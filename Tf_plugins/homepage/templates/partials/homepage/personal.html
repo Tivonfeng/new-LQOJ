@@ -1,0 +1,121 @@
+{% set udoc = payload[0] %}
+{% if udoc.uname != 'Guest'%}
+<div class="section side">
+  <div class="content-container">
+    <div class="avatar-container">
+        <img
+          src="{{ avatarUrl(udoc.avatar, 120) }}"
+          alt="头像"
+          class="avatar"
+        />
+    </div>
+    <div class="text-container">
+       {{ udoc.displayName | default('同学')}}，欢迎回来～
+    </div>
+  </div>
+</div>
+
+<div class="section side" id="personal-info">
+  <div class="section__body">
+    <div class="balancer sidebar-user-stat">
+      <div class="balancer__body">
+        <div class="numbox">
+          <div class="numbox__num medium">{{ udoc.nSubmit or 0 }}</div>
+          <div class="numbox__text">总提交</div>
+           <div class="status-line submit"></div> <!-- 新增黄色状态线 -->
+        </div>
+      </div>
+      <div class="balancer__body">
+        <div class="numbox">
+          <div class="numbox__num medium">{{ udoc.nAccept or 0 }}</div>
+          <div class="numbox__text">总AC</div>
+           <div class="status-line accept"></div> <!-- 新增绿色状态线 -->
+        </div>
+      </div>
+      <div class="balancer__body">
+        <div class="numbox">
+          {# <div class="numbox__num medium">{{ udoc.rp | default(0) | int }}</div> #}
+          <div class="numbox__num medium">{{ udoc.relLqcoin | default(0) | int }}</div>
+          <div class="numbox__text">绿旗币</div>
+          <div class="status-line solution"></div> <!-- 新增蓝色状态线 -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+
+/* 内容容器样式 */
+.content-container {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  gap: 20px; /* 头像和文本之间的间距 */
+  padding: 10px; /* 内边距 */
+}
+
+/* 头像容器样式 */
+.avatar-container {
+  flex-shrink: 0; /* 防止头像在容器缩小时也跟着缩小 */
+  width: 60px; /* 指定宽度 */
+  height: 60px; /* 指定高度 */
+  overflow: hidden; /* 超出部分隐藏，保持图片比例不失真 */
+  border-radius: 50%; /* 圆形 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%; /* 保持圆形 */
+  border: 2px solid #ffffff; /* 添加一个白色边框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 添加轻微的阴影，增加立体感 */
+  transition: transform 0.3s ease; /* 添加过渡效果，使鼠标悬浮时有动画效果 */
+}
+
+.avatar:hover {
+  transform: scale(1.1); /* 鼠标悬浮时放大头像 */
+}
+
+.text-container {
+  color: #333; /* 文字颜色，深灰色 */
+  font-size: 16px; /* 文字大小，根据需要调整 */
+  line-height: 1.5; /* 行高，增加阅读舒适度 */
+  text-align: center; /* 文本居中显示 */
+  margin-top: 10px; /* 如果需要，可以调整顶部边距 */
+}
+
+/* 状态线的基本样式 */
+.status-line {
+  height: 2px; /* 状态线的高度 */
+  width: 50%; /* 状态线的宽度，使其充满容器 */
+  margin-top: 3px; /* 状态线与上方文本的间距 */
+  border-radius: 2px; /* 添加圆角 */
+  margin-left: auto; /* 与下一条规则结合使用，实现居中 */
+  margin-right: auto; /* 与上一条规则结合使用，实现居中 */
+}
+
+.status-line.submit {
+  background-color: #FFD700; /* 黄色 */
+  box-shadow: 0 0 2px #FFD700; /* 增加一个黄色的光亮效果 */
+}
+
+/* 总通过的绿色状态线 */
+.status-line.accept {
+  background-color: #32CD32; /* 闪光绿 */
+  box-shadow: 0 0 2px #32CD32; /* 增加一个绿色的光亮效果 */
+}
+
+.status-line.solution {
+  background-color: #0777f6; /* 闪光绿 */
+  box-shadow: 0 0 2px #0777f6; /* 增加一个绿色的光亮效果 */
+}
+#personal-info{
+.numbox__text {
+    margin-top: .325rem;
+}
+}
+</style>

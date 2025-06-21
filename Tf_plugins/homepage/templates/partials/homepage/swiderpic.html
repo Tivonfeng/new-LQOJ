@@ -1,0 +1,239 @@
+{% set domainId = payload[0] %} {% set transformedRdocs = payload[2] %}
+
+<div id="carousel__container" class="section side">
+  <div>
+    {% if domainId == 'system' %}
+    <div class="img__container">
+      <img
+        class="carousel__img"
+        src="https://qiniuyun.lqcode.fun/picgo/noj/welcome.png-web.webp"
+        alt="carousel-img"
+      />
+    </div>
+    {% elif domainId == 'python' %}
+    <div class="img__container">
+      <img
+        class="carousel__img"
+        src="https://qiniuyun.lqcode.fun/picgo/noj/python.png-web.webp"
+        alt="carousel-img"
+      />
+    </div>
+    {% elif domainId == 'CSPJ' %}
+    <div class="img__container">
+      <img
+        class="carousel__img"
+        src="https://qiniuyun.lqcode.fun/picgo/noj/csp.png-web.webp"
+        alt="carousel-img"
+      />
+    </div>
+    {% else %}
+    <div class="img__container">
+      <img
+        class="carousel__img"
+        src="https://qiniuyun.lqcode.fun/picgo/noj/welcome.png-web.webp"
+        alt="carousel-img"
+      />
+    </div>
+    {% endif %}
+  </div>
+  {# <div class="scrolling-announcement">
+    <i class="tf-icon">📢</i>
+    <div class="scrolling-text">
+      <p>{{ payload[1]|default('Hello，同学们！欢迎来到绿旗编程！') }}</p>
+    </div>
+    {% if domainId != 'system'  and transformedRdocs.length > 0 %}
+    <div class="recent-records">
+      <span class="recent-record-text"></span>
+      <span class="recent-record-time"></span>
+    </div>
+    <script>
+      var transformedRdocs = {{ transformedRdocs | json | safe }};
+      var currentIndex = 0;
+
+     function updateRecentRecords() {
+          var record = transformedRdocs[currentIndex];
+          var recentRecordText = document.querySelector('.recent-record-text');
+          var recentRecordTime = document.querySelector('.recent-record-time');
+          recentRecordText.textContent = `${record.uid}同学 解决了 ${record.pid}`;
+          recentRecordTime.textContent = `${record.time}分钟前`;
+          currentIndex = (currentIndex + 1) % transformedRdocs.length; // 循环显示数组中的元素
+      }
+
+      // 初始调用一次，然后每5秒更新一次
+      updateRecentRecords();
+      setInterval(updateRecentRecords, 5000);
+    </script>
+    {% endif %}
+  </div> #}
+</div>
+
+{% if domainId == 'system' %}
+<div class="section side">
+  <div class="card-container">
+    <a href="https://noj.lqcode.fun/d/python/" class="card tech-background">
+      <div class="card-content">
+        <h2 class="card-title">Python训练体系</h2>
+      </div>
+    </a>
+
+    <a href="https://noj.lqcode.fun/d/CSPJ/" class="card tech-background">
+      <div class="card-content">
+        <h2 class="card-title">CSP训练体系</h2>
+      </div>
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<style>
+   #carousel__container {
+      position: relative;
+      {# display: flex; #}
+      height: 100%;
+      overflow: hidden;
+  }
+
+  .img__container {
+      width: 100%;
+      height: 100%;
+      flex-shrink: 0;
+  }
+
+  .img__container > img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* 保证图片按比例缩放 */
+  }
+
+
+  .carousel__img {
+      transition: transform 0.8s ease;
+  }
+
+
+
+  .card-container {
+      display: flex;
+      {# gap: 5px; #}
+  }
+
+  .card {
+      width: 50%;
+      height: 100px;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative; /* 为背景动画准备 */
+      display: flex; /* 使内容上下居中 */
+      justify-content: center; /* 使内容水平居中 */
+      align-items: center; /* 使内容垂直居中 */
+      text-decoration: none; /* 去除链接下划线 */
+  }
+
+  .card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      text-decoration: none; /* 确保悬停时没有下划线 */
+  }
+
+  .card-content {
+      text-align: center; /* 标题居中 */
+  }
+
+
+  .tech-background {
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%),
+                  linear-gradient(135deg, rgba(0, 153, 255, 0.4), rgba(0, 255, 204, 0.4));
+      background-blend-mode: overlay;
+      overflow: hidden;
+      border-radius: 12px; /* 增加圆角 */
+  }
+
+  .tech-background::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 180deg at center, rgba(255, 255, 255, 0.3), transparent 90%);
+      animation: rotate 10s linear infinite;
+  }
+
+  @keyframes rotate {
+      0% {
+          transform: rotate(0deg);
+      }
+      100% {
+          transform: rotate(360deg);
+      }
+  }
+
+  .scrolling-announcement {
+        overflow: hidden;
+        white-space: nowrap;
+        background-color: #FFFFE0; /* 设置背景颜色为深绿色 */
+        color: darkgreen; /* 设置文字颜色为白色 */
+        height: 20px;
+        display: flex;
+        align-items: center;
+      }
+  .scrolling-text p {
+        display: inline-block;
+        padding-left: 100%;
+        animation: scroll-left 10s linear infinite;
+      }
+  @keyframes scroll-left {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-100%);
+        }
+      }
+  .tf-icon {
+      margin-left: 5px;
+      margin-right: 10px;
+  }
+   .scrolling-text {
+        flex-grow: 1; /* 让文本容器填充剩余空间 */
+        overflow: hidden;
+      }
+  .recent-records {
+      color: white;
+      font-size: 12px;
+      text-align: center;
+      align-items: center;
+      width: 45%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 5px;
+      display: flex; /* 添加flex布局 */
+      justify-content: center; /* 水平居中 */
+      align-items: center; /* 垂直居中 */
+  }
+  .recent-records span {
+          margin-right: 10px; /* 在每个span元素的右侧添加10px的间隔 */
+      }
+  .recent-records span:last-child {
+          margin-right: 0; /* 最后一个span元素不添加间隔 */
+      }
+
+  .recent-record-text, .recent-record-time {
+      animation: slide-up-fade 5s linear infinite;
+  }
+
+  @keyframes slide-up-fade {
+       0%, 10% {
+          opacity: 0;
+          transform: translateY(20px);
+      }
+      20%, 80% {
+          opacity: 1;
+          transform: translateY(0);
+      }
+      90%, 100% {
+          opacity: 0;
+          transform: translateY(-20px);
+      }
+  }
+</style>

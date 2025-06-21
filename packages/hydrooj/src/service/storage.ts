@@ -61,7 +61,7 @@ const convertPath = (p: string) => {
 };
 
 const defaultPath = process.env.CI ? '/tmp/file'
-    : process.env.DEFAULT_STORE_PATH || '/data/file/hydro';
+    : process.env.DEFAULT_STORE_PATH || '~/data/file/hydro';
 const FileSetting = Schema.intersect([
     Schema.object({
         type: Schema.union([

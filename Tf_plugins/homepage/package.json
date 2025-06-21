@@ -1,0 +1,18 @@
+{
+  "name": "@hydrooj/homepage",
+  "version": "1.0.0",
+  "description": "首页轮播图和公告插件",
+  "main": "index.ts",
+  "author": "TfFeng",
+  "license": "MIT",
+  "packageManager": "yarn@4.9.1",
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  },
+  "keywords": [
+    "hydrooj",
+    "plugin",
+    "homepage",
+    "carousel"
+  ]
+}
