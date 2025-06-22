@@ -160,6 +160,13 @@ configure_zsh() {
         # 查找plugins行并添加autosuggestions
         sed -i 's/plugins=(/plugins=(zsh-autosuggestions /' "$zshrc"
         log_success "已添加 zsh-autosuggestions 到插件列表"
+        
+        # 重新加载zsh配置
+        if [ -n "$ZSH_VERSION" ]; then
+            log_info "重新加载 zsh 配置..."
+            source "$zshrc"
+            log_success "zsh 配置已重新加载"
+        fi
     else
         log_error ".zshrc 文件不存在，请手动配置"
     fi
@@ -197,6 +204,27 @@ install_additional_tools() {
     log_success "额外工具安装完成"
 }
 
+# 安装Hydro
+install_hydro() {
+    log_info "开始安装 Hydro..."
+    
+    # 检查是否已经安装了Node.js（Hydro需要）
+    if ! command -v node &> /dev/null; then
+        log_info "Node.js 未安装，Hydro 安装脚本会自动处理..."
+    fi
+    
+    # 安装Hydro
+    log_info "正在下载并执行 Hydro 安装脚本..."
+    LANG=zh . <(curl -fsSL https://hydro.ac/setup.sh)
+    
+    if [ $? -eq 0 ]; then
+        log_success "Hydro 安装完成"
+    else
+        log_error "Hydro 安装失败，请检查网络连接或手动安装"
+        log_info "可以稍后手动运行: LANG=zh . <(curl https://hydro.ac/setup.sh)"
+    fi
+}
+
 # 显示完成信息
 show_completion_info() {
     echo
@@ -208,12 +236,18 @@ show_completion_info() {
     echo "  ✅ Zsh"
     echo "  ✅ Oh My Zsh"
     echo "  ✅ zsh-autosuggestions"
+    echo "  ✅ Hydro (在线判题系统)"
     echo
     echo "下一步操作："
     echo "  1. 重启终端或运行: exec zsh"
-    echo "  2. 享受新的开发环境！"
+    echo "  2. 或者运行: source ~/.zshrc 来重新加载配置"
+    echo "  3. 访问 Hydro 管理面板进行初始化配置"
+    echo "  4. 享受新的开发环境！"
     echo
-    echo "如果需要自定义配置，可以编辑 ~/.zshrc 文件"
+    echo "配置说明："
+    echo "  • 编辑 ~/.zshrc 文件可以自定义 zsh 配置"
+    echo "  • Hydro 的配置文件通常在 ~/.hydro 目录下"
+    echo "  • 如需重新安装 Hydro，运行: LANG=zh . <(curl https://hydro.ac/setup.sh)"
 }
 
 # 主函数
@@ -232,6 +266,7 @@ main() {
     configure_zsh
     set_default_shell
     install_additional_tools
+    install_hydro
     show_completion_info
 }
 
