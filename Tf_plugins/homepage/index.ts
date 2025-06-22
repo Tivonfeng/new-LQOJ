@@ -1,5 +1,6 @@
 import {
-    Context, DomainModel, RecordModel, UserModel, ProblemModel, PERM, PRIV
+    Context,
+    ProblemModel, RecordModel, UserModel,
 } from 'hydrooj';
 
 async function getPersonal(domainId: string, userId: number) {
@@ -82,22 +83,20 @@ export async function apply(ctx: Context) {
     // 运行时动态获取HomeHandler，避免弃用警告
     ctx.on('app/started', () => {
         const HomeHandler = require('hydrooj/src/handler/home').HomeHandler;
-        
-        // 扩展HomeHandler添加首页数据获取功能
-        HomeHandler.prototype.getSwiderpic = async (domainId: string, info: any) => {
-            return await getSwiderpic(domainId, info);
-        };
 
-        HomeHandler.prototype.getPersonal = async function(domainId: string) {
+        // 扩展HomeHandler添加首页数据获取功能
+        HomeHandler.prototype.getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
+
+        HomeHandler.prototype.getPersonal = async function (domainId: string) {
             return await getPersonal(domainId, this.user._id);
         };
 
         // HomeHandler.prototype.getTimeRanking = async (domainId: string) => {
         //     return await getTimeRanking(domainId, this.user._id);
         // };
-        
+
         console.log('Homepage methods added to HomeHandler');
     });
-    
+
     console.log('Homepage plugin loaded successfully!');
 }
