@@ -1,0 +1,81 @@
+name: Sync Tf_plugins to Remote Directory
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'Tf_plugins/**'
+  workflow_dispatch:
+    inputs:
+      remote_host:
+        description: 'Remote host address'
+        required: true
+        default: ''
+      remote_user:
+        description: 'Remote user'
+        required: true
+        default: ''
+      remote_path:
+        description: 'Remote directory path'
+        required: true
+        default: ''
+      sync_method:
+        description: 'Sync method (rsync/scp)'
+        required: true
+        default: 'rsync'
+        type: choice
+        options:
+          - rsync
+          - scp
+
+jobs:
+  sync-plugins:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Add remote host to known_hosts
+      run: |
+        ssh-keyscan -H ${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Sync Tf_plugins using rsync
+      if: (github.event.inputs.sync_method == 'rsync' || github.event.inputs.sync_method == '') && github.event_name == 'workflow_dispatch'
+      run: |
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='node_modules' \
+          --exclude='*.log' \
+          --exclude='.DS_Store' \
+          Tf_plugins/ \
+          ${{ github.event.inputs.remote_user || secrets.REMOTE_USER }}@${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}:${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}/
+          
+    - name: Sync Tf_plugins using scp
+      if: github.event.inputs.sync_method == 'scp' && github.event_name == 'workflow_dispatch'
+      run: |
+        scp -r Tf_plugins/ \
+          ${{ github.event.inputs.remote_user || secrets.REMOTE_USER }}@${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}:${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}/
+          
+    - name: Auto sync on push (using secrets)
+      if: github.event_name == 'push'
+      run: |
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='node_modules' \
+          --exclude='*.log' \
+          --exclude='.DS_Store' \
+          Tf_plugins/ \
+          ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_PATH }}/
+          
+    - name: Verify sync
+      run: |
+        echo "Sync completed successfully!"
+        echo "Synced directory: Tf_plugins/"
+        echo "Remote host: ${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}"
+        echo "Remote path: ${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}" 
