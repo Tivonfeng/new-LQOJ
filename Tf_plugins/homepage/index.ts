@@ -1,6 +1,6 @@
 import {
     Context,
-    ProblemModel, RecordModel, UserModel,
+    UserModel,
 } from 'hydrooj';
 
 async function getPersonal(domainId: string, userId: number) {
@@ -15,17 +15,7 @@ async function getPersonal(domainId: string, userId: number) {
 }
 
 async function getSwiderpic(domainId: string, info: any) {
-    if (domainId === 'system') return [domainId, info, []];
-    const rdocs = await RecordModel.getMulti(domainId, { status: 1 }).sort({ _id: -1 }).limit(5).toArray();
-    const uids = rdocs.map((doc) => doc.uid);
-    const udict = await UserModel.getList(domainId, uids);
-    const pdict = await ProblemModel.getList(domainId, rdocs.map((doc) => doc.pid));
-    const transformedRdocs = rdocs.map((doc) => ({
-        pid: pdict[doc.pid].pid,
-        uid: udict[doc.uid].displayName || udict[doc.uid].uname,
-        time: Math.floor((new Date().getTime() - new Date(doc.judgeAt).getTime()) / 60000),
-    }));
-    return [domainId, info, transformedRdocs];
+    return [domainId, info, []];
 }
 
 // async function getTimeRanking(domainId: string, userId: number) {

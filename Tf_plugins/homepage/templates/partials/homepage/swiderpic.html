@@ -1,4 +1,4 @@
-{% set domainId = payload[0] %} {% set transformedRdocs = payload[2] %}
+{% set domainId = payload[0] %}
 
 <div id="carousel__container" class="section side">
   <div>
@@ -36,35 +36,6 @@
     </div>
     {% endif %}
   </div>
-  {# <div class="scrolling-announcement">
-    <i class="tf-icon">📢</i>
-    <div class="scrolling-text">
-      <p>{{ payload[1]|default('Hello，同学们！欢迎来到绿旗编程！') }}</p>
-    </div>
-    {% if domainId != 'system'  and transformedRdocs.length > 0 %}
-    <div class="recent-records">
-      <span class="recent-record-text"></span>
-      <span class="recent-record-time"></span>
-    </div>
-    <script>
-      var transformedRdocs = {{ transformedRdocs | json | safe }};
-      var currentIndex = 0;
-
-     function updateRecentRecords() {
-          var record = transformedRdocs[currentIndex];
-          var recentRecordText = document.querySelector('.recent-record-text');
-          var recentRecordTime = document.querySelector('.recent-record-time');
-          recentRecordText.textContent = `${record.uid}同学 解决了 ${record.pid}`;
-          recentRecordTime.textContent = `${record.time}分钟前`;
-          currentIndex = (currentIndex + 1) % transformedRdocs.length; // 循环显示数组中的元素
-      }
-
-      // 初始调用一次，然后每5秒更新一次
-      updateRecentRecords();
-      setInterval(updateRecentRecords, 5000);
-    </script>
-    {% endif %}
-  </div> #}
 </div>
 
 {% if domainId == 'system' %}
