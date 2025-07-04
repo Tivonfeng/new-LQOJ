@@ -315,6 +315,22 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
       setPids((o) => o.filter((i) => !all.includes(i)));
     });
   }, []);
+  React.useEffect(() => {
+    (window as any).__getPids = () => pids;
+    (window as any).__setPids = (newIds: string[]) => setPids(newIds);
+  }, [pids]);
+
+  const problemSelectAutoCompleteRef = React.useRef(null);
+  const copyIds = React.useCallback(async () => {
+    await navigator.clipboard.writeText(pids.join(','));
+    Notification.success(i18n('Problem ids copied to clipboard!'));
+    problemSelectAutoCompleteRef.current.getSelectedItems();
+  }, [pids]);
+  const copyPids = React.useCallback(async () => {
+    const items = problemSelectAutoCompleteRef.current.getSelectedItems();
+    await navigator.clipboard.writeText(items.map((i) => i.pid || i.docId).join(','));
+    Notification.success(i18n('Problem ids copied to clipboard!'));
+  }, [pids]);
 
   const updateCheckboxSelection = React.useCallback(() => {
     for (const i of $('[data-checkbox-group="problem"]:checked')) {
@@ -353,6 +369,7 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
             <div className="columns">
               <ProblemSelectAutoComplete
                 multi
+                ref={problemSelectAutoCompleteRef}
                 onChange={(v) => setPids(v.split(',').filter((i) => i.trim()))}
                 selectedKeys={pids}
               />
@@ -363,6 +380,8 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
         <div className="row">
           <div className="columns clearfix">
             <div className="float-right dialog__action">
+              <button className="rounded button" onClick={copyIds}>{i18n('Copy IDs')}</button>{' '}
+              <button className="rounded button" onClick={copyPids}>{i18n('Copy pids')}</button>{' '}
               <button className="rounded button" onClick={() => setPids([])}>{i18n('Clear')}</button>{' '}
               <button className="primary rounded button" onClick={() => setDialogOpen(false)}>{i18n('Ok')}</button>
             </div>
@@ -435,11 +454,14 @@ const page = new NamedPage(['problem_main'], () => {
   $(document).on('vjContentNew', (e) => processElement(e.target));
   processElement(document);
 
-  ReactDOM.createRoot(document.getElementById('problem_selection'))
-    .render(<ProblemSelectionDisplay
-      onChange={(pids) => { selectedPids = pids; }}
-      onClear={(handler) => { clearSelectionHandler = handler; }}
-    />);
+  const selection = document.getElementById('problem_selection');
+  if (selection) {
+    ReactDOM.createRoot(selection)
+      .render(<ProblemSelectionDisplay
+        onChange={(pids) => { selectedPids = pids; }}
+        onClear={(handler) => { clearSelectionHandler = handler; }}
+      />);
+  }
 
   addSpeculationRules({
     prerender: [{
