@@ -1,0 +1,20 @@
+{
+  "name": "@hydrooj/confetti",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "提交成功时显示彩带效果的插件",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.6.0",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@hydrooj/common": "workspace:^",
+    "schemastery": "^3.16.1",
+    "@types/canvas-confetti": "^1.6.0"
+  }
+} 
