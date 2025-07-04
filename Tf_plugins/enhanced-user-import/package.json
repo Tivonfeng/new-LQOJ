@@ -1,26 +1,9 @@
 {
-  "name": "@hydrooj/enhanced-user-import",
+  "name": "enhanced-user-import",
   "version": "1.0.0",
-  "description": "Enhanced user import interface with modern UI and advanced features",
+  "description": "Enhanced User Import Plugin for Hydro",
   "main": "index.ts",
-  "author": "LQOJ Enhancement Team",
+  "author": "TivonFeng",
   "license": "MIT",
-  "dependencies": {
-    "papaparse": "^5.4.1"
-  },
-  "devDependencies": {
-    "@types/papaparse": "^5.3.14"
-  },
-  "peerDependencies": {
-    "hydrooj": "*"
-  },
-  "hydro": {
-    "weight": 100
-  },
-  "keywords": [
-    "hydrooj",
-    "user-import",
-    "admin",
-    "management"
-  ]
+  "keywords": ["hydro", "user-import", "csv", "batch-import"]
 } 
