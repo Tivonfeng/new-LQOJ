@@ -13,8 +13,6 @@
     "hydrooj": "workspace:^"
   },
   "devDependencies": {
-    "@hydrooj/common": "workspace:^",
-    "schemastery": "^3.16.1",
     "@types/canvas-confetti": "^1.6.0"
   }
-} 
+}
