@@ -1,0 +1,26 @@
+{
+  "name": "@hydrooj/enhanced-user-import",
+  "version": "1.0.0",
+  "description": "Enhanced user import interface with modern UI and advanced features",
+  "main": "index.ts",
+  "author": "LQOJ Enhancement Team",
+  "license": "MIT",
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.14"
+  },
+  "peerDependencies": {
+    "hydrooj": "*"
+  },
+  "hydro": {
+    "weight": 100
+  },
+  "keywords": [
+    "hydrooj",
+    "user-import",
+    "admin",
+    "management"
+  ]
+} 

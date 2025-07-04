@@ -1,0 +1,1128 @@
+{% extends "manage_base.html" %}
+{% block manage_content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.import-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.import-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.import-tab {
+    flex: 1;
+    padding: 15px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.import-tab.active {
+    background: #007bff;
+    color: white;
+}
+
+.import-tab:hover {
+    background: #e9ecef;
+}
+
+.import-tab.active:hover {
+    background: #0056b3;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.upload-zone {
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.upload-zone:hover {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.upload-zone.dragover {
+    border-color: #007bff;
+    background: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.upload-text {
+    color: #6c757d;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.upload-hint {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.format-help {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.format-help h3 {
+    color: #495057;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.format-example {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.sample-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.sample-btn {
+    padding: 8px 16px;
+    border: 1px solid #007bff;
+    background: white;
+    color: #007bff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.sample-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.validation-panel {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.validation-item {
+    padding: 8px 12px;
+    margin: 5px 0;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.validation-item.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.validation-item.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.validation-item.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.progress-container {
+    display: none;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #1e7e34;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.enhanced-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.enhanced-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.batch-settings {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.batch-input {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.file-input {
+    display: none;
+}
+
+.stats-panel {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.preview-table th,
+.preview-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.preview-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.preview-table tr:hover {
+    background: #f8f9fa;
+}
+
+.tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-success {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.responsive-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 30px;
+}
+
+@media (max-width: 768px) {
+    .responsive-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .import-tabs {
+        flex-direction: column;
+    }
+    
+    .control-buttons {
+        flex-direction: column;
+    }
+    
+    .sample-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+
+<div class="import-container">
+    <div class="section">
+        <div class="section__header">
+            <h1 class="section__title">
+                <i class="fas fa-users-cog"></i>
+                {{ _('Enhanced User Import') }}
+            </h1>
+        </div>
+        
+        <div class="section__body">
+            <!-- 导入方式选择 -->
+            <div class="import-tabs">
+                <button class="import-tab active" data-tab="upload">
+                    <i class="fas fa-upload"></i>
+                    {{ _('File Upload') }}
+                </button>
+                <button class="import-tab" data-tab="paste">
+                    <i class="fas fa-paste"></i>
+                    {{ _('Paste Text') }}
+                </button>
+            </div>
+
+            <div class="responsive-grid">
+                <div class="main-content">
+                    <!-- 文件上传 -->
+                    <div class="tab-content active" id="upload-tab">
+                        <div class="upload-zone" id="upload-zone">
+                            <input type="file" id="file-input" class="file-input" accept=".csv,.tsv,.txt" multiple>
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">{{ _('Drag and drop files here') }}</div>
+                            <div class="upload-hint">{{ _('or click to browse') }}</div>
+                            <div class="upload-hint">{{ _('Supported formats: CSV, TSV') }} | {{ _('File size limit: 5MB') }}</div>
+                        </div>
+                    </div>
+
+                    <!-- 文本粘贴 -->
+                    <div class="tab-content" id="paste-tab">
+                        <label for="users-textarea">{{ _('Or paste user data below') }}:</label>
+                        <textarea id="users-textarea" name="users" class="enhanced-textarea" 
+                                  placeholder="{{ _('Each line should contain') }}: {{ _('email, username, password, displayName, extra') }}"></textarea>
+                    </div>
+
+                    <!-- 统计面板 -->
+                    <div class="stats-panel" id="stats-panel" style="display: none;">
+                        <h3><i class="fas fa-chart-bar"></i> {{ _('Import Statistics') }}</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number" id="total-users">0</div>
+                                <div class="stat-label">{{ _('Total Users') }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="valid-users">0</div>
+                                <div class="stat-label">{{ _('Valid Users') }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="invalid-users">0</div>
+                                <div class="stat-label">{{ _('Invalid Users') }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="duplicate-users">0</div>
+                                <div class="stat-label">{{ _('Duplicates') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 验证面板 -->
+                    <div class="validation-panel" id="validation-panel" style="display: none;">
+                        <h3><i class="fas fa-check-circle"></i> {{ _('Real-time Validation') }}</h3>
+                        <div id="validation-results"></div>
+                    </div>
+
+                    <!-- 进度条 -->
+                    <div class="progress-container" id="progress-container">
+                        <h3><i class="fas fa-tasks"></i> {{ _('Import Progress') }}</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">{{ _('Preparing...') }}</div>
+                    </div>
+
+                    <!-- 批次设置 -->
+                    <div class="batch-settings">
+                        <label for="batch-size">{{ _('Batch size') }}:</label>
+                        <input type="number" id="batch-size" class="batch-input" value="50" min="1" max="1000">
+                        <span class="tooltip" data-tooltip="{{ _('Import in batches to avoid timeout') }}">
+                            <i class="fas fa-question-circle"></i>
+                        </span>
+                    </div>
+
+                    <!-- 预览表格 -->
+                    <div id="preview-container" style="display: none;">
+                        <h3><i class="fas fa-table"></i> {{ _('Preview Results') }}</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="preview-table" id="preview-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ _('Email') }}</th>
+                                        <th>{{ _('Username') }}</th>
+                                        <th>{{ _('Display Name') }}</th>
+                                        <th>{{ _('Extra Info') }}</th>
+                                        <th>{{ _('Status') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 控制按钮 -->
+                    <div class="control-buttons">
+                        <button class="btn btn-primary" id="preview-btn">
+                            <i class="fas fa-eye"></i>
+                            {{ _('Preview Results') }}
+                        </button>
+                        <button class="btn btn-success" id="import-btn" disabled>
+                            <i class="fas fa-download"></i>
+                            {{ _('Import Now') }}
+                        </button>
+                        <button class="btn btn-secondary" id="clear-btn">
+                            <i class="fas fa-trash"></i>
+                            {{ _('Clear Data') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 侧边栏 -->
+                <div class="sidebar">
+                    <!-- 格式帮助 -->
+                    <div class="format-help">
+                        <h3><i class="fas fa-info-circle"></i> {{ _('Format Help') }}</h3>
+                        <p>{{ _('User data format') }}:</p>
+                        <p>{{ _('Each line should contain') }}:</p>
+                        <div class="format-example">
+email,username,password,displayName,extra
+user@example.com,user123,password123,John Doe,{"group":"students","school":"MIT"}
+                        </div>
+                        <p>{{ _('Extra field can be JSON with group, school, studentId') }}</p>
+                        
+                        <div class="sample-buttons">
+                            <button class="sample-btn" id="csv-sample">
+                                <i class="fas fa-file-csv"></i>
+                                {{ _('Download Sample CSV') }}
+                            </button>
+                            <button class="sample-btn" id="tsv-sample">
+                                <i class="fas fa-file-alt"></i>
+                                {{ _('Download Sample TSV') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 模板下载 -->
+                    <div class="format-help">
+                        <h3><i class="fas fa-download"></i> {{ _('Export Template') }}</h3>
+                        <p>{{ _('Download template files to get started quickly') }}</p>
+                        <div class="sample-buttons">
+                            <button class="sample-btn" id="template-csv">
+                                <i class="fas fa-file-csv"></i>
+                                {{ _('CSV Template') }}
+                            </button>
+                            <button class="sample-btn" id="template-tsv">
+                                <i class="fas fa-file-alt"></i>
+                                {{ _('TSV Template') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 帮助信息 -->
+                    <div class="alert alert-info">
+                        <h4><i class="fas fa-lightbulb"></i> {{ _('Tips') }}</h4>
+                        <ul>
+                            <li>{{ _('Use CSV or TSV format for best results') }}</li>
+                            <li>{{ _('Maximum 5MB file size') }}</li>
+                            <li>{{ _('Batch import for large datasets') }}</li>
+                            <li>{{ _('Preview before importing') }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+<script>
+// 增强版用户导入 JavaScript
+class EnhancedUserImport {
+    constructor() {
+        this.csvData = [];
+        this.validationResults = [];
+        this.isImporting = false;
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.setupDragDrop();
+        this.setupTabSwitching();
+    }
+
+    setupEventListeners() {
+        // 文件选择
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            this.handleFileSelect(e.target.files);
+        });
+
+        // 文本区域变化
+        document.getElementById('users-textarea').addEventListener('input', (e) => {
+            this.handleTextChange(e.target.value);
+        });
+
+        // 按钮事件
+        document.getElementById('preview-btn').addEventListener('click', () => {
+            this.previewData();
+        });
+
+        document.getElementById('import-btn').addEventListener('click', () => {
+            this.importData();
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            this.clearData();
+        });
+
+        // 模板下载
+        document.getElementById('csv-sample').addEventListener('click', () => {
+            this.downloadSample('csv');
+        });
+
+        document.getElementById('tsv-sample').addEventListener('click', () => {
+            this.downloadSample('tsv');
+        });
+
+        document.getElementById('template-csv').addEventListener('click', () => {
+            this.downloadTemplate('csv');
+        });
+
+        document.getElementById('template-tsv').addEventListener('click', () => {
+            this.downloadTemplate('tsv');
+        });
+    }
+
+    setupDragDrop() {
+        const uploadZone = document.getElementById('upload-zone');
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            this.handleFileSelect(e.dataTransfer.files);
+        });
+
+        uploadZone.addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+    }
+
+    setupTabSwitching() {
+        const tabs = document.querySelectorAll('.import-tab');
+        const contents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                // 移除所有活动状态
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+
+                // 添加活动状态
+                tab.classList.add('active');
+                contents[index].classList.add('active');
+            });
+        });
+    }
+
+    handleFileSelect(files) {
+        if (files.length === 0) return;
+
+        const file = files[0];
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            alert('文件大小超过5MB限制');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+            this.parseCSV(content);
+        };
+        reader.readAsText(file);
+    }
+
+    parseCSV(content) {
+        Papa.parse(content, {
+            complete: (results) => {
+                this.csvData = results.data;
+                this.validateData();
+                this.updateStats();
+                this.showValidationResults();
+            },
+            header: false,
+            skipEmptyLines: true
+        });
+    }
+
+    handleTextChange(content) {
+        if (!content.trim()) {
+            this.clearData();
+            return;
+        }
+
+        // 解析文本数据
+        const lines = content.trim().split('\n');
+        this.csvData = lines.map(line => {
+            // 支持逗号和制表符分隔
+            return line.includes('\t') ? line.split('\t') : line.split(',');
+        });
+
+        this.validateData();
+        this.updateStats();
+        this.showValidationResults();
+    }
+
+    validateData() {
+        this.validationResults = [];
+        let validCount = 0;
+        let invalidCount = 0;
+        let duplicateCount = 0;
+        const emailSet = new Set();
+        const usernameSet = new Set();
+
+        this.csvData.forEach((row, index) => {
+            const lineNum = index + 1;
+            const [email, username, password, displayName, extra] = row;
+
+            if (!email || !username || !password) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'error',
+                    message: '缺少必需字段'
+                });
+                invalidCount++;
+                return;
+            }
+
+            // 邮箱验证
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'error',
+                    message: '邮箱格式无效'
+                });
+                invalidCount++;
+                return;
+            }
+
+            // 用户名验证
+            if (username.length < 3 || username.length > 20) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'error',
+                    message: '用户名必须为3-20个字符'
+                });
+                invalidCount++;
+                return;
+            }
+
+            // 密码验证
+            if (password.length < 6) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'error',
+                    message: '密码至少需要6个字符'
+                });
+                invalidCount++;
+                return;
+            }
+
+            // 检查重复
+            if (emailSet.has(email)) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'warning',
+                    message: '邮箱重复'
+                });
+                duplicateCount++;
+            } else {
+                emailSet.add(email);
+            }
+
+            if (usernameSet.has(username)) {
+                this.validationResults.push({
+                    line: lineNum,
+                    type: 'warning',
+                    message: '用户名重复'
+                });
+                duplicateCount++;
+            } else {
+                usernameSet.add(username);
+            }
+
+            // 验证额外信息
+            if (extra) {
+                try {
+                    JSON.parse(extra);
+                } catch (e) {
+                    this.validationResults.push({
+                        line: lineNum,
+                        type: 'warning',
+                        message: '额外字段中的JSON格式无效'
+                    });
+                }
+            }
+
+            validCount++;
+        });
+
+        // 更新统计
+        document.getElementById('total-users').textContent = this.csvData.length;
+        document.getElementById('valid-users').textContent = validCount;
+        document.getElementById('invalid-users').textContent = invalidCount;
+        document.getElementById('duplicate-users').textContent = duplicateCount;
+
+        // 启用/禁用导入按钮
+        document.getElementById('import-btn').disabled = invalidCount > 0 || validCount === 0;
+    }
+
+    updateStats() {
+        const statsPanel = document.getElementById('stats-panel');
+        if (this.csvData.length > 0) {
+            statsPanel.style.display = 'block';
+        } else {
+            statsPanel.style.display = 'none';
+        }
+    }
+
+    showValidationResults() {
+        const validationPanel = document.getElementById('validation-panel');
+        const validationResults = document.getElementById('validation-results');
+
+        if (this.validationResults.length === 0) {
+            validationPanel.style.display = 'none';
+            return;
+        }
+
+        validationPanel.style.display = 'block';
+        validationResults.innerHTML = '';
+
+        this.validationResults.forEach(result => {
+            const div = document.createElement('div');
+            div.className = `validation-item ${result.type}`;
+            div.innerHTML = `
+                <strong>第 ${result.line} 行：</strong> ${result.message}
+            `;
+            validationResults.appendChild(div);
+        });
+    }
+
+    previewData() {
+        if (this.csvData.length === 0) {
+            alert('没有数据可预览');
+            return;
+        }
+
+        const previewContainer = document.getElementById('preview-container');
+        const previewTbody = document.getElementById('preview-tbody');
+        
+        previewTbody.innerHTML = '';
+
+        this.csvData.slice(0, 10).forEach((row, index) => {
+            const [email, username, password, displayName, extra] = row;
+            const tr = document.createElement('tr');
+            
+            // 检查这行是否有错误
+            const hasError = this.validationResults.some(r => r.line === index + 1 && r.type === 'error');
+            const hasWarning = this.validationResults.some(r => r.line === index + 1 && r.type === 'warning');
+            
+            let statusClass = 'success';
+            let statusText = '有效';
+            
+            if (hasError) {
+                statusClass = 'error';
+                statusText = '错误';
+            } else if (hasWarning) {
+                statusClass = 'warning';
+                statusText = '警告';
+            }
+
+            tr.innerHTML = `
+                <td>${email || ''}</td>
+                <td>${username || ''}</td>
+                <td>${displayName || ''}</td>
+                <td>${extra || ''}</td>
+                <td><span class="validation-item ${statusClass}">${statusText}</span></td>
+            `;
+            previewTbody.appendChild(tr);
+        });
+
+        if (this.csvData.length > 10) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="5" style="text-align: center; font-style: italic;">
+                    ... 还有 ${this.csvData.length - 10} 行
+                </td>
+            `;
+            previewTbody.appendChild(tr);
+        }
+
+        previewContainer.style.display = 'block';
+    }
+
+    async importData() {
+        if (this.isImporting) return;
+        
+        this.isImporting = true;
+        this.showProgress();
+
+        try {
+            // 转换数据格式
+            const userData = this.csvData.map(row => {
+                const [email, username, password, displayName, extra] = row;
+                return [email, username, password, displayName, extra].join('\t');
+            }).join('\n');
+
+            const batchSize = parseInt(document.getElementById('batch-size').value) || 50;
+
+            // 发送请求
+            const response = await fetch('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    users: userData,
+                    draft: 'false',
+                    batchSize: batchSize.toString()
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showSuccess(result.messages);
+                this.clearData();
+            } else {
+                this.showError(result.messages);
+            }
+
+        } catch (error) {
+            this.showError(['导入失败: ' + error.message]);
+        } finally {
+            this.isImporting = false;
+            this.hideProgress();
+        }
+    }
+
+    showProgress() {
+        const progressContainer = document.getElementById('progress-container');
+        progressContainer.style.display = 'block';
+        
+        // 模拟进度
+        let progress = 0;
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+            }
+            progressFill.style.width = progress + '%';
+            progressText.textContent = `正在导入用户... ${Math.round(progress)}%`;
+        }, 500);
+    }
+
+    hideProgress() {
+        const progressContainer = document.getElementById('progress-container');
+        progressContainer.style.display = 'none';
+    }
+
+    showSuccess(messages) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success';
+        alertDiv.innerHTML = `
+            <h4><i class="fas fa-check-circle"></i> 导入完成！</h4>
+            <ul>${messages.map(msg => `<li>${msg}</li>`).join('')}</ul>
+        `;
+        document.querySelector('.main-content').prepend(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 10000);
+    }
+
+    showError(messages) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger';
+        alertDiv.innerHTML = `
+            <h4><i class="fas fa-exclamation-circle"></i> 导入失败</h4>
+            <ul>${messages.map(msg => `<li>${msg}</li>`).join('')}</ul>
+        `;
+        document.querySelector('.main-content').prepend(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 10000);
+    }
+
+    clearData() {
+        this.csvData = [];
+        this.validationResults = [];
+        
+        document.getElementById('users-textarea').value = '';
+        document.getElementById('file-input').value = '';
+        document.getElementById('stats-panel').style.display = 'none';
+        document.getElementById('validation-panel').style.display = 'none';
+        document.getElementById('preview-container').style.display = 'none';
+        document.getElementById('import-btn').disabled = true;
+    }
+
+    downloadSample(format) {
+        const sampleData = [
+            ['user1@example.com', 'user1', 'password123', 'John Doe', '{"group":"students","school":"MIT"}'],
+            ['user2@example.com', 'user2', 'password456', 'Jane Smith', '{"group":"teachers","school":"Harvard"}'],
+            ['user3@example.com', 'user3', 'password789', 'Bob Wilson', '{"group":"students","studentId":"20230001"}']
+        ];
+
+        const separator = format === 'csv' ? ',' : '\t';
+        const content = sampleData.map(row => row.join(separator)).join('\n');
+        
+        this.downloadFile(content, `sample_users.${format}`, 'text/plain');
+    }
+
+    downloadTemplate(format) {
+        const header = ['email', 'username', 'password', 'displayName', 'extra'];
+        const separator = format === 'csv' ? ',' : '\t';
+        const content = header.join(separator);
+        
+        this.downloadFile(content, `user_import_template.${format}`, 'text/plain');
+    }
+
+    downloadFile(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    new EnhancedUserImport();
+});
+</script>
+{% endblock %} 
