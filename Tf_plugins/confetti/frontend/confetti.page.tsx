@@ -12,11 +12,9 @@ const confettiConfig = {
 
 // 音效配置
 const audioConfig = {
-  // 可以配置多个音效文件，插件会随机选择一个播放
+  // 播放当前目录下的ding.mp3
   soundFiles: [
-    '/static/sounds/success1.mp3',
-    '/static/sounds/success2.mp3',
-    '/static/sounds/celebration.mp3',
+    '/ding.mp3',
   ],
   volume: 0.3, // 音量 (0-1)
   enableSound: true, // 是否启用音效

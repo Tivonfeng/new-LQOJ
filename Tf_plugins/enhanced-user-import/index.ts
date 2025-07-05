@@ -1,13 +1,14 @@
 import {
     BadRequestError,
     Context,
-    domain,
     Handler,
-    param,
     PRIV,
     Types,
-    user,
 } from 'hydrooj';
+
+// 通过全局对象访问模型
+const user = global.Hydro.model.user;
+const domain = global.Hydro.model.domain;
 
 // 解析CSV格式数据
 function parseCSV(csvData: string): string[][] {
@@ -54,6 +55,16 @@ function generateSampleData(format: 'csv' | 'tsv'): string {
     return samples.map((row) => row.join(separator)).join('\n');
 }
 
+// 生成随机密码
+function generateRandomPassword(length: number = 8): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 class EnhancedUserImportHandler extends Handler {
     async prepare() {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
@@ -68,16 +79,59 @@ class EnhancedUserImportHandler extends Handler {
         };
     }
 
-    @param('users', Types.Content)
-    @param('draft', Types.Boolean)
-    @param('batchSize', Types.UnsignedInt, true)
-    @param('format', Types.String, true)
-    @param('fileContent', Types.String, true)
-    async post(domainId: string, _users: string, draft: boolean, batchSize: number = 50, format: string = 'manual', fileContent: string = '') {
+    async post(domainId: string) {
+        const _users = this.request.body.users || '';
+        const draft = this.request.body.draft === 'true' || this.request.body.draft === true;
+        const batchSize = parseInt(this.request.body.batchSize, 10) || 50;
+        const format = this.request.body.format || 'quick';
+        const fileContent = this.request.body.fileContent || '';
+        const usernames = this.request.body.usernames || '';
+        const singleUsername = this.request.body.username || '';
+
+        // 快速输入模式不需要复杂配置
+
+        // 获取快速输入的密码配置
+        const passwordMode = this.request.body.passwordMode || 'random';
+        const fixedPasswordValue = this.request.body.fixedPasswordValue || '';
+
         let usersData = _users;
 
+        // 处理快速输入的用户名
+        if (format === 'quick' && (usernames || singleUsername)) {
+            try {
+                let userNameList: string[] = [];
+
+                if (singleUsername) {
+                    // 处理单个用户名
+                    userNameList = [singleUsername.trim()];
+                } else if (usernames) {
+                    // 处理多个用户名（向后兼容）
+                    userNameList = usernames.split('\n').map((name) => name.trim()).filter((name) => name);
+                }
+                usersData = userNameList.map((userNameItem) => {
+                    const email = `${userNameItem}@lqcode.fun`;
+                    let password = '';
+
+                    // 根据密码模式生成密码
+                    if (passwordMode === 'random') {
+                        password = generateRandomPassword();
+                    } else if (passwordMode === 'fixed') {
+                        password = fixedPasswordValue || generateRandomPassword();
+                    } else if (passwordMode === 'username') {
+                        password = userNameItem;
+                    } else {
+                        password = generateRandomPassword();
+                    }
+
+                    return `${email}\t${userNameItem}\t${password}\t${userNameItem}\t{}`;
+                }).join('\n');
+            } catch (e) {
+                throw new BadRequestError(`快速输入解析错误：${e instanceof Error ? e.message : String(e)}`);
+            }
+        }
+
         // 处理文件上传的内容
-        if (fileContent && format !== 'manual') {
+        if (fileContent && format !== 'quick') {
             try {
                 let parsedData: string[][];
                 if (format === 'csv') {
@@ -107,7 +161,7 @@ class EnhancedUserImportHandler extends Handler {
             displayName?: string,
             [key: string]: any;
         }[] = [];
-        const messages = [];
+        const messages: string[] = [];
         const mapping = Object.create(null);
         const groups: Record<string, string[]> = Object.create(null);
         const statistics = {
@@ -117,7 +171,15 @@ class EnhancedUserImportHandler extends Handler {
             total: 0,
         };
 
-        // 数据验证逻辑（复用原有逻辑，增加统计）
+        // 数据验证逻辑（批量处理避免循环中的await）
+        const validUsers: Array<{
+            email: string;
+            username: string;
+            password: string;
+            displayName: string;
+            extra: string;
+            lineNum: number;
+        }> = [];
         for (const i in users) {
             const u = users[i];
             statistics.total++;
@@ -144,30 +206,10 @@ class EnhancedUserImportHandler extends Handler {
                 } else if (!Types.Password[1](password)) {
                     messages.push(`第 ${+i + 1} 行：密码格式无效`);
                     statistics.invalid++;
-                } else if (udocs.find((t) => t.email === email) || await user.getByEmail('system', email)) {
-                    messages.push(`第 ${+i + 1} 行：邮箱 ${email} 已存在`);
-                    statistics.duplicates++;
-                } else if (udocs.find((t) => t.username === username) || await user.getByUname('system', username)) {
-                    messages.push(`第 ${+i + 1} 行：用户名 ${username} 已存在`);
-                    statistics.duplicates++;
                 } else {
-                    const payload: any = {};
-                    try {
-                        const data = JSON.parse(extra || '{}');
-                        if (data.group) {
-                            groups[data.group] ||= [];
-                            groups[data.group].push(email);
-                        }
-                        Object.assign(payload, data);
-                    } catch (e) { }
-
-                    Object.assign(payload, {
-                        email, username, password, displayName,
+                    validUsers.push({
+                        email, username, password, displayName, extra, lineNum: +i + 1,
                     });
-
-                    await this.ctx.serial('user/import/parse', payload);
-                    udocs.push(payload);
-                    statistics.valid++;
                 }
             } else {
                 messages.push(`第 ${+i + 1} 行：输入格式无效`);
@@ -175,46 +217,89 @@ class EnhancedUserImportHandler extends Handler {
             }
         }
 
-        messages.push(`共找到 ${udocs.length} 个有效用户`);
-        messages.push(`有效：${statistics.valid}，无效：${statistics.invalid}，重复：${statistics.duplicates}`);
+        // 批量检查用户是否存在
+        const emailChecks = await Promise.all(validUsers.map((u) => user.getByEmail('system', u.email)));
+        const usernameChecks = await Promise.all(validUsers.map((u) => user.getByUname('system', u.username)));
+
+        for (let i = 0; i < validUsers.length; i++) {
+            const userInfo = validUsers[i];
+            const {
+                email, username, password, displayName, extra, lineNum,
+            } = userInfo;
+
+            if (udocs.find((t) => t.email === email) || emailChecks[i]) {
+                messages.push(`第 ${lineNum} 行：邮箱 ${email} 已存在`);
+                statistics.duplicates++;
+            } else if (udocs.find((t) => t.username === username) || usernameChecks[i]) {
+                messages.push(`第 ${lineNum} 行：用户名 ${username} 已存在`);
+                statistics.duplicates++;
+            } else {
+                const payload: any = {};
+                try {
+                    const data = JSON.parse(extra || '{}');
+                    if (data.group) {
+                        groups[data.group] ||= [];
+                        groups[data.group].push(email);
+                    }
+                    Object.assign(payload, data);
+                } catch (e) { }
+
+                Object.assign(payload, {
+                    email, username, password, displayName,
+                });
+
+                udocs.push(payload);
+                statistics.valid++;
+            }
+        }
+
+        if (format === 'quick' && udocs.length <= 1) {
+            if (udocs.length === 1) {
+                messages.push(`用户 ${udocs[0].username} 准备就绪`);
+            } else {
+                messages.push(`没有找到有效用户`);
+            }
+        } else {
+            messages.push(`共找到 ${udocs.length} 个有效用户`);
+            messages.push(`有效：${statistics.valid}，无效：${statistics.invalid}，重复：${statistics.duplicates}`);
+        }
 
         if (!draft && udocs.length > 0) {
             // 批次处理导入
-            const batches = [];
+            const batches: typeof udocs[] = [];
             for (let i = 0; i < udocs.length; i += batchSize) {
                 batches.push(udocs.slice(i, i + batchSize));
             }
 
             let importedCount = 0;
-            const importErrors = [];
+            const importErrors: string[] = [];
 
             for (const batch of batches) {
-                for (const udoc of batch) {
-                    try {
+                const batchResults = await Promise.allSettled(
+                    batch.map(async (udoc) => {
                         const uid = await user.create(udoc.email, udoc.username, udoc.password);
                         mapping[udoc.email] = uid;
 
+                        const promises: Promise<any>[] = [];
                         if (udoc.displayName) {
-                            await domain.setUserInDomain(domainId, uid, { displayName: udoc.displayName });
+                            promises.push(domain.setUserInDomain(domainId, uid, { displayName: udoc.displayName }));
                         }
-                        if (udoc.school) await user.setById(uid, { school: udoc.school });
-                        if (udoc.studentId) await user.setById(uid, { studentId: udoc.studentId });
+                        if (udoc.school) promises.push(user.setById(uid, { school: udoc.school }));
+                        if (udoc.studentId) promises.push(user.setById(uid, { studentId: udoc.studentId }));
 
+                        promises.push(this.ctx.serial('user/import/create', uid, udoc));
+
+                        await Promise.all(promises);
+                        return { success: true, email: udoc.email };
+                    }),
+                );
+
+                for (const result of batchResults) {
+                    if (result.status === 'fulfilled') {
                         importedCount++;
-                        await this.ctx.serial('user/import/create', uid, udoc);
-                    } catch (e) {
-                        importErrors.push(`导入 ${udoc.email} 时出错：${e instanceof Error ? e.message : String(e)}`);
+                    } else {
+                        importErrors.push(`导入用户时出错：${result.reason}`);
                     }
-                }
-
-                // 发送进度更新 - 在有WebSocket连接时
-                if (this.send) {
-                    this.send({
-                        type: 'progress',
-                        current: importedCount,
-                        total: udocs.length,
-                        errors: importErrors.length,
-                    });
                 }
             }
 
@@ -228,7 +313,15 @@ class EnhancedUserImportHandler extends Handler {
                 }
             }
 
-            messages.push(`成功导入 ${importedCount} 个用户`);
+            if (format === 'quick' && importedCount <= 1) {
+                if (importedCount === 1) {
+                    messages.push(`用户创建成功！`);
+                } else {
+                    messages.push(`用户创建失败`);
+                }
+            } else {
+                messages.push(`成功导入 ${importedCount} 个用户`);
+            }
             if (importErrors.length > 0) {
                 messages.push(...importErrors);
             }
@@ -251,8 +344,8 @@ class TemplateDownloadHandler extends Handler {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
     }
 
-    @param('format', Types.String)
-    async get(domainId: string, format: string) {
+    async get() {
+        const format = this.request.params.format;
         if (!['csv', 'tsv'].includes(format)) {
             throw new BadRequestError('Invalid format');
         }
@@ -262,9 +355,7 @@ class TemplateDownloadHandler extends Handler {
 
         this.response.body = sampleData;
         this.response.type = 'text/plain';
-        this.response.header = {
-            'Content-Disposition': `attachment; filename="${fileName}"`,
-        };
+        this.response.disposition = `attachment; filename="${fileName}"`;
     }
 }
 
@@ -273,8 +364,8 @@ export async function apply(ctx: Context) {
     ctx.Route('manage_user_import_enhanced', '/manage/userimport/enhanced', EnhancedUserImportHandler, PRIV.PRIV_EDIT_SYSTEM);
     ctx.Route('user_import_template', '/manage/userimport/template/:format', TemplateDownloadHandler, PRIV.PRIV_EDIT_SYSTEM);
 
-    // 菜单项可以通过直接访问 /manage/userimport/enhanced 路径来使用
-    // 国际化内容已移至 locales/ 文件夹，系统会自动加载
+    // 将菜单项注入到控制面板中，放在原有用户导入功能下面
+    ctx.injectUI('ControlPanel', 'manage_user_import_enhanced');
 
     console.log('Enhanced User Import Plugin loaded successfully!');
 }
