@@ -336,7 +336,7 @@ function connectWebSocket() {
         }
 
         // 处理AC状态
-        if (msg.rdoc?.status === 1) {
+        if (msg.rdoc?.status === 1 && msg.rdoc?.contest !== '000000000000000000000000') {
           console.log('Confetti: AC detected, showing celebration');
           showCelebration();
         }
