@@ -1,18 +1,18 @@
 import parser, { SearchParserResult } from '@hydrooj/utils/lib/search';
+import Clipboard from 'clipboard';
 import $ from 'jquery';
 import _ from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import ProblemSelectAutoComplete from 'vj/components/autocomplete/components/ProblemSelectAutoComplete';
-import DomainSelectAutoComplete from 'vj/components/autocomplete/DomainSelectAutoComplete';
-import { ActionDialog, ConfirmDialog, Dialog } from 'vj/components/dialog';
+import { confirm, Dialog, prompt } from 'vj/components/dialog';
 import Dropdown from 'vj/components/dropdown/Dropdown';
 import createHint from 'vj/components/hint';
 import Notification from 'vj/components/notification';
 import { downloadProblemSet } from 'vj/components/zipDownloader';
 import { NamedPage } from 'vj/misc/Page';
 import {
-  addSpeculationRules, delay, i18n, pjax, request, tpl,
+  addSpeculationRules, delay, i18n, pjax, request,
 } from 'vj/utils';
 
 const list = [];
@@ -176,31 +176,28 @@ function ensureAndGetSelectedPids() {
   return selectedPids;
 }
 
-async function handleOperation(operation) {
+async function handleOperation(operation: string) {
   const pids = ensureAndGetSelectedPids();
   if (pids === null) return;
   const payload: any = {};
   if (operation === 'delete') {
-    const action = await new ConfirmDialog({
-      $body: tpl.typoMsg(i18n('Confirm to delete the selected problems?')),
-    }).open();
-    if (action !== 'yes') return;
+    if (!(await confirm(i18n('Confirm to delete the selected problems?')))) return;
   } else if (operation === 'copy') {
-    const domainSelector: any = DomainSelectAutoComplete.getOrConstruct($('.dialog__body--problem-copy [name="target"]'));
-    const copyDialog = await new ActionDialog({
-      $body: $('.dialog__body--problem-copy > div'),
-      onDispatch(action) {
-        if (action === 'ok' && domainSelector.value() === null) {
-          domainSelector.focus();
-          return false;
-        }
-        return true;
+    const res = await prompt(i18n('Copy Problems'), {
+      target: {
+        type: 'domain',
+        label: i18n('Target'),
+        required: true,
+        autofocus: true,
       },
-    }).open();
-    if (copyDialog !== 'ok') return;
-    const target = $('[name="target"]').val();
-    if (!target) return;
-    payload.target = target;
+      hidden: {
+        type: 'checkbox',
+        label: i18n('Hidden'),
+      },
+    });
+    if (!res) return;
+    payload.target = res.target;
+    payload.hidden = res.hidden;
   }
   try {
     await request.post('', { operation, pids, ...payload });
@@ -274,8 +271,8 @@ function buildSearchContainer() {
 
 async function handleDownload(ev) {
   let name = 'Export';
-  // eslint-disable-next-line no-alert
-  if (ev.shiftKey) name = prompt(i18n('Filename'), name);
+  if (ev.shiftKey) name = (await prompt(i18n('Filename'), { name: { type: 'text', default: name } }))?.name as string;
+  if (!name) return;
   const pids = ensureAndGetSelectedPids();
   if (pids) await downloadProblemSet(pids, name);
 }
@@ -285,9 +282,20 @@ function processElement(ele) {
   createHint('Hint::icon::difficulty', $(ele).find('th.col--difficulty'));
 }
 
+function getAllPids() {
+  return $('[data-checkbox-group="problem"]').map((_index, i) => $(i).closest('tr').attr('data-pid')).get();
+}
+
+function getSelectedPids() {
+  return $('[data-checkbox-group="problem"]:checked').map((_index, i) => $(i).closest('tr').attr('data-pid')).get();
+}
+
 function ProblemSelectionDisplay(props) { // eslint-disable-line
   const [pids, setPids] = React.useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [copyIdRef, setCopyIdRef] = React.useState(null);
+  const [copyPidRef, setCopyPidRef] = React.useState(null);
+  const problemSelectAutoCompleteRef = React.useRef(null);
 
   React.useEffect(() => {
     props.onClear?.(() => {
@@ -296,41 +304,50 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
   }, [props.onClear]);
 
   React.useEffect(() => {
-    $(document).on('click', '[data-checkbox-group="problem"]:checked', (ev) => {
-      const $checkbox = $(ev.currentTarget);
-      const pid = $checkbox.closest('tr').attr('data-pid');
-      setPids((o) => Array.from(new Set([...o, pid])));
+    const cb = () => queueMicrotask(() => {
+      const all = getAllPids();
+      const selected = getSelectedPids();
+      setPids((o) => {
+        const ret = o.filter((i) => !all.includes(i) || selected.includes(i));
+        for (const val of selected) if (!ret.includes(val)) ret.push(val);
+        return ret;
+      });
     });
-    $(document).on('click', '[data-checkbox-group="problem"]:not(:checked)', (ev) => {
-      const $checkbox = $(ev.currentTarget);
-      const pid = $checkbox.closest('tr').attr('data-pid');
-      setPids((o) => o.filter((i) => i !== pid));
-    });
-    $(document).on('click', '[data-checkbox-toggle="problem"]:checked', () => {
-      const all = $('[data-checkbox-group="problem"]').map((_index, i) => $(i).closest('tr').attr('data-pid')).get();
-      setPids((o) => Array.from(new Set([...o, ...all])));
-    });
-    $(document).on('click', '[data-checkbox-toggle="problem"]:not(:checked)', () => {
-      const all = $('[data-checkbox-group="problem"]').map((_index, i) => $(i).closest('tr').attr('data-pid')).get();
-      setPids((o) => o.filter((i) => !all.includes(i)));
-    });
+    $(document).on('click', '[data-checkbox-group="problem"]', cb);
+    $(document).on('click', '[data-checkbox-toggle="problem"]', cb);
+    return () => {
+      $(document).off('click', '[data-checkbox-group="problem"]', cb);
+      $(document).off('click', '[data-checkbox-toggle="problem"]', cb);
+    };
   }, []);
   React.useEffect(() => {
     (window as any).__getPids = () => pids;
     (window as any).__setPids = (newIds: string[]) => setPids(newIds);
   }, [pids]);
-
-  const problemSelectAutoCompleteRef = React.useRef(null);
-  const copyIds = React.useCallback(async () => {
-    await navigator.clipboard.writeText(pids.join(','));
-    Notification.success(i18n('Problem ids copied to clipboard!'));
-    problemSelectAutoCompleteRef.current.getSelectedItems();
-  }, [pids]);
-  const copyPids = React.useCallback(async () => {
-    const items = problemSelectAutoCompleteRef.current.getSelectedItems();
-    await navigator.clipboard.writeText(items.map((i) => i.pid || i.docId).join(','));
-    Notification.success(i18n('Problem ids copied to clipboard!'));
-  }, [pids]);
+  React.useEffect(() => {
+    if (!copyIdRef) return;
+    const clip = new Clipboard(copyIdRef, {
+      text: () => problemSelectAutoCompleteRef.current.getSelectedItems().map((i) => i.docId).join(','),
+    });
+    clip.on('success', () => {
+      Notification.success(i18n('Problem ids copied to clipboard!'));
+    });
+    clip.on('error', () => {
+      Notification.error(i18n('Copy failed :('));
+    });
+  }, [copyIdRef]);
+  React.useEffect(() => {
+    if (!copyPidRef) return;
+    const clip = new Clipboard(copyPidRef, {
+      text: () => problemSelectAutoCompleteRef.current.getSelectedItems().map((i) => i.pid || i.docId).join(','),
+    });
+    clip.on('success', () => {
+      Notification.success(i18n('Problem ids copied to clipboard!'));
+    });
+    clip.on('error', () => {
+      Notification.error(i18n('Copy failed :('));
+    });
+  }, [copyPidRef]);
 
   const updateCheckboxSelection = React.useCallback(() => {
     for (const i of $('[data-checkbox-group="problem"]:checked')) {
@@ -380,8 +397,8 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
         <div className="row">
           <div className="columns clearfix">
             <div className="float-right dialog__action">
-              <button className="rounded button" onClick={copyIds}>{i18n('Copy IDs')}</button>{' '}
-              <button className="rounded button" onClick={copyPids}>{i18n('Copy pids')}</button>{' '}
+              <button className="rounded button" ref={setCopyIdRef}>{i18n('Copy IDs')}</button>{' '}
+              <button className="rounded button" ref={setCopyPidRef}>{i18n('Copy pids')}</button>{' '}
               <button className="rounded button" onClick={() => setPids([])}>{i18n('Clear')}</button>{' '}
               <button className="primary rounded button" onClick={() => setDialogOpen(false)}>{i18n('Ok')}</button>
             </div>
@@ -396,23 +413,6 @@ const page = new NamedPage(['problem_main'], () => {
   const $body = $('body');
   $body.addClass('display-mode');
   $('.section.display-mode').removeClass('display-mode');
-  $(tpl`
-    <div style="display: none" class="dialog__body--problem-copy">
-      <div class="row"><div class="columns">
-        <h1 name="select_user_hint">${i18n('Copy Problems')}</h1>
-      </div></div>
-      <div class="row">
-        <div class="columns">
-          <label>
-            ${i18n('Target')}
-            <div class="textbox-container">
-              <input name="target" type="text" class="textbox" data-autofocus>
-            </div>
-          </label>
-        </div>
-      </div>
-    </div>
-  `).appendTo(document.body);
 
   buildSearchContainer();
   buildLegacyCategoryFilter();
@@ -456,19 +456,20 @@ const page = new NamedPage(['problem_main'], () => {
 
   const selection = document.getElementById('problem_selection');
   if (selection) {
-    ReactDOM.createRoot(selection)
-      .render(<ProblemSelectionDisplay
+    ReactDOM.createRoot(selection).render(
+      <ProblemSelectionDisplay
         onChange={(pids) => { selectedPids = pids; }}
         onClear={(handler) => { clearSelectionHandler = handler; }}
-      />);
+      />,
+    );
   }
 
   addSpeculationRules({
     prerender: [{
-      'where': {
-        'or': [
-          { 'href_matches': '/p/*' },
-          { 'href_matches': '/d/*/p/*' },
+      where: {
+        or: [
+          { href_matches: '/p/*' },
+          { href_matches: '/d/*/p/*' },
         ],
       },
     }],

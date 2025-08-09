@@ -21,11 +21,8 @@ class MessageModel {
         from: number, to: number | number[],
         content: string, flag: number = MessageModel.FLAG_UNREAD,
     ) {
-        const _id = new ObjectId();
         if (!Array.isArray(to)) to = [to];
-        const base = {
-            _id, from, content, flag,
-        };
+        const base = { from, content, flag };
         if (!to.length) return base;
         await MessageModel.coll.insertMany(to.map((t) => ({ ...base, to: t })));
         bus.broadcast('user/message', to, base);
@@ -34,9 +31,8 @@ class MessageModel {
     }
 
     static async sendInfo(to: number, content: string) {
-        const _id = new ObjectId();
         const mdoc: MessageDoc = {
-            _id, from: 1, to, content, flag: MessageModel.FLAG_INFO | MessageModel.FLAG_I18N,
+            from: 1, to, content, flag: MessageModel.FLAG_INFO | MessageModel.FLAG_I18N,
         };
         bus.broadcast('user/message', [to], mdoc);
     }

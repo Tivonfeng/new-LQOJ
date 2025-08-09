@@ -1,6 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 import $ from 'jquery';
 import React from 'react';
+import ReactDOM from 'react-dom/client';
 import { i18n, tpl } from 'vj/utils';
+import DomainSelectAutoComplete from '../autocomplete/components/DomainSelectAutoComplete';
+import UserSelectAutoComplete from '../autocomplete/components/UserSelectAutoComplete';
 import DomDialog, { DialogOptions } from './DomDialog';
 
 export class Dialog {
@@ -108,7 +112,121 @@ export class ConfirmDialog extends Dialog {
   }
 }
 
+export interface Field {
+  type: 'text' | 'checkbox' | 'user' | 'userId' | 'username' | 'domain';
+  placeholder?: string;
+  label?: string;
+  autofocus?: boolean;
+  required?: boolean;
+  default?: string;
+}
+
+type Result<T extends string, R extends Record<T, Field>> = {
+  [K in keyof R]: ('text' | 'password' | 'username' | 'domain') extends R[K]['type'] ? string
+    : R[K]['type'] extends 'checkbox' ? boolean
+      : R[K]['type'] extends 'userId' ? number
+        : R[K]['type'] extends 'user' ? any
+          : never;
+};
+
+export async function prompt<T extends string, R extends Record<T, Field>>(title: string, fields: R): Promise<Result<T, R>> {
+  let valueCache: Result<T, R> = {} as any;
+  const defaultValues = Object.fromEntries(Object.entries(fields)
+    .map(([name, field]: [T, Field]) => [name, field.default || ''])) as Result<T, R>;
+
+  const Component = () => {
+    const [values, setValues] = React.useState(defaultValues);
+    const [selected, setSelected] = React.useState<Partial<Result<T, R>>>({});
+    const refs = React.useRef<Partial<Record<T, React.RefObject<any>>>>({});
+
+    React.useEffect(() => {
+      valueCache = values;
+    }, [values]);
+
+    return <div>
+      <div className="row"><div className="columns">
+        <h1>{title}</h1>
+      </div></div>
+      {Object.entries(fields).map(([name, field]: [string, Field]) => <div className="row" key={name}>
+        <div className="columns">
+          {['text', 'user', 'userId', 'username', 'domain'].includes(field.type) && <label>
+            {field.label}
+            <div className="textbox-container">
+              {['text', 'password'].includes(field.type)
+                ? <input
+                  type={field.type}
+                  className="textbox"
+                  data-autofocus={field.autofocus}
+                  defaultValue={field.default}
+                  onChange={(e) => setValues({ ...values, [name]: e.target.value })}
+                />
+                : ['userId', 'username', 'user'].includes(field.type)
+                  ? <UserSelectAutoComplete
+                    data-autofocus={field.autofocus}
+                    ref={(el) => { refs.current[name] = el; }}
+                    selectedKeys={selected[name] ? [selected[name].toString()] : []}
+                    onChange={(e) => {
+                      const val = refs.current[name].getSelectedItems()[0];
+                      setValues({ ...values, [name]: field.type === 'username' ? val.uname : field.type === 'userId' ? val._id : val });
+                      setSelected({ ...selected, [name]: e });
+                    }}
+                  />
+                  : <DomainSelectAutoComplete
+                    data-autofocus={field.autofocus}
+                    selectedKeys={values[name] ? [values[name]] : []}
+                    onChange={(e) => setValues({ ...values, [name]: e })}
+                  />}
+            </div>
+          </label>}
+          {field.type === 'checkbox' && <label className="checkbox">
+            <input
+              type="checkbox"
+              defaultChecked={field.default === 'true'}
+              onChange={(e) => setValues({ ...values, [name]: !!e.target.checked })}
+            />
+            {field.label}
+          </label>}
+        </div>
+      </div>)}
+    </div>;
+  };
+  const div = document.createElement('div');
+  const root = ReactDOM.createRoot(div);
+  root.render(<Component />);
+  const res = await new Dialog({
+    $body: $(div),
+    $action: [buttonCancel, buttonOk].join('\n'),
+    onDispatch(action) {
+      if (action === 'ok') {
+        for (const [name, field] of Object.entries(fields)) {
+          if ((field as any).required && !valueCache[name]) return false;
+        }
+      }
+      return true;
+    },
+  }).open();
+  root.unmount();
+  if (res !== 'ok') return null;
+  return valueCache;
+}
+
+export async function confirm(text: string) {
+  const res = await new ConfirmDialog({
+    $body: tpl.typoMsg(text),
+  }).open();
+  return res === 'yes';
+}
+
+export async function alert(text: string) {
+  return await new InfoDialog({
+    $body: tpl.typoMsg(text),
+  }).open();
+}
+
 window.Hydro.components.Dialog = Dialog;
 window.Hydro.components.InfoDialog = InfoDialog;
 window.Hydro.components.ActionDialog = ActionDialog;
 window.Hydro.components.ConfirmDialog = ConfirmDialog;
+window.Hydro.components.prompt = prompt;
+window.Hydro.components.confirm = confirm;
+window.Hydro.components.alert = alert;

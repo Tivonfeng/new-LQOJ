@@ -79,7 +79,7 @@ function DraggableSelection({
 const AutoComplete = forwardRef(function Impl<T>(props: AutoCompleteProps<T>, ref: React.Ref<AutoCompleteHandle<T>>) {
   const {
     multi = false, width = '100%', height = 'auto',
-    freeSolo = false, allowEmptyQuery = false, listStyle = {}, // eslint-disable-line @eslint-react/no-unstable-default-props
+    freeSolo = false, allowEmptyQuery = false, listStyle = {},
     disabled = false, disabledHint = '', draggable = multi,
   } = props;
   const queryItems = props.queryItems ?? (() => []);
@@ -87,7 +87,7 @@ const AutoComplete = forwardRef(function Impl<T>(props: AutoCompleteProps<T>, re
   const itemText = props.itemText ?? ((item) => item.toString());
   const itemKey = props.itemKey ?? itemText;
   const onChange = props.onChange ?? (() => { });
-  const freeSoloConverter = freeSolo ? props.freeSoloConverter ?? ((i) => i) : ((i) => i);
+  const freeSoloConverter = freeSolo ? props.freeSoloConverter ?? ((i) => i) : (i) => i;
 
   const [focused, setFocused] = useState(false); // is focused
   const [selectedKeys, setSelectedKeys] = useState(props.selectedKeys || []); // keys of selected items
@@ -126,10 +126,8 @@ const AutoComplete = forwardRef(function Impl<T>(props: AutoCompleteProps<T>, re
     else onChange(selectedKeys.filter((v) => v?.trim().length).join(','));
   };
 
-  let first = !multi;
   useEffect(() => {
-    if (first) first = false;
-    else dispatchChange();
+    dispatchChange();
     if (!multi) return; // Load pre-selected items only in multi mode
     const ids = [];
     for (const key of selectedKeys) if (!valueCache[key]) ids.push(key);
@@ -161,7 +159,6 @@ const AutoComplete = forwardRef(function Impl<T>(props: AutoCompleteProps<T>, re
       setSelectedKeys([key]);
       inputRef.current.value = key;
     }
-    dispatchChange();
     if (!shouldKeepOpen) {
       setItemList([]);
       setCurrentItem(null);
@@ -310,18 +307,20 @@ const AutoComplete = forwardRef(function Impl<T>(props: AutoCompleteProps<T>, re
       )}
       {focused && itemList.length > 0 && (
         <ul ref={listRef} className="autocomplete-list" style={listStyle} onMouseDown={(e) => e.preventDefault()}>
-          {itemList.map((item, idx) => (
-            <li
+          {itemList.map((item, idx) => {
+            const inner = renderItem(item);
+            if (!inner) return null;
+            return <li
               key={itemKey(item)}
               onClick={() => toggleItem(item)}
               onMouseMove={() => setCurrentItem(idx)}
               data-selected={selectedKeys.includes(itemKey(item))}
               data-focus={idx === currentItem}
             >
-              <div>{renderItem(item)}</div>
+              <div>{inner}</div>
               {selectedKeys.includes(itemKey(item)) && <Icon name="check" />}
-            </li>
-          ))}
+            </li>;
+          })}
         </ul>
       )}
     </div>

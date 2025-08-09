@@ -1,6 +1,6 @@
 {
     "name": "@hydrooj/components",
-    "version": "1.0.0-beta.4",
+    "version": "1.0.0-beta.5",
     "main": "./frontend/index.ts",
     "repository": "https://github.com/hydro-dev/Hydro",
     "sideEffects": [
@@ -20,8 +20,8 @@
     "devDependencies": {
         "@types/diff": "^8.0.0",
         "@types/js-yaml": "^4.0.9",
-        "@types/lodash": "^4.17.19",
-        "sass": "^1.89.2"
+        "@types/lodash": "^4.17.20",
+        "sass": "^1.90.0"
     },
     "peerDependencies": {
         "react": "*",

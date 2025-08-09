@@ -70,7 +70,7 @@ class RecordListHandler extends ContestDetailBaseHandler {
         }
         if (pid) {
             if (typeof pid === 'string' && tdoc && /^[A-Z]$/.test(pid)) {
-                pid = tdoc.pids[parseInt(pid, 36) - 10];
+                pid = tdoc.pids[Number.parseInt(pid, 36) - 10];
             }
             const pdoc = await problem.get(domainId, pid);
             if (pdoc) q.pid = pdoc.docId;
@@ -160,7 +160,7 @@ class RecordDetailHandler extends ContestDetailBaseHandler {
         const allRev = await record.collHistory.find({ rid }).project({ _id: 1, judgeAt: 1 }).sort({ _id: -1 }).toArray();
         const allRevs: Record<string, Date> = Object.fromEntries(allRev.map((i) => [i._id.toString(), i.judgeAt]));
         if (rev && allRevs[rev.toString()]) {
-            rdoc = { ...rdoc, ...omit(await record.collHistory.findOne({ _id: rev }), ['_id']) };
+            rdoc = { ...rdoc, ...omit(await record.collHistory.findOne({ _id: rev }), ['_id']), progress: null };
         }
         let canViewDetail = true;
         if (rdoc.contest?.toString().startsWith('0'.repeat(23))) {
@@ -341,7 +341,6 @@ class RecordMainConnectionHandler extends ConnectionHandler {
         if (typeof this.pid === 'number' && rdoc.pid !== this.pid) return;
         if (typeof this.uid === 'number' && rdoc.uid !== this.uid) return;
 
-        // eslint-disable-next-line prefer-const
         let [udoc, pdoc] = await Promise.all([
             user.getById(this.args.domainId, rdoc.uid),
             problem.get(rdoc.domainId, rdoc.pid),
