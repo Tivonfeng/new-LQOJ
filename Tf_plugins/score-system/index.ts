@@ -50,7 +50,7 @@ interface UserScore {
 // 抽奖奖品接口
 interface LotteryPrize {
     _id?: any;
-    domainId: string;
+    domainId?: string; // 可选，支持全域统一
     name: string;
     icon: string;
     description: string;
@@ -215,10 +215,10 @@ class LotteryService {
         this.scoreService = scoreService;
     }
 
-    // 初始化默认奖品
-    async initializePrizes(domainId: string) {
+    // 初始化默认奖品(全域统一)
+    async initializePrizes() {
         const existingPrizes = await this.ctx.db.collection('lottery.prizes')
-            .countDocuments({ domainId });
+            .countDocuments({});
         
         if (existingPrizes > 0) return; // 已有奖品，跳过初始化
 
@@ -243,7 +243,6 @@ class LotteryService {
 
         for (const prize of defaultPrizes) {
             await this.ctx.db.collection('lottery.prizes').insertOne({
-                domainId,
                 ...prize,
                 description: `${prize.name}奖励`,
                 probability: prize.weight / 100,
@@ -278,8 +277,8 @@ class LotteryService {
         // 检查保底机制
         const shouldGuaranteeWin = await this.checkGuarantee(domainId, uid, lotteryType);
         
-        // 获取可用奖品
-        const availablePrizes = await this.getAvailablePrizes(domainId, lotteryType, shouldGuaranteeWin);
+        // 获取可用奖品(全域统一)
+        const availablePrizes = await this.getAvailablePrizes(lotteryType, shouldGuaranteeWin);
         if (availablePrizes.length === 0) {
             return { success: false, message: '暂无可用奖品' };
         }
@@ -386,9 +385,8 @@ class LotteryService {
     }
 
     // 获取可用奖品
-    private async getAvailablePrizes(domainId: string, lotteryType: string, guaranteeMode: boolean = false): Promise<LotteryPrize[]> {
+    private async getAvailablePrizes(lotteryType: string, guaranteeMode: boolean = false): Promise<LotteryPrize[]> {
         let query: any = { 
-            domainId, 
             enabled: true,
             $or: [
                 { currentStock: -1 }, // 无限库存
@@ -537,7 +535,7 @@ class LotteryHallHandler extends Handler {
         const lotteryService = new LotteryService(this.ctx, scoreService);
         
         // 初始化奖品(如果需要)
-        await lotteryService.initializePrizes(this.domain._id);
+        await lotteryService.initializePrizes();
 
         // 获取用户抽奖统计
         const userStats = await lotteryService.getUserLotteryStats(this.domain._id, uid);
@@ -545,9 +543,9 @@ class LotteryHallHandler extends Handler {
         // 获取最近抽奖记录
         const recentRecords = await lotteryService.getUserLotteryHistory(this.domain._id, uid, 10);
 
-        // 获取所有可用奖品用于展示
+        // 获取所有可用奖品用于展示(全域统一)
         const allPrizes = await this.ctx.db.collection('lottery.prizes')
-            .find({ domainId: this.domain._id, enabled: true })
+            .find({ enabled: true })
             .sort({ rarity: 1, weight: -1 })
             .toArray();
 
@@ -905,15 +903,15 @@ class LotteryAdminHandler extends Handler {
     async get() {
         this.checkPerm(PERM.PERM_EDIT_DOMAIN);
         
-        // 获取所有奖品
+        // 获取所有奖品(全域统一)
         const prizes = await this.ctx.db.collection('lottery.prizes')
-            .find({ domainId: this.domain._id })
+            .find({})
             .sort({ rarity: 1, createdAt: -1 })
             .toArray();
 
-        // 获取抽奖统计
+        // 获取抽奖统计(全域统一)
         const stats = await this.ctx.db.collection('lottery.records').aggregate([
-            { $match: { domainId: this.domain._id } },
+            { $match: {} },
             {
                 $group: {
                     _id: null,
@@ -988,7 +986,6 @@ class LotteryAdminHandler extends Handler {
         }
 
         const prize = {
-            domainId: this.domain._id,
             name: name.trim(),
             icon: icon.trim(),
             description: description?.trim() || '',
@@ -1032,7 +1029,7 @@ class LotteryAdminHandler extends Handler {
         console.log('[Lottery Admin] 更新数据:', updateData);
 
         const result = await this.ctx.db.collection('lottery.prizes').updateOne(
-            { _id: ObjectId.createFromHexString(prizeId), domainId: this.domain._id },
+            { _id: ObjectId.createFromHexString(prizeId) },
             { $set: updateData }
         );
         
@@ -1064,8 +1061,7 @@ class LotteryAdminHandler extends Handler {
         }
 
         const result = await this.ctx.db.collection('lottery.prizes').deleteOne({
-            _id: ObjectId.createFromHexString(prizeId),
-            domainId: this.domain._id
+            _id: ObjectId.createFromHexString(prizeId)
         });
         
         console.log('[Lottery Admin] 删除结果:', result);

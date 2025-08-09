@@ -6,7 +6,7 @@
     <div class="hero-content">
         <div class="hero-text">
             <h1 class="hero-title">🎰 {{ _('Lottery Hall') }}</h1>
-            <p class="hero-subtitle">{{ _('Try Your Luck!') }}</p>
+            <p class="hero-subtitle">{{ _('Try Your Luck!') }} <span class="global-badge">🌐 全域统一奖品</span></p>
         </div>
         <div class="hero-nav">
             <a href="{{ url('lottery_history') }}" class="nav-button">{{ _('Lottery History') }}</a>
@@ -397,6 +397,25 @@
     font-size: 1.125rem;
     opacity: 0.9;
     font-weight: 500;
+}
+
+/* 全域统一标识样式 */
+.global-badge {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-1) var(--spacing-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-3);
+    display: inline-block;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+    to { box-shadow: 0 0 15px rgba(255, 255, 255, 0.6); }
 }
 
 .hero-nav {

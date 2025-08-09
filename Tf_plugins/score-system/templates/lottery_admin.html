@@ -6,7 +6,7 @@
     <div class="hero-content">
         <div class="hero-text">
             <h1 class="hero-title">🎰 {{ _('Lottery Administration') }}</h1>
-            <p class="hero-subtitle">{{ _('Manage prizes and lottery settings') }}</p>
+            <p class="hero-subtitle">{{ _('Manage prizes and lottery settings') }} <span class="global-badge">🌐 全域统一</span></p>
         </div>
         <div class="hero-nav">
             <a href="{{ url('lottery_hall') }}" class="nav-button">{{ _('Back to Lottery') }}</a>
@@ -20,7 +20,7 @@
     <!-- Statistics Overview -->
     <div class="stats-section">
         <div class="section-header">
-            <h2>📊 {{ _('Lottery Statistics') }}</h2>
+            <h2>📊 {{ _('Lottery Statistics') }} <span class="global-label">（全平台统计）</span></h2>
         </div>
         <div class="stats-grid">
             <div class="stat-card primary">
@@ -337,6 +337,31 @@
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+/* 全域统一标识样式 */
+.global-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-2);
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+.global-label {
+    color: var(--success-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: var(--spacing-2);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }
 
 /* Statistics Section */
