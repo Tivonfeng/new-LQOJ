@@ -325,9 +325,11 @@ function connectWebSocket() {
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+        console.log('Confetti: Received message:', msg);
 
         // 处理心跳响应
         if (msg.type === 'pong') {
+          console.log('Confetti: Heartbeat pong received');
           if (heartbeatTimeoutTimer) {
             clearTimeout(heartbeatTimeoutTimer);
             heartbeatTimeoutTimer = null;
@@ -335,13 +337,15 @@ function connectWebSocket() {
           return;
         }
 
-        // 处理AC状态
+        // 处理AC状态 - 添加详细日志
         if (msg.rdoc?.status === 1 && msg.rdoc?.contest !== '000000000000000000000000') {
-          console.log('Confetti: AC detected, showing celebration');
+          console.log('Confetti: AC detected! Status:', msg.rdoc.status, 'Contest:', msg.rdoc.contest);
           showCelebration();
+        } else if (msg.rdoc) {
+          console.log('Confetti: Message with rdoc but not AC - Status:', msg.rdoc.status, 'Contest:', msg.rdoc.contest);
         }
       } catch (error) {
-        // 静默处理错误
+        console.error('Confetti: Error parsing message:', error, 'Raw data:', event.data);
       }
     };
 
