@@ -1,0 +1,1129 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">🎰 {{ _('Lottery Administration') }}</h1>
+            <p class="hero-subtitle">{{ _('Manage prizes and lottery settings') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('lottery_hall') }}" class="nav-button">{{ _('Back to Lottery') }}</a>
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Statistics Overview -->
+    <div class="stats-section">
+        <div class="section-header">
+            <h2>📊 {{ _('Lottery Statistics') }}</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">🎲</div>
+                <div class="stat-value">{{ lotteryStats.totalDraws }}</div>
+                <div class="stat-label">{{ _('Total Draws') }}</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ lotteryStats.totalWins }}</div>
+                <div class="stat-label">{{ _('Total Wins') }}</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">{{ ((lotteryStats.totalWins / lotteryStats.totalDraws * 100) | round(2)) if lotteryStats.totalDraws > 0 else 0 }}%</div>
+                <div class="stat-label">{{ _('Win Rate') }}</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">{{ lotteryStats.totalCost }}</div>
+                <div class="stat-label">{{ _('Total Cost') }}</div>
+            </div>
+            <div class="stat-card secondary">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-value">{{ lotteryStats.basicDraws }}</div>
+                <div class="stat-label">{{ _('Basic Draws') }}</div>
+            </div>
+            <div class="stat-card primary">
+                <div class="stat-icon">💎</div>
+                <div class="stat-value">{{ lotteryStats.premiumDraws }}</div>
+                <div class="stat-label">{{ _('Premium Draws') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Prize -->
+    <div class="add-prize-section">
+        <div class="section-header">
+            <h2>➕ {{ _('Add New Prize') }}</h2>
+        </div>
+        <div class="form-container">
+            <form id="addPrizeForm" class="prize-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Prize Name') }}</label>
+                        <input type="text" name="name" class="form-input" placeholder="输入奖品名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Icon') }}</label>
+                        <input type="text" name="icon" class="form-input" placeholder="🎁" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Type') }}</label>
+                        <select name="type" class="form-select" required>
+                            <option value="coin">{{ _('Green Flag Coins') }}</option>
+                            <option value="badge">{{ _('Special Badges') }}</option>
+                            <option value="privilege">{{ _('Privilege') }}</option>
+                            <option value="virtual">{{ _('Virtual Item') }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Value') }}</label>
+                        <input type="text" name="value" class="form-input" placeholder="20 or badge_name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Rarity') }}</label>
+                        <select name="rarity" class="form-select" required>
+                            <option value="common">{{ _('Common') }}</option>
+                            <option value="rare">{{ _('Rare') }}</option>
+                            <option value="epic">{{ _('Epic') }}</option>
+                            <option value="legendary">{{ _('Legendary') }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Weight') }}</label>
+                        <input type="number" name="weight" class="form-input" value="10" min="1" required>
+                    </div>
+                    <div class="form-group span-2">
+                        <label class="form-label">{{ _('Description') }}</label>
+                        <input type="text" name="description" class="form-input" placeholder="奖品描述">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ _('Stock') }}</label>
+                        <input type="number" name="stock" class="form-input" value="-1" placeholder="-1表示无限">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="submit-btn">
+                            <span class="btn-icon">➕</span>
+                            <span class="btn-text">{{ _('Add Prize') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Prize Management -->
+    <div class="management-section">
+        <div class="section-header">
+            <h2>🎁 {{ _('Prize Management') }}</h2>
+        </div>
+        
+        {% for rarity, rarityPrizes in prizesByRarity %}
+        {% if rarityPrizes|length > 0 %}
+        <div class="rarity-section rarity-{{ rarity }}">
+            <div class="rarity-header">
+                <div class="rarity-title">
+                    <span class="rarity-badge rarity-{{ rarity }}" style="background: {{ rarityInfo[rarity].color }}">
+                        {{ rarityInfo[rarity].name }}
+                    </span>
+                    <span class="rarity-count">{{ rarityPrizes|length }} 个奖品</span>
+                </div>
+            </div>
+            
+            <div class="prizes-grid">
+                {% for prize in rarityPrizes %}
+                <div class="prize-card rarity-{{ rarity }}" data-prize-id="{{ prize._id }}">
+                    <div class="prize-header">
+                        <div class="prize-icon">{{ prize.icon }}</div>
+                        <div class="prize-info">
+                            <div class="prize-name">{{ prize.name }}</div>
+                            <div class="prize-desc">{{ prize.description }}</div>
+                            <div class="prize-meta">
+                                <span class="meta-item">{{ _('Type') }}: {{ prize.type }}</span>
+                                <span class="meta-item">{{ _('Weight') }}: {{ prize.weight }}</span>
+                                <span class="meta-item">{{ _('Stock') }}: {{ prize.currentStock if prize.currentStock >= 0 else '∞' }}</span>
+                            </div>
+                        </div>
+                        <div class="prize-toggle">
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="enable-toggle" {{ 'checked' if prize.enabled else '' }}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="prize-controls">
+                        <div class="control-group">
+                            <label class="control-label">{{ _('Weight') }}</label>
+                            <input type="number" class="control-input weight-input" value="{{ prize.weight }}" min="1">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">{{ _('Stock') }}</label>
+                            <input type="number" class="control-input stock-input" value="{{ prize.currentStock }}" min="-1">
+                        </div>
+                        <div class="control-actions">
+                            <button class="action-btn update-btn">
+                                <span class="btn-icon">💾</span>
+                                <span class="btn-text">{{ _('Update') }}</span>
+                            </button>
+                            <button class="action-btn delete-btn">
+                                <span class="btn-icon">🗑️</span>
+                                <span class="btn-text">{{ _('Delete') }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        
+        {% if prizes|length == 0 %}
+        <div class="empty-state">
+            <div class="empty-content">
+                <div class="empty-icon">🎁</div>
+                <h3 class="empty-title">{{ _('No prizes found. Add some prizes to get started!') }}</h3>
+                <p class="empty-description">创建第一个奖品来开始抽奖系统</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Design System Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+    background: linear-gradient(45deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.hero-nav {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+}
+
+/* Section Headers */
+.section-header {
+    margin-bottom: var(--spacing-6);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Statistics Section */
+.stats-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: var(--success-color);
+}
+
+.stat-card.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: var(--warning-color);
+}
+
+.stat-card.accent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: var(--accent-color);
+}
+
+.stat-card.secondary {
+    background: linear-gradient(135deg, rgba(6, 214, 160, 0.1) 0%, rgba(6, 214, 160, 0.05) 100%);
+    border-color: var(--secondary-color);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Add Prize Section */
+.add-prize-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.form-container {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+    align-items: end;
+}
+
+.form-group.span-2 {
+    grid-column: span 2;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2);
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3) var(--spacing-4);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+}
+
+/* Management Section */
+.management-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.rarity-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 2px solid var(--border-color);
+}
+
+.rarity-section.rarity-common { border-color: #9E9E9E; }
+.rarity-section.rarity-rare { border-color: #2196F3; }
+.rarity-section.rarity-epic { border-color: #9C27B0; }
+.rarity-section.rarity-legendary { border-color: #FF9800; }
+
+.rarity-header {
+    background: var(--bg-secondary);
+    padding: var(--spacing-4) var(--spacing-6);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rarity-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.rarity-badge {
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.rarity-count {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.prizes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-6);
+    padding: var(--spacing-6);
+}
+
+.prize-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.prize-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.prize-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.prize-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+
+.prize-info {
+    flex: 1;
+}
+
+.prize-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.prize-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2);
+}
+
+.prize-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.meta-item {
+    background: var(--bg-primary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+}
+
+.prize-toggle {
+    flex-shrink: 0;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* Prize Controls */
+.prize-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--spacing-4);
+    align-items: end;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.control-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.control-input {
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.control-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.control-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.update-btn {
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    color: white;
+}
+
+.update-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.delete-btn {
+    background: linear-gradient(135deg, var(--error-color) 0%, #dc2626 100%);
+    color: white;
+}
+
+.delete-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Empty State */
+.empty-state {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-12);
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.empty-content {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.empty-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .form-group.span-2 {
+        grid-column: span 2;
+    }
+    
+    .prizes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-group.span-2 {
+        grid-column: span 1;
+    }
+    
+    .prize-controls {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-3);
+    }
+    
+    .control-actions {
+        flex-direction: row;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: var(--spacing-8) 0 var(--spacing-6) 0;
+    }
+    
+    .hero-content {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-3);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-section, .add-prize-section, .rarity-section {
+        padding: var(--spacing-4);
+    }
+    
+    .prizes-grid {
+        padding: var(--spacing-4);
+        gap: var(--spacing-4);
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stats-section, .add-prize-section, .rarity-section, .empty-state {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+.stat-card:nth-child(5) { animation-delay: 0.5s; }
+.stat-card:nth-child(6) { animation-delay: 0.6s; }
+
+.prize-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.prize-card:nth-child(odd) { animation-delay: 0.1s; }
+.prize-card:nth-child(even) { animation-delay: 0.2s; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 自定义确认对话框
+    function showCustomConfirm(title, message) {
+        return new Promise((resolve) => {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: white;
+                padding: 24px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                max-width: 400px;
+                text-align: center;
+            `;
+            
+            dialog.innerHTML = `
+                <h3 style="margin: 0 0 16px 0; color: #dc2626; font-size: 1.25rem;">${title}</h3>
+                <p style="margin: 0 0 24px 0; color: #6b7280;">${message}</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="confirmCancel" style="
+                        padding: 8px 16px;
+                        border: 1px solid #d1d5db;
+                        background: #f9fafb;
+                        color: #374151;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    ">取消</button>
+                    <button id="confirmOk" style="
+                        padding: 8px 16px;
+                        border: none;
+                        background: #dc2626;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    ">确定删除</button>
+                </div>
+            `;
+            
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+            
+            // 绑定事件
+            dialog.querySelector('#confirmOk').onclick = () => {
+                document.body.removeChild(modal);
+                resolve(true);
+            };
+            
+            dialog.querySelector('#confirmCancel').onclick = () => {
+                document.body.removeChild(modal);
+                resolve(false);
+            };
+            
+            // 点击背景关闭
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                }
+            };
+        });
+    }
+    
+    
+    // 添加奖品表单
+    document.getElementById('addPrizeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        formData.append('action', 'addPrize');
+        
+        try {
+            const response = await fetch('{{ url("lottery_admin") }}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('{{ _("Prize added successfully!") }}');
+                location.reload();
+            } else {
+                alert(result.message || '{{ _("Failed to add prize") }}');
+            }
+        } catch (error) {
+            console.error('添加奖品失败:', error);
+            alert('{{ _("Failed to add prize") }}');
+        }
+    });
+    
+    // 奖品启用/禁用切换
+    document.querySelectorAll('.enable-toggle').forEach(toggle => {
+        toggle.addEventListener('change', async function() {
+            const prizeCard = this.closest('.prize-card');
+            const prizeId = prizeCard.dataset.prizeId;
+            
+            await updatePrize(prizeId, { enabled: this.checked });
+        });
+    });
+    
+    // 更新奖品
+    document.querySelectorAll('.update-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const prizeCard = this.closest('.prize-card');
+            const prizeId = prizeCard.dataset.prizeId;
+            const weight = prizeCard.querySelector('.weight-input').value;
+            const stock = prizeCard.querySelector('.stock-input').value;
+            
+            await updatePrize(prizeId, { weight, stock });
+        });
+    });
+    
+    // 删除奖品
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            // 使用自定义确认对话框
+            const confirmed = await showCustomConfirm('确定要删除这个奖品吗？', '此操作无法撤销！');
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            const prizeCard = this.closest('.prize-card');
+            const prizeId = prizeCard?.dataset?.prizeId;
+            
+            if (!prizeCard || !prizeId) {
+                alert('找不到奖品信息');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'deletePrize');
+                formData.append('prizeId', prizeId);
+                
+                const response = await fetch('{{ url("lottery_admin") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('{{ _("Prize deleted successfully!") }}');
+                    location.reload();
+                } else {
+                    alert(result.message || '{{ _("Failed to delete prize") }}');
+                }
+            } catch (error) {
+                console.error('删除奖品失败:', error);
+                alert('{{ _("Failed to delete prize") }}: ' + error.message);
+            }
+        });
+    });
+    
+    // 通用更新奖品函数
+    async function updatePrize(prizeId, data) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'updatePrize');
+            formData.append('prizeId', prizeId);
+            
+            // 添加其他数据
+            for (const [key, value] of Object.entries(data)) {
+                formData.append(key, value);
+            }
+            
+            const response = await fetch('{{ url("lottery_admin") }}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log('奖品更新成功');
+                showToast(result.message || '{{ _("Prize updated successfully!") }}', 'success');
+                
+                // 如果消息提示没有实际修改，不刷新页面
+                if (result.message && result.message.includes('未变更')) {
+                    return;
+                }
+                
+                // 延迟刷新，让用户看到成功提示
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                console.error('更新失败:', result);
+                alert(result.message || '{{ _("Failed to update prize") }}');
+            }
+        } catch (error) {
+            console.error('更新奖品失败:', error);
+            alert('{{ _("Failed to update prize") }}');
+        }
+    }
+    
+    // 简单的成功提示函数
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // 显示动画
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 100);
+        
+        // 自动消失
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
+});
+</script>
+
+{% endblock %}

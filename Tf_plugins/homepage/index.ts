@@ -3,11 +3,30 @@ import {
     UserModel,
 } from 'hydrooj';
 
-async function getPersonal(domainId: string, userId: number) {
+async function getPersonal(domainId: string, userId: number, ctx: Context) {
     try {
         const tfUdoc = await UserModel.getById(domainId, userId);
         console.log('getPersonal - user found:', tfUdoc?.uname || 'no user');
-        return [tfUdoc, domainId];
+        
+        // 获取用户积分(绿旗币)
+        let userScore = 0;
+        try {
+            const scoreDoc = await ctx.db.collection('score.users').findOne({
+                domainId,
+                uid: userId
+            });
+            userScore = scoreDoc?.totalScore || 0;
+        } catch (scoreError) {
+            console.log('Score system not available or error:', scoreError.message);
+        }
+        
+        // 将积分数据添加到用户对象中
+        const enhancedUdoc = {
+            ...tfUdoc,
+            greenFlagCoins: userScore // 绿旗币数量
+        };
+        
+        return [enhancedUdoc, domainId];
     } catch (error) {
         console.error('getPersonal error:', error);
         return [null, domainId];
@@ -78,7 +97,7 @@ export async function apply(ctx: Context) {
         HomeHandler.prototype.getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
 
         HomeHandler.prototype.getPersonal = async function (domainId: string) {
-            return await getPersonal(domainId, this.user._id);
+            return await getPersonal(domainId, this.user._id, ctx);
         };
 
         // HomeHandler.prototype.getTimeRanking = async (domainId: string) => {

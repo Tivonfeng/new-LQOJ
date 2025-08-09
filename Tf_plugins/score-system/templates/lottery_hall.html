@@ -1,0 +1,1460 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">🎰 {{ _('Lottery Hall') }}</h1>
+            <p class="hero-subtitle">{{ _('Try Your Luck!') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('lottery_history') }}" class="nav-button">{{ _('Lottery History') }}</a>
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- User Stats -->
+    <div class="stats-spotlight">
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">🏴</div>
+                <div class="stat-value">{{ currentCoins }}</div>
+                <div class="stat-label">{{ _('Current Coins') }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎲</div>
+                <div class="stat-value">{{ userStats.totalDraws }}</div>
+                <div class="stat-label">{{ _('Total Draws') }}</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ userStats.totalWins }}</div>
+                <div class="stat-label">{{ _('Total Wins') }}</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-value">{{ userStats.currentStreak }}</div>
+                <div class="stat-label">{{ _('Current Streak') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lottery Instructions -->
+    <div class="instructions-section">
+        <div class="instructions-compact">
+            <div class="instruction-toggle">
+                <button class="toggle-btn" id="instructionsToggle">
+                    <span class="toggle-icon">📋</span>
+                    <span class="toggle-text">抽奖说明</span>
+                    <span class="toggle-arrow">▼</span>
+                </button>
+            </div>
+            
+            <div class="instruction-content" id="instructionContent" style="display: none;">
+                <div class="instruction-summary">
+                    <div class="summary-item">
+                        <span class="summary-icon">💰</span>
+                        <div class="summary-text">
+                            <strong>获得绿旗币</strong>
+                            <span>首次AC +10币</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-item">
+                        <span class="summary-icon">🎲</span>
+                        <div class="summary-text">
+                            <strong>普通抽奖</strong>
+                            <span>10币/次，普通奖励</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-item">
+                        <span class="summary-icon">💎</span>
+                        <div class="summary-text">
+                            <strong>高级抽奖</strong>
+                            <span>50币/次，10次保底</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-item">
+                        <span class="summary-icon">🏆</span>
+                        <div class="summary-text">
+                            <strong>奖品等级</strong>
+                            <span>普通→稀有→史诗→传说</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instruction-tips">
+                    <div class="tip-item">💡 高级抽奖有保底机制，适合集中使用</div>
+                    <div class="tip-item">⚠️ 抽奖结果完全随机，请理性参与</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lottery Machines -->
+    <div class="machines-section">
+        <div class="machines-grid">
+            <div class="machine-card basic-machine">
+                <div class="machine-header">
+                    <div class="machine-icon">🎲</div>
+                    <div class="machine-info">
+                        <h3>{{ lotteryTypes.basic.name }}</h3>
+                        <p class="machine-desc">{{ lotteryTypes.basic.description }}</p>
+                        <div class="machine-cost">{{ lotteryTypes.basic.cost }} {{ _('coins per draw') }}</div>
+                        <div class="feature-tag">{{ _('Quick & Easy') }}</div>
+                    </div>
+                </div>
+                
+                <div class="slot-machine" id="basicSlotMachine">
+                    <div class="slot-reel">
+                        <div class="slot-item">🪙</div>
+                        <div class="slot-item">💰</div>
+                        <div class="slot-item">🔰</div>
+                        <div class="slot-item">🎯</div>
+                        <div class="slot-item">💍</div>
+                        <div class="slot-item">🏆</div>
+                    </div>
+                    <div class="slot-reel">
+                        <div class="slot-item">💎</div>
+                        <div class="slot-item">🪙</div>
+                        <div class="slot-item">👑</div>
+                        <div class="slot-item">🔰</div>
+                        <div class="slot-item">🌟</div>
+                        <div class="slot-item">💰</div>
+                    </div>
+                    <div class="slot-reel">
+                        <div class="slot-item">🏆</div>
+                        <div class="slot-item">🎯</div>
+                        <div class="slot-item">💰</div>
+                        <div class="slot-item">🪙</div>
+                        <div class="slot-item">💍</div>
+                        <div class="slot-item">🔰</div>
+                    </div>
+                </div>
+                
+                <button class="draw-btn basic-draw" data-type="basic" 
+                        {% if currentCoins < lotteryTypes.basic.cost %}disabled{% endif %}>
+                    <span class="btn-icon">🎲</span>
+                    <span class="btn-text">{{ _('Draw Now') }}</span>
+                    <span class="btn-cost">-{{ lotteryTypes.basic.cost }} 🏴</span>
+                </button>
+            </div>
+            
+            <div class="machine-card premium-machine">
+                <div class="machine-header">
+                    <div class="machine-icon">💎</div>
+                    <div class="machine-info">
+                        <h3>{{ lotteryTypes.premium.name }}</h3>
+                        <p class="machine-desc">{{ lotteryTypes.premium.description }}</p>
+                        <div class="machine-cost">{{ lotteryTypes.premium.cost }} {{ _('coins per draw') }}</div>
+                        <div class="feature-tag premium">{{ lotteryTypes.premium.guaranteeDraws }}{{ _('draws guarantee') }}</div>
+                    </div>
+                </div>
+                
+                <div class="slot-machine premium-slot" id="premiumSlotMachine">
+                    <div class="slot-reel">
+                        <div class="slot-item">💎</div>
+                        <div class="slot-item">👑</div>
+                        <div class="slot-item">🏆</div>
+                        <div class="slot-item">🌟</div>
+                        <div class="slot-item">💍</div>
+                        <div class="slot-item">🎯</div>
+                    </div>
+                    <div class="slot-reel">
+                        <div class="slot-item">🌟</div>
+                        <div class="slot-item">💎</div>
+                        <div class="slot-item">🏆</div>
+                        <div class="slot-item">👑</div>
+                        <div class="slot-item">💍</div>
+                        <div class="slot-item">🎯</div>
+                    </div>
+                    <div class="slot-reel">
+                        <div class="slot-item">🏆</div>
+                        <div class="slot-item">🌟</div>
+                        <div class="slot-item">💎</div>
+                        <div class="slot-item">👑</div>
+                        <div class="slot-item">💍</div>
+                        <div class="slot-item">🎯</div>
+                    </div>
+                </div>
+                
+                <button class="draw-btn premium-draw" data-type="premium"
+                        {% if currentCoins < lotteryTypes.premium.cost %}disabled{% endif %}>
+                    <span class="btn-icon">💎</span>
+                    <span class="btn-text">{{ _('Premium Draw') }}</span>
+                    <span class="btn-cost">-{{ lotteryTypes.premium.cost }} 🏴</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Prize Showcase -->
+        <div class="prizes-section">
+            <div class="section-header">
+                <h3>🎁 {{ _('Available Prizes') }}</h3>
+            </div>
+            
+            <div class="prize-showcase">
+                {% for rarity, prizes in prizesByRarity %}
+                {% if prizes|length > 0 %}
+                <div class="rarity-section rarity-{{ rarity }}">
+                    <h4 class="rarity-title">
+                        {{ rarityInfo[rarity].name }}
+                        <span class="rarity-badge" style="background: {{ rarityInfo[rarity].color }}">
+                            {{ rarityInfo[rarity].weight }}%
+                        </span>
+                    </h4>
+                    <div class="prize-grid">
+                        {% for prize in prizes %}
+                        <div class="prize-item rarity-{{ rarity }}">
+                            <div class="prize-icon">{{ prize.icon }}</div>
+                            <div class="prize-name">{{ prize.name }}</div>
+                            {% if prize.type == 'coin' %}
+                            <div class="prize-value">+{{ prize.value }} 🏴</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Recent Records -->
+            <div class="records-card">
+                <div class="section-header">
+                    <h4>📋 {{ _('Recent Records') }}</h4>
+                </div>
+                {% if recentRecords and recentRecords|length > 0 %}
+                <div class="recent-records">
+                    {% for record in recentRecords %}
+                    <div class="record-item {{ 'win' if record.result == 'win' else 'lose' }}">
+                        <div class="record-time">{{ record.drawTime }}</div>
+                        <div class="record-type">
+                            {{ lotteryTypes[record.lotteryType].icon }} {{ lotteryTypes[record.lotteryType].name }}
+                        </div>
+                        {% if record.result == 'win' %}
+                        <div class="record-result win">
+                            {{ record.prizeIcon }} {{ record.prizeName }}
+                        </div>
+                        {% else %}
+                        <div class="record-result lose">{{ _('No Prize') }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">🎲</span>
+                    <p>{{ _('No lottery records yet') }}</p>
+                    <small>{{ _('Start drawing to see your history!') }}</small>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="actions-card">
+                <h4>{{ _('Quick Actions') }}</h4>
+                <div class="action-buttons">
+                    <a href="{{ url('user_score') }}" class="action-btn">
+                        <span class="btn-icon">📊</span>
+                        <span class="btn-text">{{ _('My Score') }}</span>
+                    </a>
+                    <a href="{{ url('score_ranking') }}" class="action-btn">
+                        <span class="btn-icon">🏆</span>
+                        <span class="btn-text">{{ _('Rankings') }}</span>
+                    </a>
+                    <a href="{{ url('problem_main') }}" class="action-btn">
+                        <span class="btn-icon">💻</span>
+                        <span class="btn-text">{{ _('Solve Problems') }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="lottery-result-modal" id="resultModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="result-display">
+            <div class="result-icon" id="resultIcon">🎉</div>
+            <div class="result-title" id="resultTitle">抽奖结果</div>
+            <div class="result-prize" id="resultPrize"></div>
+            <div class="result-rarity" id="resultRarity"></div>
+            <div class="result-actions">
+                <button class="claim-btn" id="claimBtn">{{ _('Claim Prize') }}</button>
+                <button class="continue-btn" id="continueBtn">{{ _('Continue') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Design System Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+    background: linear-gradient(45deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.hero-nav {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+/* Stats Spotlight */
+.stats-spotlight {
+    margin-bottom: var(--spacing-8);
+}
+
+/* Instructions Section - Compact */
+.instructions-section {
+    margin-bottom: var(--spacing-6);
+}
+
+.instructions-compact {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.instruction-toggle {
+    width: 100%;
+}
+
+.toggle-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border: none;
+    padding: var(--spacing-4) var(--spacing-6);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #3b38f5);
+}
+
+.toggle-icon {
+    font-size: 1.25rem;
+}
+
+.toggle-text {
+    flex: 1;
+    text-align: left;
+}
+
+.toggle-arrow {
+    font-size: 0.875rem;
+    transition: transform 0.3s ease;
+}
+
+.toggle-btn.active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.instruction-content {
+    padding: var(--spacing-6);
+    border-top: 1px solid var(--border-color);
+    animation: fadeInDown 0.3s ease-out;
+}
+
+.instruction-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateY(-2px);
+}
+
+.summary-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.summary-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.summary-text strong {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.summary-text span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.instruction-tips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--border-color);
+}
+
+.tip-item {
+    flex: 1;
+    min-width: 200px;
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: var(--success-color);
+}
+
+.stat-card.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: var(--warning-color);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Machines Section */
+.machines-section {
+    margin-bottom: var(--spacing-8);
+}
+
+.machines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: var(--spacing-8);
+}
+
+.machine-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.machine-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.basic-machine {
+    border-color: var(--secondary-color);
+}
+
+.basic-machine:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
+}
+
+.premium-machine {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+.premium-machine:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.3), var(--shadow-xl);
+}
+
+.machine-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.machine-icon {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+}
+
+.machine-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.machine-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--spacing-2);
+}
+
+.machine-cost {
+    color: var(--accent-color);
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin-bottom: var(--spacing-2);
+}
+
+.feature-tag {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.feature-tag.premium {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Slot Machine */
+.slot-machine {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-3);
+    background: #000;
+    padding: var(--spacing-6);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-6);
+    min-height: 120px;
+    overflow: hidden;
+}
+
+.slot-reel {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #333;
+    position: relative;
+    overflow: hidden;
+}
+
+.slot-item {
+    font-size: 2.5rem;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slot-reel.spinning .slot-item {
+    animation: slotSpin 0.1s linear infinite;
+}
+
+@keyframes slotSpin {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(100%); }
+}
+
+.premium-slot .slot-reel {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+/* Draw Button */
+.draw-btn {
+    width: 100%;
+    padding: var(--spacing-4) var(--spacing-6);
+    font-size: 1.125rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+    position: relative;
+    overflow: hidden;
+}
+
+.basic-draw {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #059669 100%);
+    color: white;
+}
+
+.basic-draw:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.4), var(--shadow-xl);
+}
+
+.premium-draw {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.premium-draw:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), var(--shadow-xl);
+}
+
+.draw-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.draw-btn.drawing {
+    pointer-events: none;
+}
+
+.draw-btn.drawing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-8);
+}
+
+/* Prize Section */
+.prizes-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.section-header h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rarity-section {
+    margin-bottom: var(--spacing-6);
+}
+
+.rarity-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rarity-badge {
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.prize-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.prize-item {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    text-align: center;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.prize-item.rarity-common { border-color: #9E9E9E; }
+.prize-item.rarity-rare { border-color: #2196F3; }
+.prize-item.rarity-epic { border-color: #9C27B0; }
+.prize-item.rarity-legendary { 
+    border-color: #FF9800;
+    background: linear-gradient(135deg, #fff8e1, #ffffff);
+}
+
+.prize-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.prize-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-2);
+}
+
+.prize-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-1);
+}
+
+.prize-value {
+    color: var(--success-color);
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.records-card, .actions-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.recent-records {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.record-item {
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.record-item.win {
+    border-left-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.record-item.lose {
+    border-left-color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.record-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-1);
+}
+
+.record-type {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.record-result.win {
+    color: var(--success-color);
+    font-weight: 700;
+}
+
+.record-result.lose {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.btn-icon {
+    font-size: 1.125rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-4);
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+/* Result Modal */
+.lottery-result-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-10);
+    text-align: center;
+    min-width: 350px;
+    box-shadow: var(--shadow-xl);
+}
+
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-5);
+}
+
+.result-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-4);
+    color: var(--text-primary);
+}
+
+.result-prize {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.result-rarity {
+    font-weight: 700;
+    margin-bottom: var(--spacing-8);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    display: inline-block;
+}
+
+.result-actions {
+    display: flex;
+    gap: var(--spacing-4);
+    justify-content: center;
+}
+
+.claim-btn, .continue-btn {
+    padding: var(--spacing-3) var(--spacing-6);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.claim-btn {
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    color: white;
+}
+
+.continue-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.claim-btn:hover, .continue-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .sidebar {
+        order: -1;
+    }
+    
+    .machines-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .instruction-summary {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-3);
+    }
+    
+    .instruction-tips {
+        flex-direction: column;
+    }
+    
+    .tip-item {
+        min-width: auto;
+    }
+    
+    .toggle-btn {
+        padding: var(--spacing-3) var(--spacing-4);
+        font-size: 0.875rem;
+    }
+    
+    .instruction-content {
+        padding: var(--spacing-4);
+    }
+    
+    .machine-card {
+        padding: var(--spacing-6);
+    }
+    
+    .machine-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .slot-machine {
+        padding: var(--spacing-4);
+        gap: var(--spacing-2);
+    }
+    
+    .slot-reel {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .slot-item {
+        font-size: 2rem;
+    }
+    
+    .prize-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: var(--spacing-8) 0 var(--spacing-6) 0;
+    }
+    
+    .hero-content {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-3);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .machine-card, .prizes-section, .records-card, .actions-card {
+        padding: var(--spacing-4);
+    }
+    
+    .draw-btn {
+        padding: var(--spacing-3) var(--spacing-4);
+        font-size: 1rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.machine-card, .prizes-section, .records-card, .actions-card, .stat-card, .instructions-section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+
+.machine-card:nth-child(1) { animation-delay: 0.1s; }
+.machine-card:nth-child(2) { animation-delay: 0.2s; }
+.prizes-section { animation-delay: 0.3s; }
+.records-card { animation-delay: 0.4s; }
+.actions-card { animation-delay: 0.5s; }
+</style>
+
+<script>
+// 抽奖功能JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // 抽奖说明折叠功能
+    const instructionsToggle = document.getElementById('instructionsToggle');
+    const instructionContent = document.getElementById('instructionContent');
+    
+    if (instructionsToggle && instructionContent) {
+        instructionsToggle.addEventListener('click', function() {
+            const isVisible = instructionContent.style.display !== 'none';
+            
+            if (isVisible) {
+                instructionContent.style.display = 'none';
+                instructionsToggle.classList.remove('active');
+            } else {
+                instructionContent.style.display = 'block';
+                instructionsToggle.classList.add('active');
+            }
+        });
+    }
+    const drawButtons = document.querySelectorAll('.draw-btn');
+    const resultModal = document.getElementById('resultModal');
+    const claimBtn = document.getElementById('claimBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    
+    let currentRecord = null;
+    
+    // 绑定抽奖按钮事件
+    drawButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log('按钮被点击了', btn.dataset.type);
+            if (btn.disabled) {
+                console.log('按钮被禁用，跳过');
+                return;
+            }
+            
+            const lotteryType = btn.dataset.type;
+            console.log('开始抽奖:', lotteryType);
+            performDraw(lotteryType, btn);
+        });
+    });
+    
+    // 执行抽奖
+    async function performDraw(type, button) {
+        console.log('执行抽奖函数:', type);
+        // 禁用按钮，开始动画
+        button.disabled = true;
+        button.classList.add('drawing');
+        
+        const slotMachine = document.getElementById(type === 'basic' ? 'basicSlotMachine' : 'premiumSlotMachine');
+        const reels = slotMachine.querySelectorAll('.slot-reel');
+        
+        // 启动老虎机动画
+        reels.forEach(reel => reel.classList.add('spinning'));
+        
+        try {
+            // 发送抽奖请求
+            console.log('发送请求到:', '{{ url("lottery_draw") }}');
+            const response = await fetch('{{ url("lottery_draw") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ lotteryType: type })
+            });
+            
+            console.log('响应状态:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // 等待动画时间
+            setTimeout(() => {
+                // 停止动画
+                reels.forEach(reel => reel.classList.remove('spinning'));
+                
+                // 显示结果
+                showResult(result);
+                
+                // 恢复按钮状态 (页面会刷新，所以这里先暂时设为false)
+                button.disabled = false;
+                button.classList.remove('drawing');
+            }, 2000);
+            
+        } catch (error) {
+            console.error('抽奖失败:', error);
+            console.error('错误详情:', error.message);
+            alert('抽奖失败，请重试: ' + error.message);
+            
+            // 停止动画，恢复按钮
+            reels.forEach(reel => reel.classList.remove('spinning'));
+            button.disabled = false;
+            button.classList.remove('drawing');
+        }
+    }
+    
+    // 显示抽奖结果
+    function showResult(result) {
+        if (!result.success) {
+            alert(result.message || '抽奖失败');
+            return;
+        }
+        
+        const { won, prize, record } = result.result;
+        currentRecord = record;
+        
+        const resultIcon = document.getElementById('resultIcon');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultPrize = document.getElementById('resultPrize');
+        const resultRarity = document.getElementById('resultRarity');
+        
+        if (won && prize) {
+            // 中奖
+            resultIcon.textContent = '🎉';
+            resultTitle.textContent = '{{ _("Congratulations!") }}';
+            resultPrize.textContent = `${prize.icon} ${prize.name}`;
+            
+            // 设置稀有度样式
+            const rarityColors = {
+                common: '#9E9E9E',
+                rare: '#2196F3', 
+                epic: '#9C27B0',
+                legendary: '#FF9800'
+            };
+            
+            resultRarity.textContent = `{{ rarityInfo[prize.rarity].name }}`;
+            resultRarity.style.background = rarityColors[prize.rarity];
+            resultRarity.style.color = 'white';
+            
+            claimBtn.style.display = 'inline-block';
+        } else {
+            // 未中奖
+            resultIcon.textContent = '😔';
+            resultTitle.textContent = '{{ _("Better luck next time!") }}';
+            resultPrize.textContent = '{{ _("No prize this time") }}';
+            resultRarity.textContent = '';
+            claimBtn.style.display = 'none';
+        }
+        
+        resultModal.style.display = 'block';
+    }
+    
+    // 领取奖品
+    claimBtn.addEventListener('click', async function() {
+        if (!currentRecord) return;
+        
+        try {
+            const response = await fetch('{{ url("lottery_claim") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ recordId: currentRecord._id })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('{{ _("Prize claimed successfully!") }}');
+                location.reload(); // 刷新页面更新积分
+            } else {
+                alert(result.message || '{{ _("Failed to claim prize") }}');
+            }
+        } catch (error) {
+            console.error('领取失败:', error);
+            alert('{{ _("Failed to claim prize") }}');
+        }
+    });
+    
+    // 继续游戏
+    continueBtn.addEventListener('click', function() {
+        resultModal.style.display = 'none';
+        currentRecord = null;
+        location.reload(); // 刷新页面更新积分和记录
+    });
+    
+    // 点击背景关闭弹窗
+    document.querySelector('.modal-backdrop').addEventListener('click', function() {
+        resultModal.style.display = 'none';
+        currentRecord = null;
+    });
+});
+</script>
+
+{% endblock %}

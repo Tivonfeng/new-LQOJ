@@ -1,0 +1,893 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">👤 {{ _('My Score') }}</h1>
+            <p class="hero-subtitle">{{ _('Your Progress') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
+            <a href="{{ url('lottery_hall') }}" class="nav-button primary">{{ _('Lottery Hall') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Stats Overview -->
+    <div class="stats-section">
+        <div class="section-header">
+            <h2>📊 {{ _('Your Progress') }}</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ userScore.totalScore }}</div>
+                <div class="stat-label">{{ _('Total Score') }}</div>
+                <div class="stat-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ (userScore.totalScore / 10000 * 100) | round(1) if userScore.totalScore < 10000 else 100 }}%"></div>
+                    </div>
+                    <div class="progress-text">{{ _('Next milestone: 10,000 points') if userScore.totalScore < 10000 else _('Milestone reached!') }}</div>
+                </div>
+            </div>
+            
+            <div class="stat-card success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">{{ userScore.acCount }}</div>
+                <div class="stat-label">{{ _('AC Count') }}</div>
+                <div class="stat-meta">
+                    <div class="meta-item">
+                        <span class="meta-icon">🎯</span>
+                        <span class="meta-text">{{ _('Solved') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card accent">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value">{{ averageScore }}</div>
+                <div class="stat-label">{{ _('Average Score per AC') }}</div>
+                <div class="stat-meta">
+                    <div class="trend-indicator {{ 'positive' if averageScore > 50 else 'neutral' }}">
+                        <span class="trend-icon">{{ '📈' if averageScore > 50 else '📊' }}</span>
+                        <span class="trend-text">{{ _('High efficiency!') if averageScore > 50 else _('Good progress') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Records -->
+    <div class="records-section">
+        <div class="section-header">
+            <h2>📋 {{ _('Recent Score Records') }}</h2>
+        </div>
+        
+        {% if recentRecords and recentRecords|length > 0 %}
+        <div class="table-container">
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Problem') }}</th>
+                        <th>{{ _('Score') }}</th>
+                        <th>{{ _('Reason') }}</th>
+                        <th>{{ _('Time') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in recentRecords %}
+                    <tr class="record-row {{ 'positive' if record.score > 0 else 'negative' }}">
+                        <td class="problem-cell">
+                            <div class="problem-info">
+                                <div class="problem-icon">📝</div>
+                                <div class="problem-details">
+                                    <a href="{{ url('problem_detail', pid=record.pid) }}" class="problem-link">
+                                        {{ record.problemTitle or ('P' + record.pid|string) }}
+                                    </a>
+                                    <div class="problem-id">ID: {{ record.pid }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="score-cell">
+                            <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
+                                <span class="score-icon">{{ '➕' if record.score > 0 else '➖' }}</span>
+                                <span class="score-value">{{ record.score | abs }}</span>
+                            </div>
+                        </td>
+                        <td class="reason-cell">
+                            <div class="reason-tag">
+                                <span class="reason-icon">💭</span>
+                                <span class="reason-text">{{ record.reason }}</span>
+                            </div>
+                        </td>
+                        <td class="time-cell">
+                            <div class="time-info">
+                                {% if record.createdAt and record.createdAt.strftime %}
+                                <span class="time-main">{{ record.createdAt.strftime('%m/%d') }}</span>
+                                <span class="time-sub">{{ record.createdAt.strftime('%H:%M') }}</span>
+                                {% else %}
+                                <span class="time-main">N/A</span>
+                                <span class="time-sub"></span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-content">
+                <div class="empty-icon">📊</div>
+                <h3 class="empty-title">{{ _('No score records found. Start solving problems to earn points!') }}</h3>
+                <p class="empty-description">开始解题来获得您的第一个积分记录吧！</p>
+                <a href="{{ url('problem_main') }}" class="empty-cta">
+                    <span class="cta-icon">🎯</span>
+                    <span class="cta-text">{{ _('Start Coding') }}</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Action Section -->
+    <div class="action-section">
+        <div class="action-cards">
+            <a href="{{ url('score_ranking') }}" class="action-card primary">
+                <div class="card-icon">🏆</div>
+                <div class="card-content">
+                    <h3>{{ _('Rankings') }}</h3>
+                    <p>{{ _('View Full Ranking') }}</p>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+            
+            <a href="{{ url('problem_main') }}" class="action-card">
+                <div class="card-icon">💻</div>
+                <div class="card-content">
+                    <h3>{{ _('Solve Problems') }}</h3>
+                    <p>{{ _('Earn Coins') }}</p>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Design System Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+    background: linear-gradient(45deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.hero-nav {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
+}
+
+.nav-button.primary {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--primary-color);
+}
+
+.nav-button.primary:hover {
+    background: rgba(255, 255, 255, 1);
+    color: var(--primary-dark);
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+}
+
+/* Section Headers */
+.section-header {
+    margin-bottom: var(--spacing-6);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Stats Section */
+.stats-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 2px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: var(--success-color);
+}
+
+.stat-card.accent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: var(--accent-color);
+}
+
+.stat-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-4);
+}
+
+/* Progress Bar */
+.stat-progress {
+    margin-top: var(--spacing-4);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--spacing-2);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border-radius: var(--radius-sm);
+    transition: width 0.8s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Stat Meta */
+.stat-meta {
+    margin-top: var(--spacing-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    background: var(--bg-primary);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+}
+
+.meta-icon {
+    font-size: 0.875rem;
+}
+
+.trend-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.trend-indicator.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.trend-indicator.neutral {
+    background: rgba(156, 163, 175, 0.1);
+    color: var(--text-muted);
+}
+
+/* Records Section */
+.records-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-primary);
+}
+
+.records-table thead {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.records-table th {
+    padding: var(--spacing-4) var(--spacing-6);
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+}
+
+.records-table td {
+    padding: var(--spacing-4) var(--spacing-6);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.record-row {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.record-row:hover {
+    background-color: var(--bg-secondary);
+}
+
+.record-row.positive {
+    border-left-color: var(--success-color);
+}
+
+.record-row.negative {
+    border-left-color: var(--error-color);
+}
+
+/* Problem Cell */
+.problem-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.problem-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.problem-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.problem-link {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.problem-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.problem-id {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Score Cell */
+.score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.score-badge.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.score-badge.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+.score-icon {
+    font-size: 1rem;
+}
+
+/* Reason Cell */
+.reason-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: var(--bg-secondary);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.reason-icon {
+    font-size: 1rem;
+}
+
+/* Time Cell */
+.time-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.time-main {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.time-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Action Section */
+.action-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.action-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    text-decoration: none;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.action-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-content h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-1);
+}
+
+.card-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.card-arrow {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+}
+
+.action-card:hover .card-arrow {
+    transform: translateX(4px);
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+    padding: var(--spacing-8);
+}
+
+.empty-content {
+    text-align: center;
+    max-width: 400px;
+}
+
+.empty-icon {
+    font-size: 5rem;
+    margin-bottom: var(--spacing-6);
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-3);
+}
+
+.empty-description {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-6);
+    font-size: 1rem;
+}
+
+.empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-4) var(--spacing-8);
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.125rem;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+}
+
+.empty-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), var(--shadow-xl);
+    text-decoration: none;
+    color: white;
+}
+
+.cta-icon {
+    font-size: 1.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .records-table th,
+    .records-table td {
+        padding: var(--spacing-3) var(--spacing-4);
+        font-size: 0.875rem;
+    }
+    
+    .problem-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-2);
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: var(--spacing-8) 0 var(--spacing-6) 0;
+    }
+    
+    .hero-content {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-3);
+    }
+    
+    .records-table th,
+    .records-table td {
+        padding: var(--spacing-2) var(--spacing-3);
+    }
+    
+    /* Hide less important columns on small screens */
+    .records-table th:nth-child(3),
+    .records-table td:nth-child(3),
+    .records-table th:nth-child(4),
+    .records-table td:nth-child(4) {
+        display: none;
+    }
+    
+    .empty-content {
+        padding: var(--spacing-6) var(--spacing-4);
+    }
+    
+    .empty-icon {
+        font-size: 3.5rem;
+    }
+    
+    .empty-cta {
+        padding: var(--spacing-3) var(--spacing-6);
+        font-size: 1rem;
+    }
+    
+    .stats-section, .records-section, .action-section {
+        padding: var(--spacing-4);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes progressFill {
+    from {
+        width: 0%;
+    }
+    to {
+        width: var(--progress-width);
+    }
+}
+
+.stats-section, .records-section, .action-section, .empty-content {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+
+.record-row {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.record-row:nth-child(odd) { animation-delay: 0.05s; }
+.record-row:nth-child(even) { animation-delay: 0.1s; }
+
+.action-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.action-card:nth-child(1) { animation-delay: 0.1s; }
+.action-card:nth-child(2) { animation-delay: 0.2s; }
+</style>
+
+{% endblock %}

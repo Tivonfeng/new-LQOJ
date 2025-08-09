@@ -1,0 +1,148 @@
+Score System Management: 积分系统管理
+Score Hall: 积分大厅
+score_hall: 积分大厅
+Score Ranking: 积分排行榜
+My Score: 我的积分
+Total Score: 总积分
+AC Count: AC数量
+Average Score per AC: 平均每AC积分
+Top Scorers: 积分排行榜
+Rank: 排名
+User: 用户
+User ID: 用户ID
+Problem: 题目
+Score: 积分
+Time: 时间
+Last Updated: 最后更新
+Previous: 上一页
+Next: 下一页
+Manage Scores: 管理积分
+Manage: 管理
+View Full Ranking: 查看完整排名
+View Details: 查看详情
+View All: 查看全部
+Solve Problems: 解题
+Rankings: 排行榜
+Details: 详情
+Solved: 已解决
+Recent Score Records: 最近积分记录
+"Quick Actions": 快捷操作
+"Your Progress": 您的进度
+"Your Balance": 您的余额
+"Active Today": 今日活跃
+"Coins Earned": 获得绿旗币
+"Start Coding": 开始刷题
+"Earn Coins": 获得绿旗币
+"Turn Your Achievements Into Rewards!": "将您的成就转化为奖励！"
+
+# 抽奖系统
+Lottery Hall: 抽奖大厅
+Lottery History: 抽奖历史
+Lottery Administration: 抽奖系统管理
+Lottery Statistics: 抽奖统计
+Premium Draw: 高级抽奖
+Basic Draw: 普通抽奖
+Draw Now: 立即抽奖
+Current Coins: 当前绿旗币
+Total Draws: 总抽奖次数
+Total Wins: 总中奖次数
+Current Streak: 连续未中奖
+Win Rate: 中奖率
+Available Prizes: 可获得奖品
+Recent Records: 最近记录
+Back to Lottery: 返回抽奖
+Claim Prize: 领取奖品
+Continue: 继续
+Basic: 普通
+Premium: 高级
+Win: 中奖
+Lose: 未中奖
+No Prize: 无奖品
+Claimed: 已领取
+Unclaimed: 未领取
+Type: 类型
+Cost: 费用
+Result: 结果
+Prize: 奖品
+Status: 状态
+
+# 奖品管理
+Add New Prize: 添加新奖品
+Prize Name: 奖品名称
+Icon: 图标
+Value: 价值
+Weight: 权重
+Stock: 库存
+Description: 描述
+Add Prize: 添加奖品
+Prize Management: 奖品管理
+Update: 更新
+Delete: 删除
+
+# 稀有度和奖励
+Common: 普通
+Rare: 稀有
+Epic: 史诗
+Legendary: 传说
+"Common Rewards": 普通奖励
+"Better Rewards": 更好奖励
+"Rare Rewards": 稀有奖励
+Green Flag Coins: 绿旗币
+Special Badges: 特殊徽章
+Privilege: 特权
+Virtual Item: 虚拟物品
+
+# 消息和通知
+"Congratulations!": "恭喜！"
+"Better luck next time!": "再接再厉！"
+"No prize this time": 这次没有奖品
+"Prize claimed successfully!": "奖品领取成功！"
+Failed to claim prize: 奖品领取失败
+"Are you sure to delete this prize?": "确定要删除这个奖品吗？"
+"Prize added successfully!": "奖品添加成功！"
+"Prize deleted successfully!": "奖品删除成功！"
+"Prize updated successfully!": "奖品更新成功！"
+
+# 特殊功能
+"Quick & Easy": 快速简单
+coins per draw: 绿旗币/次
+draws guarantee: 次保底
+"per draw": /次
+"Spend Your Coins": 使用绿旗币
+
+# 空状态
+"No score records found. Start solving problems to earn points!": "未找到积分记录。开始解题来获得积分吧！"
+"No lottery records yet": 暂无抽奖记录
+"Start drawing to see your history!": "开始抽奖来查看你的历史记录！"
+"No rankings yet": 暂无排名
+"No lottery history yet": 暂无抽奖历史
+"No prizes found. Add some prizes to get started!": "未找到奖品。添加一些奖品开始使用吧！"
+
+# 新增缺失的翻译
+"Try Your Luck!": "祝你好运！"
+"Your drawing records": 您的抽奖记录
+"Go to Lottery Hall": 前往抽奖大厅
+"Next milestone: 10,000 points": "下个里程碑：10,000 积分"
+"Milestone reached!": "里程碑已达成！"
+"High efficiency!": "高效率！"
+"Good progress": 良好进度
+"No recent records found.": 未找到最近记录
+"System Overview": 系统总览
+"Management Tools": 管理工具
+"Personal": 个人
+"Admin": 管理员
+"Overview": 概述
+"Turn Your Achievements Into Rewards": 将您的成就转化为奖励
+"Top Players": 顶级玩家
+Reason: 原因
+Rarity: 稀有度
+"Start Drawing": 开始抽奖
+"Manage prizes and lottery settings": 管理奖品和抽奖设置
+"Basic Draws": 普通抽奖次数
+"Premium Draws": 高级抽奖次数
+
+# 分页
+Page: 第
+of: "页，共"
+Total: 总计
+records: 条记录

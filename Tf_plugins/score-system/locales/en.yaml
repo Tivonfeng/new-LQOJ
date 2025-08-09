@@ -1,0 +1,147 @@
+Score System Management: Score System Management
+Score Hall: Score Hall
+Score Ranking: Score Ranking
+My Score: My Score
+Total Score: Total Score
+AC Count: AC Count
+Average Score per AC: Average Score per AC
+Top Scorers: Top Scorers
+Rank: Rank
+User: User
+User ID: User ID
+Problem: Problem
+Score: Score
+Time: Time
+Last Updated: Last Updated
+Previous: Previous
+Next: Next
+Manage Scores: Manage Scores
+Manage: Manage
+View Full Ranking: View Full Ranking
+View Details: View Details
+View All: View All
+Solve Problems: Solve Problems
+Rankings: Rankings
+Details: Details
+Solved: Solved
+Recent Score Records: Recent Score Records
+"Quick Actions": Quick Actions
+"Your Progress": Your Progress
+"Your Balance": Your Balance
+"Active Today": Active Today
+"Coins Earned": Coins Earned
+"Start Coding": Start Coding
+"Earn Coins": Earn Coins
+"Turn Your Achievements Into Rewards!": Turn Your Achievements Into Rewards!
+
+# Lottery System
+Lottery Hall: Lottery Hall
+Lottery History: Lottery History
+Lottery Administration: Lottery Administration
+Lottery Statistics: Lottery Statistics
+Premium Draw: Premium Draw
+Basic Draw: Basic Draw
+Draw Now: Draw Now
+Current Coins: Current Coins
+Total Draws: Total Draws
+Total Wins: Total Wins
+Current Streak: Current Streak
+Win Rate: Win Rate
+Available Prizes: Available Prizes
+Recent Records: Recent Records
+Back to Lottery: Back to Lottery
+Claim Prize: Claim Prize
+Continue: Continue
+Basic: Basic
+Premium: Premium
+Win: Win
+Lose: Lose
+No Prize: No Prize
+Claimed: Claimed
+Unclaimed: Unclaimed
+Type: Type
+Cost: Cost
+Result: Result
+Prize: Prize
+Status: Status
+
+# Prize Management
+Add New Prize: Add New Prize
+Prize Name: Prize Name
+Icon: Icon
+Value: Value
+Weight: Weight
+Stock: Stock
+Description: Description
+Add Prize: Add Prize
+Prize Management: Prize Management
+Update: Update
+Delete: Delete
+
+# Rarity & Rewards
+Common: Common
+Rare: Rare
+Epic: Epic
+Legendary: Legendary
+"Common Rewards": Common Rewards
+"Better Rewards": Better Rewards
+"Rare Rewards": Rare Rewards
+Green Flag Coins: Green Flag Coins
+Special Badges: Special Badges
+Privilege: Privilege
+Virtual Item: Virtual Item
+
+# Messages & Notifications
+"Congratulations!": Congratulations!
+"Better luck next time!": Better luck next time!
+"No prize this time": No prize this time
+"Prize claimed successfully!": Prize claimed successfully!
+Failed to claim prize: Failed to claim prize
+"Are you sure to delete this prize?": Are you sure to delete this prize?
+"Prize added successfully!": Prize added successfully!
+"Prize deleted successfully!": Prize deleted successfully!
+"Prize updated successfully!": Prize updated successfully!
+
+# Special Features
+"Quick & Easy": Quick & Easy
+coins per draw: coins per draw
+draws guarantee: draws guarantee
+"per draw": per draw
+"Spend Your Coins": Spend Your Coins
+
+# Empty States
+"No score records found. Start solving problems to earn points!": No score records found. Start solving problems to earn points!
+"No lottery records yet": No lottery records yet
+"Start drawing to see your history!": Start drawing to see your history!
+"No rankings yet": No rankings yet
+"No lottery history yet": No lottery history yet
+"No prizes found. Add some prizes to get started!": No prizes found. Add some prizes to get started!
+
+# Additional missing translations
+"Try Your Luck!": Try Your Luck!
+"Your drawing records": Your drawing records
+"Go to Lottery Hall": Go to Lottery Hall
+"Next milestone: 10,000 points": "Next milestone: 10,000 points"
+"Milestone reached!": Milestone reached!
+"High efficiency!": High efficiency!
+"Good progress": Good progress
+"No recent records found.": No recent records found.
+"System Overview": System Overview
+"Management Tools": Management Tools
+"Personal": Personal
+"Admin": Admin
+"Overview": Overview
+"Turn Your Achievements Into Rewards": Turn Your Achievements Into Rewards
+"Top Players": Top Players
+Reason: Reason
+Rarity: Rarity
+"Start Drawing": Start Drawing
+"Manage prizes and lottery settings": Manage prizes and lottery settings
+"Basic Draws": Basic Draws
+"Premium Draws": Premium Draws
+
+# Pagination
+Page: Page
+of: of
+Total: Total
+records: records

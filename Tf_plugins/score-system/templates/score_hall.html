@@ -1,0 +1,980 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">{{ _('Score Hall') }}</h1>
+            <p class="hero-subtitle">{{ _('Turn Your Achievements Into Rewards') }}</p>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-badge">
+                <span class="stat-icon">👥</span>
+                <span class="stat-text">{{ todayActiveUsers }} {{ _('Active Today') }}</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-icon">💰</span>
+                <span class="stat-text">+{{ todayTotalScore }} {{ _('Coins Earned') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-container">
+    <!-- Lottery Spotlight -->
+    <div class="lottery-spotlight">
+        <div class="spotlight-header">
+            <div class="spotlight-title">
+                <span class="title-icon">🎰</span>
+                <h2>{{ _('Lottery Hall') }}</h2>
+                <span class="subtitle">{{ _('Spend Your Coins') }}</span>
+            </div>
+            {% if isLoggedIn %}
+            <div class="coins-balance">
+                <span class="balance-label">{{ _('Your Balance') }}</span>
+                <span class="balance-amount">{{ currentCoins or 0 }}</span>
+                <span class="balance-unit">🏴</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="lottery-content">
+            <div class="lottery-machines">
+                <div class="machine-card basic-machine">
+                    <div class="machine-header">
+                        <div class="machine-icon">🎲</div>
+                        <div class="machine-info">
+                            <h3>{{ _('Basic Draw') }}</h3>
+                            <p>{{ _('Quick & Easy') }}</p>
+                        </div>
+                    </div>
+                    <div class="machine-price">
+                        <span class="price-amount">10</span>
+                        <span class="price-unit">🏴</span>
+                    </div>
+                    <div class="machine-features">
+                        <span class="feature-tag">{{ _('Common Rewards') }}</span>
+                    </div>
+                </div>
+                
+                <div class="machine-card premium-machine">
+                    <div class="machine-header">
+                        <div class="machine-icon">💎</div>
+                        <div class="machine-info">
+                            <h3>{{ _('Premium Draw') }}</h3>
+                            <p>{{ _('Better Rewards') }}</p>
+                        </div>
+                    </div>
+                    <div class="machine-price">
+                        <span class="price-amount">50</span>
+                        <span class="price-unit">🏴</span>
+                    </div>
+                    <div class="machine-features">
+                        <span class="feature-tag premium">10{{ _('draws guarantee') }}</span>
+                        <span class="feature-tag">{{ _('Rare Rewards') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lottery-cta">
+                <a href="{{ url('lottery_hall') }}" class="cta-button primary">
+                    <span class="cta-icon">🎰</span>
+                    <span class="cta-text">{{ _('Start Drawing') }}</span>
+                    <span class="cta-arrow">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Leaderboard -->
+        <div class="leaderboard-section">
+            <div class="section-header">
+                <h3>{{ _('Top Players') }}</h3>
+                <a href="{{ url('score_ranking') }}" class="view-all-link">
+                    {{ _('View All') }} →
+                </a>
+            </div>
+            
+            <div class="leaderboard-list">
+                {% if topUsers and topUsers|length > 0 %}
+                {% for user in topUsers %}
+                <div class="leaderboard-item {{ 'current-user' if isLoggedIn and user.uid == handler.user._id }}">
+                    <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                        {% if loop.index <= 3 %}
+                            {% set medals = ['🥇', '🥈', '🥉'] %}
+                            {{ medals[loop.index - 1] }}
+                        {% else %}
+                            {{ loop.index }}
+                        {% endif %}
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">
+                            {% if udocs[user.uid] %}
+                                {{ udocs[user.uid].uname }}
+                                {% if udocs[user.uid].displayName %}
+                                <span class="display-name">({{ udocs[user.uid].displayName }})</span>
+                                {% endif %}
+                            {% else %}
+                                User {{ user.uid }}
+                            {% endif %}
+                        </div>
+                        <div class="player-stats">
+                            <span class="stat-item">{{ user.acCount }} AC</span>
+                        </div>
+                    </div>
+                    <div class="player-score">
+                        {{ user.totalScore }}
+                        <span class="score-unit">pts</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">📊</span>
+                    <p>{{ _('No rankings yet') }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            {% if isLoggedIn %}
+            <!-- Personal Stats -->
+            <div class="stats-card">
+                <div class="stats-header">
+                    <h4>{{ _('Your Progress') }}</h4>
+                    <a href="{{ url('user_score') }}" class="details-link">{{ _('Details') }}</a>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ userScore.totalScore }}</span>
+                        <span class="stat-label">{{ _('Total Score') }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ userScore.acCount }}</span>
+                        <span class="stat-label">{{ _('Solved') }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">#{{ userRank }}</span>
+                        <span class="stat-label">{{ _('Rank') }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- How to Earn -->
+            <div class="earn-card">
+                <div class="earn-header">
+                    <h4>{{ _('Earn Coins') }}</h4>
+                    <span class="earn-icon">💡</span>
+                </div>
+                <div class="earn-method">
+                    <div class="method-icon">✅</div>
+                    <div class="method-info">
+                        <span class="method-title">{{ _('Solve Problems') }}</span>
+                        <span class="method-reward">+10 🏴</span>
+                    </div>
+                </div>
+                <a href="{{ url('problem_main') }}" class="earn-cta">
+                    <span class="cta-text">{{ _('Start Coding') }}</span>
+                    <span class="cta-icon">💻</span>
+                </a>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-card">
+                <h4>{{ _('Quick Actions') }}</h4>
+                <div class="action-buttons">
+                    <a href="{{ url('score_ranking') }}" class="action-btn">
+                        <span class="btn-icon">🏆</span>
+                        <span class="btn-text">{{ _('Rankings') }}</span>
+                    </a>
+                    {% if canManage %}
+                    <a href="{{ url('score_manage') }}" class="action-btn">
+                        <span class="btn-icon">⚙️</span>
+                        <span class="btn-text">{{ _('Manage') }}</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Design System Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+    background: linear-gradient(45deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.hero-stats {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.stat-badge {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.stat-badge:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 1.25rem;
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+/* Lottery Spotlight */
+.lottery-spotlight {
+    background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.lottery-spotlight::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.spotlight-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-8);
+    position: relative;
+    z-index: 1;
+}
+
+.spotlight-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.title-icon {
+    font-size: 2rem;
+}
+
+.spotlight-title h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.subtitle {
+    background: var(--accent-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.coins-balance {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4) var(--spacing-5);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    box-shadow: var(--shadow-md);
+}
+
+.balance-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.balance-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.balance-unit {
+    font-size: 1.125rem;
+}
+
+/* Lottery Machines */
+.lottery-content {
+    position: relative;
+    z-index: 1;
+}
+
+.lottery-machines {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+
+.machine-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.machine-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.basic-machine {
+    border-color: var(--secondary-color);
+}
+
+.basic-machine:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
+}
+
+.premium-machine {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+.premium-machine:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.3), var(--shadow-xl);
+}
+
+.machine-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.machine-icon {
+    font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+}
+
+.machine-info h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.machine-info p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.machine-price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+}
+
+.price-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-color);
+}
+
+.price-unit {
+    font-size: 1.25rem;
+}
+
+.machine-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+}
+
+.feature-tag {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.feature-tag.premium {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* CTA Button */
+.lottery-cta {
+    text-align: center;
+}
+
+.cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-4) var(--spacing-8);
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.125rem;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), var(--shadow-xl);
+    text-decoration: none;
+    color: white;
+}
+
+.cta-icon {
+    font-size: 1.25rem;
+}
+
+.cta-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.cta-button:hover .cta-arrow {
+    transform: translateX(4px);
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-8);
+}
+
+/* Leaderboard */
+.leaderboard-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.view-all-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+}
+
+.view-all-link:hover {
+    color: var(--primary-dark);
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.leaderboard-item:hover {
+    background: var(--bg-secondary);
+    transform: translateX(4px);
+}
+
+.leaderboard-item.current-user {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.rank-badge {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.rank-1, .rank-2, .rank-3 {
+    font-size: 1.5rem;
+}
+
+.rank-other {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.display-name {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.player-stats {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.stat-item {
+    margin-right: var(--spacing-3);
+}
+
+.player-score {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--success-color);
+    text-align: right;
+}
+
+.score-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.stats-card, .earn-card, .actions-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.stats-header, .earn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+}
+
+.stats-header h4, .earn-header h4, .actions-card h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.details-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-4);
+}
+
+.stats-grid .stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.earn-icon {
+    font-size: 1.25rem;
+}
+
+.earn-method {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.method-icon {
+    font-size: 1.25rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--success-color);
+    color: white;
+    border-radius: var(--radius-md);
+}
+
+.method-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.method-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.method-reward {
+    font-weight: 700;
+    color: var(--success-color);
+}
+
+.earn-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    background: var(--success-color);
+    color: white;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.earn-cta:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.btn-icon {
+    font-size: 1.125rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-4);
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .sidebar {
+        order: -1;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .lottery-machines {
+        grid-template-columns: 1fr;
+    }
+    
+    .spotlight-header {
+        flex-direction: column;
+        gap: var(--spacing-4);
+        align-items: flex-start;
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .lottery-spotlight {
+        padding: var(--spacing-6);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-3);
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: var(--spacing-8) 0 var(--spacing-6) 0;
+    }
+    
+    .hero-content {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-3);
+    }
+    
+    .lottery-spotlight, .leaderboard-section, .stats-card, .earn-card, .actions-card {
+        padding: var(--spacing-4);
+    }
+    
+    .machine-card {
+        padding: var(--spacing-4);
+    }
+    
+    .cta-button {
+        padding: var(--spacing-3) var(--spacing-6);
+        font-size: 1rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.leaderboard-section, .lottery-spotlight, .stats-card, .earn-card, .actions-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.leaderboard-section { animation-delay: 0.1s; }
+.stats-card { animation-delay: 0.2s; }
+.earn-card { animation-delay: 0.3s; }
+.actions-card { animation-delay: 0.4s; }
+</style>
+
+{% endblock %}

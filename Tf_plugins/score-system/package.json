@@ -1,0 +1,17 @@
+{
+  "name": "@hydrooj/score-system",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "学生AC题目后自动加分的积分系统插件",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
