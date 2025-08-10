@@ -94,10 +94,7 @@
                             <option value="legendary">{{ _('Legendary') }}</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">{{ _('Weight') }}</label>
-                        <input type="number" name="weight" class="form-input" value="10" min="1" required>
-                    </div>
+                    <!-- 权重已改为自动计算，移除手动输入 -->
                     <div class="form-group span-2">
                         <label class="form-label">{{ _('Description') }}</label>
                         <input type="text" name="description" class="form-input" placeholder="奖品描述">
@@ -116,6 +113,68 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    <!-- Weight Distribution -->
+    <div class="weight-section">
+        <div class="section-header">
+            <h2>⚖️ {{ _('Weight Distribution') }} <span class="auto-label">（自动计算）</span></h2>
+            <div class="weight-actions">
+                <button class="action-btn recalculate-btn" onclick="recalculateWeights()">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">{{ _('Recalculate All') }}</span>
+                </button>
+                <button class="action-btn validate-btn" onclick="validateWeights()">
+                    <span class="btn-icon">✅</span>
+                    <span class="btn-text">{{ _('Validate') }}</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="weight-grid">
+            {% for dist in weightDistribution %}
+            <div class="weight-card rarity-{{ dist.rarity }}">
+                <div class="weight-header">
+                    <span class="rarity-badge rarity-{{ dist.rarity }}" style="background: {{ rarityInfo[dist.rarity].color }}">
+                        {{ dist.rarityLabel }}
+                    </span>
+                    <span class="probability-badge">{{ dist.probability }}</span>
+                </div>
+                <div class="weight-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">奖品数量</span>
+                        <span class="stat-value">{{ dist.prizeCount }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">总权重</span>
+                        <span class="stat-value">{{ dist.totalWeight }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">单个权重</span>
+                        <span class="stat-value">{{ dist.individualWeight }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if weightValidation %}
+        <div class="validation-result {{ 'valid' if weightValidation.isValid else 'invalid' }}">
+            <div class="validation-header">
+                <span class="validation-icon">{{ '✅' if weightValidation.isValid else '⚠️' }}</span>
+                <span class="validation-status">
+                    {{ '权重系统正常' if weightValidation.isValid else '权重系统存在问题' }}
+                </span>
+            </div>
+            {% if not weightValidation.isValid %}
+            <div class="validation-issues">
+                {% for issue in weightValidation.issues %}
+                <div class="issue-item">{{ issue }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- Prize Management -->
@@ -146,7 +205,7 @@
                             <div class="prize-desc">{{ prize.description }}</div>
                             <div class="prize-meta">
                                 <span class="meta-item">{{ _('Type') }}: {{ prize.type }}</span>
-                                <span class="meta-item">{{ _('Weight') }}: {{ prize.weight }}</span>
+                                <span class="meta-item">{{ _('Weight') }}: {{ prize.calculatedWeight or prize.weight }} ({{ _('Auto') }})</span>
                                 <span class="meta-item">{{ _('Stock') }}: {{ prize.currentStock if prize.currentStock >= 0 else '∞' }}</span>
                             </div>
                         </div>
@@ -160,8 +219,8 @@
                     
                     <div class="prize-controls">
                         <div class="control-group">
-                            <label class="control-label">{{ _('Weight') }}</label>
-                            <input type="number" class="control-input weight-input" value="{{ prize.weight }}" min="1">
+                            <label class="control-label">{{ _('Auto Weight') }}</label>
+                            <div class="weight-display">{{ prize.calculatedWeight or prize.weight }}</div>
                         </div>
                         <div class="control-group">
                             <label class="control-label">{{ _('Stock') }}</label>
@@ -170,7 +229,7 @@
                         <div class="control-actions">
                             <button class="action-btn update-btn">
                                 <span class="btn-icon">💾</span>
-                                <span class="btn-text">{{ _('Update') }}</span>
+                                <span class="btn-text">{{ _('Update Stock') }}</span>
                             </button>
                             <button class="action-btn delete-btn">
                                 <span class="btn-icon">🗑️</span>
@@ -680,6 +739,18 @@ input:checked + .toggle-slider:before {
     align-items: end;
 }
 
+/* Weight Display */
+.weight-display {
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: center;
+}
+
 .control-group {
     display: flex;
     flex-direction: column;
@@ -894,6 +965,174 @@ input:checked + .toggle-slider:before {
 
 .prize-card:nth-child(odd) { animation-delay: 0.1s; }
 .prize-card:nth-child(even) { animation-delay: 0.2s; }
+
+/* Weight Distribution Styles */
+.weight-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.weight-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+}
+
+.auto-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.weight-actions {
+    display: flex;
+    gap: var(--spacing-3);
+}
+
+.recalculate-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.recalculate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.validate-btn {
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    color: white;
+}
+
+.validate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.weight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.weight-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    transition: all 0.3s ease;
+}
+
+.weight-card.rarity-no_prize {
+    background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+    border-color: #fca5a5;
+}
+
+.weight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.weight-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+}
+
+.probability-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.rarity-no_prize .probability-badge {
+    background: var(--error-color);
+}
+
+.weight-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-3);
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.validation-result {
+    padding: var(--spacing-4);
+    border-radius: var(--radius-md);
+    border-left: 4px solid;
+}
+
+.validation-result.valid {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--success-color);
+}
+
+.validation-result.invalid {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--error-color);
+}
+
+.validation-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-2);
+}
+
+.validation-icon {
+    font-size: 1.25rem;
+}
+
+.validation-status {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.validation-issues {
+    margin-top: var(--spacing-3);
+}
+
+.issue-item {
+    padding: var(--spacing-2);
+    background: rgba(239, 68, 68, 0.05);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-2);
+    font-size: 0.875rem;
+    color: var(--error-color);
+}
+
+.issue-item:last-child {
+    margin-bottom: 0;
+}
 </style>
 
 <script>
@@ -1011,15 +1250,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // 更新奖品
+    // 更新奖品（仅库存）
     document.querySelectorAll('.update-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
             const prizeCard = this.closest('.prize-card');
             const prizeId = prizeCard.dataset.prizeId;
-            const weight = prizeCard.querySelector('.weight-input').value;
             const stock = prizeCard.querySelector('.stock-input').value;
             
-            await updatePrize(prizeId, { weight, stock });
+            await updatePrize(prizeId, { stock });
         });
     });
     
@@ -1149,6 +1387,113 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 });
+
+// 权重重新计算函数
+async function recalculateWeights() {
+    try {
+        showToast('正在重新计算权重...', 'info');
+        
+        const formData = new FormData();
+        formData.append('action', 'recalculateWeights');
+        
+        const response = await fetch('{{ url("lottery_admin") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message || '权重重新计算完成', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert(result.message || '权重重新计算失败');
+        }
+    } catch (error) {
+        console.error('权重重新计算失败:', error);
+        alert('权重重新计算失败: ' + error.message);
+    }
+}
+
+// 权重验证函数  
+async function validateWeights() {
+    try {
+        showToast('正在验证权重系统...', 'info');
+        
+        const formData = new FormData();
+        formData.append('action', 'validateWeights');
+        
+        const response = await fetch('{{ url("lottery_admin") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(result.message, result.data.isValid ? 'success' : 'warning');
+            
+            // 如果有问题，显示详细信息
+            if (!result.data.isValid) {
+                const issues = result.data.issues.join('\n');
+                setTimeout(() => {
+                    alert(`权重系统存在以下问题：\n${issues}`);
+                }, 2000);
+            }
+        } else {
+            alert(result.message || '权重验证失败');
+        }
+    } catch (error) {
+        console.error('权重验证失败:', error);
+        alert('权重验证失败: ' + error.message);
+    }
+}
+
+// 更新 showToast 函数支持更多类型
+function showToast(message, type = 'success') {
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444', 
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type] || colors.success};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // 显示动画
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // 自动消失
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
 </script>
 
 {% endblock %}

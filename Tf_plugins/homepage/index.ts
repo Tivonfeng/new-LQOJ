@@ -14,7 +14,7 @@ async function getPersonal(domainId: string, userId: number, ctx: Context) {
         // 获取用户积分(绿旗币)
         let userScore = 0;
         try {
-            const scoreDoc = await ctx.db.collection('score.users').findOne({
+            const scoreDoc = await ctx.db.collection('score.users' as any).findOne({
                 domainId,
                 uid: userId
             });
