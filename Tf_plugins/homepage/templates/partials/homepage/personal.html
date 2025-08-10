@@ -14,94 +14,19 @@
             <h2 class="welcome-title">{{ udoc.displayName | default('同学') }}，欢迎回来！</h2>
             <p class="welcome-subtitle">继续你的编程之旅</p>
         </div>
-        <div class="hero-quick-stats">
-            {% set accuracy = ((udoc.nAccept or 0) / (udoc.nSubmit or 1) * 100) | round(1) if udoc.nSubmit > 0 else 0 %}
-            <div class="quick-stat-badge">
-                <span class="stat-icon">🎯</span>
-                <span class="stat-text">{{ accuracy }}% 通过率</span>
+        <div class="hero-stats-grid">
+            <div class="hero-stat-item">
+                <div class="hero-stat-number">{{ udoc.todayAccept | default(0) }}</div>
+                <div class="hero-stat-label">今日AC</div>
+            </div>
+            <div class="hero-stat-item">
+                <div class="hero-stat-number coins-accent">{{ udoc.greenFlagCoins | default(0) | int }}</div>
+                <div class="hero-stat-label">绿旗币</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Personal Stats Dashboard -->
-<div class="personal-dashboard">
-    <div class="dashboard-header">
-        <h3>个人统计</h3>
-        <div class="dashboard-period">
-            <span class="period-label">今日表现</span>
-        </div>
-    </div>
-    
-    <div class="stats-grid-modern">
-        <!-- 总提交统计卡片 -->
-        <div class="stat-card submit-card">
-            <div class="stat-card-content">
-                <div class="stat-icon-wrapper">
-                    <span class="stat-icon-large">📊</span>
-                </div>
-                <div class="stat-info">
-                    <div class="stat-number">{{ udoc.nSubmit or 0 }}</div>
-                    <div class="stat-label">总提交</div>
-                    <div class="stat-trend">
-                        <span class="trend-icon">📈</span>
-                        <span class="trend-text">持续努力</span>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-progress-bar submit-progress"></div>
-        </div>
-
-        <!-- AC统计卡片 -->
-        <div class="stat-card accept-card">
-            <div class="stat-card-content">
-                <div class="stat-icon-wrapper">
-                    <span class="stat-icon-large">✅</span>
-                </div>
-                <div class="stat-info">
-                    <div class="stat-number">{{ udoc.nAccept or 0 }}</div>
-                    <div class="stat-label">总AC</div>
-                    <div class="stat-trend">
-                        <span class="trend-icon">🔥</span>
-                        <span class="trend-text">优秀表现</span>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-progress-bar accept-progress"></div>
-        </div>
-
-        <!-- 绿旗币卡片 -->
-        <div class="stat-card coins-card">
-            <div class="stat-card-content">
-                <div class="stat-icon-wrapper coins-icon-bg">
-                    <span class="stat-icon-large">🏴</span>
-                </div>
-                <div class="stat-info">
-                    <div class="stat-number coins-number">{{ udoc.greenFlagCoins | default(0) | int }}</div>
-                    <div class="stat-label">绿旗币</div>
-                    <div class="stat-trend">
-                        <span class="trend-icon">💎</span>
-                        <span class="trend-text">财富积累</span>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-progress-bar coins-progress"></div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions-modern">
-        <a href="{{ url('problem_main') }}" class="quick-action-btn primary-action">
-            <span class="action-icon">💻</span>
-            <span class="action-text">开始刷题</span>
-            <span class="action-arrow">→</span>
-        </a>
-        <a href="{{ url('score_hall') }}" class="quick-action-btn secondary-action">
-            <span class="action-icon">🏆</span>
-            <span class="action-text">积分大厅</span>
-        </a>
-    </div>
-</div>
 {% endif %}
 
 <style>
@@ -248,228 +173,65 @@
     font-weight: 500;
 }
 
-.hero-quick-stats {
-    flex-shrink: 0;
+.hero-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3);
+    width: 100%;
+    max-width: 200px;
 }
 
-.quick-stat-badge {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-3) var(--spacing-4);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    font-weight: 600;
+.hero-stat-item {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3);
+    text-align: center;
     transition: all 0.3s ease;
 }
 
-.quick-stat-badge:hover {
+.hero-stat-item:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Personal Dashboard */
-.personal-dashboard {
-    background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-    margin-bottom: var(--spacing-4);
-}
-
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-4);
-    padding-bottom: var(--spacing-3);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.dashboard-header h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.dashboard-period {
-    background: var(--bg-secondary);
-    padding: var(--spacing-2) var(--spacing-3);
-    border-radius: var(--radius-md);
-}
-
-.period-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-/* Modern Stats Grid */
-.stats-grid-modern {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
-}
-
-.stat-card {
-    background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
-    box-shadow: var(--shadow-sm);
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl);
-}
-
-.submit-card::before {
-    background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-
-.submit-card:hover {
-    border-color: var(--warning-color);
-}
-
-.accept-card::before {
-    background: linear-gradient(90deg, #34d399, #10b981);
-}
-
-.accept-card:hover {
-    border-color: var(--success-color);
-}
-
-.coins-card::before {
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-}
-
-.coins-card:hover {
-    border-color: var(--primary-color);
-}
-
-.stat-card-content {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-3);
-}
-
-.stat-icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-    background: var(--bg-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.coins-icon-bg {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-}
-
-.stat-icon-large {
-    font-size: 1.25rem;
-}
-
-.stat-info {
-    flex: 1;
-}
-
-.stat-number {
+.hero-stat-number {
     font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--text-primary);
+    font-weight: 900;
+    color: white;
     margin-bottom: var(--spacing-1);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1;
 }
 
-.coins-number {
-    color: var(--primary-color);
+.hero-stat-number.coins-accent {
+    background: linear-gradient(45deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-.stat-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-    margin-bottom: var(--spacing-2);
-}
-
-.stat-trend {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-1);
-}
-
-.trend-icon {
-    font-size: 0.875rem;
-}
-
-.trend-text {
+.hero-stat-label {
     font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.stat-progress-bar {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--bg-tertiary);
-    position: relative;
-    overflow: hidden;
-}
 
-.stat-progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 70%;
-    border-radius: 2px;
-    animation: progressGlow 2s ease-in-out infinite;
-}
-
-.submit-progress::after {
-    background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-
-.accept-progress::after {
-    background: linear-gradient(90deg, #34d399, #10b981);
-}
-
-.coins-progress::after {
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
-}
-
-@keyframes progressGlow {
-    0%, 100% { opacity: 0.8; }
-    50% { opacity: 1; }
-}
 
 /* Quick Actions */
 .quick-actions-modern {
     display: flex;
     gap: var(--spacing-4);
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
 }
 
 .quick-action-btn {
@@ -533,16 +295,26 @@
     .quick-actions-modern {
         flex-direction: column;
         gap: var(--spacing-2);
+        padding: var(--spacing-3);
+    }
+    
+    .hero-stats-grid {
+        max-width: 180px;
+        gap: var(--spacing-2);
+    }
+    
+    .hero-stat-item {
+        padding: var(--spacing-2);
+    }
+    
+    .hero-stat-number {
+        font-size: 1.25rem;
     }
 }
 
 @media (max-width: 768px) {
     .personal-hero-section {
         padding: var(--spacing-4) var(--spacing-3);
-    }
-    
-    .personal-dashboard {
-        padding: var(--spacing-3);
     }
     
     .hero-avatar {
@@ -558,17 +330,30 @@
         font-size: 0.8rem;
     }
     
-    .stat-card {
-        padding: var(--spacing-3);
+    .hero-stats-grid {
+        max-width: 160px;
+        gap: var(--spacing-2);
     }
     
-    .stat-number {
-        font-size: 1.25rem;
+    .hero-stat-item {
+        padding: var(--spacing-2);
+    }
+    
+    .hero-stat-number {
+        font-size: 1.1rem;
+    }
+    
+    .hero-stat-label {
+        font-size: 0.7rem;
     }
     
     .quick-action-btn {
         font-size: 0.8rem;
         padding: var(--spacing-2) var(--spacing-3);
+    }
+    
+    .quick-actions-modern {
+        padding: var(--spacing-3);
     }
 }
 
@@ -584,11 +369,11 @@
     }
 }
 
-.personal-hero-section, .personal-dashboard {
+.personal-hero-section, .quick-actions-modern {
     animation: fadeInUp 0.6s ease-out;
 }
 
-.personal-dashboard {
+.quick-actions-modern {
     animation-delay: 0.2s;
 }
 </style>

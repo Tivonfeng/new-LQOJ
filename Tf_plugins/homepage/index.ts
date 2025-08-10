@@ -1,6 +1,9 @@
 import {
     Context,
     UserModel,
+    RecordModel,
+    STATUS,
+    Time,
 } from 'hydrooj';
 
 async function getPersonal(domainId: string, userId: number, ctx: Context) {
@@ -20,10 +23,33 @@ async function getPersonal(domainId: string, userId: number, ctx: Context) {
             console.log('Score system not available or error:', scoreError.message);
         }
         
-        // 将积分数据添加到用户对象中
+        // 计算今日AC数量
+        let todayAccept = 0;
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            todayAccept = await RecordModel.coll.countDocuments({
+                uid: userId,
+                domainId: domainId,
+                status: STATUS.STATUS_ACCEPTED,
+                _id: {
+                    $gte: Time.getObjectID(today),
+                    $lt: Time.getObjectID(tomorrow)
+                }
+            });
+        } catch (recordError) {
+            console.log('Today AC calculation error:', recordError.message);
+        }
+        
+        // 将积分数据和今日AC添加到用户对象中
         const enhancedUdoc = {
             ...tfUdoc,
-            greenFlagCoins: userScore // 绿旗币数量
+            greenFlagCoins: userScore, // 绿旗币数量
+            todayAccept: todayAccept    // 今日AC数量
         };
         
         return [enhancedUdoc, domainId];
