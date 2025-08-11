@@ -302,24 +302,6 @@
     </div>
 </div>
 
-<!-- 自定义弹窗组件 -->
-<div class="custom-modal" id="customModal">
-    <div class="custom-modal-backdrop"></div>
-    <div class="custom-modal-content">
-        <div class="custom-modal-header">
-            <div class="custom-modal-icon" id="customModalIcon">ℹ️</div>
-            <h3 class="custom-modal-title" id="customModalTitle">提示</h3>
-            <button class="custom-modal-close" id="customModalClose">×</button>
-        </div>
-        <div class="custom-modal-body">
-            <p class="custom-modal-message" id="customModalMessage">消息内容</p>
-        </div>
-        <div class="custom-modal-footer">
-            <button class="custom-modal-btn custom-modal-btn-primary" id="customModalOk">确定</button>
-            <button class="custom-modal-btn custom-modal-btn-secondary" id="customModalCancel" style="display: none;">取消</button>
-        </div>
-    </div>
-</div>
 
 <style>
 /* Design System Variables */
@@ -1283,323 +1265,9 @@
     }
 }
 
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.machine-card, .prizes-section, .records-card, .actions-card, .stat-card, .instructions-section {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-
-.machine-card:nth-child(1) { animation-delay: 0.1s; }
-.machine-card:nth-child(2) { animation-delay: 0.2s; }
-.prizes-section { animation-delay: 0.3s; }
-.records-card { animation-delay: 0.4s; }
-.actions-card { animation-delay: 0.5s; }
-/* 自定义弹窗样式 */
-.custom-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2000;
-}
-
-.custom-modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-}
-
-.custom-modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    border-radius: var(--radius-xl);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    min-width: 420px;
-    max-width: 500px;
-    overflow: hidden;
-    animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -60%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-}
-
-.custom-modal-header {
-    padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-    border-bottom: 1px solid var(--border-color);
-    position: relative;
-}
-
-.custom-modal-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-
-.custom-modal-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-    flex: 1;
-}
-
-.custom-modal-close {
-    position: absolute;
-    top: var(--spacing-4);
-    right: var(--spacing-4);
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: var(--bg-secondary);
-    color: var(--text-muted);
-    border-radius: var(--radius-full);
-    font-size: 1.25rem;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.custom-modal-close:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    transform: scale(1.1);
-}
-
-.custom-modal-body {
-    padding: var(--spacing-6);
-}
-
-.custom-modal-message {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
-.custom-modal-footer {
-    padding: var(--spacing-4) var(--spacing-6) var(--spacing-6);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-3);
-}
-
-.custom-modal-btn {
-    padding: var(--spacing-2) var(--spacing-6);
-    border-radius: var(--radius-md);
-    border: none;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-    min-width: 80px;
-}
-
-.custom-modal-btn-primary {
-    background: var(--primary-color);
-    color: white;
-}
-
-.custom-modal-btn-primary:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.custom-modal-btn-secondary {
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-}
-
-.custom-modal-btn-secondary:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    transform: translateY(-1px);
-}
-
-/* 不同类型弹窗的图标和颜色 */
-.custom-modal.success .custom-modal-icon {
-    color: var(--success-color);
-}
-
-.custom-modal.error .custom-modal-icon {
-    color: var(--error-color);
-}
-
-.custom-modal.warning .custom-modal-icon {
-    color: var(--warning-color);
-}
-
-.custom-modal.info .custom-modal-icon {
-    color: var(--primary-color);
-}
-
-/* 响应式设计 */
-@media (max-width: 640px) {
-    .custom-modal-content {
-        min-width: 90vw;
-        max-width: 90vw;
-        margin: 0 var(--spacing-4);
-    }
-    
-    .custom-modal-footer {
-        flex-direction: column-reverse;
-    }
-    
-    .custom-modal-btn {
-        width: 100%;
-    }
-}
 </style>
 
 <script>
-// 自定义弹窗功能
-class CustomModal {
-    constructor() {
-        this.modal = document.getElementById('customModal');
-        this.backdrop = this.modal.querySelector('.custom-modal-backdrop');
-        this.closeBtn = document.getElementById('customModalClose');
-        this.okBtn = document.getElementById('customModalOk');
-        this.cancelBtn = document.getElementById('customModalCancel');
-        
-        this.icon = document.getElementById('customModalIcon');
-        this.title = document.getElementById('customModalTitle');
-        this.message = document.getElementById('customModalMessage');
-        
-        this.initEvents();
-    }
-    
-    initEvents() {
-        // 关闭按钮事件
-        this.closeBtn.addEventListener('click', () => this.hide());
-        this.backdrop.addEventListener('click', () => this.hide());
-        
-        // 确定按钮默认关闭弹窗
-        this.okBtn.addEventListener('click', () => this.hide());
-        this.cancelBtn.addEventListener('click', () => this.hide());
-    }
-    
-    show(options = {}) {
-        const {
-            type = 'info',
-            title = '提示',
-            message = '',
-            showCancel = false,
-            onOk = null,
-            onCancel = null
-        } = options;
-        
-        // 设置类型和图标
-        this.modal.className = `custom-modal ${type}`;
-        const icons = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-        
-        this.icon.textContent = icons[type] || icons.info;
-        this.title.textContent = title;
-        this.message.textContent = message;
-        
-        // 显示/隐藏取消按钮
-        this.cancelBtn.style.display = showCancel ? 'inline-block' : 'none';
-        
-        // 绑定回调函数
-        this.okBtn.onclick = () => {
-            if (onOk) onOk();
-            this.hide();
-        };
-        
-        this.cancelBtn.onclick = () => {
-            if (onCancel) onCancel();
-            this.hide();
-        };
-        
-        // 显示弹窗
-        this.modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-    
-    hide() {
-        this.modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-// 创建全局弹窗实例
-const customModal = new CustomModal();
-
-// 替代原生 alert 的函数
-function showAlert(message, title = '提示', type = 'info') {
-    customModal.show({
-        type,
-        title,
-        message
-    });
-}
-
-// 替代原生 confirm 的函数  
-function showConfirm(message, title = '确认', onOk = null, onCancel = null) {
-    customModal.show({
-        type: 'warning',
-        title,
-        message,
-        showCancel: true,
-        onOk,
-        onCancel
-    });
-}
-
-// 显示成功消息
-function showSuccess(message, title = '成功') {
-    customModal.show({
-        type: 'success',
-        title,
-        message
-    });
-}
-
-// 显示错误消息
-function showError(message, title = '错误') {
-    customModal.show({
-        type: 'error',
-        title,
-        message
-    });
-}
 
 // 抽奖功能JavaScript
 document.addEventListener('DOMContentLoaded', function() {
@@ -1691,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('抽奖失败:', error);
             console.error('错误详情:', error.message);
-            showError('抽奖失败，请重试: ' + error.message, '抽奖失败');
+            alert('抽奖失败，请重试: ' + error.message);
             
             // 停止动画，恢复按钮
             reels.forEach(reel => reel.classList.remove('spinning'));
@@ -1703,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 显示抽奖结果
     function showResult(result) {
         if (!result.success) {
-            showError(result.message || '抽奖失败', '抽奖失败');
+            alert(result.message || '抽奖失败');
             return;
         }
         
@@ -1762,14 +1430,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (result.success) {
-                showSuccess('{{ _("Prize claimed successfully!") }}', '{{ _("Success") }}');
+                alert('{{ _("Prize claimed successfully!") }}');
                 location.reload(); // 刷新页面更新积分
             } else {
-                showError(result.message || '{{ _("Failed to claim prize") }}', '{{ _("Failed") }}');
+                alert(result.message || '{{ _("Failed to claim prize") }}');
             }
         } catch (error) {
             console.error('领取失败:', error);
-            showError('{{ _("Failed to claim prize") }}', '{{ _("Error") }}');
+            alert('{{ _("Failed to claim prize") }}');
         }
     });
     

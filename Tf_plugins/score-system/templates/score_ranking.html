@@ -148,27 +148,7 @@
         {% endif %}
     </div>
     
-    <!-- Action Section -->
-    <div class="action-section">
-        <div class="action-cards">
-            <a href="{{ url('user_score') }}" class="action-card primary">
-                <div class="card-icon">👤</div>
-                <div class="card-content">
-                    <h3>{{ _('My Score') }}</h3>
-                    <p>{{ _('View Details') }}</p>
-                </div>
-            </a>
-            {% if canManage %}
-            <a href="{{ url('score_manage') }}" class="action-card">
-                <div class="card-icon">⚙️</div>
-                <div class="card-content">
-                    <h3>{{ _('Manage Scores') }}</h3>
-                    <p>{{ _('Manage') }}</p>
-                </div>
-            </a>
-            {% endif %}
-        </div>
-    </div>
+
     
     {% else %}
     <!-- Empty State -->
@@ -862,35 +842,6 @@
     }
 }
 
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.ranking-section, .action-section, .empty-content {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.ranking-row {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.ranking-row:nth-child(odd) { animation-delay: 0.05s; }
-.ranking-row:nth-child(even) { animation-delay: 0.1s; }
-
-.action-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.action-card:nth-child(1) { animation-delay: 0.1s; }
-.action-card:nth-child(2) { animation-delay: 0.2s; }
 </style>
 
 {% endblock %}

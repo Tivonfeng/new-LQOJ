@@ -136,28 +136,6 @@
         {% endif %}
     </div>
 
-    <!-- Action Section -->
-    <div class="action-section">
-        <div class="action-cards">
-            <a href="{{ url('score_ranking') }}" class="action-card primary">
-                <div class="card-icon">🏆</div>
-                <div class="card-content">
-                    <h3>{{ _('Rankings') }}</h3>
-                    <p>{{ _('View Full Ranking') }}</p>
-                </div>
-                <div class="card-arrow">→</div>
-            </a>
-            
-            <a href="{{ url('problem_main') }}" class="action-card">
-                <div class="card-icon">💻</div>
-                <div class="card-content">
-                    <h3>{{ _('Solve Problems') }}</h3>
-                    <p>{{ _('Earn Coins') }}</p>
-                </div>
-                <div class="card-arrow">→</div>
-            </a>
-        </div>
-    </div>
 </div>
 
 <style>
@@ -842,52 +820,6 @@
     }
 }
 
-/* Animations */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes progressFill {
-    from {
-        width: 0%;
-    }
-    to {
-        width: var(--progress-width);
-    }
-}
-
-.stats-section, .records-section, .action-section, .empty-content {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.stat-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.stat-card:nth-child(1) { animation-delay: 0.1s; }
-.stat-card:nth-child(2) { animation-delay: 0.2s; }
-.stat-card:nth-child(3) { animation-delay: 0.3s; }
-
-.record-row {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.record-row:nth-child(odd) { animation-delay: 0.05s; }
-.record-row:nth-child(even) { animation-delay: 0.1s; }
-
-.action-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.action-card:nth-child(1) { animation-delay: 0.1s; }
-.action-card:nth-child(2) { animation-delay: 0.2s; }
 </style>
 
 {% endblock %}
