@@ -15,6 +15,8 @@ import {
     type LotteryRecord,
     type UserLotteryStats,
     type ScoreConfig,
+    type DiceGameRecord,
+    type UserDiceStats,
 } from './src/services';
 
 // 导入处理器
@@ -27,7 +29,11 @@ import {
     LotteryDrawHandler,
     LotteryClaimHandler,
     LotteryHistoryHandler,
-    LotteryAdminHandler
+    LotteryAdminHandler,
+    DiceGameHandler,
+    DicePlayHandler,
+    DiceHistoryHandler,
+    DiceAdminHandler
 } from './src/handlers';
 
 // 默认配置已移至各Handler文件中
@@ -45,6 +51,8 @@ declare module 'hydrooj' {
         'lottery.prizes': LotteryPrize;
         'lottery.records': LotteryRecord;
         'lottery.stats': UserLotteryStats;
+        'dice.records': DiceGameRecord;
+        'dice.stats': UserDiceStats;
     }
 }
 
@@ -120,6 +128,12 @@ export default function apply(ctx: Context, config: any = {}) {
     
     // 管理员路由
     ctx.Route('lottery_admin', '/score/lottery/admin', LotteryAdminHandler);
+    
+    // 掷骰子游戏路由
+    ctx.Route('dice_game', '/score/dice', DiceGameHandler);
+    ctx.Route('dice_play', '/score/dice/play', DicePlayHandler);
+    ctx.Route('dice_history', '/score/dice/history', DiceHistoryHandler);
+    ctx.Route('dice_admin', '/score/dice/admin', DiceAdminHandler);
 
     // 注入导航栏
     ctx.injectUI('Nav', 'score_hall', {
@@ -128,6 +142,7 @@ export default function apply(ctx: Context, config: any = {}) {
     });
 
     console.log('积分大厅路由已注册，可通过 /score/hall 访问');
+    console.log('掷骰子游戏路由已注册，可通过 /score/dice 访问');
 
     console.log('Score System plugin loaded successfully!');
 }

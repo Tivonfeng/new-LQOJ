@@ -27,3 +27,10 @@ export {
 export {
     WeightCalculationService
 } from './WeightCalculationService';
+
+// 掷骰子游戏服务
+export {
+    DiceGameService,
+    type DiceGameRecord,
+    type UserDiceStats
+} from './DiceGameService';

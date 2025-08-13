@@ -88,6 +88,79 @@
         </div>
     </div>
 
+    <!-- Dice Game Spotlight -->
+    <div class="dice-game-spotlight">
+        <div class="spotlight-header">
+            <div class="spotlight-title">
+                <span class="title-icon">🎲</span>
+                <h2>{{ _('Dice Game') }}</h2>
+                <span class="subtitle">{{ _('Test Your Luck') }}</span>
+            </div>
+            {% if isLoggedIn %}
+            <div class="game-balance">
+                <span class="balance-label">{{ _('Your Balance') }}</span>
+                <span class="balance-amount">{{ currentCoins or 0 }}</span>
+                <span class="balance-unit">🏴</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="dice-content">
+            <div class="dice-machines">
+                <div class="machine-card dice-machine">
+                    <div class="machine-header">
+                        <div class="machine-icon">🎯</div>
+                        <div class="machine-info">
+                            <h3>{{ _('Guess Big or Small') }}</h3>
+                            <p>{{ _('50% Win Rate') }}</p>
+                        </div>
+                    </div>
+                    <div class="machine-price">
+                        <span class="price-amount">20</span>
+                        <span class="price-unit">🏴</span>
+                    </div>
+                    <div class="machine-features">
+                        <span class="feature-tag dice">{{ _('Double or Nothing') }}</span>
+                        <span class="feature-tag">{{ _('Instant Result') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-rules-card">
+                    <div class="rules-header">
+                        <div class="rules-icon">📋</div>
+                        <h4>{{ _('Game Rules') }}</h4>
+                    </div>
+                    <div class="rules-content">
+                        <div class="rule-item">
+                            <span class="rule-icon">💰</span>
+                            <span class="rule-text">{{ _('Bet 20 coins per game') }}</span>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-icon">🔢</span>
+                            <span class="rule-text">{{ _('1-3: Small, 4-6: Big') }}</span>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-icon">🎉</span>
+                            <span class="rule-text">{{ _('Win: +40 coins (+20 profit)') }}</span>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-icon">💸</span>
+                            <span class="rule-text">{{ _('Lose: -20 coins') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dice-cta">
+                <a href="{{ url('dice_game') }}" class="cta-button secondary">
+                    <span class="cta-icon">🎲</span>
+                    <span class="cta-text">{{ _('Start Playing') }}</span>
+                    <span class="cta-arrow">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Content Grid -->
     <div class="content-grid">
         <!-- Leaderboard -->
@@ -190,6 +263,14 @@
             <div class="actions-card">
                 <h4>{{ _('Quick Actions') }}</h4>
                 <div class="action-buttons">
+                    <a href="{{ url('dice_game') }}" class="action-btn">
+                        <span class="btn-icon">🎲</span>
+                        <span class="btn-text">{{ _('Dice Game') }}</span>
+                    </a>
+                    <a href="{{ url('lottery_hall') }}" class="action-btn">
+                        <span class="btn-icon">🎰</span>
+                        <span class="btn-text">{{ _('Lottery') }}</span>
+                    </a>
                     <a href="{{ url('score_ranking') }}" class="action-btn">
                         <span class="btn-icon">🏆</span>
                         <span class="btn-text">{{ _('Rankings') }}</span>
@@ -952,6 +1033,145 @@
     .cta-button {
         padding: var(--spacing-3) var(--spacing-6);
         font-size: 1rem;
+    }
+}
+
+/* Dice Game Spotlight */
+.dice-game-spotlight {
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.dice-game-spotlight::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">🎲</text></svg>') no-repeat;
+    background-size: contain;
+    opacity: 0.3;
+}
+
+.dice-content {
+    position: relative;
+    z-index: 1;
+}
+
+.dice-machines {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.machine-card.dice-machine {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.game-rules-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    color: white;
+}
+
+.rules-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+}
+
+.rules-icon {
+    font-size: 1.5rem;
+}
+
+.rules-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.rule-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.rule-icon {
+    font-size: 1.125rem;
+    width: 24px;
+    text-align: center;
+}
+
+.rule-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.feature-tag.dice {
+    background: var(--accent-color);
+    color: white;
+}
+
+.cta-button.secondary {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.cta-button.secondary:hover {
+    box-shadow: 0 20px 25px -5px rgba(220, 38, 38, 0.4), var(--shadow-xl);
+}
+
+.dice-cta {
+    text-align: center;
+}
+
+.game-balance {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Additional responsive styles for dice game */
+@media (max-width: 768px) {
+    .dice-machines {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    .dice-game-spotlight {
+        padding: var(--spacing-6);
+    }
+}
+
+@media (max-width: 640px) {
+    .dice-game-spotlight {
+        padding: var(--spacing-4);
+    }
+    
+    .rules-content {
+        gap: var(--spacing-2);
+    }
+    
+    .rule-text {
+        font-size: 0.8125rem;
     }
 }
 

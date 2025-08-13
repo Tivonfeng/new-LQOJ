@@ -122,7 +122,7 @@ draws guarantee: 次保底
 "Try Your Luck!": "祝你好运！"
 "Your drawing records": 您的抽奖记录
 "Go to Lottery Hall": 前往抽奖大厅
-"Next milestone: 10,000 points": "下个里程碑：10,000 积分"
+Next milestone 10000 points: 下个里程碑：10000 积分
 "Milestone reached!": "里程碑已达成！"
 "High efficiency!": "高效率！"
 "Good progress": 良好进度
@@ -146,3 +146,51 @@ Page: 第
 of: "页，共"
 Total: 总计
 records: 条记录
+
+# 掷骰子游戏
+Dice Game: 掷骰子游戏
+Dice Game History: 掷骰子游戏历史
+Roll the Dice: 掷骰子
+Guess Big or Small: 猜大小
+Test Your Luck: 测试运气
+Test Your Luck with Big or Small: 猜大小测试运气
+Your Complete Gaming Records: 您的完整游戏记录
+Small: 小
+Big: 大
+Bet: 投注
+Dice Win: 胜利
+Dice Loss: 失败
+Loss: 失败
+Profitable Session: 盈利局
+Losing Session: 亏损局
+Small Big Range: 1-3小，4-6大
+Bet 20 coins per game: 每局投注20绿旗币
+Win Double Bet: 获胜双倍奖励
+"Choose your prediction and roll!": "选择您的预测并掷骰子！"
+"Insufficient balance. Need": "余额不足，需要"
+to play: 绿旗币才能游戏
+Earn More Coins: 获得更多绿旗币
+Start Your First Game: 开始第一局游戏
+Continue Playing: 继续游戏
+Game Statistics: 游戏统计
+Your Performance: 您的表现
+Total Games: 总游戏数
+Wins: 胜利次数
+Net Profit: 净利润
+Streak Records: 连胜记录
+Dice Current Streak: 当前连胜
+Best Streak: 最佳连胜
+Game Records: 游戏记录
+total records: 条总记录
+No Game Records Yet: 暂无游戏记录
+"Start playing to build your gaming history!": "开始游戏来建立您的游戏历史！"
+This Page Stats: 本页统计
+Games: 游戏数
+Net: 净收益
+Quick Navigation: 快速导航
+Play Dice Game: 玩掷骰子游戏
+Dice Score Hall: 积分大厅
+Lottery: 抽奖
+Game Rules: 游戏规则
+Profit: 利润
+coins: 绿旗币

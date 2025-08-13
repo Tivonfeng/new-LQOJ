@@ -16,3 +16,11 @@ export {
     LotteryHistoryHandler,
     LotteryAdminHandler
 } from './LotteryHandlers';
+
+// 掷骰子游戏相关处理器
+export {
+    DiceGameHandler,
+    DicePlayHandler,
+    DiceHistoryHandler,
+    DiceAdminHandler
+} from './DiceGameHandlers';
