@@ -106,12 +106,20 @@
                         </td>
                         <td class="time-cell">
                             <div class="time-info">
-                                {% if record.createdAt and record.createdAt.strftime %}
-                                <span class="time-main">{{ record.createdAt.strftime('%m/%d') }}</span>
-                                <span class="time-sub">{{ record.createdAt.strftime('%H:%M') }}</span>
+                                {% if record.createdAt %}
+                                    {% if record.createdAt.strftime %}
+                                    <span class="time-main">{{ record.createdAt.strftime('%m/%d') }}</span>
+                                    <span class="time-sub">{{ record.createdAt.strftime('%H:%M') }}</span>
+                                    {% elif record.createdAt|string %}
+                                    <span class="time-main">{{ record.createdAt|string }}</span>
+                                    <span class="time-sub">{{ _('Last Updated') }}</span>
+                                    {% else %}
+                                    <span class="time-main">{{ _('Recent') }}</span>
+                                    <span class="time-sub"></span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="time-main">N/A</span>
-                                <span class="time-sub"></span>
+                                <span class="time-main">{{ _('No Data') }}</span>
+                                <span class="time-sub">{{ _('N/A') }}</span>
                                 {% endif %}
                             </div>
                         </td>

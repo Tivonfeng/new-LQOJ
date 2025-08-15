@@ -37,12 +37,20 @@
                     <tr class="record-row {{ 'win' if record.result == 'win' else 'lose' }}">
                         <td class="time-cell">
                             <div class="time-info">
-                                {% if record.drawTime and record.drawTime.strftime %}
-                                <span class="time-main">{{ record.drawTime.strftime('%m/%d') }}</span>
-                                <span class="time-sub">{{ record.drawTime.strftime('%H:%M') }}</span>
+                                {% if record.drawTime %}
+                                    {% if record.drawTime.strftime %}
+                                    <span class="time-main">{{ record.drawTime.strftime('%m/%d') }}</span>
+                                    <span class="time-sub">{{ record.drawTime.strftime('%H:%M') }}</span>
+                                    {% elif record.drawTime|string %}
+                                    <span class="time-main">{{ record.drawTime|string }}</span>
+                                    <span class="time-sub">{{ _('Last Updated') }}</span>
+                                    {% else %}
+                                    <span class="time-main">{{ _('Recent') }}</span>
+                                    <span class="time-sub"></span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="time-main">N/A</span>
-                                <span class="time-sub"></span>
+                                <span class="time-main">{{ _('No Data') }}</span>
+                                <span class="time-sub">{{ _('N/A') }}</span>
                                 {% endif %}
                             </div>
                         </td>

@@ -240,7 +240,19 @@
                 <div class="recent-records">
                     {% for record in recentRecords %}
                     <div class="record-item {{ 'win' if record.result == 'win' else 'lose' }}">
-                        <div class="record-time">{{ record.drawTime }}</div>
+                        <div class="record-time">
+                            {% if record.drawTime %}
+                                {% if record.drawTime.strftime %}
+                                {{ record.drawTime.strftime('%m/%d %H:%M') }}
+                                {% elif record.drawTime|string %}
+                                {{ record.drawTime|string }}
+                                {% else %}
+                                {{ _('Recent') }}
+                                {% endif %}
+                            {% else %}
+                            {{ _('N/A') }}
+                            {% endif %}
+                        </div>
                         <div class="record-type">
                             {{ lotteryTypes[record.lotteryType].icon }} {{ lotteryTypes[record.lotteryType].name }}
                         </div>

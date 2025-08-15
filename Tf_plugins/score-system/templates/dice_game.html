@@ -177,7 +177,19 @@
                                 {{ '✓' if game.won else '✗' }} {{ _('Win') if game.won else _('Loss') }}
                             </span>
                         </div>
-                        <div class="game-time">{{ game.gameTime }}</div>
+                        <div class="game-time">
+                            {% if game.gameTime %}
+                                {% if game.gameTime.strftime %}
+                                {{ game.gameTime.strftime('%m/%d %H:%M') }}
+                                {% elif game.gameTime|string %}
+                                {{ game.gameTime|string }}
+                                {% else %}
+                                {{ _('Recent') }}
+                                {% endif %}
+                            {% else %}
+                            {{ _('N/A') }}
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="game-profit {{ 'positive' if game.netGain > 0 else 'negative' }}">
                         {{ game.netGain > 0 and '+' or '' }}{{ game.netGain }}

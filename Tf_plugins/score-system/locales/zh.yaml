@@ -210,3 +210,16 @@ coins: 绿旗币
 "Your Statistics": "您的统计"
 "games": "局游戏"
 "Rolling...": "掷骰中..."
+
+# score_hall.html 缺失的翻译项
+"50% Win Rate": "50% 胜率"
+"Double or Nothing": "双倍奖励或全无"
+"Instant Result": "即时结果"
+"Win: +40 coins (+20 profit)": "获胜：+40绿旗币（+20利润）"
+"Lose: -20 coins": "失败：-20绿旗币"
+"Start Playing": "开始游戏"
+
+# score_ranking.html 翻译项
+"Recent": "最近"
+"No Data": "无数据"
+"N/A": "不可用"

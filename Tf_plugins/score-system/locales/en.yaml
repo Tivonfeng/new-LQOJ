@@ -209,3 +209,16 @@ coins: coins
 "Your Statistics": "Your Statistics"
 "games": "games"
 "Rolling...": "Rolling..."
+
+# score_hall.html missing translations
+"50% Win Rate": "50% Win Rate"
+"Double or Nothing": "Double or Nothing"
+"Instant Result": "Instant Result"
+"Win: +40 coins (+20 profit)": "Win: +40 coins (+20 profit)"
+"Lose: -20 coins": "Lose: -20 coins"
+"Start Playing": "Start Playing"
+
+# score_ranking.html translations
+"Recent": "Recent"
+"No Data": "No Data"
+"N/A": "N/A"

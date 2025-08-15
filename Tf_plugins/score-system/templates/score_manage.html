@@ -104,10 +104,16 @@
                                         <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
                                     </div>
                                     <div class="time-info">
-                                        {% if record.createdAt and record.createdAt.strftime %}
-                                        {{ record.createdAt.strftime('%m/%d %H:%M') }}
+                                        {% if record.createdAt %}
+                                            {% if record.createdAt.strftime %}
+                                            {{ record.createdAt.strftime('%m/%d %H:%M') }}
+                                            {% elif record.createdAt|string %}
+                                            {{ record.createdAt|string }}
+                                            {% else %}
+                                            {{ _('Recent') }}
+                                            {% endif %}
                                         {% else %}
-                                        N/A
+                                        {{ _('N/A') }}
                                         {% endif %}
                                     </div>
                                 </div>

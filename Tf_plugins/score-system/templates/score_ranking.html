@@ -28,7 +28,6 @@
                         <th>{{ _('User') }}</th>
                         <th>{{ _('Total Score') }}</th>
                         <th>{{ _('AC Count') }}</th>
-                        <th>{{ _('Average Score per AC') }}</th>
                         <th>{{ _('Last Updated') }}</th>
                     </tr>
                 </thead>
@@ -90,19 +89,22 @@
                                 <span class="ac-count">{{ user.acCount }}</span>
                             </div>
                         </td>
-                        <td class="average-cell">
-                            <div class="average-value">
-                                {{ (user.totalScore / user.acCount) | round(1) if user.acCount > 0 else 0 }}
-                            </div>
-                        </td>
                         <td class="time-cell">
                             <div class="time-info">
-                                {% if user.lastUpdated and user.lastUpdated.strftime %}
-                                <span class="time-main">{{ user.lastUpdated.strftime('%m/%d') }}</span>
-                                <span class="time-sub">{{ user.lastUpdated.strftime('%H:%M') }}</span>
+                                {% if user.lastUpdated %}
+                                    {% if user.lastUpdated.strftime %}
+                                    <span class="time-main">{{ user.lastUpdated.strftime('%m/%d') }}</span>
+                                    <span class="time-sub">{{ user.lastUpdated.strftime('%H:%M') }}</span>
+                                    {% elif user.lastUpdated|string %}
+                                    <span class="time-main">{{ user.lastUpdated|string }}</span>
+                                    <span class="time-sub">{{ _('Last Updated') }}</span>
+                                    {% else %}
+                                    <span class="time-main">{{ _('Recent') }}</span>
+                                    <span class="time-sub"></span>
+                                    {% endif %}
                                 {% else %}
-                                <span class="time-main">N/A</span>
-                                <span class="time-sub"></span>
+                                <span class="time-main">{{ _('No Data') }}</span>
+                                <span class="time-sub">{{ _('N/A') }}</span>
                                 {% endif %}
                             </div>
                         </td>
@@ -818,9 +820,7 @@
     
     /* Hide less important columns on small screens */
     .ranking-table th:nth-child(5),
-    .ranking-table td:nth-child(5),
-    .ranking-table th:nth-child(6),
-    .ranking-table td:nth-child(6) {
+    .ranking-table td:nth-child(5) {
         display: none;
     }
     

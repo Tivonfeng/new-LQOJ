@@ -137,7 +137,19 @@
                                 <span class="result-info">{{ record.resultText }} vs {{ record.guessText }}</span>
                             </div>
                             <div class="game-meta">
-                                <span class="game-time">{{ record.gameTime }}</span>
+                                <span class="game-time">
+                                    {% if record.gameTime %}
+                                        {% if record.gameTime.strftime %}
+                                        {{ record.gameTime.strftime('%m/%d %H:%M') }}
+                                        {% elif record.gameTime|string %}
+                                        {{ record.gameTime|string }}
+                                        {% else %}
+                                        {{ _('Recent') }}
+                                        {% endif %}
+                                    {% else %}
+                                    {{ _('N/A') }}
+                                    {% endif %}
+                                </span>
                             </div>
                         </div>
                         
