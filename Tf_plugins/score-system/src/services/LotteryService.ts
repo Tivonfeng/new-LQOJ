@@ -82,11 +82,11 @@ export const LOTTERY_TYPES = {
 } as const;
 
 export const PRIZE_RARITY = {
-    common: { name: '普通', color: '#9E9E9E', weight: 60 },
-    rare: { name: '稀有', color: '#2196F3', weight: 24 },
-    epic: { name: '史诗', color: '#9C27B0', weight: 11 },
-    legendary: { name: '传说', color: '#FF9800', weight: 2 },
-    no_prize: { name: '未中奖', color: '#ef4444', weight: 3 }
+    common: { name: '普通', color: '#9E9E9E', weight: 55 },
+    rare: { name: '稀有', color: '#2196F3', weight: 20 },
+    epic: { name: '史诗', color: '#9C27B0', weight: 15 },
+    legendary: { name: '传说', color: '#FF9800', weight: 5 },
+    no_prize: { name: '未中奖', color: '#ef4444', weight: 5 }
 } as const;
 
 /**
@@ -331,14 +331,61 @@ export class LotteryService {
             ]
         };
 
-        // 高级抽奖提高稀有奖品权重
-        if (lotteryType === 'premium' && !guaranteeMode) {
-            // 可以在这里调整权重逻辑
-        }
-
-        return await this.ctx.db.collection('lottery.prizes' as any)
+        const prizes = await this.ctx.db.collection('lottery.prizes' as any)
             .find(query)
             .toArray();
+
+        // 高级抽奖调整权重分配
+        if (lotteryType === 'premium' && !guaranteeMode) {
+            return this.adjustPremiumWeights(prizes);
+        }
+
+        return prizes;
+    }
+
+    /**
+     * 为高级抽奖调整奖品权重
+     * 普通10%，稀有50%，史诗30%，传说10%
+     */
+    private adjustPremiumWeights(prizes: LotteryPrize[]): LotteryPrize[] {
+        const premiumWeights = {
+            common: 3000,      // 普通 10%
+            rare: 5000,        // 稀有 50%
+            epic: 1500,        // 史诗 30%
+            legendary: 500    // 传说 10%
+        };
+
+        // 按稀有度分组
+        const groupedPrizes: Record<string, LotteryPrize[]> = {
+            common: [],
+            rare: [],
+            epic: [],
+            legendary: []
+        };
+
+        prizes.forEach(prize => {
+            if (groupedPrizes[prize.rarity]) {
+                groupedPrizes[prize.rarity].push(prize);
+            }
+        });
+
+        // 调整每个奖品的权重
+        const adjustedPrizes: LotteryPrize[] = [];
+        Object.entries(groupedPrizes).forEach(([rarity, rarityPrizes]) => {
+            if (rarityPrizes.length === 0) return;
+
+            const totalWeight = premiumWeights[rarity as keyof typeof premiumWeights] || 0;
+            const individualWeight = Math.floor(totalWeight / rarityPrizes.length);
+
+            rarityPrizes.forEach(prize => {
+                adjustedPrizes.push({
+                    ...prize,
+                    weight: individualWeight
+                });
+            });
+        });
+
+        return adjustedPrizes;
     }
 
     /**
@@ -557,9 +604,10 @@ export class LotteryService {
 
     /**
      * 获取权重分布预览
+     * @param lotteryType 抽奖类型
      */
-    async getWeightDistribution() {
-        return await this.weightCalculationService.getWeightDistribution();
+    async getWeightDistribution(lotteryType: 'basic' | 'premium' = 'basic') {
+        return await this.weightCalculationService.getWeightDistribution(lotteryType);
     }
 
     /**

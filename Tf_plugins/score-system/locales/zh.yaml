@@ -194,3 +194,19 @@ Lottery: 抽奖
 Game Rules: 游戏规则
 Profit: 利润
 coins: 绿旗币
+
+# 补充缺失的 dice_game.html 翻译项
+"1-3: Small, 4-6: Big": "1-3为小，4-6为大"
+"Better luck next time": "下次好运"
+"Dice Value": "骰子点数"
+"Game History": "游戏历史"
+"Game failed": "游戏失败"
+"Guessed": "您的猜测"
+"Network error, please try again": "网络错误，请重试"
+"Page will refresh in 3 seconds...": "页面将在3秒后刷新..."
+"Recent Games": "最近游戏"
+"View History": "查看历史"
+"Your Guess": "您的猜测"
+"Your Statistics": "您的统计"
+"games": "局游戏"
+"Rolling...": "掷骰中..."

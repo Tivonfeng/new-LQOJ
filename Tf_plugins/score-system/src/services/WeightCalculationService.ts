@@ -10,10 +10,18 @@ export class WeightCalculationService {
 
     // 稀有度基础权重配置 (放大100倍避免小数)
     private readonly RARITY_BASE_WEIGHTS = {
-        common: 7000,      // 普通 70% (提高中奖率)
-        rare: 2000,        // 稀有 20%
-        epic: 800,         // 史诗 8%
-        legendary: 200     // 传说 2%
+        common: 6000,      // 普通 50%
+        rare: 2000,        // 稀有 30%
+        epic: 1500,        // 史诗 15%
+        legendary: 500     // 传说 5%
+    };
+
+    // 高级抽奖权重配置 (普通10%，稀有50%，史诗30%，传说10%)
+    private readonly PREMIUM_RARITY_WEIGHTS = {
+        common: 3000,      // 普通 10%
+        rare: 5000,        // 稀有 50%
+        epic: 1500,        // 史诗 30%
+        legendary: 500    // 传说 10%
     };
     
     // 未中奖权重 - 降低未中奖概率，提升用户体验
@@ -142,8 +150,9 @@ export class WeightCalculationService {
 
     /**
      * 获取权重分布预览
+     * @param lotteryType 抽奖类型，用于显示不同权重分布
      */
-    async getWeightDistribution(): Promise<{
+    async getWeightDistribution(lotteryType: 'basic' | 'premium' = 'basic'): Promise<{
         rarity: string;
         rarityLabel: string;
         prizeCount: number;
@@ -156,7 +165,10 @@ export class WeightCalculationService {
             .toArray();
 
         const groupedPrizes = this.groupByRarity(allPrizes);
-        const totalSystemWeight = Object.values(this.RARITY_BASE_WEIGHTS).reduce((sum, w) => sum + w, 0);
+        
+        // 根据抽奖类型选择权重配置
+        const weightConfig = lotteryType === 'premium' ? this.PREMIUM_RARITY_WEIGHTS : this.RARITY_BASE_WEIGHTS;
+        const totalSystemWeight = Object.values(weightConfig).reduce((sum, w) => sum + w, 0);
 
         const rarityLabels = {
             common: '普通',
@@ -167,7 +179,7 @@ export class WeightCalculationService {
         };
 
         const result = Object.entries(groupedPrizes).map(([rarity, prizes]) => {
-            const baseWeight = this.RARITY_BASE_WEIGHTS[rarity as keyof typeof this.RARITY_BASE_WEIGHTS] || 0;
+            const baseWeight = weightConfig[rarity as keyof typeof weightConfig] || 0;
             const individualWeight = prizes.length > 0 ? Math.floor(baseWeight / prizes.length) : 0;
             const probability = ((baseWeight / totalSystemWeight) * 100).toFixed(1);
 
