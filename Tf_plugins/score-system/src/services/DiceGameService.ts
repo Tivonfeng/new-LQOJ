@@ -8,13 +8,13 @@ export interface DiceGameRecord {
     _id?: any;
     uid: number;
     domainId: string;
-    bet: number; // 投入积分 (固定20)
+    bet: number; // 投入积分 (20/50/100)
     guess: 'big' | 'small'; // 用户猜测
     diceValue: number; // 骰子点数 (1-6)
     actualResult: 'big' | 'small'; // 实际大小 (1-3为小，4-6为大)
     won: boolean; // 是否获胜
-    reward: number; // 奖励积分 (获胜40，失败0)
-    netGain: number; // 净收益 (+20 或 -20)
+    reward: number; // 奖励积分 (获胜2倍投注，失败0)
+    netGain: number; // 净收益 (获胜+投注额，失败-投注额)
     gameTime: Date;
 }
 
@@ -42,10 +42,8 @@ export class DiceGameService {
     private scoreService: ScoreService;
 
     // 游戏常量
-    private static readonly BET_AMOUNT = 20; // 固定投注20积分
-    private static readonly WIN_REWARD = 40; // 获胜奖励40积分
-    private static readonly NET_WIN = 20; // 净收益20积分
-    private static readonly NET_LOSS = -20; // 净亏损20积分
+    private static readonly AVAILABLE_BETS = [20, 50, 100]; // 可选投注额度
+    private static readonly WIN_MULTIPLIER = 2; // 获胜倍数(2倍)
 
     constructor(ctx: Context, scoreService: ScoreService) {
         this.ctx = ctx;
@@ -57,9 +55,10 @@ export class DiceGameService {
      * @param domainId 域ID
      * @param uid 用户ID
      * @param guess 用户猜测('big' | 'small')
+     * @param betAmount 投注金额(20/50/100)
      * @returns 游戏结果
      */
-    async playDiceGame(domainId: string, uid: number, guess: 'big' | 'small'): Promise<{
+    async playDiceGame(domainId: string, uid: number, guess: 'big' | 'small', betAmount: number = 20): Promise<{
         success: boolean;
         message?: string;
         result?: DiceGameRecord;
@@ -69,12 +68,17 @@ export class DiceGameService {
             return { success: false, message: '无效的猜测选项' };
         }
 
+        // 验证投注金额
+        if (!DiceGameService.AVAILABLE_BETS.includes(betAmount)) {
+            return { success: false, message: '无效的投注金额，可选择20、50或100积分' };
+        }
+
         // 检查用户积分
         const userScore = await this.scoreService.getUserScore(domainId, uid);
-        if (!userScore || userScore.totalScore < DiceGameService.BET_AMOUNT) {
+        if (!userScore || userScore.totalScore < betAmount) {
             return { 
                 success: false, 
-                message: `积分不足，需要${DiceGameService.BET_AMOUNT}积分才能游戏` 
+                message: `积分不足，需要${betAmount}积分才能游戏` 
             };
         }
 
@@ -82,33 +86,33 @@ export class DiceGameService {
         const diceValue = Math.floor(Math.random() * 6) + 1;
         const actualResult: 'big' | 'small' = diceValue >= 4 ? 'big' : 'small';
         const won = guess === actualResult;
-        const reward = won ? DiceGameService.WIN_REWARD : 0;
-        const netGain = won ? DiceGameService.NET_WIN : DiceGameService.NET_LOSS;
+        const reward = won ? betAmount * DiceGameService.WIN_MULTIPLIER : 0;
+        const netGain = won ? betAmount : -betAmount;
 
         console.log(`[DiceGame] User ${uid} - Dice: ${diceValue}, Guess: ${guess}, Result: ${actualResult}, Won: ${won}`);
 
         // 扣除投注积分
-        await this.scoreService.updateUserScore(domainId, uid, -DiceGameService.BET_AMOUNT);
+        await this.scoreService.updateUserScore(domainId, uid, -betAmount);
         await this.scoreService.addScoreRecord({
             uid,
             domainId,
             pid: 0,
             recordId: null,
-            score: -DiceGameService.BET_AMOUNT,
-            reason: `掷骰子游戏投注`,
+            score: -betAmount,
+            reason: `掷骰子游戏投注${betAmount}积分`,
             problemTitle: '掷骰子游戏'
         });
 
         // 如果获胜，发放奖励
         if (won) {
-            await this.scoreService.updateUserScore(domainId, uid, DiceGameService.WIN_REWARD);
+            await this.scoreService.updateUserScore(domainId, uid, reward);
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
                 pid: 0,
                 recordId: null,
-                score: DiceGameService.WIN_REWARD,
-                reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult})`,
+                score: reward,
+                reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
                 problemTitle: '掷骰子游戏'
             });
         }
@@ -117,7 +121,7 @@ export class DiceGameService {
         const gameRecord: Omit<DiceGameRecord, '_id'> = {
             uid,
             domainId,
-            bet: DiceGameService.BET_AMOUNT,
+            bet: betAmount,
             guess,
             diceValue,
             actualResult,
@@ -131,7 +135,7 @@ export class DiceGameService {
         const finalRecord = { ...gameRecord, _id: recordResult.insertedId };
 
         // 更新用户统计
-        await this.updateUserStats(domainId, uid, won, netGain);
+        await this.updateUserStats(domainId, uid, won, netGain, betAmount, reward);
 
         console.log(`[DiceGame] ✅ User ${uid} game completed - Net: ${netGain}`);
 
@@ -144,8 +148,10 @@ export class DiceGameService {
      * @param uid 用户ID
      * @param won 是否获胜
      * @param netGain 净收益
+     * @param betAmount 投注金额
+     * @param reward 奖励金额
      */
-    private async updateUserStats(domainId: string, uid: number, won: boolean, netGain: number): Promise<void> {
+    private async updateUserStats(domainId: string, uid: number, won: boolean, netGain: number, betAmount: number, reward: number): Promise<void> {
         // 先获取当前统计以计算连胜
         const currentStats = await this.ctx.db.collection('dice.stats' as any).findOne({ domainId, uid });
         
@@ -171,8 +177,8 @@ export class DiceGameService {
             $inc: {
                 totalGames: 1,
                 totalWins: won ? 1 : 0,
-                totalBet: DiceGameService.BET_AMOUNT,
-                totalReward: won ? DiceGameService.WIN_REWARD : 0,
+                totalBet: betAmount,
+                totalReward: reward,
                 netProfit: netGain
             },
             $set: { 
@@ -300,10 +306,8 @@ export class DiceGameService {
      */
     getGameConfig() {
         return {
-            betAmount: DiceGameService.BET_AMOUNT,
-            winReward: DiceGameService.WIN_REWARD,
-            netWin: DiceGameService.NET_WIN,
-            netLoss: DiceGameService.NET_LOSS,
+            availableBets: DiceGameService.AVAILABLE_BETS,
+            winMultiplier: DiceGameService.WIN_MULTIPLIER,
             rules: {
                 small: '1-3',
                 big: '4-6'

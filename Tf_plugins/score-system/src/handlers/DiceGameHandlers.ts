@@ -38,6 +38,9 @@ export class DiceGameHandler extends Handler {
         // 获取游戏配置
         const gameConfig = diceService.getGameConfig();
 
+        // 检查用户可以下注的最大金额
+        const availableBets = gameConfig.availableBets.filter(bet => currentCoins >= bet);
+
         // 格式化游戏记录时间
         const formattedGames = recentGames.map(game => ({
             ...game,
@@ -57,7 +60,8 @@ export class DiceGameHandler extends Handler {
         this.response.template = 'dice_game.html';
         this.response.body = {
             currentCoins,
-            canPlay: currentCoins >= gameConfig.betAmount,
+            canPlay: availableBets.length > 0,
+            availableBets,
             gameConfig,
             userStats: userStats || {
                 totalGames: 0,
@@ -83,10 +87,16 @@ export class DicePlayHandler extends Handler {
     }
 
     async post() {
-        const { guess } = this.request.body;
+        const { guess, betAmount } = this.request.body;
         
         if (!['big', 'small'].includes(guess)) {
             this.response.body = { success: false, message: '无效的猜测选项' };
+            return;
+        }
+
+        const betAmountNum = parseInt(betAmount);
+        if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
+            this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
             return;
         }
 
@@ -96,7 +106,8 @@ export class DicePlayHandler extends Handler {
         const result = await diceService.playDiceGame(
             this.domain._id,
             this.user._id,
-            guess as 'big' | 'small'
+            guess as 'big' | 'small',
+            betAmountNum
         );
         
         this.response.body = result;
