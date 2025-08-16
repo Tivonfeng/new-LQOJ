@@ -122,7 +122,7 @@ draws guarantee: 次保底
 "Try Your Luck!": "祝你好运！"
 "Your drawing records": 您的抽奖记录
 "Go to Lottery Hall": 前往抽奖大厅
-Next milestone 10000 points: 下个里程碑：10000 积分
+'Next milestone 10000 points': '下个里程碑：10000 积分'
 "Milestone reached!": "里程碑已达成！"
 "High efficiency!": "高效率！"
 "Good progress": 良好进度
@@ -160,13 +160,13 @@ Big: 大
 Bet: 投注
 "Choose Bet Amount": 选择投注金额
 "Bet Options": 投注选项
-"Insufficient balance. Need at least 20": 余额不足，至少需要20
+'Insufficient balance. Need at least 20': '余额不足，至少需要20'
 Dice Win: 胜利
 Dice Loss: 失败
 Loss: 失败
 Profitable Session: 盈利局
 Losing Session: 亏损局
-Small Big Range: 1-3小，4-6大
+'Small Big Range': '1-3小，4-6大'
 Bet 20 coins per game: 每局投注20绿旗币
 Win Double Bet: 获胜双倍奖励
 "Choose your prediction and roll!": "选择您的预测并掷骰子！"
@@ -199,7 +199,7 @@ Profit: 利润
 coins: 绿旗币
 
 # 补充缺失的 dice_game.html 翻译项
-"1-3: Small, 4-6: Big": "1-3为小，4-6为大"
+Dice Range Rule: "1-3为小，4-6为大"
 "Better luck next time": "下次好运"
 "Dice Value": "骰子点数"
 "Game History": "游戏历史"
@@ -218,11 +218,8 @@ coins: 绿旗币
 "50% Win Rate": "50% 胜率"
 "Double or Nothing": "双倍奖励或全无"
 "Instant Result": "即时结果"
-"Win: +40 coins (+20 profit)": "获胜：+40绿旗币（+20利润）"
-"Lose: -20 coins": "失败：-20绿旗币"
+Win Coins Profit: "获胜：+40绿旗币（+20利润）"
+Lose Coins: "失败：-20绿旗币"
 "Start Playing": "开始游戏"
 
-# score_ranking.html 翻译项
-"Recent": "最近"
-"No Data": "无数据"
-"N/A": "不可用"
+

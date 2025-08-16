@@ -67,9 +67,10 @@ export const LOTTERY_TYPES = {
     basic: {
         id: 'basic',
         name: '普通抽奖',
-        cost: 10,
+        cost: 20,
         icon: '🎲',
-        description: '消耗10绿旗币，有机会获得各种奖励'
+        description: '消耗20绿旗币，有机会获得各种奖励',
+        noPrizeChance: 0.3 // 30%未中奖概率
     },
     premium: {
         id: 'premium',
@@ -77,16 +78,16 @@ export const LOTTERY_TYPES = {
         cost: 50,
         icon: '💎',
         description: '消耗50绿旗币，获得稀有奖励概率更高',
-        guaranteeDraws: 10
+        guaranteeDraws: 10,
+        noPrizeChance: 0.1 // 10%未中奖概率
     }
 } as const;
 
 export const PRIZE_RARITY = {
     common: { name: '普通', color: '#9E9E9E', weight: 55 },
-    rare: { name: '稀有', color: '#2196F3', weight: 20 },
-    epic: { name: '史诗', color: '#9C27B0', weight: 15 },
-    legendary: { name: '传说', color: '#FF9800', weight: 5 },
-    no_prize: { name: '未中奖', color: '#ef4444', weight: 5 }
+    rare: { name: '稀有', color: '#2196F3', weight: 30 },
+    epic: { name: '史诗', color: '#9C27B0', weight: 12 },
+    legendary: { name: '传说', color: '#FF9800', weight: 3 }
 } as const;
 
 /**
@@ -187,7 +188,7 @@ export class LotteryService {
         }
 
         // 执行抽奖算法
-        const drawnPrize = this.performDraw(availablePrizes, shouldGuaranteeWin);
+        const drawnPrize = this.performDraw(availablePrizes, shouldGuaranteeWin, lotteryConfig.noPrizeChance);
         const won = drawnPrize !== null;
 
         // 扣除积分并记录
@@ -245,9 +246,10 @@ export class LotteryService {
      * 抽奖算法
      * @param prizes 可用奖品列表
      * @param guarantee 是否保底
+     * @param noPrizeChance 未中奖概率 (0-1)
      * @returns 抽中的奖品或null
      */
-    private performDraw(prizes: LotteryPrize[], guarantee: boolean): LotteryPrize | null {
+    private performDraw(prizes: LotteryPrize[], guarantee: boolean, noPrizeChance: number = 0): LotteryPrize | null {
         if (guarantee) {
             // 保底情况下，只从稀有以上奖品中选择，跳过未中奖逻辑
             const guaranteePrizes = prizes.filter(p => 
@@ -270,7 +272,15 @@ export class LotteryService {
             }
         }
 
-        // 正常抽奖逻辑：确保100%中奖
+        // 正常抽奖逻辑：首先判断是否未中奖
+        const noPrizeRoll = Math.random();
+        if (noPrizeRoll < noPrizeChance) {
+            // 未中奖
+            console.log(`[LotteryService] 未中奖 - 随机值: ${noPrizeRoll}, 未中奖概率: ${noPrizeChance}`);
+            return null;
+        }
+
+        // 中奖，按权重选择奖品
         const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
 
         if (totalWeight === 0) return null; // 没有可用奖品
@@ -278,18 +288,21 @@ export class LotteryService {
         const random = Math.random() * totalWeight;
         let currentWeight = 0;
 
-        // 按权重选择奖品，确保必中
+        // 按权重选择奖品
         for (const prize of prizes) {
             currentWeight += prize.weight;
             if (random <= currentWeight) {
+                console.log(`[LotteryService] 中奖 - 奖品: ${prize.name}, 稀有度: ${prize.rarity}`);
                 return prize;
             }
         }
 
         // 兜底：如果没有选中任何奖品，返回权重最大的奖品
-        return prizes.reduce((max, prize) => 
+        const fallbackPrize = prizes.reduce((max, prize) => 
             prize.weight > max.weight ? prize : max, prizes[0]
         );
+        console.log(`[LotteryService] 兜底中奖 - 奖品: ${fallbackPrize.name}`);
+        return fallbackPrize;
     }
 
     /**
