@@ -54,7 +54,16 @@
                                 <div class="user-details">
                                     <div class="user-avatar">👤</div>
                                     <div class="user-data">
-                                        <div class="user-id">{{ user.uid }}</div>
+                                        <div class="user-id">
+                                            {% if udocs[user.uid] %}
+                                                {{ udocs[user.uid].uname }}
+                                                {% if udocs[user.uid].displayName %}
+                                                <span class="display-name">({{ udocs[user.uid].displayName }})</span>
+                                                {% endif %}
+                                            {% else %}
+                                                User {{ user.uid }}
+                                            {% endif %}
+                                        </div>
                                         <div class="user-stats">{{ user.acCount }} AC</div>
                                     </div>
                                 </div>
@@ -128,6 +137,85 @@
                     </div>
                     {% endif %}
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Score Adjustment -->
+    <div class="manual-adjustment-section">
+        <div class="section-header">
+            <h2>⚖️ {{ _('Manual Score Adjustment') }}</h2>
+        </div>
+        
+        <div class="adjustment-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-icon">⚙️</div>
+                    <div class="title-content">
+                        <h3>{{ _('Adjust User Score') }}</h3>
+                        <div class="domain-info">
+                            <span class="domain-icon">🌐</span>
+                            <span class="domain-text">{{ _('Current Domain') }}: {{ currentDomain.displayName }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-badge">{{ _('Admin Only') }}</div>
+            </div>
+            
+            <div class="panel-content">
+                <div class="domain-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-content">
+                        <div class="warning-title">{{ _('Domain-Specific Operation') }}</div>
+                        <div class="warning-text">{{ _('Score adjustments will only affect users in the current domain') }} ({{ currentDomain.displayName }})</div>
+                    </div>
+                </div>
+                
+                <form id="scoreAdjustmentForm" class="adjustment-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="username" class="form-label">
+                                <span class="label-icon">👤</span>
+                                {{ _('Username') }}
+                            </label>
+                            <input type="text" id="username" name="username" class="form-input" 
+                                   placeholder="{{ _('Enter username') }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="scoreChange" class="form-label">
+                                <span class="label-icon">💰</span>
+                                {{ _('Score Change') }}
+                            </label>
+                            <input type="number" id="scoreChange" name="scoreChange" class="form-input" 
+                                   placeholder="{{ _('±1000') }}" min="-10000" max="10000" required>
+                            <div class="form-hint">{{ _('Range -10000 to +10000') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="reason" class="form-label">
+                            <span class="label-icon">📝</span>
+                            {{ _('Adjustment Reason') }}
+                        </label>
+                        <textarea id="reason" name="reason" class="form-textarea" 
+                                  placeholder="{{ _('Please specify the reason for this adjustment') }}" 
+                                  rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">{{ _('Apply Adjustment') }}</span>
+                        </button>
+                        <button type="reset" class="reset-btn">
+                            <span class="btn-icon">🔄</span>
+                            <span class="btn-text">{{ _('Reset') }}</span>
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="adjustmentResult" class="result-message" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -412,6 +500,32 @@
     margin: 0;
 }
 
+.title-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.domain-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(99, 102, 241, 0.1);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.domain-icon {
+    font-size: 0.875rem;
+}
+
+.domain-text {
+    font-weight: 500;
+}
+
 .panel-badge {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
@@ -426,6 +540,13 @@
     padding: var(--spacing-6);
     max-height: 400px;
     overflow-y: auto;
+}
+
+/* Adjustment panel specific styles */
+.adjustment-panel .panel-content {
+    max-height: none;
+    overflow: visible;
+    padding: var(--spacing-8);
 }
 
 /* Ranking List */
@@ -520,6 +641,12 @@
 .user-id {
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.display-name {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.875rem;
 }
 
 .user-stats {
@@ -760,6 +887,200 @@
     transform: translateX(4px);
 }
 
+/* Manual Adjustment Section */
+.manual-adjustment-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.adjustment-panel {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 2px solid var(--warning-color);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
+}
+
+.adjustment-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.label-icon {
+    font-size: 1rem;
+}
+
+.form-input, .form-textarea {
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-primary);
+    transition: all 0.3s ease;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-4);
+    justify-content: flex-start;
+}
+
+.submit-btn, .reset-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.submit-btn:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.reset-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.reset-btn:hover {
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.btn-icon {
+    font-size: 1rem;
+}
+
+.result-message {
+    margin-top: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+}
+
+.result-message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.result-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.domain-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.warning-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.warning-content {
+    flex: 1;
+}
+
+.warning-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.warning-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .dashboard-grid {
@@ -794,6 +1115,20 @@
         grid-template-columns: 1fr;
         gap: var(--spacing-6);
     }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: var(--spacing-3);
+    }
+    
+    .submit-btn, .reset-btn {
+        justify-content: center;
+    }
 }
 
 @media (max-width: 640px) {
@@ -820,8 +1155,110 @@
     .ranking-item, .record-item {
         padding: var(--spacing-3);
     }
+    
+    .manual-adjustment-section {
+        padding: var(--spacing-4);
+    }
+    
+    .adjustment-panel .panel-header, 
+    .adjustment-panel .panel-content {
+        padding: var(--spacing-4);
+    }
+    
+    .adjustment-panel .panel-content {
+        max-height: none;
+        overflow: visible;
+    }
 }
 
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('scoreAdjustmentForm');
+    const resultDiv = document.getElementById('adjustmentResult');
+    const submitBtn = form.querySelector('.submit-btn');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // 禁用提交按钮
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">{{ _("Processing") }}</span>';
+        
+        // 隐藏之前的结果
+        resultDiv.style.display = 'none';
+        
+        try {
+            const formData = new FormData(form);
+            const data = {
+                action: 'adjust_score',
+                username: formData.get('username'),
+                scoreChange: formData.get('scoreChange'),
+                reason: formData.get('reason')
+            };
+            
+            const response = await fetch('{{ url("score_manage") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            // 显示结果
+            resultDiv.className = 'result-message ' + (result.success ? 'success' : 'error');
+            resultDiv.textContent = result.message;
+            resultDiv.style.display = 'block';
+            
+            // 如果成功，清空表单
+            if (result.success) {
+                form.reset();
+                // 3秒后刷新页面以显示最新的记录
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            resultDiv.className = 'result-message error';
+            resultDiv.textContent = '{{ _("Network error please try again") }}';
+            resultDiv.style.display = 'block';
+        } finally {
+            // 重新启用提交按钮
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="btn-icon">⚡</span><span class="btn-text">{{ _("Apply Adjustment") }}</span>';
+        }
+    });
+    
+    // 重置按钮功能
+    form.addEventListener('reset', function() {
+        resultDiv.style.display = 'none';
+    });
+    
+    // 实时验证
+    const scoreInput = form.querySelector('#scoreChange');
+    const usernameInput = form.querySelector('#username');
+    
+    scoreInput.addEventListener('input', function() {
+        const value = parseInt(this.value);
+        if (value !== 0 && (isNaN(value) || Math.abs(value) > 10000)) {
+            this.setCustomValidity('{{ _("Score change must be between -10000 and +10000") }}');
+        } else if (value === 0) {
+            this.setCustomValidity('{{ _("Score change cannot be zero") }}');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    usernameInput.addEventListener('input', function() {
+        // 移除空格
+        this.value = this.value.trim();
+    });
+});
+</script>
 
 {% endblock %}

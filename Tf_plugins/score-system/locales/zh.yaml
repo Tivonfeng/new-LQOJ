@@ -18,6 +18,26 @@ Last Updated: 最后更新
 Previous: 上一页
 Next: 下一页
 Manage Scores: 管理积分
+
+# Manual Score Adjustment Translations
+Manual Score Adjustment: "手动积分调整"
+Adjust User Score: "调整用户积分"
+Admin Only: "仅限管理员"
+Username: "用户名"
+Enter username: "输入用户名"
+Score Change: "积分变化"
+Range -10000 to +10000: "范围：-10000 到 +10000"
+Adjustment Reason: "调整原因"
+Please specify the reason for this adjustment: "请说明此次调整的原因..."
+Apply Adjustment: "应用调整"
+Reset: "重置"
+Processing: "处理中..."
+Network error please try again: "网络错误，请重试"
+Score change must be between -10000 and +10000: "积分变化必须在-10000到+10000之间"
+Score change cannot be zero: "积分变化不能为零"
+Current Domain: "当前域"
+Domain-Specific Operation: "域专属操作"
+Score adjustments will only affect users in the current domain: "积分调整仅影响当前域中的用户"
 Manage: 管理
 View Full Ranking: 查看完整排名
 View Details: 查看详情

@@ -16,6 +16,26 @@ Last Updated: Last Updated
 Previous: Previous
 Next: Next
 Manage Scores: Manage Scores
+
+# Manual Score Adjustment Translations
+Manual Score Adjustment: "Manual Score Adjustment"
+Adjust User Score: "Adjust User Score"
+Admin Only: "Admin Only"
+Username: "Username"
+Enter username: "Enter username"
+Score Change: "Score Change"
+Range -10000 to +10000: "Range: -10000 to +10000"
+Adjustment Reason: "Adjustment Reason"
+Please specify the reason for this adjustment: "Please specify the reason for this adjustment..."
+Apply Adjustment: "Apply Adjustment"
+Reset: "Reset"
+Processing: "Processing..."
+Network error please try again: "Network error, please try again"
+Score change must be between -10000 and +10000: "Score change must be between -10000 and +10000"
+Score change cannot be zero: "Score change cannot be zero"
+Current Domain: "Current Domain"
+Domain-Specific Operation: "Domain-Specific Operation"
+Score adjustments will only affect users in the current domain: "Score adjustments will only affect users in the current domain"
 Manage: Manage
 View Full Ranking: View Full Ranking
 View Details: View Details

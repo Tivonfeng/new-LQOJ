@@ -185,12 +185,83 @@ export class ScoreManageHandler extends Handler {
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
+        
+        // 获取积分排行榜前10名
+        const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
+        
+        // 获取用户信息用于显示用户名
+        const uids = topUsers.map(u => u.uid);
+        const UserModel = global.Hydro.model.user;
+        const udocs = await UserModel.getList(this.domain._id, uids);
 
         this.response.template = 'score_manage.html';
         this.response.body = {
             recentRecords: recentActivity.scoreRecords,
-            topUsers: [], // 可以从recentRecords中提取
-            systemOverview
+            topUsers,
+            udocs,
+            systemOverview,
+            currentDomain: {
+                id: this.domain._id,
+                name: this.domain.name || this.domain._id,
+                displayName: this.domain.displayName || this.domain.name || this.domain._id
+            }
         };
+    }
+
+    async post() {
+        const { action, username, scoreChange, reason } = this.request.body;
+        
+        if (action !== 'adjust_score') {
+            this.response.body = { success: false, message: '无效的操作' };
+            return;
+        }
+
+        try {
+            // 根据用户名查找用户
+            const UserModel = global.Hydro.model.user;
+            const user = await UserModel.getByUname(this.domain._id, username);
+            
+            if (!user) {
+                this.response.body = { success: false, message: '用户不存在' };
+                return;
+            }
+
+            const scoreChangeNum = parseInt(scoreChange);
+            if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
+                this.response.body = { success: false, message: '积分变化值无效（范围：-10000 到 +10000）' };
+                return;
+            }
+
+            if (!reason || reason.length < 2) {
+                this.response.body = { success: false, message: '请填写调整原因' };
+                return;
+            }
+
+            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+            
+            // 更新用户积分
+            await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
+            
+            // 添加积分记录
+            await scoreService.addScoreRecord({
+                uid: user._id,
+                domainId: this.domain._id,
+                pid: 0, // 管理员操作使用0
+                recordId: null,
+                score: scoreChangeNum,
+                reason: `管理员调整：${reason}`,
+                problemTitle: '管理员操作',
+            });
+
+            console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
+
+            this.response.body = { 
+                success: true, 
+                message: `成功${scoreChangeNum > 0 ? '增加' : '减少'}用户 ${username} ${Math.abs(scoreChangeNum)} 积分` 
+            };
+        } catch (error) {
+            console.error('[ScoreManage] Error adjusting score:', error);
+            this.response.body = { success: false, message: '操作失败：' + error.message };
+        }
     }
 }
