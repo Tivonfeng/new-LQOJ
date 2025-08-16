@@ -9,23 +9,40 @@
             <h1 class="hero-title">🎲 {{ _('Dice Game') }}</h1>
             <p class="hero-subtitle">{{ _('Test Your Luck with Big or Small') }}</p>
         </div>
-        <div class="hero-stats">
-            {% if userStats.totalGames > 0 %}
-            <div class="stat-badge">
-                <span class="stat-icon">🎯</span>
-                <span class="stat-text">{{ winRate }}% {{ _('Win Rate') }}</span>
-            </div>
-            <div class="stat-badge">
-                <span class="stat-icon">💰</span>
-                <span class="stat-text">{{ userStats.netProfit > 0 and '+' or '' }}{{ userStats.netProfit }} {{ _('Profit') }}</span>
-            </div>
-            {% endif %}
+        <div class="hero-nav">
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Back to Score Hall') }}</a>
         </div>
     </div>
 </div>
 
 <!-- Main Container -->
 <div class="main-container">
+    <!-- User Stats -->
+    <div class="stats-spotlight">
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">🏴</div>
+                <div class="stat-value">{{ currentCoins or 0 }}</div>
+                <div class="stat-label">{{ _('Current Coins') }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎲</div>
+                <div class="stat-value">{{ userStats.totalGames or 0 }}</div>
+                <div class="stat-label">{{ _('Total Games') }}</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ userStats.wins or 0 }}</div>
+                <div class="stat-label">{{ _('Wins') }}</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">{{ userStats.netProfit > 0 and '+' or '' }}{{ userStats.netProfit or 0 }}</div>
+                <div class="stat-label">{{ _('Net Profit') }}</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Section -->
     <div class="game-spotlight">
         <div class="spotlight-header">
@@ -34,13 +51,6 @@
                 <h2>{{ _('Roll the Dice') }}</h2>
                 <span class="subtitle">{{ _('Guess Big or Small') }}</span>
             </div>
-            {% if isLoggedIn %}
-            <div class="coins-balance">
-                <span class="balance-label">{{ _('Your Balance') }}</span>
-                <span class="balance-amount">{{ currentCoins }}</span>
-                <span class="balance-unit">🏴</span>
-            </div>
-            {% endif %}
         </div>
         
         <div class="game-content">
@@ -250,8 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let gameInProgress = false;
     let selectedBetAmount = null;
 
-    console.log('Buttons found:', { betSmallBtn, betBigBtn, diceContainer, gameResult, betAmountBtns });
-
     // 投注金额选择
     betAmountBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -274,21 +282,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 启用游戏按钮
         if (betSmallBtn) betSmallBtn.disabled = false;
         if (betBigBtn) betBigBtn.disabled = false;
-        
-        console.log('Selected bet amount:', betAmount);
     }
 
     if (betSmallBtn) {
-        console.log('Adding click listener to small button');
         betSmallBtn.addEventListener('click', () => {
-            console.log('Small button clicked');
             if (selectedBetAmount) playGame('small', selectedBetAmount);
         });
     }
     if (betBigBtn) {
-        console.log('Adding click listener to big button');
         betBigBtn.addEventListener('click', () => {
-            console.log('Big button clicked'); 
             if (selectedBetAmount) playGame('big', selectedBetAmount);
         });
     }
@@ -323,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
         } catch (error) {
-            console.error('Game error:', error);
             showError('{{ _("Network error, please try again") }}');
             enableButtons();
             gameInProgress = false;
@@ -530,38 +531,95 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 500;
 }
 
-.hero-stats {
+.hero-nav {
     display: flex;
     gap: var(--spacing-4);
 }
 
-.stat-badge {
+.nav-button {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: var(--radius-lg);
     padding: var(--spacing-3) var(--spacing-4);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
+    color: white;
+    text-decoration: none;
     font-weight: 600;
     transition: all 0.3s ease;
 }
 
-.stat-badge:hover {
+.nav-button:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
 }
 
-.stat-icon {
-    font-size: 1.25rem;
-}
 
 /* Main Container */
 .main-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-6);
+}
+
+/* Stats Spotlight */
+.stats-spotlight {
+    margin-bottom: var(--spacing-8);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: var(--primary-color);
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: var(--success-color);
+}
+
+.stat-card.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: var(--warning-color);
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-3);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.stat-card .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
 }
 
 /* Game Spotlight */
@@ -621,31 +679,6 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 600;
 }
 
-.coins-balance {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4) var(--spacing-5);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    box-shadow: var(--shadow-md);
-}
-
-.balance-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.balance-amount {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary-color);
-}
-
-.balance-unit {
-    font-size: 1.125rem;
-}
 
 /* Game Content */
 .game-content {
@@ -1260,6 +1293,10 @@ document.addEventListener('DOMContentLoaded', function() {
         font-size: 2rem;
     }
     
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
     .spotlight-header {
         flex-direction: column;
         gap: var(--spacing-4);
@@ -1318,6 +1355,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .main-container {
         padding: 0 var(--spacing-3);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
     
     .game-spotlight, .stats-section, .recent-section, .navigation-section {

@@ -1130,7 +1130,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(result.message || '{{ _("Failed to add prize") }}');
             }
         } catch (error) {
-            console.error('添加奖品失败:', error);
             alert('{{ _("Failed to add prize") }}');
         }
     });
@@ -1199,7 +1198,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert(result.message || '{{ _("Failed to delete prize") }}');
                 }
             } catch (error) {
-                console.error('删除奖品失败:', error);
                 alert('{{ _("Failed to delete prize") }}: ' + error.message);
             }
         });
@@ -1225,7 +1223,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (result.success) {
-                console.log('奖品更新成功');
                 showToast(result.message || '{{ _("Prize updated successfully!") }}', 'success');
                 
                 // 如果消息提示没有实际修改，不刷新页面
@@ -1238,11 +1235,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 }, 1500);
             } else {
-                console.error('更新失败:', result);
                 alert(result.message || '{{ _("Failed to update prize") }}');
             }
         } catch (error) {
-            console.error('更新奖品失败:', error);
             alert('{{ _("Failed to update prize") }}');
         }
     }
@@ -1305,7 +1300,6 @@ async function recalculateWeights() {
             alert(result.message || '权重重新计算失败');
         }
     } catch (error) {
-        console.error('权重重新计算失败:', error);
         alert('权重重新计算失败: ' + error.message);
     }
 }
@@ -1339,7 +1333,6 @@ async function validateWeights() {
             alert(result.message || '权重验证失败');
         }
     } catch (error) {
-        console.error('权重验证失败:', error);
         alert('权重验证失败: ' + error.message);
     }
 }

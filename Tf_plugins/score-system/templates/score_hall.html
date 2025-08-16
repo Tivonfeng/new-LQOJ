@@ -13,10 +13,12 @@
                 <span class="stat-icon">👥</span>
                 <span class="stat-text">{{ todayActiveUsers }} {{ _('Active Today') }}</span>
             </div>
+            {% if isLoggedIn %}
             <div class="stat-badge">
                 <span class="stat-icon">💰</span>
-                <span class="stat-text">+{{ todayTotalScore }} {{ _('Coins Earned') }}</span>
+                <span class="stat-text">{{ _('Your Balance') }}: {{ currentCoins or 0 }} 🏴</span>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -31,13 +33,6 @@
                 <h2>{{ _('Lottery Hall') }}</h2>
                 <span class="subtitle">{{ _('Spend Your Coins') }}</span>
             </div>
-            {% if isLoggedIn %}
-            <div class="coins-balance">
-                <span class="balance-label">{{ _('Your Balance') }}</span>
-                <span class="balance-amount">{{ currentCoins or 0 }}</span>
-                <span class="balance-unit">🏴</span>
-            </div>
-            {% endif %}
         </div>
         
         <div class="lottery-content">
@@ -51,7 +46,7 @@
                         </div>
                     </div>
                     <div class="machine-price">
-                        <span class="price-amount">10</span>
+                        <span class="price-amount">20</span>
                         <span class="price-unit">🏴</span>
                     </div>
                     <div class="machine-features">
@@ -96,13 +91,6 @@
                 <h2>{{ _('Dice Game') }}</h2>
                 <span class="subtitle">{{ _('Test Your Luck') }}</span>
             </div>
-            {% if isLoggedIn %}
-            <div class="game-balance">
-                <span class="balance-label">{{ _('Your Balance') }}</span>
-                <span class="balance-amount">{{ currentCoins or 0 }}</span>
-                <span class="balance-unit">🏴</span>
-            </div>
-            {% endif %}
         </div>
         
         <div class="dice-content">
@@ -475,31 +463,6 @@
     font-weight: 600;
 }
 
-.coins-balance {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-4) var(--spacing-5);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    box-shadow: var(--shadow-md);
-}
-
-.balance-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.balance-amount {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary-color);
-}
-
-.balance-unit {
-    font-size: 1.125rem;
-}
 
 /* Lottery Machines */
 .lottery-content {
@@ -1163,29 +1126,6 @@
     text-align: center;
 }
 
-.game-balance {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-2);
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: var(--spacing-3) var(--spacing-4);
-    border-radius: var(--radius-lg);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: var(--shadow-md);
-}
-
-.game-balance .balance-label {
-    color: var(--text-secondary);
-}
-
-.game-balance .balance-amount {
-    color: var(--primary-color);
-}
-
-.game-balance .balance-unit {
-    color: var(--text-primary);
-}
 
 /* Additional responsive styles for dice game */
 @media (max-width: 768px) {
