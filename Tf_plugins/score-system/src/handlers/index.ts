@@ -24,3 +24,11 @@ export {
     DiceHistoryHandler,
     DiceAdminHandler
 } from './DiceGameHandlers';
+
+// 剪刀石头布游戏相关处理器
+export {
+    RPSGameHandler,
+    RPSPlayHandler,
+    RPSHistoryHandler,
+    RPSAdminHandler
+} from './RPSHandlers';

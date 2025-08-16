@@ -175,7 +175,6 @@ Earn More Coins: Earn More Coins
 Start Your First Game: Start Your First Game
 Continue Playing: Continue Playing
 Game Statistics: Game Statistics
-Your Performance: Your Performance
 Total Games: Total Games
 Wins: Wins
 Net Profit: Net Profit
@@ -184,7 +183,6 @@ Dice Current Streak: Current Streak
 Best Streak: Best Streak
 Game Records: Game Records
 total records: total records
-No Game Records Yet: No Game Records Yet
 "Start playing to build your gaming history!": "Start playing to build your gaming history!"
 This Page Stats: This Page Stats
 Games: Games
@@ -220,5 +218,47 @@ Dice Range Rule: "1-3: Small, 4-6: Big"
 Win Coins Profit: "Win: +40 coins (+20 profit)"
 Lose Coins: "Lose: -20 coins"
 "Start Playing": "Start Playing"
+
+# Rock Paper Scissors Game Translations
+Rock Paper Scissors: Rock Paper Scissors
+"Challenge the AI": "Challenge the AI"
+"Challenge the AI and Win Coins": "Challenge the AI and Win Coins"
+"Battle Arena": "Battle Arena"
+"Quick Strategy Game": "Quick Strategy Game"
+"3x Reward": "3x Reward"
+"Streak Bonus": "Streak Bonus"
+Rock: Rock
+Paper: Paper
+Scissors: Scissors
+"Choose your weapon!": "Choose your weapon!"
+"Choose Your Weapon": "Choose Your Weapon"
+"AI is thinking...": "AI is thinking..."
+"You Win!": "You Win!"
+"You Lose!": "You Lose!"
+"Draw!": "Draw!"
+"Beats Scissors": "Beats Scissors"
+"Beats Rock": "Beats Rock"
+"Beats Paper": "Beats Paper"
+"AI Opponent": "AI Opponent"
+"You": "You"
+"Refund bet": "Refund bet"
+"per game": "per game"
+reward: reward
+"Refund": "Refund"
+"How to Play": "How to Play"
+bonus: bonus
+"Start Battle": "Start Battle"
+"Play Again": "Play Again"
+"Rock Paper Scissors History": "Rock Paper Scissors History"
+"Play Game": "Play Game"
+"Your Performance": "Your Performance"
+"Choice Statistics": "Choice Statistics"
+"Losses": "Losses"
+"AI Choice": "AI Choice"
+"Your Choice": "Your Choice"
+"Streak": "Streak"
+"No Game Records Yet": "No Game Records Yet"
+"Play Your First Game": "Play Your First Game"
+"Small Big Range Rule": "1-3: Small, 4-6: Big"
 
 

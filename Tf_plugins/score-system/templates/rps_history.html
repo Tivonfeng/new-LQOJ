@@ -1,0 +1,604 @@
+{% set page_name = "rps_history" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">📊 {{ _('Rock Paper Scissors History') }}</h1>
+            <p class="hero-subtitle">{{ _('Your Complete Gaming Records') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('rock_paper_scissors') }}" class="nav-button">{{ _('Play Game') }}</a>
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Summary Stats -->
+    <div class="stats-section">
+        <div class="section-header">
+            <h2>🎯 {{ _('Your Performance') }}</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">🎮</div>
+                <div class="stat-value">{{ userStats.totalGames or 0 }}</div>
+                <div class="stat-label">{{ _('Total Games') }}</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ userStats.wins or 0 }}</div>
+                <div class="stat-label">{{ _('Wins') }}</div>
+                <div class="stat-percentage">{{ ((userStats.wins / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">🤝</div>
+                <div class="stat-value">{{ userStats.draws or 0 }}</div>
+                <div class="stat-label">{{ _('Draws') }}</div>
+                <div class="stat-percentage">{{ ((userStats.draws / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-icon">💔</div>
+                <div class="stat-value">{{ userStats.losses or 0 }}</div>
+                <div class="stat-label">{{ _('Losses') }}</div>
+                <div class="stat-percentage">{{ ((userStats.losses / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">{{ userStats.netProfit > 0 and '+' or '' }}{{ userStats.netProfit or 0 }}</div>
+                <div class="stat-label">{{ _('Net Profit') }}</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-value">{{ userStats.bestStreak or 0 }}</div>
+                <div class="stat-label">{{ _('Best Streak') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choice Statistics -->
+    <div class="choice-stats-section">
+        <div class="section-header">
+            <h3>📊 {{ _('Choice Statistics') }}</h3>
+        </div>
+        <div class="choice-stats-grid">
+            <div class="choice-stat-card">
+                <div class="choice-icon">🗿</div>
+                <div class="choice-name">{{ _('Rock') }}</div>
+                <div class="choice-count">{{ choiceStats.rock or 0 }}</div>
+                <div class="choice-percentage">{{ ((choiceStats.rock / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+            <div class="choice-stat-card">
+                <div class="choice-icon">📄</div>
+                <div class="choice-name">{{ _('Paper') }}</div>
+                <div class="choice-count">{{ choiceStats.paper or 0 }}</div>
+                <div class="choice-percentage">{{ ((choiceStats.paper / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+            <div class="choice-stat-card">
+                <div class="choice-icon">✂️</div>
+                <div class="choice-name">{{ _('Scissors') }}</div>
+                <div class="choice-count">{{ choiceStats.scissors or 0 }}</div>
+                <div class="choice-percentage">{{ ((choiceStats.scissors / userStats.totalGames * 100) | round(1)) if userStats.totalGames > 0 else 0 }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game History Table -->
+    <div class="history-section">
+        <div class="section-header">
+            <h3>📋 {{ _('Game History') }}</h3>
+            <div class="header-stats">
+                <span class="total-records">{{ _('Total') }}: {{ gameHistory|length }} {{ _('records') }}</span>
+            </div>
+        </div>
+        
+        {% if gameHistory and gameHistory|length > 0 %}
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Time') }}</th>
+                        <th>{{ _('Your Choice') }}</th>
+                        <th>{{ _('AI Choice') }}</th>
+                        <th>{{ _('Result') }}</th>
+                        <th>{{ _('Reward') }}</th>
+                        <th>{{ _('Streak') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in gameHistory %}
+                    <tr class="game-row {{ game.result }}">
+                        <td class="time-cell">
+                            <div class="time-display">
+                                {% if game.time %}
+                                    {{ game.time.strftime('%m-%d %H:%M') }}
+                                {% else %}
+                                    {{ _('N/A') }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="choice-cell">
+                            <div class="choice-display">
+                                <span class="choice-icon">{{ game.playerChoiceIcon }}</span>
+                                <span class="choice-text">{{ _(game.playerChoice.title()) }}</span>
+                            </div>
+                        </td>
+                        <td class="choice-cell">
+                            <div class="choice-display">
+                                <span class="choice-icon">{{ game.aiChoiceIcon }}</span>
+                                <span class="choice-text">{{ _(game.aiChoice.title()) }}</span>
+                            </div>
+                        </td>
+                        <td class="result-cell">
+                            <div class="result-badge {{ game.result }}">
+                                {% if game.result == 'win' %}
+                                    <span class="result-icon">🎉</span>
+                                    <span class="result-text">{{ _('Win') }}</span>
+                                {% elif game.result == 'lose' %}
+                                    <span class="result-icon">😢</span>
+                                    <span class="result-text">{{ _('Loss') }}</span>
+                                {% else %}
+                                    <span class="result-icon">🤝</span>
+                                    <span class="result-text">{{ _('Draw') }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="reward-cell">
+                            <div class="reward-display {{ 'positive' if game.reward > 0 else ('negative' if game.reward < 0 else 'neutral') }}">
+                                <span class="reward-amount">{{ ('+' if game.reward > 0 else '') }}{{ game.reward }}</span>
+                                <span class="reward-unit">🏴</span>
+                            </div>
+                        </td>
+                        <td class="streak-cell">
+                            {% if game.streak > 1 %}
+                                <div class="streak-badge">
+                                    <span class="streak-icon">🔥</span>
+                                    <span class="streak-count">{{ game.streak }}</span>
+                                </div>
+                            {% else %}
+                                <span class="no-streak">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if hasMore %}
+        <div class="pagination-section">
+            <div class="pagination-info">
+                {{ _('Page') }} {{ currentPage }} {{ _('of') }} {{ totalPages }} {{ _('pages') }}
+            </div>
+            <div class="pagination-controls">
+                {% if currentPage > 1 %}
+                <a href="?page={{ currentPage - 1 }}" class="pagination-btn prev">{{ _('Previous') }}</a>
+                {% endif %}
+                {% if currentPage < totalPages %}
+                <a href="?page={{ currentPage + 1 }}" class="pagination-btn next">{{ _('Next') }}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-history">
+            <div class="empty-icon">🎮</div>
+            <h3>{{ _('No Game Records Yet') }}</h3>
+            <p>{{ _('Start playing to build your gaming history!') }}</p>
+            <a href="{{ url('rock_paper_scissors') }}" class="play-now-btn">{{ _('Play Your First Game') }}</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Page Specific Styles */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-6);
+}
+
+.stats-section, .choice-stats-section, .history-section {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-3);
+    border-bottom: 2px solid var(--bg-tertiary);
+}
+
+.section-header h2, .section-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.header-stats {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card.primary {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, #f0f9ff, #f8fafc);
+}
+
+.stat-card.success {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, #f0fdf4, #f8fafc);
+}
+
+.stat-card.warning {
+    border-color: var(--warning-color);
+    background: linear-gradient(135deg, #fffbeb, #f8fafc);
+}
+
+.stat-card.error {
+    border-color: var(--error-color);
+    background: linear-gradient(135deg, #fef2f2, #f8fafc);
+}
+
+.stat-card.accent {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #faf5ff, #f8fafc);
+}
+
+.stat-card.info {
+    border-color: #06b6d4;
+    background: linear-gradient(135deg, #f0fdfa, #f8fafc);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-2);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stat-percentage {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-1);
+}
+
+.choice-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-4);
+}
+
+.choice-stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    text-align: center;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.choice-stat-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.choice-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-2);
+}
+
+.choice-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.choice-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.choice-percentage {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.history-table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.history-table th {
+    background: var(--bg-tertiary);
+    padding: var(--spacing-3);
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.history-table td {
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.game-row {
+    transition: all 0.2s ease;
+}
+
+.game-row:hover {
+    background: var(--bg-secondary);
+}
+
+.game-row.win {
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.05), transparent);
+}
+
+.game-row.lose {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.05), transparent);
+}
+
+.game-row.draw {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05), transparent);
+}
+
+.time-display {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.choice-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.choice-display .choice-icon {
+    font-size: 1.5rem;
+}
+
+.choice-text {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.result-badge.win {
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+}
+
+.result-badge.lose {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.result-badge.draw {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.reward-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-weight: 600;
+}
+
+.reward-display.positive {
+    color: var(--success-color);
+}
+
+.reward-display.negative {
+    color: var(--error-color);
+}
+
+.reward-display.neutral {
+    color: var(--warning-color);
+}
+
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.no-streak {
+    color: var(--text-muted);
+}
+
+.pagination-section {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-top: var(--spacing-6);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination-info {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.pagination-btn {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.pagination-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.empty-history {
+    text-align: center;
+    padding: var(--spacing-16) var(--spacing-4);
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+}
+
+.empty-history h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.empty-history p {
+    margin-bottom: var(--spacing-6);
+}
+
+.play-now-btn {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.play-now-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-container {
+        padding: var(--spacing-4);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .choice-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-2);
+    }
+    
+    .history-table {
+        font-size: 0.875rem;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: var(--spacing-2);
+    }
+    
+    .pagination-section {
+        flex-direction: column;
+        gap: var(--spacing-3);
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: var(--spacing-3);
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .choice-icon {
+        font-size: 2rem;
+    }
+}
+</style>
+
+{% endblock %}

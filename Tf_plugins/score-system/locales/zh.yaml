@@ -27,13 +27,13 @@ Rankings: 排行榜
 Details: 详情
 Solved: 已解决
 Recent Score Records: 最近积分记录
-"Quick Actions": 快捷操作
-"Your Progress": 您的进度
-"Your Balance": 您的余额
-"Active Today": 今日活跃
-"Coins Earned": 获得绿旗币
-"Start Coding": 开始刷题
-"Earn Coins": 获得绿旗币
+"Quick Actions": "快捷操作"
+"Your Progress": "您的进度"
+"Your Balance": "您的余额"
+"Active Today": "今日活跃"
+"Coins Earned": "获得绿旗币"
+"Start Coding": "开始刷题"
+"Earn Coins": "获得绿旗币"
 "Turn Your Achievements Into Rewards!": "将您的成就转化为奖励！"
 
 # 抽奖系统
@@ -85,9 +85,9 @@ Common: 普通
 Rare: 稀有
 Epic: 史诗
 Legendary: 传说
-"Common Rewards": 普通奖励
-"Better Rewards": 更好奖励
-"Rare Rewards": 稀有奖励
+"Common Rewards": "普通奖励"
+"Better Rewards": "更好奖励"
+"Rare Rewards": "稀有奖励"
 Green Flag Coins: 绿旗币
 Special Badges: 特殊徽章
 Privilege: 特权
@@ -96,7 +96,7 @@ Virtual Item: 虚拟物品
 # 消息和通知
 "Congratulations!": "恭喜！"
 "Better luck next time!": "再接再厉！"
-"No prize this time": 这次没有奖品
+"No prize this time": "这次没有奖品"
 "Prize claimed successfully!": "奖品领取成功！"
 Failed to claim prize: 奖品领取失败
 "Are you sure to delete this prize?": "确定要删除这个奖品吗？"
@@ -105,11 +105,11 @@ Failed to claim prize: 奖品领取失败
 "Prize updated successfully!": "奖品更新成功！"
 
 # 特殊功能
-"Quick & Easy": 快速简单
+"Quick & Easy": "快速简单"
 coins per draw: 绿旗币/次
 draws guarantee: 次保底
-"per draw": /次
-"Spend Your Coins": 使用绿旗币
+"per draw": "/次"
+"Spend Your Coins": "使用绿旗币"
 
 # 空状态
 "No score records found. Start solving problems to earn points!": "未找到积分记录。开始解题来获得积分吧！"
@@ -177,7 +177,6 @@ Earn More Coins: 获得更多绿旗币
 Start Your First Game: 开始第一局游戏
 Continue Playing: 继续游戏
 Game Statistics: 游戏统计
-Your Performance: 您的表现
 Total Games: 总游戏数
 Wins: 胜利次数
 Net Profit: 净利润
@@ -186,7 +185,6 @@ Dice Current Streak: 当前连胜
 Best Streak: 最佳连胜
 Game Records: 游戏记录
 total records: 条总记录
-No Game Records Yet: 暂无游戏记录
 "Start playing to build your gaming history!": "开始游戏来建立您的游戏历史！"
 This Page Stats: 本页统计
 Games: 游戏数
@@ -222,5 +220,47 @@ Dice Range Rule: "1-3为小，4-6为大"
 Win Coins Profit: "获胜：+40绿旗币（+20利润）"
 Lose Coins: "失败：-20绿旗币"
 "Start Playing": "开始游戏"
+
+# 剪刀石头布游戏翻译
+Rock Paper Scissors: "剪刀石头布"
+"Challenge the AI": "挑战AI"
+"Challenge the AI and Win Coins": "挑战AI赢取绿旗币"
+"Battle Arena": "对战竞技场"
+"Quick Strategy Game": "快速策略游戏"
+"3x Reward": "3倍奖励"
+"Streak Bonus": "连胜奖励"
+Rock: "石头"
+Paper: "布"
+Scissors: "剪刀"
+"Choose your weapon!": "选择您的武器！"
+"Choose Your Weapon": "选择您的武器"
+"AI is thinking...": "AI思考中..."
+"You Win!": "您胜利了！"
+"You Lose!": "您失败了！"
+"Draw!": "平局！"
+"Beats Scissors": "击败剪刀"
+"Beats Rock": "击败石头"
+"Beats Paper": "击败布"
+"AI Opponent": "AI对手"
+"You": "您"
+"Refund bet": "退还投注"
+"per game": "每局"
+reward: "奖励"
+"Refund": "退还"
+"How to Play": "游戏玩法"
+bonus: "奖励"
+"Start Battle": "开始对战"
+"Play Again": "再来一局"
+"Rock Paper Scissors History": "剪刀石头布游戏历史"
+"Play Game": "玩游戏"
+"Your Performance": "您的表现"
+"Choice Statistics": "选择统计"
+"Losses": "失败次数"
+"AI Choice": "AI选择"
+"Your Choice": "您的选择"
+"Streak": "连胜"
+"No Game Records Yet": "暂无游戏记录"
+"Play Your First Game": "开始第一局游戏"
+"Small Big Range Rule": "1-3为小，4-6为大"
 
 

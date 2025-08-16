@@ -17,6 +17,8 @@ import {
     type ScoreConfig,
     type DiceGameRecord,
     type UserDiceStats,
+    type RPSGameRecord,
+    type UserRPSStats,
 } from './src/services';
 
 // 导入处理器
@@ -33,7 +35,11 @@ import {
     DiceGameHandler,
     DicePlayHandler,
     DiceHistoryHandler,
-    DiceAdminHandler
+    DiceAdminHandler,
+    RPSGameHandler,
+    RPSPlayHandler,
+    RPSHistoryHandler,
+    RPSAdminHandler
 } from './src/handlers';
 
 // 默认配置已移至各Handler文件中
@@ -53,6 +59,8 @@ declare module 'hydrooj' {
         'lottery.stats': UserLotteryStats;
         'dice.records': DiceGameRecord;
         'dice.stats': UserDiceStats;
+        'rps.records': RPSGameRecord;
+        'rps.stats': UserRPSStats;
     }
 }
 
@@ -134,6 +142,12 @@ export default function apply(ctx: Context, config: any = {}) {
     ctx.Route('dice_play', '/score/dice/play', DicePlayHandler);
     ctx.Route('dice_history', '/score/dice/history', DiceHistoryHandler);
     ctx.Route('dice_admin', '/score/dice/admin', DiceAdminHandler);
+    
+    // 剪刀石头布游戏路由
+    ctx.Route('rock_paper_scissors', '/score/rps', RPSGameHandler);
+    ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
+    ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
+    ctx.Route('rps_admin', '/score/rps/admin', RPSAdminHandler);
 
     // 注入导航栏
     ctx.injectUI('Nav', 'score_hall', {
@@ -143,6 +157,7 @@ export default function apply(ctx: Context, config: any = {}) {
 
     console.log('积分大厅路由已注册，可通过 /score/hall 访问');
     console.log('掷骰子游戏路由已注册，可通过 /score/dice 访问');
+    console.log('剪刀石头布游戏路由已注册，可通过 /score/rps 访问');
 
     console.log('Score System plugin loaded successfully!');
 }

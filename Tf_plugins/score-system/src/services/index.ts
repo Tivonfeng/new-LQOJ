@@ -34,3 +34,11 @@ export {
     type DiceGameRecord,
     type UserDiceStats
 } from './DiceGameService';
+
+// 剪刀石头布游戏服务
+export {
+    RPSGameService,
+    type RPSGameRecord,
+    type UserRPSStats,
+    type UserChoiceStats
+} from './RPSGameService';
