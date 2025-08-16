@@ -163,14 +163,43 @@ export class RPSGameService {
 
             console.log(`[RPSGameService] Calculated reward: ${reward}, netGain: ${netGain}, streak: ${currentStreak}`);
 
-            // 扣除基础费用
+            // 扣除基础费用并记录
             console.log(`[RPSGameService] Deducting base cost: ${RPSGameService.BASE_COST}`);
             await this.scoreService.updateUserScore(domainId, uid, -RPSGameService.BASE_COST);
+            await this.scoreService.addScoreRecord({
+                uid,
+                domainId,
+                pid: 0, // 游戏类型记录，使用0表示非题目
+                recordId: null,
+                score: -RPSGameService.BASE_COST,
+                reason: `剪刀石头布游戏 - 游戏费用`,
+                problemTitle: '剪刀石头布',
+            });
 
-            // 发放奖励（如果有）
+            // 发放奖励（如果有）并记录
             if (reward > 0) {
                 console.log(`[RPSGameService] Adding reward: ${reward}`);
                 await this.scoreService.updateUserScore(domainId, uid, reward);
+                
+                let rewardReason = '';
+                if (gameResult === 'win') {
+                    rewardReason = `剪刀石头布游戏 - 胜利奖励`;
+                    if (streakBonus > 0) {
+                        rewardReason += ` (连胜${currentStreak}次，奖励+${streakBonus})`;
+                    }
+                } else if (gameResult === 'draw') {
+                    rewardReason = `剪刀石头布游戏 - 平局退款`;
+                }
+                
+                await this.scoreService.addScoreRecord({
+                    uid,
+                    domainId,
+                    pid: 0, // 游戏类型记录，使用0表示非题目
+                    recordId: null,
+                    score: reward,
+                    reason: rewardReason,
+                    problemTitle: '剪刀石头布',
+                });
             }
 
             // 记录游戏结果
