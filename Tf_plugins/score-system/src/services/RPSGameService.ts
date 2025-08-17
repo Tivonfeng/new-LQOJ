@@ -53,7 +53,7 @@ export class RPSGameService {
 
     // 游戏常量
     private static readonly BASE_COST = 15; // 基础费用
-    private static readonly WIN_REWARD = 45; // 胜利奖励(3倍)
+    private static readonly WIN_REWARD = 30; // 胜利奖励(2倍)
     private static readonly DRAW_REWARD = 15; // 平局退款
     private static readonly STREAK_BONUS = 5; // 连胜奖励
     private static readonly CHOICES = ['rock', 'paper', 'scissors'] as const;
@@ -72,7 +72,7 @@ export class RPSGameService {
             winReward: RPSGameService.WIN_REWARD,
             drawReward: RPSGameService.DRAW_REWARD,
             streakBonus: RPSGameService.STREAK_BONUS,
-            winMultiplier: 3
+            winMultiplier: 2
         };
     }
 
