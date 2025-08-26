@@ -13,8 +13,16 @@ const initializeTypingStats = () => {
   // 初始化进度图表
   const initProgressChart = () => {
     const canvas = document.getElementById('progress-chart') as HTMLCanvasElement;
-    if (!canvas || typeof Chart === 'undefined') {
-      console.warn('Chart.js not available or canvas not found');
+    if (!canvas) {
+      console.warn('Progress chart canvas not found');
+      return;
+    }
+
+    // 检查Chart.js是否可用
+    const Chart = (window as any).Chart;
+    if (typeof Chart === 'undefined') {
+      // 如果Chart.js不可用，显示简单的文字图表
+      showSimpleChart(canvas);
       return;
     }
 
@@ -23,7 +31,8 @@ const initializeTypingStats = () => {
 
     const chartData = generateChartData(statsData.progressData || [], '30d');
     
-    progressChart = new (window as any).Chart(ctx, {
+    try {
+      progressChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: chartData.labels,
@@ -102,6 +111,58 @@ const initializeTypingStats = () => {
         }
       }
     });
+    } catch (error) {
+      console.error('Error creating progress chart:', error);
+      showSimpleChart(canvas);
+    }
+  };
+
+  // 简单图表回退方案（当Chart.js不可用时）
+  const showSimpleChart = (canvas: HTMLCanvasElement) => {
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    const chartData = generateChartData(statsData.progressData || [], '30d');
+    if (chartData.labels.length === 0) {
+      container.innerHTML = `
+        <div class="chart-empty">
+          <div class="chart-empty-icon">📈</div>
+          <div class="chart-empty-text">暂无练习数据</div>
+          <div class="chart-empty-subtext">开始练习打字来查看进度图表</div>
+        </div>
+      `;
+      return;
+    }
+
+    // 创建简单的文字统计
+    const avgWPM = chartData.wmpData.length > 0 
+      ? Math.round(chartData.wmpData.reduce((sum: number, item: any) => sum + (item.y || 0), 0) / chartData.wmpData.length)
+      : 0;
+    const avgAccuracy = chartData.accuracyData.length > 0
+      ? Math.round(chartData.accuracyData.reduce((sum: number, item: any) => sum + (item.y || 0), 0) / chartData.accuracyData.length)
+      : 0;
+
+    container.innerHTML = `
+      <div class="chart-simple">
+        <div class="simple-stats">
+          <div class="simple-stat">
+            <div class="stat-label">平均打字速度</div>
+            <div class="stat-value">${avgWPM} WPM</div>
+          </div>
+          <div class="simple-stat">
+            <div class="stat-label">平均准确率</div>
+            <div class="stat-value">${avgAccuracy}%</div>
+          </div>
+          <div class="simple-stat">
+            <div class="stat-label">练习天数</div>
+            <div class="stat-value">${chartData.labels.length} 天</div>
+          </div>
+        </div>
+        <div class="chart-note">
+          <small>📊 需要Chart.js库来显示详细图表</small>
+        </div>
+      </div>
+    `;
   };
 
   // 生成图表数据
@@ -146,7 +207,6 @@ const initializeTypingStats = () => {
     if (!heatmapContainer || !statsData.heatmapData) return;
 
     const heatmapData = statsData.heatmapData;
-    const today = new Date();
     
     // 生成热力图HTML
     let heatmapHTML = '<div class="heatmap-grid">';
@@ -167,7 +227,6 @@ const initializeTypingStats = () => {
     heatmapHTML += '<div class="heatmap-days">';
     
     heatmapData.forEach((day: any) => {
-      const date = new Date(day.date);
       const intensity = Math.min(day.intensity || 0, 4);
       const practices = day.practices || 0;
       const totalTime = Math.round((day.totalTime || 0) / 60); // 转换为分钟
@@ -408,7 +467,7 @@ const initializeTypingStats = () => {
         }
         
         // 更新统计卡片
-        updateOverviewCards(data.data.userStats, data.data.periodStats);
+        updateOverviewCards(data.data.userStats);
       }
     } catch (error) {
       console.error('Error updating stats from API:', error);
@@ -416,7 +475,7 @@ const initializeTypingStats = () => {
   };
 
   // 更新概览卡片
-  const updateOverviewCards = (userStats: any, periodStats: any) => {
+  const updateOverviewCards = (userStats: any) => {
     const updates = {
       'best-wmp': userStats?.bestWPM,
       'best-accuracy': userStats?.bestAccuracy ? `${userStats.bestAccuracy}%` : undefined,

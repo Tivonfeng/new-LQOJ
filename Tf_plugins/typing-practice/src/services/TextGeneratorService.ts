@@ -11,7 +11,57 @@ export class TextGeneratorService {
      * 初始化文本模板库
      */
     private initializeTextTemplates(): void {
-        // 编程类文本模板
+        // 基础键位练习模板 - 字母反复练习
+        const basicKeysTexts = {
+            [DifficultyLevel.BEGINNER]: [
+                'aaa sss ddd fff jjj kkk lll',
+                'asdf jkl; asdf jkl;',
+                'fff jjj ddd kkk sss lll aaa',
+                'qwe rty uio qwe rty uio',
+                'zxc vbn zxc vbn zxc vbn'
+            ],
+            [DifficultyLevel.INTERMEDIATE]: [
+                'the and for are but not you all can her was one our out day had has may use word each which she how man new now old see him two way who oil sit end',
+                'cat dog run jump sit eat play work read write think learn practice improve focus speed accuracy',
+                'home office school computer keyboard mouse screen display window file folder document text print save open close'
+            ],
+            [DifficultyLevel.ADVANCED]: [
+                'programming software development algorithm database network security implementation architecture framework methodology documentation testing debugging deployment maintenance optimization performance scalability reliability availability',
+                'javascript typescript python java swift kotlin golang rust scala haskell lisp erlang clojure dart lua ruby perl php bash powershell assembly machine learning artificial intelligence neural network deep learning',
+                'responsive design user interface experience accessibility usability functionality compatibility cross-platform mobile tablet desktop web application progressive framework library component service microservice'
+            ],
+            [DifficultyLevel.EXPERT]: [
+                'polymorphism encapsulation inheritance abstraction composition aggregation delegation dependency injection inversion principle solid liskov substitution interface segregation open closed single responsibility',
+                'distributed systems consensus algorithms byzantine fault tolerance cap theorem eventual consistency strong consistency acid properties transactions isolation levels deadlock prevention detection resolution recovery',
+                'cryptographic algorithms symmetric asymmetric hashing digital signatures certificates authentication authorization verification validation sanitization normalization denormalization indexing partitioning sharding replication'
+            ]
+        };
+
+        // 编程词汇练习模板
+        const programmingWordsTexts = {
+            [DifficultyLevel.BEGINNER]: [
+                'function class object method property variable array string number boolean null undefined true false if else for while do switch case break continue return',
+                'int float double char string bool void const let var public private protected static final abstract interface extends implements import export from as',
+                'console log print debug error warn info trace assert test expect should describe it before after setup teardown mock stub spy'
+            ],
+            [DifficultyLevel.INTERMEDIATE]: [
+                'algorithm data structure linked list binary tree hash table stack queue priority queue heap graph vertex edge path cycle sort search insert delete update',
+                'database table column row index primary key foreign key join inner outer left right union select insert update delete create alter drop constraint',
+                'http https request response get post put delete patch head options status code header body json xml yaml html css javascript client server'
+            ],
+            [DifficultyLevel.ADVANCED]: [
+                'microservices architecture containerization docker kubernetes orchestration deployment scaling load balancing service discovery circuit breaker retry timeout bulkhead isolation',
+                'machine learning supervised unsupervised reinforcement neural network deep learning convolutional recurrent transformer attention mechanism gradient descent backpropagation optimization',
+                'distributed systems consensus raft paxos byzantine fault tolerance eventual consistency strong consistency acid properties cap theorem partition tolerance availability consistency'
+            ],
+            [DifficultyLevel.EXPERT]: [
+                'cryptocurrency blockchain distributed ledger consensus proof work stake delegated byzantine fault tolerance smart contracts decentralized autonomous organization tokenomics governance',
+                'quantum computing superposition entanglement interference quantum gates circuit model adiabatic computing quantum annealing supremacy advantage error correction fault tolerance',
+                'bioinformatics genomics proteomics sequence alignment phylogenetic analysis protein folding molecular dynamics drug discovery personalized medicine precision agriculture synthetic biology'
+            ]
+        };
+
+        // 编程代码练习模板
         const programmingTexts = {
             [DifficultyLevel.BEGINNER]: [
                 'function hello() { console.log("Hello World"); }',
@@ -84,6 +134,8 @@ export class TextGeneratorService {
         };
 
         // 存储模板到内存中
+        this.storeTextTemplates('basic_keys', basicKeysTexts);
+        this.storeTextTemplates('programming_words', programmingWordsTexts);
         this.storeTextTemplates('programming', programmingTexts);
         this.storeTextTemplates('english', englishTexts);
         this.storeTextTemplates('chinese', chineseTexts);
@@ -276,7 +328,7 @@ export class TextGeneratorService {
             metrics: {
                 averageWordLength,
                 specialCharCount,
-                uniqueCharCount,
+                uniqueCharCount: uniqueChars,
                 complexityScore
             }
         };

@@ -21,11 +21,13 @@ export enum DifficultyLevel {
 
 // 文本类型
 export enum TextType {
-    PROGRAMMING = 'programming',
-    ENGLISH = 'english',
-    CHINESE = 'chinese',
-    MIXED = 'mixed',
-    CUSTOM = 'custom'
+    BASIC_KEYS = 'basic_keys',        // 基础键位练习
+    PROGRAMMING_WORDS = 'programming_words',  // 编程词汇练习
+    PROGRAMMING = 'programming',       // 编程代码练习
+    ENGLISH = 'english',              // 英文文章
+    CHINESE = 'chinese',              // 中文文章
+    MIXED = 'mixed',                  // 混合内容
+    CUSTOM = 'custom'                 // 自定义文本
 }
 
 // 练习结果

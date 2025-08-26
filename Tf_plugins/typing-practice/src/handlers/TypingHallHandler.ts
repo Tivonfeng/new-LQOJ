@@ -63,7 +63,8 @@ export class TypingHallHandler extends Handler {
             // 获取用户文档
             const userIds = topUsers.map(user => user.uid).filter(Boolean);
             if (userIds.length > 0) {
-                const userDocs = await this.domain.getMultiUsersByUid(...userIds);
+                const UserModel = global.Hydro.model.user;
+                const userDocs = await UserModel.getList(this.domain._id, userIds);
                 udocs = Object.fromEntries(
                     userDocs.map(doc => [doc._id, doc])
                 );
@@ -102,18 +103,22 @@ export class TypingHallHandler extends Handler {
                 { key: 'expert', name: '专家', description: '极限挑战' }
             ],
             textTypes: [
-                { key: 'english', name: '英文', description: '英语文本练习' },
-                { key: 'chinese', name: '中文', description: '中文文本练习' },
-                { key: 'code', name: '代码', description: '编程代码练习' }
+                { key: 'basic_keys', name: '基础键位', description: '字母反复练习，掌握正确指法' },
+                { key: 'programming_words', name: '编程词汇', description: '常用编程词汇和变量名' },
+                { key: 'english', name: '英文文章', description: '英语文本和段落练习' },
+                { key: 'chinese', name: '中文文章', description: '中文文本和段落练习' },
+                { key: 'programming', name: '编程代码', description: '完整代码段落练习' }
             ]
         };
     }
 
     private getModeIcon(textType: string): string {
         const icons = {
-            'english': '🔤',
-            'chinese': '📝',
-            'code': '💻',
+            'basic_keys': '🔤',
+            'programming_words': '📝',
+            'english': '📄',
+            'chinese': '📜',
+            'programming': '💻',
             'mixed': '📄'
         };
         return icons[textType] || '⌨️';
@@ -121,12 +126,14 @@ export class TypingHallHandler extends Handler {
 
     private getModeName(textType: string): string {
         const names = {
-            'english': 'English Practice',
-            'chinese': 'Chinese Practice',
-            'code': 'Code Practice',
-            'mixed': 'Mixed Practice'
+            'basic_keys': '基础键位练习',
+            'programming_words': '编程词汇练习',
+            'english': '英文文章练习',
+            'chinese': '中文文章练习',
+            'programming': '编程代码练习',
+            'mixed': '混合练习'
         };
-        return names[textType] || 'Typing Practice';
+        return names[textType] || '打字练习';
     }
 
     private getTimeAgo(date: Date): string {

@@ -155,7 +155,11 @@
               <td>
                 {% if user.lastPracticeAt %}
                 <span title="{{ user.lastPracticeAt }}">
-                  {{ user.lastPracticeAt | date }}
+                  {% if user.lastPracticeAt.strftime %}
+                  {{ user.lastPracticeAt.strftime('%m/%d %H:%M') }}
+                  {% else %}
+                  {{ user.lastPracticeAt|string }}
+                  {% endif %}
                 </span>
                 {% else %}
                 {{ _('Never') }}
@@ -242,7 +246,17 @@
             <tbody>
               {% for record in recordsOverview.recentPractices %}
               <tr>
-                <td>{{ record.createdAt | date }}</td>
+                <td>
+                  {% if record.createdAt %}
+                    {% if record.createdAt.strftime %}
+                    {{ record.createdAt.strftime('%m/%d %H:%M') }}
+                    {% else %}
+                    {{ record.createdAt|string }}
+                    {% endif %}
+                  {% else %}
+                    {{ _('N/A') }}
+                  {% endif %}
+                </td>
                 <td>
                   <span class="user-link" data-uid="{{ record.uid }}">
                     User {{ record.uid }}

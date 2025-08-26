@@ -1,75 +1,555 @@
 {% extends "layout/basic.html" %}
 
 {% block head %}
+<!-- Optimized meta tags for better performance -->
+<meta name="description" content="Interactive typing practice system with real-time stats, achievements, and personalized training">
+<meta name="keywords" content="typing practice, typing speed, WPM, typing test, keyboard training">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<!-- Preload critical resources -->
+<link rel="preconnect" href="{{ url('typing_practice') }}" crossorigin>
+<link rel="dns-prefetch" href="{{ url('typing_practice') }}">
+
 <style>
-/* 基本页面样式 */
+/* 🎨 现代化设计系统配色 */
+:root {
+  /* 主色调 - 专业打字练习主题 */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-dark: #4c63d2;
+  --primary-light: #8b9de8;
+  
+  /* 背景渐变 - 现代感设计 */
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --bg-secondary: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  
+  /* 中性色系 */
+  --surface: rgba(255, 255, 255, 0.95);
+  --surface-elevated: rgba(255, 255, 255, 0.98);
+  --surface-variant: rgba(248, 250, 252, 0.8);
+  
+  /* 文本颜色 */
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  
+  /* 功能色彩 */
+  --success: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  --error: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  --warning: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+  
+  /* 阴影系统 */
+  --shadow-soft: 0 4px 20px rgba(102, 126, 234, 0.1);
+  --shadow-medium: 0 8px 30px rgba(102, 126, 234, 0.15);
+  --shadow-strong: 0 20px 60px rgba(102, 126, 234, 0.2);
+  --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
+  
+  /* 字体系统 - 清晰易读 */
+  --font-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", "Roboto Mono", monospace;
+  
+  /* 边框半径 - 简洁风格 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+}
+
+/* 🎯 专业打字页面 - 突出焦点 */
 .typing-practice-page {
-  background-color: #f5f5f5;
+  background: var(--bg-gradient);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  padding: 20px 0;
+  font-family: var(--font-primary);
+  padding: 24px 0;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* 确保React组件有足够空间 */
+/* 简化背景 - 减少干扰 */
+.typing-practice-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(90, 103, 216, 0.06) 0%, transparent 50%);
+  z-index: -1;
+}
+
+/* 🎯 专业容器 - 突出内容 */
 #typing-practice-app-mount-point {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  background: var(--surface-elevated);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  box-shadow: var(--shadow-medium);
+  position: relative;
+  min-height: 600px;
+  overflow: hidden;
 }
 
-/* 加载状态 */
-.loading-spinner {
+/* 添加微妙的内部光影效果 */
+#typing-practice-app-mount-point::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    transparent 100%
+  );
+  z-index: 1;
+}
+
+#typing-practice-app-mount-point::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 🌟 现代化加载状态设计 */
+.loading-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 200px;
+  height: 400px;
+  text-align: center;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
   font-size: 18px;
-  color: #666;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
-.loading-spinner::after {
+/* 🎨 高级加载动画设计 */
+.spinner-icon {
+  width: 60px;
+  height: 60px;
+  position: relative;
+}
+
+.spinner-icon::before {
   content: '';
-  width: 20px;
-  height: 20px;
-  margin-left: 10px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #667eea;
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  background: var(--primary-gradient);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), black 0);
+  animation: spinGlow 1.2s linear infinite;
 }
 
+.spinner-icon::after {
+  content: '⌨️';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.loading-progress {
+  margin-top: 15px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
+  padding: 8px 16px;
+  background: var(--surface-variant);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(10px);
+}
+
+/* 🎨 现代化骨架屏设计 */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    rgba(102, 126, 234, 0.08) 0%, 
+    rgba(102, 126, 234, 0.15) 50%, 
+    rgba(102, 126, 234, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerGradient 2.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+  margin: 15px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    transparent 100%
+  );
+  animation: shimmerOverlay 2s ease-in-out infinite;
+}
+
+.skeleton-header {
+  height: 48px;
+  width: 65%;
+  margin-bottom: 25px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-line {
+  height: 24px;
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-line:last-child {
+  width: 75%;
+}
+
+/* 🚨 现代化错误状态设计 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  text-align: center;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.error-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  opacity: 0.9;
+  animation: errorPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(245, 101, 101, 0.3));
+}
+
+.error-message {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  background: var(--error);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.error-details {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+.error-retry {
+  padding: 14px 28px;
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+.error-retry::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.error-retry:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-strong);
+}
+
+.error-retry:hover::before {
+  opacity: 1;
+}
+
+.error-retry:active {
+  transform: translateY(-1px);
+}
+
+/* Animations */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loading-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .typing-practice-page {
+    padding: 10px 0;
+  }
+  
+  #typing-practice-app-mount-point {
+    margin: 0 10px;
+    padding: 15px;
+    border-radius: 12px;
+  }
+  
+  .loading-container {
+    height: 250px;
+  }
+  
+  .loading-spinner {
+    font-size: 16px;
+  }
+  
+  .spinner-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Performance optimizations */
+.typing-practice-page * {
+  box-sizing: border-box;
+}
+
+/* GPU acceleration for animations */
+.spinner-icon,
+.loading-skeleton {
+  will-change: transform;
+  transform: translateZ(0);
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="typing-practice-page">
-  <!-- React应用挂载点 -->
+  <!-- Enhanced React app mount point with improved loading states -->
   <div id="typing-practice-app-mount-point">
-    <div class="loading-spinner">正在加载打字练习界面</div>
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner-icon"></div>
+        <div class="loading-text">正在加载打字练习界面</div>
+        <div class="loading-progress">初始化组件中...</div>
+      </div>
+      
+      <!-- Loading skeleton for better perceived performance -->
+      <div class="loading-skeleton skeleton-header"></div>
+      <div class="loading-skeleton skeleton-line"></div>
+      <div class="loading-skeleton skeleton-line"></div>
+      <div class="loading-skeleton skeleton-line"></div>
+    </div>
+    
+    <!-- Error fallback (hidden by default, shown via JavaScript if needed) -->
+    <div class="error-container" style="display: none;" id="app-error-fallback">
+      <div class="error-icon">⚠️</div>
+      <div class="error-message">加载失败</div>
+      <div class="error-details">打字练习界面加载时出现问题，请刷新页面重试</div>
+      <button class="error-retry" onclick="window.location.reload()">刷新页面</button>
+    </div>
   </div>
 </div>
 
-<!-- 传递数据给React组件 -->
+<!-- Enhanced data transfer with error handling -->
 <script>
-window.TypingPracticeData = {
-  user: {
-    id: {{ user._id or 0 }},
-    username: "{{ user.uname or 'Guest' }}"
-  },
-  userStats: {{ userStats | json | safe }},
-  leaderboard: {{ leaderboard | json | safe }},
-  scoreSystemStatus: {{ scoreSystemStatus | json | safe }},
-  recommendedText: {{ recommendedText | json | safe }},
-  config: {{ config | json | safe }},
-  difficulties: {{ difficulties | json | safe }},
-  textTypes: {{ textTypes | json | safe }}
-};
+// Enhanced data initialization with error handling and loading feedback
+(function() {
+  'use strict';
+  
+  // Update loading progress
+  const updateLoadingProgress = (text) => {
+    const progressEl = document.querySelector('.loading-progress');
+    if (progressEl) {
+      progressEl.textContent = text;
+    }
+  };
+  
+  // Error handler for data initialization
+  const handleDataError = (error) => {
+    console.error('Error initializing typing practice data:', error);
+    
+    // Hide loading state
+    const loadingContainer = document.querySelector('.loading-container');
+    const errorContainer = document.getElementById('app-error-fallback');
+    
+    if (loadingContainer) loadingContainer.style.display = 'none';
+    if (errorContainer) {
+      errorContainer.style.display = 'flex';
+      errorContainer.querySelector('.error-details').textContent = 
+        '数据初始化失败: ' + (error.message || '未知错误');
+    }
+  };
+  
+  try {
+    updateLoadingProgress('加载用户数据...');
+    
+    // Initialize typing practice data with enhanced error handling
+    window.TypingPracticeData = {
+      user: {
+        id: {{ user._id or 0 }},
+        username: "{{ (user.uname or 'Guest') | escape | safe }}"
+      },
+      userStats: {{ userStats | json | safe }},
+      leaderboard: {{ leaderboard | json | safe }},
+      scoreSystemStatus: {{ scoreSystemStatus | json | safe }},
+      recommendedText: {{ recommendedText | json | safe }},
+      config: {{ config | json | safe }},
+      difficulties: {{ difficulties | json | safe }},
+      textTypes: {{ textTypes | json | safe }},
+      
+      // Enhanced metadata
+      meta: {
+        loadTime: Date.now(),
+        userAgent: navigator.userAgent,
+        language: navigator.language || 'zh-CN',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        screen: {
+          width: screen.width,
+          height: screen.height,
+          pixelRatio: window.devicePixelRatio || 1
+        }
+      }
+    };
+    
+    updateLoadingProgress('验证数据完整性...');
+    
+    // Data validation
+    const data = window.TypingPracticeData;
+    if (!data.user || !data.config) {
+      throw new Error('Critical data missing');
+    }
+    
+    // Validate required configuration
+    if (!data.config.maxTextLength || data.config.maxTextLength < 50) {
+      data.config.maxTextLength = 500;
+    }
+    
+    if (!data.config.minAccuracy || data.config.minAccuracy < 0) {
+      data.config.minAccuracy = 60;
+    }
+    
+    updateLoadingProgress('准备就绪...');
+    
+    // Enhanced debug logging with performance metrics
+    const perfStart = performance.now();
+    console.group('🎯 Typing Practice Data Loaded');
+    console.log('📊 User Stats:', data.userStats);
+    console.log('🏆 Leaderboard entries:', data.leaderboard?.length || 0);
+    console.log('⚙️ Config:', data.config);
+    console.log('🎯 Recommended text length:', data.recommendedText?.text?.length || 0);
+    console.log('🌍 Environment:', {
+      screen: `${data.meta.screen.width}x${data.meta.screen.height}`,
+      pixelRatio: data.meta.screen.pixelRatio,
+      language: data.meta.language,
+      timezone: data.meta.timezone
+    });
+    console.log('⏱️ Data load time:', (performance.now() - perfStart).toFixed(2) + 'ms');
+    console.groupEnd();
+    
+    // Mark data as ready
+    window.TypingPracticeDataReady = true;
+    document.dispatchEvent(new CustomEvent('typingPracticeDataReady', { detail: data }));
+    
+  } catch (error) {
+    handleDataError(error);
+  }
+})();
+
+// Enhanced app loading with timeout protection
+(function() {
+  let loadTimeout;
+  let appLoadStartTime = Date.now();
+  
+  // Set a reasonable timeout for app loading (10 seconds)
+  loadTimeout = setTimeout(() => {
+    const loadingContainer = document.querySelector('.loading-container');
+    const errorContainer = document.getElementById('app-error-fallback');
+    
+    if (loadingContainer && loadingContainer.style.display !== 'none') {
+      console.error('App loading timeout exceeded');
+      
+      if (loadingContainer) loadingContainer.style.display = 'none';
+      if (errorContainer) {
+        errorContainer.style.display = 'flex';
+        errorContainer.querySelector('.error-details').textContent = 
+          '应用加载超时，请检查网络连接后刷新页面重试';
+      }
+    }
+  }, 10000);
+  
+  // Listen for successful app mount (to be dispatched by React component)
+  document.addEventListener('typingPracticeAppMounted', function() {
+    clearTimeout(loadTimeout);
+    
+    const loadTime = Date.now() - appLoadStartTime;
+    console.log(`🚀 Typing Practice App mounted successfully in ${loadTime}ms`);
+    
+    // Hide loading state
+    const loadingContainer = document.querySelector('.loading-container');
+    if (loadingContainer) {
+      loadingContainer.style.opacity = '0';
+      loadingContainer.style.transition = 'opacity 0.3s ease-out';
+      setTimeout(() => {
+        loadingContainer.style.display = 'none';
+      }, 300);
+    }
+  });
+})();
 </script>
 {% endblock %}

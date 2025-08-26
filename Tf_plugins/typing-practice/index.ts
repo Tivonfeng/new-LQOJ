@@ -73,6 +73,7 @@ export default function apply(ctx: Context, config: Partial<TypingConfig> = {}) 
     // 注册路由 - 直接传递Handler类
     ctx.Route('typing_hall', '/typing/hall', TypingHallHandler);  // 打字大厅（公开访问）
     ctx.Route('typing_practice', '/typing', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.Route('typing_text', '/typing/text', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('typing_data', '/typing/data', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('typing_stats', '/typing/stats', TypingStatsHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('typing_admin', '/typing/admin', TypingAdminHandler, PRIV.PRIV_CREATE_DOMAIN);

@@ -38,6 +38,7 @@ export class TypingPracticeHandler extends Handler {
     /**
      * GET /typing - 显示打字练习页面
      * GET /typing/data - 返回JSON数据
+     * GET /typing/text - 生成文本API
      */
     async get() {
         // 检查用户是否登录
@@ -46,6 +47,11 @@ export class TypingPracticeHandler extends Handler {
         // 如果是数据API请求，返回JSON
         if (this.request.path === '/typing/data') {
             return this.getData();
+        }
+        
+        // 如果是文本生成请求，返回JSON
+        if (this.request.path === '/typing/text') {
+            return this.getGenerateText();
         }
 
         try {
@@ -61,12 +67,46 @@ export class TypingPracticeHandler extends Handler {
                 integration: 'disabled'
             };
 
-            // 获取推荐文本
-            const recommendedTextData = this.textGeneratorService.getRecommendedText({
-                averageWPM: userStats.averageWPM,
-                averageAccuracy: userStats.averageAccuracy,
-                level: userStats.level
-            });
+            // 获取URL参数
+            const urlDifficulty = this.request.query.difficulty as string;
+            const urlTextType = this.request.query.textType as string;
+            
+            // 决定推荐文本的参数
+            let difficulty: DifficultyLevel;
+            let textType: TextType;
+            
+            if (urlDifficulty && Object.values(DifficultyLevel).includes(urlDifficulty as DifficultyLevel)) {
+                difficulty = urlDifficulty as DifficultyLevel;
+            } else {
+                // 使用推荐算法
+                const rec = this.textGeneratorService.getRecommendedText({
+                    averageWPM: userStats.averageWPM,
+                    averageAccuracy: userStats.averageAccuracy,
+                    level: userStats.level
+                });
+                difficulty = rec.difficulty;
+            }
+            
+            if (urlTextType && Object.values(TextType).includes(urlTextType as TextType)) {
+                textType = urlTextType as TextType;
+            } else {
+                // 使用推荐算法
+                const rec = this.textGeneratorService.getRecommendedText({
+                    averageWPM: userStats.averageWPM,
+                    averageAccuracy: userStats.averageAccuracy,
+                    level: userStats.level
+                });
+                textType = rec.type;
+            }
+
+            // 生成指定类型的文本
+            const generatedText = this.textGeneratorService.generateText(difficulty, textType);
+            const recommendedTextData = {
+                text: generatedText,
+                difficulty,
+                type: textType,
+                reason: urlDifficulty || urlTextType ? '根据用户选择的模式生成' : '根据用户水平推荐'
+            };
 
             // 确保推荐文本有正确的数据结构
             const recommendedText = {
@@ -121,14 +161,30 @@ export class TypingPracticeHandler extends Handler {
 
     /**
      * POST /typing - 提交打字练习结果
+     * POST /typing/text - 生成新文本
      */
-    @param('originalText', Types.String)
-    @param('userInput', Types.String)
-    @param('result', Types.ObjectId)
-    async postSubmitResult(domainId: string, originalText: string, userInput: string, result: TypingResult) {
+    async post() {
         this.checkPriv(PRIV.PRIV_USER_PROFILE);
 
+        // 如果是文本生成请求
+        if (this.request.path === '/typing/text') {
+            return this.postGenerateTextSimple();
+        }
+
+        // 否则处理练习结果提交
+        const { originalText, userInput, result: resultStr } = this.request.body;
+        console.log('Received POST data:', { originalText: !!originalText, userInput: !!userInput, result: !!resultStr });
+
         try {
+            // 解析结果数据
+            let result: TypingResult;
+            try {
+                result = JSON.parse(resultStr);
+            } catch (parseError) {
+                console.error('Failed to parse result JSON:', parseError);
+                throw new ValidationError('Invalid result data format');
+            }
+
             // 验证输入数据
             if (!originalText || !userInput || !result) {
                 throw new ValidationError('Missing required data');
@@ -156,6 +212,8 @@ export class TypingPracticeHandler extends Handler {
                 levelUp: false,
                 newLevel: undefined
             };
+
+            const domainId = this.domain._id;
 
             // 如果启用积分集成，处理积分奖励
             if (this.config.scoreIntegration && this.scoreIntegrationService) {
@@ -225,6 +283,102 @@ export class TypingPracticeHandler extends Handler {
                 error: {
                     code: error.name || 'PROCESSING_ERROR',
                     message: error.message || 'Failed to process typing result'
+                }
+            };
+            
+            this.response.body = response;
+        }
+    }
+
+    /**
+     * 简化的文本生成方法 - 处理POST /typing/text
+     */
+    async postGenerateTextSimple() {
+        try {
+            const { difficulty, textType } = this.request.body;
+            
+            // 验证和设置默认参数
+            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel) 
+                ? (difficulty as DifficultyLevel) 
+                : DifficultyLevel.BEGINNER;
+            
+            const validTextType = Object.values(TextType).includes(textType as TextType)
+                ? (textType as TextType)
+                : TextType.ENGLISH;
+
+            // 生成文本
+            const generatedText = this.textGeneratorService.generateText(validDifficulty, validTextType);
+            
+            // 分析文本难度
+            const textAnalysis = this.textGeneratorService.analyzeTextDifficulty(generatedText);
+
+            const response: TypingPracticeResponse = {
+                success: true,
+                data: {
+                    text: generatedText,
+                    difficulty: textAnalysis.estimatedDifficulty,
+                    textType: validTextType,
+                    analysis: textAnalysis.metrics
+                }
+            };
+
+            this.response.body = response;
+        } catch (error) {
+            console.error('[TypingPracticeHandler] Error generating text:', error);
+            
+            const response: TypingPracticeResponse = {
+                success: false,
+                error: {
+                    code: error.name || 'TEXT_GENERATION_ERROR',
+                    message: error.message || 'Failed to generate practice text'
+                }
+            };
+            
+            this.response.body = response;
+        }
+    }
+
+    /**
+     * 简化的文本生成方法 - 处理GET /typing/text
+     */
+    async getGenerateText() {
+        try {
+            const { difficulty, textType } = this.request.query;
+            
+            // 验证和设置默认参数
+            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel) 
+                ? (difficulty as DifficultyLevel) 
+                : DifficultyLevel.BEGINNER;
+            
+            const validTextType = Object.values(TextType).includes(textType as TextType)
+                ? (textType as TextType)
+                : TextType.ENGLISH;
+
+            // 生成文本
+            const generatedText = this.textGeneratorService.generateText(validDifficulty, validTextType);
+            
+            // 分析文本难度
+            const textAnalysis = this.textGeneratorService.analyzeTextDifficulty(generatedText);
+
+            const response: TypingPracticeResponse = {
+                success: true,
+                data: {
+                    text: generatedText,
+                    difficulty: textAnalysis.estimatedDifficulty,
+                    textType: validTextType,
+                    analysis: textAnalysis.metrics
+                }
+            };
+
+            this.response.body = response;
+        } catch (error) {
+            console.error('[TypingPracticeHandler] Error generating text:', error);
+            
+            const response: TypingPracticeResponse = {
+                success: false,
+                error: {
+                    code: error.name || 'TEXT_GENERATION_ERROR',
+                    message: error.message || 'Failed to generate practice text'
                 }
             };
             
