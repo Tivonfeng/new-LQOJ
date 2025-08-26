@@ -1,0 +1,1621 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">⌨️ {{ _('Typing Hall') }}</h1>
+            <p class="hero-subtitle">{{ _('Master Your Typing Skills') }} <span class="skill-badge">🎯 技能提升中心</span></p>
+        </div>
+        <div class="hero-stats">
+            {% if isLoggedIn %}
+            <div class="stat-badge">
+                <span class="stat-icon">🏆</span>
+                <span class="stat-text">{{ _('Best WPM') }}: {{ userStats.bestWPM or 0 }}</span>
+            </div>
+            <div class="stat-badge">
+                <span class="stat-icon">📊</span>
+                <span class="stat-text">{{ _('Level') }}: {{ userStats.level or 1 }}</span>
+            </div>
+            {% endif %}
+            <div class="stat-badge">
+                <span class="stat-icon">👥</span>
+                <span class="stat-text">{{ todayActiveUsers }} {{ _('Active Today') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Practice Modes Spotlight -->
+    <div class="practice-spotlight">
+        <div class="spotlight-header">
+            <div class="spotlight-title">
+                <span class="title-icon">🎯</span>
+                <h2>{{ _('Practice Modes') }}</h2>
+                <span class="subtitle">{{ _('Choose Your Challenge') }}</span>
+            </div>
+        </div>
+        
+        <div class="practice-content">
+            <!-- Basic Key Training -->
+            <div class="mode-card basic-keys-mode">
+                <div class="mode-header">
+                    <div class="mode-icon">🔤</div>
+                    <div class="mode-info">
+                        <h3>{{ _('Basic Key Training') }}</h3>
+                        <p class="mode-desc">{{ _('Master fundamental finger positions') }}</p>
+                        <div class="mode-features">
+                            <span class="feature-tag">{{ _('Beginner Friendly') }}</span>
+                            <span class="feature-tag">{{ _('Finger Position') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="keyboard-preview">
+                    <div class="keyboard-row">
+                        <div class="key">Q</div>
+                        <div class="key">W</div>
+                        <div class="key">E</div>
+                        <div class="key">R</div>
+                        <div class="key">T</div>
+                        <div class="key">Y</div>
+                        <div class="key">U</div>
+                        <div class="key">I</div>
+                        <div class="key">O</div>
+                        <div class="key">P</div>
+                    </div>
+                    <div class="keyboard-row">
+                        <div class="key highlight">A</div>
+                        <div class="key highlight">S</div>
+                        <div class="key highlight">D</div>
+                        <div class="key highlight">F</div>
+                        <div class="key">G</div>
+                        <div class="key">H</div>
+                        <div class="key highlight">J</div>
+                        <div class="key highlight">K</div>
+                        <div class="key highlight">L</div>
+                        <div class="key">;</div>
+                    </div>
+                </div>
+                
+                <div class="mode-progress">
+                    <div class="progress-info">
+                        <span class="progress-text">{{ _('Progress') }}: {{ userProgress.basicKeys or 0 }}%</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ userProgress.basicKeys or 0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url('typing_practice') }}" class="mode-btn basic-btn">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">{{ _('Start Training') }}</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+            </div>
+            
+            <!-- Word Practice -->
+            <div class="mode-card word-practice-mode">
+                <div class="mode-header">
+                    <div class="mode-icon">📝</div>
+                    <div class="mode-info">
+                        <h3>{{ _('Word Practice') }}</h3>
+                        <p class="mode-desc">{{ _('Build vocabulary and speed') }}</p>
+                        <div class="mode-features">
+                            <span class="feature-tag">{{ _('Common Words') }}</span>
+                            <span class="feature-tag word-feature">{{ _('Multiple Languages') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="word-preview">
+                    <div class="preview-words">
+                        <span class="word">hello</span>
+                        <span class="word">world</span>
+                        <span class="word">typing</span>
+                        <span class="word">practice</span>
+                        <span class="word">speed</span>
+                        <span class="word">accuracy</span>
+                    </div>
+                </div>
+                
+                <div class="mode-progress">
+                    <div class="progress-info">
+                        <span class="progress-text">{{ _('Words Mastered') }}: {{ userProgress.wordsCompleted or 0 }}</span>
+                        <div class="difficulty-badges">
+                            <span class="diff-badge">{{ _('Easy') }} ✓</span>
+                            <span class="diff-badge">{{ _('Medium') }} 80%</span>
+                            <span class="diff-badge">{{ _('Hard') }} 20%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url('typing_practice') }}" class="mode-btn word-btn">
+                    <span class="btn-icon">💪</span>
+                    <span class="btn-text">{{ _('Practice Words') }}</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+            </div>
+            
+            <!-- Article Practice -->
+            <div class="mode-card article-practice-mode">
+                <div class="mode-header">
+                    <div class="mode-icon">📄</div>
+                    <div class="mode-info">
+                        <h3>{{ _('Article Practice') }}</h3>
+                        <p class="mode-desc">{{ _('Real-world typing scenarios') }}</p>
+                        <div class="mode-features">
+                            <span class="feature-tag">{{ _('Full Texts') }}</span>
+                            <span class="feature-tag article-feature">{{ _('Code & Literature') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="article-preview">
+                    <div class="preview-text">
+                        <div class="text-line">The quick brown fox jumps over the lazy dog.</div>
+                        <div class="text-line">This pangram contains every letter of the alphabet.</div>
+                        <div class="text-line highlight-line">Perfect for comprehensive typing practice...</div>
+                    </div>
+                </div>
+                
+                <div class="mode-progress">
+                    <div class="progress-info">
+                        <span class="progress-text">{{ _('Articles Completed') }}: {{ userProgress.articlesCompleted or 0 }}</span>
+                        <div class="article-types">
+                            <span class="type-badge">📚 Literature</span>
+                            <span class="type-badge">💻 Programming</span>
+                            <span class="type-badge">📰 News</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url('typing_practice') }}" class="mode-btn article-btn">
+                    <span class="btn-icon">🎯</span>
+                    <span class="btn-text">{{ _('Practice Articles') }}</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+            </div>
+            
+            <!-- Speed Challenge -->
+            <div class="mode-card speed-challenge-mode">
+                <div class="mode-header">
+                    <div class="mode-icon">⚡</div>
+                    <div class="mode-info">
+                        <h3>{{ _('Speed Challenge') }}</h3>
+                        <p class="mode-desc">{{ _('Test your limits') }}</p>
+                        <div class="mode-features">
+                            <span class="feature-tag speed-feature">{{ _('Timed Tests') }}</span>
+                            <span class="feature-tag">{{ _('Leaderboard') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="speed-preview">
+                    <div class="timer-display">
+                        <div class="timer-icon">⏱️</div>
+                        <div class="timer-options">
+                            <span class="time-option">1min</span>
+                            <span class="time-option active">3min</span>
+                            <span class="time-option">5min</span>
+                        </div>
+                    </div>
+                    <div class="speed-stats">
+                        <div class="stat">
+                            <span class="stat-label">Target</span>
+                            <span class="stat-value">60 WPM</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Best</span>
+                            <span class="stat-value">{{ userStats.bestWPM or 0 }} WPM</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url('typing_practice') }}" class="mode-btn speed-btn">
+                    <span class="btn-icon">🏁</span>
+                    <span class="btn-text">{{ _('Start Challenge') }}</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Leaderboard -->
+        <div class="leaderboard-section">
+            <div class="section-header">
+                <h3>🏆 {{ _('Top Typists') }}</h3>
+                <a href="{{ url('typing_stats') }}" class="view-all-link">
+                    {{ _('View All') }} →
+                </a>
+            </div>
+            
+            {% if leaderboard and leaderboard|length > 0 %}
+            <div class="leaderboard-list">
+                {% for user in leaderboard %}
+                <div class="leaderboard-item {{ 'current-user' if isLoggedIn and user.uid == handler.user._id }}">
+                    <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                        {% if loop.index <= 3 %}
+                            {% set medals = ['🥇', '🥈', '🥉'] %}
+                            {{ medals[loop.index - 1] }}
+                        {% else %}
+                            {{ loop.index }}
+                        {% endif %}
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">
+                            {% if udocs[user.uid] %}
+                                {{ udocs[user.uid].uname }}
+                            {% else %}
+                                User {{ user.uid }}
+                            {% endif %}
+                        </div>
+                        <div class="player-stats">
+                            <span class="stat-item">{{ user.bestWPM }} WPM</span>
+                            <span class="stat-item">{{ user.avgAccuracy }}%</span>
+                        </div>
+                    </div>
+                    <div class="player-level">
+                        Lv.{{ user.level }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">🏆</span>
+                <p>{{ _('No rankings yet') }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Personal Dashboard -->
+            <div class="dashboard-card">
+                <div class="section-header">
+                    <h4>📊 {{ _('Your Dashboard') }}</h4>
+                    <a href="{{ url('typing_stats') }}" class="more-link">{{ _('Details') }}</a>
+                </div>
+                
+                {% if isLoggedIn %}
+                <div class="stats-dashboard">
+                    <div class="dashboard-stats">
+                        <div class="dashboard-stat primary">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ userStats.averageWPM or 0 }}</div>
+                                <div class="stat-label">{{ _('Avg WPM') }}</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-stat success">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ userStats.averageAccuracy or 0 }}%</div>
+                                <div class="stat-label">{{ _('Avg Accuracy') }}</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-stat warning">
+                            <div class="stat-icon">📅</div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ userStats.practiceStreak or 0 }}</div>
+                                <div class="stat-label">{{ _('Day Streak') }}</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-stat info">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ userStats.totalTime or 0 }}h</div>
+                                <div class="stat-label">{{ _('Total Time') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activity">
+                        <h4>{{ _('Recent Activity') }}</h4>
+                        {% if recentSessions and recentSessions|length > 0 %}
+                        <div class="activity-list">
+                            {% for session in recentSessions %}
+                            <div class="activity-item">
+                                <div class="activity-icon">{{ session.modeIcon }}</div>
+                                <div class="activity-info">
+                                    <div class="activity-title">{{ session.modeName }}</div>
+                                    <div class="activity-details">
+                                        {{ session.wpm }} WPM • {{ session.accuracy }}% • {{ session.timeAgo }}
+                                    </div>
+                                </div>
+                                <div class="activity-score {{ session.performance }}">
+                                    {{ session.scoreIcon }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-activity">
+                            <span class="empty-icon">⌨️</span>
+                            <p>{{ _('No recent activity') }}</p>
+                            <small>{{ _('Start practicing to see your progress!') }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="guest-dashboard">
+                    <div class="guest-welcome">
+                        <div class="welcome-icon">👋</div>
+                        <h4>{{ _('Welcome to Typing Hall!') }}</h4>
+                        <p>{{ _('Track your progress and compete with others by creating an account.') }}</p>
+                        <a href="{{ url('user_login') }}" class="login-btn">
+                            <span class="btn-icon">🔑</span>
+                            <span class="btn-text">{{ _('Login') }}</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="tips-card">
+                <div class="tips-header">
+                    <h4>💡 {{ _('Typing Tips') }}</h4>
+                </div>
+                <div class="tips-list">
+                    <div class="tip-item">
+                        <span class="tip-icon">👆</span>
+                        <span class="tip-text">{{ _('Use proper finger positioning on home row') }}</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">👀</span>
+                        <span class="tip-text">{{ _('Look at the screen, not the keyboard') }}</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">🎯</span>
+                        <span class="tip-text">{{ _('Focus on accuracy before speed') }}</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-icon">⏰</span>
+                        <span class="tip-text">{{ _('Practice regularly for best results') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-card">
+                <h4>🚀 {{ _('Quick Actions') }}</h4>
+                <div class="action-buttons">
+                    <a href="{{ url('typing_practice') }}" class="action-btn">
+                        <span class="btn-icon">⌨️</span>
+                        <span class="btn-text">{{ _('Free Practice') }}</span>
+                    </a>
+                    <a href="{{ url('typing_practice') }}" class="action-btn">
+                        <span class="btn-icon">🧪</span>
+                        <span class="btn-text">{{ _('Typing Test') }}</span>
+                    </a>
+                    <a href="{{ url('typing_stats') }}" class="action-btn">
+                        <span class="btn-icon">📚</span>
+                        <span class="btn-text">{{ _('Statistics') }}</span>
+                    </a>
+                    <a href="{{ url('typing_practice') }}" class="action-btn">
+                        <span class="btn-icon">🎮</span>
+                        <span class="btn-text">{{ _('More Practice') }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Design System Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Reset and Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
+    background-size: cover;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+    background: linear-gradient(45deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+/* 技能提升标识样式 */
+.skill-badge {
+    background: rgba(6, 214, 160, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(6, 214, 160, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-1) var(--spacing-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-3);
+    display: inline-block;
+    animation: skillPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes skillPulse {
+    from { box-shadow: 0 0 5px rgba(6, 214, 160, 0.3); }
+    to { box-shadow: 0 0 15px rgba(6, 214, 160, 0.6); }
+}
+
+.hero-stats {
+    display: flex;
+    gap: var(--spacing-4);
+    flex-wrap: wrap;
+}
+
+.stat-badge {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.stat-badge:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 1.25rem;
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+/* Practice Modes Spotlight */
+.practice-spotlight {
+    margin-bottom: var(--spacing-8);
+}
+
+.spotlight-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-8);
+}
+
+.spotlight-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.title-icon {
+    font-size: 2rem;
+}
+
+.spotlight-title h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.subtitle {
+    background: var(--accent-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Practice Modes Grid */
+.practice-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-8);
+}
+
+.mode-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.basic-keys-mode {
+    border-color: var(--secondary-color);
+    background: linear-gradient(135deg, rgba(6, 214, 160, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.basic-keys-mode:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
+}
+
+.word-practice-mode {
+    border-color: var(--info-color);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.word-practice-mode:hover {
+    border-color: var(--info-color);
+    box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.3), var(--shadow-xl);
+}
+
+.article-practice-mode {
+    border-color: var(--warning-color);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.article-practice-mode:hover {
+    border-color: var(--warning-color);
+    box-shadow: 0 20px 25px -5px rgba(245, 158, 11, 0.3), var(--shadow-xl);
+}
+
+.speed-challenge-mode {
+    border-color: var(--error-color);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-primary) 100%);
+}
+
+.speed-challenge-mode:hover {
+    border-color: var(--error-color);
+    box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.3), var(--shadow-xl);
+}
+
+.mode-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.mode-icon {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.mode-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.mode-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--spacing-3);
+}
+
+.mode-features {
+    display: flex;
+    gap: var(--spacing-2);
+    flex-wrap: wrap;
+}
+
+.feature-tag {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.word-feature {
+    background: var(--info-color);
+    color: white;
+}
+
+.article-feature {
+    background: var(--warning-color);
+    color: white;
+}
+
+.speed-feature {
+    background: var(--error-color);
+    color: white;
+}
+
+/* Mode Preview Sections */
+.keyboard-preview {
+    background: #1a1a1a;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.keyboard-row {
+    display: flex;
+    gap: var(--spacing-1);
+    justify-content: center;
+    margin-bottom: var(--spacing-2);
+}
+
+.keyboard-row:last-child {
+    margin-bottom: 0;
+}
+
+.key {
+    width: 35px;
+    height: 35px;
+    background: #333;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: 1px solid #555;
+}
+
+.key.highlight {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    animation: keyGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes keyGlow {
+    from { box-shadow: 0 0 5px rgba(6, 214, 160, 0.5); }
+    to { box-shadow: 0 0 15px rgba(6, 214, 160, 0.8); }
+}
+
+.word-preview {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.preview-words {
+    display: flex;
+    gap: var(--spacing-4);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.word {
+    background: white;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    animation: wordFloat 3s ease-in-out infinite;
+}
+
+.word:nth-child(odd) {
+    animation-delay: 0.5s;
+}
+
+.word:nth-child(3n) {
+    animation-delay: 1s;
+}
+
+@keyframes wordFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+.article-preview {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.preview-text {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.6;
+}
+
+.text-line {
+    padding: var(--spacing-2) 0;
+    color: var(--text-secondary);
+}
+
+.highlight-line {
+    background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2), transparent);
+    color: var(--text-primary);
+    font-weight: 600;
+    animation: textHighlight 2s ease-in-out infinite;
+}
+
+@keyframes textHighlight {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.speed-preview {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.timer-icon {
+    font-size: 2rem;
+}
+
+.timer-options {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.time-option {
+    padding: var(--spacing-2) var(--spacing-3);
+    background: white;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.time-option.active {
+    background: var(--error-color);
+    color: white;
+}
+
+.speed-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-8);
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Mode Progress */
+.mode-progress {
+    margin-bottom: var(--spacing-6);
+}
+
+.progress-info {
+    text-align: center;
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-3);
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: var(--spacing-3);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary-color), var(--success-color));
+    transition: width 0.3s ease;
+}
+
+.difficulty-badges, .article-types {
+    display: flex;
+    gap: var(--spacing-2);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.diff-badge, .type-badge {
+    background: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Mode Buttons */
+.mode-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4) var(--spacing-6);
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.basic-btn {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #059669 100%);
+    color: white;
+}
+
+.basic-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.4);
+    text-decoration: none;
+    color: white;
+}
+
+.word-btn {
+    background: linear-gradient(135deg, var(--info-color) 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.word-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
+    text-decoration: none;
+    color: white;
+}
+
+.article-btn {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%);
+    color: white;
+}
+
+.article-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(245, 158, 11, 0.4);
+    text-decoration: none;
+    color: white;
+}
+
+.speed-btn {
+    background: linear-gradient(135deg, var(--error-color) 0%, #dc2626 100%);
+    color: white;
+}
+
+.speed-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.4);
+    text-decoration: none;
+    color: white;
+}
+
+.btn-icon {
+    font-size: 1.25rem;
+}
+
+.btn-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.mode-btn:hover .btn-arrow {
+    transform: translateX(4px);
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-8);
+}
+
+/* Dashboard Section */
+.dashboard-section,
+.dashboard-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.leaderboard-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h3, .section-header h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.view-all-link, .more-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.view-all-link:hover, .more-link:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    text-decoration: none;
+    color: var(--primary-color);
+    transform: translateX(2px);
+}
+
+/* Dashboard Stats */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.dashboard-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+.dashboard-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.dashboard-stat.primary { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); }
+.dashboard-stat.success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); }
+.dashboard-stat.warning { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05)); }
+.dashboard-stat.info { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); }
+
+.dashboard-stat .stat-icon {
+    font-size: 1.5rem;
+}
+
+.dashboard-stat .stat-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.dashboard-stat .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Recent Activity */
+.recent-activity h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-4);
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(4px);
+}
+
+.activity-icon {
+    font-size: 1.25rem;
+    width: 32px;
+    text-align: center;
+}
+
+.activity-info {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.activity-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.activity-score {
+    font-size: 1.25rem;
+}
+
+.activity-score.excellent { color: var(--success-color); }
+.activity-score.good { color: var(--info-color); }
+.activity-score.average { color: var(--warning-color); }
+.activity-score.poor { color: var(--error-color); }
+
+/* Guest Dashboard */
+.guest-dashboard {
+    text-align: center;
+    padding: var(--spacing-8);
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+}
+
+.guest-welcome h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-3);
+}
+
+.guest-welcome p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-6);
+}
+
+.login-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
+}
+
+.empty-activity {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-4);
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.leaderboard-card, .dashboard-card, .tips-card, .actions-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+/* Leaderboard */
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(99, 102, 241, 0.08) 100%);
+}
+
+.leaderboard-item:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.12) 100%);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+}
+
+.leaderboard-item.current-user {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.25) 100%);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.rank-badge {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 1.125rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.rank-badge.rank-1 { 
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #8b5a00;
+    font-size: 1.5rem;
+    animation: champion-glow 2s ease-in-out infinite alternate;
+}
+
+.rank-badge.rank-2 { 
+    background: linear-gradient(135deg, #c0c0c0, #e2e8f0);
+    color: #4a5568;
+    font-size: 1.3rem;
+}
+
+.rank-badge.rank-3 { 
+    background: linear-gradient(135deg, #cd7f32, #d69e2e);
+    color: white;
+    font-size: 1.3rem;
+}
+
+.rank-other {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    box-shadow: none;
+}
+
+@keyframes champion-glow {
+    from { 
+        box-shadow: 0 4px 8px rgba(255, 215, 0, 0.4);
+        transform: scale(1);
+    }
+    to { 
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.6);
+        transform: scale(1.05);
+    }
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+    font-size: 1rem;
+}
+
+.player-stats {
+    display: flex;
+    gap: var(--spacing-4);
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.8);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(4px);
+    font-weight: 500;
+}
+
+.player-level {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-1);
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 0.875rem;
+    background: rgba(245, 158, 11, 0.1);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    min-width: 60px;
+}
+
+/* Tips Card */
+.tips-header h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-4);
+}
+
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+}
+
+.tip-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(2px);
+}
+
+.tip-icon {
+    font-size: 1.125rem;
+    margin-top: var(--spacing-1);
+}
+
+.tip-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Actions Card */
+.actions-card h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-4);
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.action-btn .btn-icon {
+    font-size: 1.125rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-4);
+    color: var(--text-muted);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-radius: var(--radius-lg);
+    border: 2px dashed rgba(99, 102, 241, 0.2);
+}
+
+.empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.6;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .sidebar {
+        order: -1;
+    }
+    
+    .practice-content {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-stats {
+        justify-content: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .practice-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .mode-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .spotlight-header {
+        flex-direction: column;
+        gap: var(--spacing-4);
+        align-items: flex-start;
+    }
+    
+    /* Leaderboard responsive */
+    .player-stats {
+        gap: var(--spacing-2);
+    }
+    
+    .stat-item {
+        font-size: 0.8125rem;
+    }
+    
+    .leaderboard-item {
+        padding: var(--spacing-3);
+        gap: var(--spacing-3);
+    }
+    
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .rank-badge.rank-1,
+    .rank-badge.rank-2,
+    .rank-badge.rank-3 {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-section {
+        padding: var(--spacing-8) 0 var(--spacing-6) 0;
+    }
+    
+    .hero-content {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-3);
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .mode-card, .dashboard-section, .dashboard-card, .leaderboard-section, .leaderboard-card, .tips-card, .actions-card {
+        padding: var(--spacing-4);
+    }
+    
+    .mode-btn {
+        padding: var(--spacing-3) var(--spacing-4);
+        font-size: 1rem;
+    }
+    
+    .stat-badge {
+        font-size: 0.875rem;
+        padding: var(--spacing-2) var(--spacing-3);
+    }
+    
+    /* Small screen leaderboard */
+    .player-stats {
+        flex-direction: column;
+        gap: var(--spacing-1);
+    }
+    
+    .leaderboard-item {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-3);
+    }
+    
+    .player-level {
+        flex-direction: row;
+        justify-content: center;
+        align-items: baseline;
+        gap: var(--spacing-2);
+        min-width: auto;
+    }
+}
+</style>
+
+{% endblock %}

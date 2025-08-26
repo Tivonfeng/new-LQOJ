@@ -1,0 +1,75 @@
+{% extends "layout/basic.html" %}
+
+{% block head %}
+<style>
+/* 基本页面样式 */
+.typing-practice-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  padding: 20px 0;
+}
+
+/* 确保React组件有足够空间 */
+#typing-practice-app-mount-point {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* 加载状态 */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+.loading-spinner::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  margin-left: 10px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="typing-practice-page">
+  <!-- React应用挂载点 -->
+  <div id="typing-practice-app-mount-point">
+    <div class="loading-spinner">正在加载打字练习界面</div>
+  </div>
+</div>
+
+<!-- 传递数据给React组件 -->
+<script>
+window.TypingPracticeData = {
+  user: {
+    id: {{ user._id or 0 }},
+    username: "{{ user.uname or 'Guest' }}"
+  },
+  userStats: {{ userStats | json | safe }},
+  leaderboard: {{ leaderboard | json | safe }},
+  scoreSystemStatus: {{ scoreSystemStatus | json | safe }},
+  recommendedText: {{ recommendedText | json | safe }},
+  config: {{ config | json | safe }},
+  difficulties: {{ difficulties | json | safe }},
+  textTypes: {{ textTypes | json | safe }}
+};
+</script>
+{% endblock %}

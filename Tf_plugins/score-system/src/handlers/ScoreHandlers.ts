@@ -49,6 +49,7 @@ export class ScoreHallHandler extends Handler {
         // 获取积分排行榜前10
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
 
+
         // 获取用户信息
         const uids = topUsers.map(u => u.uid);
         const UserModel = global.Hydro.model.user;

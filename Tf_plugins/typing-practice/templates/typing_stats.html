@@ -1,0 +1,328 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div class="section typing-stats-page">
+  <div class="section__header">
+    <h1 class="section__title">
+      <span class="icon">📊</span>
+      {{ _('Typing Statistics') }}
+    </h1>
+    <div class="section__tools">
+      <a href="/typing" class="btn btn-primary">
+        <span class="icon">⌨️</span>
+        {{ _('Back to Practice') }}
+      </a>
+      <button id="export-data-btn" class="btn btn-outline-secondary">
+        <span class="icon">💾</span>
+        {{ _('Export Data') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="typing-stats-container">
+    <!-- 概览卡片 -->
+    <div class="stats-overview">
+      <div class="overview-card">
+        <div class="card-icon">⚡</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Best WPM') }}</div>
+          <div class="card-value">{{ userStats.bestWPM or 0 }}</div>
+          <div class="card-change {% if progressData.wmpTrend == 'improving' %}positive{% elif progressData.wmpTrend == 'declining' %}negative{% endif %}">
+            {% if progressData.wmpTrend == 'improving' %}↗️ {{ _('Improving') }}{% elif progressData.wmpTrend == 'declining' %}↘️ {{ _('Declining') }}{% else %}➡️ {{ _('Stable') }}{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="card-icon">🎯</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Best Accuracy') }}</div>
+          <div class="card-value">{{ userStats.bestAccuracy or 0 }}%</div>
+          <div class="card-change {% if progressData.accuracyTrend == 'improving' %}positive{% elif progressData.accuracyTrend == 'declining' %}negative{% endif %}">
+            {% if progressData.accuracyTrend == 'improving' %}↗️ {{ _('Improving') }}{% elif progressData.accuracyTrend == 'declining' %}↘️ {{ _('Declining') }}{% else %}➡️ {{ _('Stable') }}{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="card-icon">💪</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Total Practices') }}</div>
+          <div class="card-value">{{ userStats.totalPractices or 0 }}</div>
+          <div class="card-subtitle">{{ ((userStats.totalTimeSpent or 0) / 60) | round(1) }} {{ _('minutes') }}</div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="card-icon">🔥</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Longest Streak') }}</div>
+          <div class="card-value">{{ userStats.longestStreak or 0 }}</div>
+          <div class="card-subtitle">{{ _('days') }}</div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <div class="card-icon">⭐</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Level') }}</div>
+          <div class="card-value">{{ userStats.level or 1 }}</div>
+          <div class="card-subtitle">{{ userStats.experiencePoints or 0 }} XP</div>
+        </div>
+      </div>
+
+      {% if config.scoreIntegration %}
+      <div class="overview-card">
+        <div class="card-icon">🏆</div>
+        <div class="card-content">
+          <div class="card-title">{{ _('Total Score') }}</div>
+          <div class="card-value">{{ userStats.totalScore or 0 }}</div>
+          <div class="card-subtitle">{{ _('Rank') }} #{{ userRankings.score or 'N/A' }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="stats-charts">
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>{{ _('Progress Over Time') }}</h3>
+          <div class="chart-controls">
+            <select id="chart-period" class="form-control form-control-sm">
+              <option value="7d">{{ _('Last 7 days') }}</option>
+              <option value="30d" selected>{{ _('Last 30 days') }}</option>
+              <option value="90d">{{ _('Last 90 days') }}</option>
+              <option value="1y">{{ _('Last year') }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-content">
+          <canvas id="progress-chart" width="800" height="300"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>{{ _('Practice Heatmap') }}</h3>
+          <div class="heatmap-legend">
+            <span>{{ _('Less') }}</span>
+            <div class="legend-scale">
+              <div class="legend-day level-0"></div>
+              <div class="legend-day level-1"></div>
+              <div class="legend-day level-2"></div>
+              <div class="legend-day level-3"></div>
+              <div class="legend-day level-4"></div>
+            </div>
+            <span>{{ _('More') }}</span>
+          </div>
+        </div>
+        <div class="heatmap-content" id="practice-heatmap">
+          <!-- 热力图将通过JavaScript动态生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 详细统计 -->
+    <div class="stats-details">
+      <div class="details-column">
+        <!-- 练习历史 -->
+        <div class="stats-section">
+          <h3>{{ _('Recent Practice History') }}</h3>
+          <div class="practice-history-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>{{ _('Date') }}</th>
+                  <th>{{ _('WPM') }}</th>
+                  <th>{{ _('Accuracy') }}</th>
+                  <th>{{ _('Time') }}</th>
+                  <th>{{ _('Score') }}</th>
+                  <th>{{ _('Difficulty') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in practiceHistory %}
+                <tr>
+                  <td>{{ record.createdAt | date }}</td>
+                  <td>{{ record.result.wpm }}</td>
+                  <td>{{ record.result.accuracy }}%</td>
+                  <td>{{ (record.result.timeSpent / 60) | round(1) }}m</td>
+                  <td>{{ record.scoreEarned }}</td>
+                  <td>
+                    <span class="difficulty-badge difficulty-{{ record.result.difficulty }}">
+                      {{ _(record.result.difficulty|title) }}
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="load-more-container">
+            <button id="load-more-history" class="btn btn-outline-primary">
+              {{ _('Load More History') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 错误分析 -->
+        {% if errorAnalysis.mostProblematicChars.length > 0 %}
+        <div class="stats-section">
+          <h3>{{ _('Error Analysis') }}</h3>
+          <div class="error-analysis">
+            <h4>{{ _('Most Problematic Characters') }}</h4>
+            <div class="error-chars-grid">
+              {% for error in errorAnalysis.mostProblematicChars %}
+              <div class="error-char-item">
+                <div class="char-display">{{ error.character }}</div>
+                <div class="char-stats">
+                  <div class="error-count">{{ error.errorCount }} {{ _('errors') }}</div>
+                  <div class="accuracy-rate">{{ error.accuracy | round(1) }}% {{ _('accuracy') }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            
+            {% if errorAnalysis.improvementSuggestions.length > 0 %}
+            <h4>{{ _('Improvement Suggestions') }}</h4>
+            <ul class="improvement-suggestions">
+              {% for suggestion in errorAnalysis.improvementSuggestions %}
+              <li>{{ suggestion }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="details-column">
+        <!-- 成就展示 -->
+        {% if userStats.achievements.length > 0 %}
+        <div class="stats-section">
+          <h3>{{ _('Achievements') }} ({{ userStats.achievements.length }})</h3>
+          <div class="achievements-grid">
+            {% for achievementId in userStats.achievements %}
+            <div class="achievement-item earned">
+              <div class="achievement-icon">🏆</div>
+              <div class="achievement-info">
+                <div class="achievement-name">{{ _(achievementId + '_name') or achievementId }}</div>
+                <div class="achievement-desc">{{ _(achievementId + '_desc') or 'Achievement unlocked!' }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 排名信息 -->
+        <div class="stats-section">
+          <h3>{{ _('Your Rankings') }}</h3>
+          <div class="rankings-grid">
+            <div class="ranking-item">
+              <div class="ranking-type">{{ _('WPM Ranking') }}</div>
+              <div class="ranking-position">#{{ userRankings.wpm or 'N/A' }}</div>
+            </div>
+            <div class="ranking-item">
+              <div class="ranking-type">{{ _('Accuracy Ranking') }}</div>
+              <div class="ranking-position">#{{ userRankings.accuracy or 'N/A' }}</div>
+            </div>
+            {% if config.scoreIntegration %}
+            <div class="ranking-item">
+              <div class="ranking-type">{{ _('Score Ranking') }}</div>
+              <div class="ranking-position">#{{ userRankings.score or 'N/A' }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 练习分布 -->
+        <div class="stats-section">
+          <h3>{{ _('Practice Distribution') }}</h3>
+          <div class="distribution-chart">
+            <h4>{{ _('By Difficulty') }}</h4>
+            <div id="difficulty-distribution" class="distribution-bars">
+              <!-- JavaScript动态生成 -->
+            </div>
+            
+            <h4>{{ _('By Text Type') }}</h4>
+            <div id="text-type-distribution" class="distribution-bars">
+              <!-- JavaScript动态生成 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 个人记录 -->
+        <div class="stats-section">
+          <h3>{{ _('Personal Records') }}</h3>
+          <div class="records-list">
+            <div class="record-item">
+              <span class="record-label">{{ _('Fastest WPM') }}:</span>
+              <span class="record-value">{{ userStats.bestWPM or 0 }}</span>
+            </div>
+            <div class="record-item">
+              <span class="record-label">{{ _('Highest Accuracy') }}:</span>
+              <span class="record-value">{{ userStats.bestAccuracy or 0 }}%</span>
+            </div>
+            <div class="record-item">
+              <span class="record-label">{{ _('Longest Session') }}:</span>
+              <span class="record-value">{{ ((userStats.longestSessionTime or 0) / 60) | round(1) }} {{ _('min') }}</span>
+            </div>
+            <div class="record-item">
+              <span class="record-label">{{ _('Most Practices in Day') }}:</span>
+              <span class="record-value">{{ userStats.maxDailyPractices or 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 数据导出模态框 -->
+<div id="export-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>{{ _('Export Your Data') }}</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-options">
+        <div class="export-format">
+          <label>{{ _('Export Format') }}:</label>
+          <select id="export-format-select" class="form-control">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </div>
+        <div class="export-description">
+          <p>{{ _('This will download your complete typing practice data including statistics, history, and achievements.') }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="download-data" class="btn btn-primary">{{ _('Download') }}</button>
+      <button class="btn btn-secondary modal-close">{{ _('Cancel') }}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 传递数据到前端组件
+window.TypingStatsData = {
+  userStats: {{ userStats | dump | safe }},
+  practiceHistory: {{ practiceHistory | dump | safe }},
+  heatmapData: {{ heatmapData | dump | safe }},
+  progressData: {{ progressData | dump | safe }},
+  errorAnalysis: {{ errorAnalysis | dump | safe }},
+  userRankings: {{ userRankings | dump | safe }},
+  config: {{ config | dump | safe }}
+};
+</script>
+{% endblock %}
+
+{% block script %}
+<!-- 统计页面React组件会在这里挂载 -->
+<div id="typing-stats-app-mount-point"></div>
+{% endblock %}

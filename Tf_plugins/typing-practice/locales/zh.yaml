@@ -1,0 +1,240 @@
+# 打字练习插件中文语言包
+
+# 导航栏和页面标题
+Typing Practice: "打字练习"
+typing_practice: "打字练习"
+typing_stats: "打字统计"
+typing_admin: "打字管理"
+
+# 练习相关
+start_practice: "开始练习"
+reset_practice: "重置练习"
+practice_completed: "练习完成！"
+try_again: "再试一次"
+new_text: "新文本"
+custom_text: "自定义文本"
+generate_new_text: "生成新文本"
+loading: "加载中..."
+
+# 统计相关
+wpm: "每分钟字数"
+accuracy: "准确率"
+time: "时间"
+progress: "进度"
+score: "积分"
+level: "等级"
+total_score: "总积分"
+best_wpm: "最佳WPM"
+average_wpm: "平均WPM"
+best_accuracy: "最佳准确率"
+total_practices: "总练习数"
+longest_streak: "最长连续"
+experience_points: "经验值"
+
+# 难度级别
+beginner: "初学者"
+intermediate: "中级"
+advanced: "高级"
+expert: "专家级"
+
+# 文本类型
+english: "英文"
+chinese: "中文"
+programming: "编程"
+mixed: "混合"
+
+# 成就系统
+achievements: "成就"
+new_achievements: "新成就！"
+achievement_unlocked: "成就解锁！"
+level_up: "升级！"
+you_are_now_level: "您现在是等级"
+
+# 成就名称和描述
+first_practice_name: "初次尝试"
+first_practice_desc: "完成第一次打字练习"
+speed_demon_40_name: "速度新手"
+speed_demon_40_desc: "WPM达到40"
+speed_demon_60_name: "打字快手"
+speed_demon_60_desc: "WPM达到60"
+speed_demon_80_name: "键盘飞侠"
+speed_demon_80_desc: "WPM达到80"
+accuracy_master_name: "精准大师"
+accuracy_master_desc: "准确率达到98%"
+persistent_learner_name: "坚持不懈"
+persistent_learner_desc: "连续练习7天"
+practice_addict_name: "练习狂人"
+practice_addict_desc: "完成100次练习"
+
+# 界面元素
+difficulty: "难度"
+text_type: "文本类型"
+length: "长度"
+est_time: "预计时间"
+characters: "字符"
+words: "单词"
+errors: "错误"
+keystrokes: "按键数"
+minutes: "分钟"
+seconds: "秒"
+days: "天"
+
+# 操作按钮
+start: "开始"
+stop: "停止"
+pause: "暂停"
+resume: "继续"
+restart: "重新开始"
+cancel: "取消"
+confirm: "确认"
+save: "保存"
+load: "加载"
+export: "导出"
+import: "导入"
+delete: "删除"
+edit: "编辑"
+view: "查看"
+close: "关闭"
+
+# 表单和输入
+enter_custom_text: "输入自定义文本"
+click_here_start_typing: "点击这里开始打字..."
+text_length_limit: "文本长度限制"
+min_accuracy_required: "最低准确率要求"
+choose_difficulty: "选择难度"
+choose_text_type: "选择文本类型"
+
+# 统计页面
+your_stats: "您的统计"
+recent_practice_history: "最近练习历史"
+practice_heatmap: "练习热力图"
+progress_over_time: "时间进度"
+error_analysis: "错误分析"
+most_problematic_chars: "最容易出错的字符"
+improvement_suggestions: "改进建议"
+personal_records: "个人记录"
+practice_distribution: "练习分布"
+by_difficulty: "按难度"
+by_text_type: "按文本类型"
+
+# 排行榜
+leaderboard: "排行榜"
+rank: "排名"
+top_players: "顶级玩家"
+your_ranking: "您的排名"
+wpm_ranking: "WPM排名"
+accuracy_ranking: "准确率排名"
+score_ranking: "积分排名"
+view_full_leaderboard: "查看完整排行榜"
+
+# 时间段
+last_7_days: "最近7天"
+last_30_days: "最近30天"
+last_90_days: "最近90天"
+last_year: "最近一年"
+today: "今天"
+yesterday: "昨天"
+this_week: "本周"
+this_month: "本月"
+
+# 趋势
+improving: "提高中"
+declining: "下降中"
+stable: "稳定"
+positive: "积极"
+negative: "消极"
+
+# 管理页面
+admin_panel: "管理面板"
+system_management: "系统管理"
+user_management: "用户管理"
+cleanup_old_data: "清理旧数据"
+send_broadcast: "发送广播"
+export_system_data: "导出系统数据"
+refresh_statistics: "刷新统计"
+reset_user_data: "重置用户数据"
+search_user: "搜索用户"
+recent_active_users: "最近活跃用户"
+system_statistics: "系统统计"
+recent_activity: "最近活动"
+
+# 统计数据
+total_users: "总用户数"
+active_users: "活跃用户"
+top_wpm: "最高WPM"
+activity_rate: "活跃率"
+user_engagement: "用户参与度"
+system_wide: "全系统"
+record: "记录"
+
+# 数据导出
+export_your_data: "导出您的数据"
+export_format: "导出格式"
+download: "下载"
+export_description: "这将下载您完整的打字练习数据，包括统计、历史和成就。"
+
+# 提示和帮助
+tips: "提示"
+recommendation: "推荐"
+focus_on_accuracy: "注重准确率胜过速度"
+use_proper_finger_positioning: "使用正确的手指位置"
+practice_regularly: "定期练习效果最佳"
+take_breaks: "适当休息以避免疲劳"
+
+# 错误消息
+error_occurred: "发生错误"
+failed_to_load: "加载失败"
+failed_to_save: "保存失败"
+invalid_input: "无效输入"
+text_too_long: "文本过长"
+text_too_short: "文本过短"
+accuracy_too_low: "准确率过低"
+connection_error: "连接错误"
+please_try_again: "请重试"
+
+# 成功消息
+saved_successfully: "保存成功"
+loaded_successfully: "加载成功"
+export_successful: "导出成功"
+practice_completed_successfully: "练习完成成功"
+achievement_earned: "获得成就"
+level_increased: "等级提升"
+
+# 确认对话框
+are_you_sure: "您确定吗？"
+this_action_cannot_be_undone: "此操作无法撤销"
+confirm_reset: "确认重置"
+confirm_delete: "确认删除"
+data_will_be_lost: "数据将丢失"
+
+# 键盘快捷键
+keyboard_shortcuts: "键盘快捷键"
+ctrl_r_restart: "Ctrl+R: 重新开始"
+ctrl_n_new_text: "Ctrl+N: 新文本"
+ctrl_t_custom_text: "Ctrl+T: 自定义文本"
+esc_close_modal: "Esc: 关闭模态框"
+
+# 音效设置
+sound_effects: "音效"
+enable_sound: "启用音效"
+sound_volume: "音量"
+correct_sound: "正确音效"
+error_sound: "错误音效"
+completion_sound: "完成音效"
+
+# 其他
+great_job: "做得好！"
+keep_practicing: "继续练习"
+you_can_do_better: "您可以做得更好"
+perfect: "完美"
+excellent: "优秀"
+good: "良好"
+needs_improvement: "需要改进"
+back_to_practice: "回到练习"
+view_detailed_stats: "查看详细统计"
+more: "更多"
+less: "更少"
+show_all: "显示全部"
+hide: "隐藏"
+expand: "展开"
+collapse: "收起"

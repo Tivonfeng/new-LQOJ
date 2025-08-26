@@ -1,0 +1,240 @@
+# Typing Practice Plugin English Language Pack
+
+# Navigation and page titles
+Typing Practice: "Typing Practice"
+typing_practice: "Typing Practice"
+typing_stats: "Typing Statistics"
+typing_admin: "Typing Admin"
+
+# Practice related
+start_practice: "Start Practice"
+reset_practice: "Reset Practice"
+practice_completed: "Practice Completed!"
+try_again: "Try Again"
+new_text: "New Text"
+custom_text: "Custom Text"
+generate_new_text: "Generate New Text"
+loading: "Loading..."
+
+# Statistics related
+wpm: "Words Per Minute"
+accuracy: "Accuracy"
+time: "Time"
+progress: "Progress"
+score: "Score"
+level: "Level"
+total_score: "Total Score"
+best_wpm: "Best WPM"
+average_wpm: "Average WPM"
+best_accuracy: "Best Accuracy"
+total_practices: "Total Practices"
+longest_streak: "Longest Streak"
+experience_points: "Experience Points"
+
+# Difficulty levels
+beginner: "Beginner"
+intermediate: "Intermediate"
+advanced: "Advanced"
+expert: "Expert"
+
+# Text types
+english: "English"
+chinese: "Chinese"
+programming: "Programming"
+mixed: "Mixed"
+
+# Achievement system
+achievements: "Achievements"
+new_achievements: "New Achievements!"
+achievement_unlocked: "Achievement Unlocked!"
+level_up: "Level Up!"
+you_are_now_level: "You are now level"
+
+# Achievement names and descriptions
+first_practice_name: "First Steps"
+first_practice_desc: "Complete your first typing practice"
+speed_demon_40_name: "Speed Novice"
+speed_demon_40_desc: "Reach 40 WPM"
+speed_demon_60_name: "Fast Fingers"
+speed_demon_60_desc: "Reach 60 WPM"
+speed_demon_80_name: "Keyboard Ninja"
+speed_demon_80_desc: "Reach 80 WPM"
+accuracy_master_name: "Accuracy Master"
+accuracy_master_desc: "Achieve 98% accuracy"
+persistent_learner_name: "Persistent Learner"
+persistent_learner_desc: "Practice for 7 consecutive days"
+practice_addict_name: "Practice Addict"
+practice_addict_desc: "Complete 100 practice sessions"
+
+# UI elements
+difficulty: "Difficulty"
+text_type: "Text Type"
+length: "Length"
+est_time: "Est. Time"
+characters: "Characters"
+words: "Words"
+errors: "Errors"
+keystrokes: "Keystrokes"
+minutes: "Minutes"
+seconds: "Seconds"
+days: "Days"
+
+# Action buttons
+start: "Start"
+stop: "Stop"
+pause: "Pause"
+resume: "Resume"
+restart: "Restart"
+cancel: "Cancel"
+confirm: "Confirm"
+save: "Save"
+load: "Load"
+export: "Export"
+import: "Import"
+delete: "Delete"
+edit: "Edit"
+view: "View"
+close: "Close"
+
+# Forms and inputs
+enter_custom_text: "Enter Custom Text"
+click_here_start_typing: "Click here and start typing..."
+text_length_limit: "Text Length Limit"
+min_accuracy_required: "Minimum Accuracy Required"
+choose_difficulty: "Choose Difficulty"
+choose_text_type: "Choose Text Type"
+
+# Statistics page
+your_stats: "Your Stats"
+recent_practice_history: "Recent Practice History"
+practice_heatmap: "Practice Heatmap"
+progress_over_time: "Progress Over Time"
+error_analysis: "Error Analysis"
+most_problematic_chars: "Most Problematic Characters"
+improvement_suggestions: "Improvement Suggestions"
+personal_records: "Personal Records"
+practice_distribution: "Practice Distribution"
+by_difficulty: "By Difficulty"
+by_text_type: "By Text Type"
+
+# Leaderboard
+leaderboard: "Leaderboard"
+rank: "Rank"
+top_players: "Top Players"
+your_ranking: "Your Ranking"
+wpm_ranking: "WPM Ranking"
+accuracy_ranking: "Accuracy Ranking"
+score_ranking: "Score Ranking"
+view_full_leaderboard: "View Full Leaderboard"
+
+# Time periods
+last_7_days: "Last 7 days"
+last_30_days: "Last 30 days"
+last_90_days: "Last 90 days"
+last_year: "Last year"
+today: "Today"
+yesterday: "Yesterday"
+this_week: "This week"
+this_month: "This month"
+
+# Trends
+improving: "Improving"
+declining: "Declining"
+stable: "Stable"
+positive: "Positive"
+negative: "Negative"
+
+# Admin page
+admin_panel: "Admin Panel"
+system_management: "System Management"
+user_management: "User Management"
+cleanup_old_data: "Cleanup Old Data"
+send_broadcast: "Send Broadcast"
+export_system_data: "Export System Data"
+refresh_statistics: "Refresh Statistics"
+reset_user_data: "Reset User Data"
+search_user: "Search User"
+recent_active_users: "Recent Active Users"
+system_statistics: "System Statistics"
+recent_activity: "Recent Activity"
+
+# Statistics data
+total_users: "Total Users"
+active_users: "Active Users"
+top_wpm: "Top WPM"
+activity_rate: "Activity Rate"
+user_engagement: "User Engagement"
+system_wide: "System-wide"
+record: "Record"
+
+# Data export
+export_your_data: "Export Your Data"
+export_format: "Export Format"
+download: "Download"
+export_description: "This will download your complete typing practice data including statistics, history, and achievements."
+
+# Tips and help
+tips: "Tips"
+recommendation: "Recommendation"
+focus_on_accuracy: "Focus on accuracy over speed initially"
+use_proper_finger_positioning: "Use proper finger positioning"
+practice_regularly: "Practice regularly for best results"
+take_breaks: "Take breaks to avoid fatigue"
+
+# Error messages
+error_occurred: "An error occurred"
+failed_to_load: "Failed to load"
+failed_to_save: "Failed to save"
+invalid_input: "Invalid input"
+text_too_long: "Text too long"
+text_too_short: "Text too short"
+accuracy_too_low: "Accuracy too low"
+connection_error: "Connection error"
+please_try_again: "Please try again"
+
+# Success messages
+saved_successfully: "Saved successfully"
+loaded_successfully: "Loaded successfully"
+export_successful: "Export successful"
+practice_completed_successfully: "Practice completed successfully"
+achievement_earned: "Achievement earned"
+level_increased: "Level increased"
+
+# Confirmation dialogs
+are_you_sure: "Are you sure?"
+this_action_cannot_be_undone: "This action cannot be undone"
+confirm_reset: "Confirm Reset"
+confirm_delete: "Confirm Delete"
+data_will_be_lost: "Data will be lost"
+
+# Keyboard shortcuts
+keyboard_shortcuts: "Keyboard Shortcuts"
+ctrl_r_restart: "Ctrl+R: Restart"
+ctrl_n_new_text: "Ctrl+N: New Text"
+ctrl_t_custom_text: "Ctrl+T: Custom Text"
+esc_close_modal: "Esc: Close Modal"
+
+# Sound settings
+sound_effects: "Sound Effects"
+enable_sound: "Enable Sound"
+sound_volume: "Sound Volume"
+correct_sound: "Correct Sound"
+error_sound: "Error Sound"
+completion_sound: "Completion Sound"
+
+# Others
+great_job: "Great job!"
+keep_practicing: "Keep practicing"
+you_can_do_better: "You can do better"
+perfect: "Perfect"
+excellent: "Excellent"
+good: "Good"
+needs_improvement: "Needs improvement"
+back_to_practice: "Back to Practice"
+view_detailed_stats: "View Detailed Stats"
+more: "More"
+less: "Less"
+show_all: "Show All"
+hide: "Hide"
+expand: "Expand"
+collapse: "Collapse"
