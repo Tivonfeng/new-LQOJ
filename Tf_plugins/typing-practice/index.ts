@@ -1,26 +1,23 @@
 import {
     Context,
-    Schema,
     PRIV,
+    Schema,
 } from 'hydrooj';
-
-// 导入类型定义
-import {
-    TypingRecord,
-    TypingUserStats,
-    TypingConfig,
-    TypingAchievement,
-} from './src/types/typing';
-
 // Services are now created directly in handlers, no longer imported here
-
 // 导入处理器
 import {
-    TypingPracticeHandler,
-    TypingStatsHandler,
     TypingAdminHandler,
     TypingHallHandler,
+    TypingPracticeHandler,
+    TypingStatsHandler,
 } from './src/handlers';
+// 导入类型定义
+import {
+    TypingAchievement,
+    TypingConfig,
+    TypingRecord,
+    TypingUserStats,
+} from './src/types/typing';
 
 // 插件配置Schema
 const Config = Schema.object({
@@ -54,24 +51,24 @@ export default function apply(ctx: Context, config: Partial<TypingConfig> = {}) 
         maxTextLength: 500,
         minAccuracy: 60,
     };
-    
+
     const finalConfig = { ...defaultConfig, ...config };
-    
+
     console.log('Typing Practice plugin loading...');
     console.log('Typing Practice config:', JSON.stringify(finalConfig, null, 2));
-    
+
     // 如果插件被禁用，直接返回
     if (!finalConfig.enabled) {
         console.log('Typing Practice plugin disabled');
         return;
     }
-    
+
     // 不再将服务注入Context，而是在每个Handler中创建服务实例
     // 这样可以避免 "cannot set property" 错误
     console.log('Services will be created in each handler as needed');
 
     // 注册路由 - 直接传递Handler类
-    ctx.Route('typing_hall', '/typing/hall', TypingHallHandler);  // 打字大厅（公开访问）
+    ctx.Route('typing_hall', '/typing/hall', TypingHallHandler); // 打字大厅（公开访问）
     ctx.Route('typing_practice', '/typing', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('typing_text', '/typing/text', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('typing_data', '/typing/data', TypingPracticeHandler, PRIV.PRIV_USER_PROFILE);
@@ -87,20 +84,13 @@ export default function apply(ctx: Context, config: Partial<TypingConfig> = {}) 
     } catch (error) {
         console.log('UI page registration not available:', (error as Error).message);
     }
-    
+
     // 注入导航栏 - 指向打字大厅
     ctx.injectUI('Nav', 'typing_hall', {
         prefix: 'typing_hall',
         icon: 'edit',
         after: 'training', // 插入到训练题目之后
     });
-
-    console.log('Typing Practice plugin routes registered:');
-    console.log('- /typing/hall - 打字大厅（主页面）');
-    console.log('- /typing - 打字练习页面');
-    console.log('- /typing/data - 数据API接口');
-    console.log('- /typing/stats - 统计页面');
-    console.log('- /typing/admin - 管理页面');
 
     console.log('Typing Practice plugin loaded successfully!');
 }

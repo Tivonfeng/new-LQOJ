@@ -1,7 +1,8 @@
-import { addPage, NamedPage } from '@hydrooj/ui-default';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createRoot } from 'react-dom/client';
 import './typing-practice.css';
+
+import { addPage, NamedPage } from '@hydrooj/ui-default';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
 // 类型定义
 interface TypingState {
@@ -36,7 +37,7 @@ interface TypingConfig {
 interface KeyboardKey {
   key: string;
   display: string;
-  shiftDisplay?: string;  // Shift组合时的显示
+  shiftDisplay?: string; // Shift组合时的显示
   finger: string;
   row: number;
   position: number;
@@ -49,8 +50,8 @@ interface KeyboardState {
   nextKey: string;
   pressedKeys: Set<string>;
   errorKeys: Set<string>;
-  isShiftPressed: boolean;  // 是否按住Shift
-  showShiftLayer: boolean;  // 是否显示Shift层
+  isShiftPressed: boolean; // 是否按住Shift
+  showShiftLayer: boolean; // 是否显示Shift层
 }
 
 // 键盘布局和手指映射
@@ -123,7 +124,7 @@ const KEYBOARD_LAYOUT: KeyboardKey[][] = [
   // 第五行（空格键行）
   [
     { key: ' ', display: 'Space', finger: 'both-thumb', row: 4, position: 0, type: 'space', width: 6.25 },
-  ]
+  ],
 ];
 
 // 虚拟键盘组件
@@ -144,41 +145,41 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ keyboardState, isActi
   // 获取按键的CSS类名
   const getKeyClassName = useCallback((key: KeyboardKey) => {
     let className = `key key-${key.finger}`;
-    
+
     if (key.type) {
       className += ` key-${key.type}`;
     }
-    
+
     // 按键宽度
     if (key.width) {
       className += ` key-width-${key.width}`;
     }
-    
+
     // Shift键高亮
     if (key.type === 'shift' && keyboardState.isShiftPressed) {
       className += ' key-shift-active';
     }
-    
+
     // 当前要按的键
     if (isActive && keyboardState.activeKey === key.key) {
       className += ' key-active';
     }
-    
+
     // 下一个要按的键
     if (isActive && keyboardState.nextKey === key.key) {
       className += ' key-next';
     }
-    
+
     // 当前按下的键
     if (keyboardState.pressedKeys.has(key.key)) {
       className += ' key-pressed';
     }
-    
+
     // 错误的键
     if (keyboardState.errorKeys.has(key.key)) {
       className += ' key-error';
     }
-    
+
     return className;
   }, [keyboardState, isActive]);
 
@@ -194,7 +195,7 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ keyboardState, isActi
                 data-key={key.key}
                 data-finger={key.finger}
                 style={{
-                  '--key-width': key.width || 1
+                  '--key-width': key.width || 1,
                 } as React.CSSProperties}
               >
                 <span className="key-display">{getKeyDisplay(key)}</span>
@@ -206,7 +207,7 @@ const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ keyboardState, isActi
           </div>
         ))}
       </div>
-      
+
       <div className="keyboard-footer">
         <div className="finger-guide">
           <div className="guide-item">
@@ -240,7 +241,7 @@ const TypingPracticeApp: React.FC = () => {
   const config: TypingConfig = initialData.config || {
     enableSoundEffects: true,
     minAccuracy: 60,
-    maxTextLength: 500
+    maxTextLength: 500,
   };
   // User data is available in initialData.user if needed
 
@@ -257,20 +258,20 @@ const TypingPracticeApp: React.FC = () => {
     keystrokeCount: 0,
     correctKeystrokes: 0,
     difficulty: initialData.recommendedText?.difficulty || 'beginner',
-    textType: initialData.recommendedText?.type || 'english'
+    textType: initialData.recommendedText?.type || 'english',
   });
 
   const [currentStats, setCurrentStats] = useState<TypingStats>({
     wpm: 0,
     accuracy: 100,
     progress: 0,
-    elapsedTime: 0
+    elapsedTime: 0,
   });
 
   const [showCustomTextModal, setShowCustomTextModal] = useState(false);
   const [customText, setCustomText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // 键盘状态管理
   const [keyboardState, setKeyboardState] = useState<KeyboardState>({
     activeKey: '',
@@ -278,7 +279,7 @@ const TypingPracticeApp: React.FC = () => {
     pressedKeys: new Set(),
     errorKeys: new Set(),
     isShiftPressed: false,
-    showShiftLayer: false
+    showShiftLayer: false,
   });
 
   // 获取当前需要按的键
@@ -313,11 +314,11 @@ const TypingPracticeApp: React.FC = () => {
   useEffect(() => {
     const currentKey = getCurrentKey();
     const nextKey = getNextKey();
-    
-    setKeyboardState(prev => ({
+
+    setKeyboardState((prev) => ({
       ...prev,
       activeKey: currentKey,
-      nextKey: nextKey
+      nextKey,
     }));
   }, [getCurrentKey, getNextKey]);
 
@@ -332,11 +333,11 @@ const TypingPracticeApp: React.FC = () => {
     const now = Date.now();
     const elapsedTime = typingState.startTime ? (now - typingState.startTime) / 1000 : 0;
     const elapsedMinutes = elapsedTime / 60;
-    
+
     // 计算WPM (假设平均单词长度为5个字符)
     const wordsTyped = typingState.userInput.length / 5;
     const wpm = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
-    
+
     // 计算准确率
     let correctChars = 0;
     for (let i = 0; i < typingState.userInput.length; i++) {
@@ -344,12 +345,12 @@ const TypingPracticeApp: React.FC = () => {
         correctChars++;
       }
     }
-    const accuracy = typingState.userInput.length > 0 
-      ? Math.round((correctChars / typingState.userInput.length) * 100) 
+    const accuracy = typingState.userInput.length > 0
+      ? Math.round((correctChars / typingState.userInput.length) * 100)
       : 100;
-    
+
     // 计算进度
-    const progress = typingState.originalText.length > 0 
+    const progress = typingState.originalText.length > 0
       ? Math.round((typingState.userInput.length / typingState.originalText.length) * 100)
       : 0;
 
@@ -357,7 +358,7 @@ const TypingPracticeApp: React.FC = () => {
       wpm: Math.max(0, wpm),
       accuracy: Math.max(0, Math.min(100, accuracy)),
       progress: Math.max(0, Math.min(100, progress)),
-      elapsedTime
+      elapsedTime,
     };
   }, [typingState]);
 
@@ -406,7 +407,7 @@ const TypingPracticeApp: React.FC = () => {
   // 渲染可打字的文本
   const renderTypingText = useCallback(() => {
     if (!textDisplayRef.current) return null;
-    
+
     const { originalText, currentPosition, userInput } = typingState;
     // 调试：打印原始文本内容
     console.log('Original text:', JSON.stringify(originalText));
@@ -414,7 +415,7 @@ const TypingPracticeApp: React.FC = () => {
 
     textDisplayRef.current.innerHTML = chars.map((char, index) => {
       let className = 'char';
-      
+
       // 只有在练习开始后才应用状态样式
       if (typingState.isActive || typingState.isCompleted) {
         if (index < userInput.length) {
@@ -439,7 +440,7 @@ const TypingPracticeApp: React.FC = () => {
       const displayChar = char === ' ' ? '&nbsp;' : char === '\n' ? ' ' : char;
       return `<span class="${className}">${displayChar}</span>`;
     }).join('');
-    
+
     return null;
   }, [typingState]);
 
@@ -451,16 +452,16 @@ const TypingPracticeApp: React.FC = () => {
 
     // 更新键盘视觉反馈
     const pressedKey = e.key;
-    setKeyboardState(prev => ({
+    setKeyboardState((prev) => ({
       ...prev,
-      pressedKeys: new Set([...prev.pressedKeys, pressedKey])
+      pressedKeys: new Set([...prev.pressedKeys, pressedKey]),
     }));
 
     // 清除按下状态
     setTimeout(() => {
-      setKeyboardState(prev => ({
+      setKeyboardState((prev) => ({
         ...prev,
-        pressedKeys: new Set([...prev.pressedKeys].filter(k => k !== pressedKey))
+        pressedKeys: new Set([...prev.pressedKeys].filter((k) => k !== pressedKey)),
       }));
     }, 100);
 
@@ -472,15 +473,15 @@ const TypingPracticeApp: React.FC = () => {
     }
 
     const currentChar = typingState.originalText[typingState.currentPosition];
-    
+
     // 处理退格键
     if (e.key === 'Backspace') {
       e.preventDefault();
       if (typingState.currentPosition > 0) {
-        setTypingState(prev => ({
+        setTypingState((prev) => ({
           ...prev,
           userInput: prev.userInput.slice(0, -1),
-          currentPosition: prev.currentPosition - 1
+          currentPosition: prev.currentPosition - 1,
         }));
       }
       return;
@@ -493,24 +494,24 @@ const TypingPracticeApp: React.FC = () => {
       e.preventDefault();
       inputChar = '\t';
     }
-    
+
     // 只处理可打印字符和特殊字符
     if (inputChar.length === 1 || ['Enter', 'Tab'].includes(e.key)) {
       e.preventDefault();
-      
+
       const isCorrect = inputChar === currentChar;
       const newKeystrokeCount = typingState.keystrokeCount + 1;
       const newCorrectKeystrokes = isCorrect ? typingState.correctKeystrokes + 1 : typingState.correctKeystrokes;
       const newErrors = isCorrect ? typingState.errors : typingState.errors + 1;
       const newPosition = typingState.currentPosition + 1;
-      
-      setTypingState(prev => ({
+
+      setTypingState((prev) => ({
         ...prev,
         userInput: prev.userInput + inputChar,
         currentPosition: newPosition,
         errors: newErrors,
         keystrokeCount: newKeystrokeCount,
-        correctKeystrokes: newCorrectKeystrokes
+        correctKeystrokes: newCorrectKeystrokes,
       }));
 
       // 播放音效
@@ -526,18 +527,18 @@ const TypingPracticeApp: React.FC = () => {
             }
           }, 200);
         }
-        
+
         // 添加键盘错误状态
-        setKeyboardState(prev => ({
+        setKeyboardState((prev) => ({
           ...prev,
-          errorKeys: new Set([...prev.errorKeys, pressedKey])
+          errorKeys: new Set([...prev.errorKeys, pressedKey]),
         }));
-        
+
         // 清除错误状态
         setTimeout(() => {
-          setKeyboardState(prev => ({
+          setKeyboardState((prev) => ({
             ...prev,
-            errorKeys: new Set([...prev.errorKeys].filter(k => k !== pressedKey))
+            errorKeys: new Set([...prev.errorKeys].filter((k) => k !== pressedKey)),
           }));
         }, 1000);
       }
@@ -551,7 +552,7 @@ const TypingPracticeApp: React.FC = () => {
 
   // 开始打字练习
   const startTyping = useCallback(() => {
-    setTypingState(prev => ({
+    setTypingState((prev) => ({
       ...prev,
       isActive: true,
       isCompleted: false,
@@ -560,9 +561,9 @@ const TypingPracticeApp: React.FC = () => {
       currentPosition: 0,
       errors: 0,
       keystrokeCount: 0,
-      correctKeystrokes: 0
+      correctKeystrokes: 0,
     }));
-    
+
     // 聚焦隐藏输入框以捕获键盘事件
     if (hiddenInputRef.current) {
       hiddenInputRef.current.focus();
@@ -571,7 +572,7 @@ const TypingPracticeApp: React.FC = () => {
 
   // 重置打字练习
   const resetTyping = useCallback(() => {
-    setTypingState(prev => ({
+    setTypingState((prev) => ({
       ...prev,
       isActive: false,
       isCompleted: false,
@@ -581,51 +582,51 @@ const TypingPracticeApp: React.FC = () => {
       currentPosition: 0,
       errors: 0,
       keystrokeCount: 0,
-      correctKeystrokes: 0
+      correctKeystrokes: 0,
     }));
-    
+
     setCurrentStats({
       wpm: 0,
       accuracy: 100,
       progress: 0,
-      elapsedTime: 0
+      elapsedTime: 0,
     });
-    
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     // 状态重置后会自动触发渲染
   }, []);
 
   // 完成练习
   const handlePracticeComplete = useCallback(async () => {
     const endTime = Date.now();
-    
+
     // 使用当前状态计算最终统计（确保数据一致性）
     const timeSpent = (endTime - typingState.startTime) / 1000;
     const elapsedMinutes = timeSpent / 60;
-    
+
     // 重新计算最终的WPM和准确率
     const wordsTyped = typingState.userInput.length / 5;
     const finalWPM = elapsedMinutes > 0 ? Math.round(wordsTyped / elapsedMinutes) : 0;
-    
+
     let correctChars = 0;
     for (let i = 0; i < typingState.userInput.length; i++) {
       if (typingState.userInput[i] === typingState.originalText[i]) {
         correctChars++;
       }
     }
-    const finalAccuracy = typingState.userInput.length > 0 
-      ? Math.round((correctChars / typingState.userInput.length) * 100) 
+    const finalAccuracy = typingState.userInput.length > 0
+      ? Math.round((correctChars / typingState.userInput.length) * 100)
       : 100;
 
-    setTypingState(prev => ({
+    setTypingState((prev) => ({
       ...prev,
       isActive: false,
       isCompleted: true,
-      endTime
+      endTime,
     }));
 
     // 播放完成音效
@@ -636,39 +637,39 @@ const TypingPracticeApp: React.FC = () => {
       wpm: Math.max(0, finalWPM),
       accuracy: Math.max(0, Math.min(100, finalAccuracy)),
       errors: typingState.errors,
-      timeSpent: timeSpent,
+      timeSpent,
       textLength: typingState.originalText.length,
       difficulty: typingState.difficulty,
       textType: typingState.textType,
       completedWords: Math.floor(typingState.originalText.length / 5),
       keystrokeCount: typingState.keystrokeCount,
-      correctKeystrokes: typingState.correctKeystrokes
+      correctKeystrokes: typingState.correctKeystrokes,
     };
 
     // 添加调试日志
     console.log('Practice completed with result:', result);
     console.log('Typing state at completion:', {
-      originalText: typingState.originalText.substring(0, 50) + '...',
+      originalText: `${typingState.originalText.substring(0, 50)}...`,
       userInput: typingState.userInput,
       startTime: typingState.startTime,
-      endTime: endTime,
+      endTime,
       errors: typingState.errors,
       keystrokeCount: typingState.keystrokeCount,
-      correctKeystrokes: typingState.correctKeystrokes
+      correctKeystrokes: typingState.correctKeystrokes,
     });
 
     // 提交结果到服务器
     try {
       setIsLoading(true);
-      
+
       const payload = {
         originalText: typingState.originalText,
         userInput: typingState.userInput,
-        result: result,
+        result,
         screenInfo: {
           width: window.screen.width,
-          height: window.screen.height
-        }
+          height: window.screen.height,
+        },
       };
 
       console.log('Sending payload to server:', payload);
@@ -685,8 +686,8 @@ const TypingPracticeApp: React.FC = () => {
         body: new URLSearchParams({
           originalText: typingState.originalText,
           userInput: typingState.userInput,
-          result: JSON.stringify(result)
-        })
+          result: JSON.stringify(result),
+        }),
       });
 
       console.log('Response status:', response.status);
@@ -709,19 +710,19 @@ const TypingPracticeApp: React.FC = () => {
         console.error('Response text:', responseText);
         throw new Error('服务器返回的不是有效的JSON格式');
       }
-      
+
       if (data.success) {
         console.log('Practice completed successfully:', data.data);
-        
+
         // 显示完成统计
         alert(`练习完成！\nWPM: ${result.wpm}\n准确率: ${result.accuracy}%\n用时: ${Math.round(result.timeSpent)}秒\n错误数: ${result.errors}`);
       } else {
         console.error('Failed to submit result:', data.error);
-        alert('提交结果失败: ' + (data.error || '未知错误'));
+        alert(`提交结果失败: ${data.error || '未知错误'}`);
       }
     } catch (error) {
       console.error('Error submitting practice result:', error);
-      alert('提交结果时发生错误: ' + error.message);
+      alert(`提交结果时发生错误: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -740,9 +741,9 @@ const TypingPracticeApp: React.FC = () => {
     try {
       setIsLoading(true);
       // 使用正确的API端点路径
-      const textApiUrl = window.location.pathname + '/text';
+      const textApiUrl = `${window.location.pathname}/text`;
       console.log('Using text API endpoint:', textApiUrl);
-      
+
       const response = await fetch(textApiUrl, {
         method: 'POST',
         headers: {
@@ -750,8 +751,8 @@ const TypingPracticeApp: React.FC = () => {
         },
         body: new URLSearchParams({
           difficulty: difficulty || typingState.difficulty,
-          textType: textType || typingState.textType
-        })
+          textType: textType || typingState.textType,
+        }),
       });
 
       // 检查响应是否成功
@@ -771,9 +772,9 @@ const TypingPracticeApp: React.FC = () => {
         console.error('Response text:', responseText);
         throw new Error('服务器返回的不是有效的JSON格式');
       }
-      
+
       if (data.success && data.data.text) {
-        setTypingState(prev => ({
+        setTypingState((prev) => ({
           ...prev,
           originalText: data.data.text.replace(/\r?\n/g, ' '),
           difficulty: data.data.difficulty || prev.difficulty,
@@ -786,7 +787,7 @@ const TypingPracticeApp: React.FC = () => {
           endTime: 0,
           errors: 0,
           keystrokeCount: 0,
-          correctKeystrokes: 0
+          correctKeystrokes: 0,
         }));
       }
     } catch (error) {
@@ -799,7 +800,7 @@ const TypingPracticeApp: React.FC = () => {
   // 处理自定义文本
   const handleCustomText = useCallback(() => {
     if (customText.trim() && customText.length <= config.maxTextLength) {
-      setTypingState(prev => ({
+      setTypingState((prev) => ({
         ...prev,
         originalText: customText.trim().replace(/\r?\n/g, ' '),
         userInput: '',
@@ -810,7 +811,7 @@ const TypingPracticeApp: React.FC = () => {
         endTime: 0,
         errors: 0,
         keystrokeCount: 0,
-        correctKeystrokes: 0
+        correctKeystrokes: 0,
       }));
 
       setShowCustomTextModal(false);
@@ -828,10 +829,10 @@ const TypingPracticeApp: React.FC = () => {
   // 获取难度的显示名称
   const getDisplayDifficulty = useCallback((difficulty: string): string => {
     const difficultyNames = {
-      'beginner': '初级',
-      'intermediate': '中级', 
-      'advanced': '高级',
-      'expert': '专家'
+      beginner: '初级',
+      intermediate: '中级',
+      advanced: '高级',
+      expert: '专家',
     };
     return difficultyNames[difficulty] || difficulty;
   }, []);
@@ -839,13 +840,13 @@ const TypingPracticeApp: React.FC = () => {
   // 获取文本类型的显示名称
   const getDisplayTextType = useCallback((textType: string): string => {
     const typeNames = {
-      'basic_keys': '基础键位',
-      'programming_words': '编程词汇',
-      'english': '英文文章',
-      'chinese': '中文文章', 
-      'programming': '编程代码',
-      'mixed': '混合内容',
-      'custom': '自定义文本'
+      basic_keys: '基础键位',
+      programming_words: '编程词汇',
+      english: '英文文章',
+      chinese: '中文文章',
+      programming: '编程代码',
+      mixed: '混合内容',
+      custom: '自定义文本',
     };
     return typeNames[textType] || textType;
   }, []);
@@ -857,7 +858,7 @@ const TypingPracticeApp: React.FC = () => {
       const updateStats = () => {
         setCurrentStats(calculateStats());
       };
-      
+
       timerRef.current = window.setInterval(updateStats, 100);
       return () => {
         if (timerRef.current) {
@@ -891,43 +892,43 @@ const TypingPracticeApp: React.FC = () => {
         hiddenInputRef.current.focus();
       }
     }, 100);
-    
+
     // 通知应用已挂载
     document.dispatchEvent(new CustomEvent('typingPracticeAppMounted'));
   }, []);
 
   // 组件挂载时的全局事件监听
   useEffect(() => {
-      // 全局快捷键
-      const handleGlobalKeyDown = (e: KeyboardEvent) => {
-        // 快捷键支持
-        if (e.ctrlKey || e.metaKey) {
-          switch (e.key) {
-            case 'r': // Ctrl+R / Cmd+R - 重新开始
-              e.preventDefault();
-              startNewPractice();
-              break;
-            case 'n': // Ctrl+N / Cmd+N - 新文本
-              e.preventDefault();
-              generateNewText();
-              break;
-            case 't': // Ctrl+T / Cmd+T - 自定义文本
-              e.preventDefault();
-              setShowCustomTextModal(true);
-              break;
-          }
+    // 全局快捷键
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 快捷键支持
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r': // Ctrl+R / Cmd+R - 重新开始
+            e.preventDefault();
+            startNewPractice();
+            break;
+          case 'n': // Ctrl+N / Cmd+N - 新文本
+            e.preventDefault();
+            generateNewText();
+            break;
+          case 't': // Ctrl+T / Cmd+T - 自定义文本
+            e.preventDefault();
+            setShowCustomTextModal(true);
+            break;
         }
-        
-        // ESC键关闭模态框
-        if (e.key === 'Escape' && !typingState.isActive) {
-          setShowCustomTextModal(false);
-        }
-      };
+      }
 
-      document.addEventListener('keydown', handleGlobalKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleGlobalKeyDown);
-      };
+      // ESC键关闭模态框
+      if (e.key === 'Escape' && !typingState.isActive) {
+        setShowCustomTextModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+    };
   }, [startNewPractice, generateNewText, typingState.isActive]);
 
   // 主渲染React组件 - 完整的打字练习界面
@@ -944,33 +945,32 @@ const TypingPracticeApp: React.FC = () => {
               <span><strong>难度:</strong> {getDisplayDifficulty(typingState.difficulty)}</span>
               <span><strong>类型:</strong> {getDisplayTextType(typingState.textType)}</span>
             </div>
-            <div 
+            <div
               ref={textDisplayRef}
-              className="typing-text" 
+              className="typing-text"
               id="typing-text"
             >
               {/* 文本内容通过renderTypingText()函数动态设置到innerHTML */}
             </div>
           </div>
-          
+
           {/* 隐藏的输入框用于捕获键盘事件 */}
-          <input 
+          <input
             ref={hiddenInputRef}
-            type="text" 
+            type="text"
             id="typing-input"
             className="hidden-input"
             style={{
               position: 'absolute',
               left: '-9999px',
-              opacity: 0
+              opacity: 0,
             }}
             autoComplete="off"
             spellCheck={false}
           />
-          
-          
+
           {/* 虚拟键盘 - 移到打字区域下方 */}
-          <VirtualKeyboard 
+          <VirtualKeyboard
             keyboardState={keyboardState}
             isActive={typingState.isActive}
           />
@@ -1007,10 +1007,10 @@ const TypingPracticeApp: React.FC = () => {
             <div className="settings-grid">
               <div className="setting-item">
                 <label>难度</label>
-                <select 
+                <select
                   className="form-control"
                   value={typingState.difficulty}
-                  onChange={(e) => setTypingState(prev => ({...prev, difficulty: e.target.value}))}
+                  onChange={(e) => setTypingState((prev) => ({ ...prev, difficulty: e.target.value }))}
                 >
                   <option value="beginner">初级</option>
                   <option value="intermediate">中级</option>
@@ -1023,7 +1023,7 @@ const TypingPracticeApp: React.FC = () => {
                 <select
                   className="form-control"
                   value={typingState.textType}
-                  onChange={(e) => setTypingState(prev => ({...prev, textType: e.target.value}))}
+                  onChange={(e) => setTypingState((prev) => ({ ...prev, textType: e.target.value }))}
                 >
                   <option value="basic_keys">基础键位</option>
                   <option value="programming_words">编程词汇</option>
@@ -1033,7 +1033,7 @@ const TypingPracticeApp: React.FC = () => {
                 </select>
               </div>
               <div className="setting-item">
-                <button 
+                <button
                   className="btn btn-primary btn-sm"
                   onClick={() => generateNewText()}
                   disabled={isLoading}
@@ -1042,7 +1042,7 @@ const TypingPracticeApp: React.FC = () => {
                 </button>
               </div>
               <div className="setting-item">
-                <button 
+                <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => setShowCustomTextModal(true)}
                 >
@@ -1050,11 +1050,11 @@ const TypingPracticeApp: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* 练习控制按钮 */}
             <div className="practice-controls">
               {!typingState.isActive && !typingState.isCompleted && (
-                <button 
+                <button
                   onClick={startTyping}
                   className="btn btn-success btn-block"
                 >
@@ -1062,7 +1062,7 @@ const TypingPracticeApp: React.FC = () => {
                 </button>
               )}
               {typingState.isActive && (
-                <button 
+                <button
                   onClick={resetTyping}
                   className="btn btn-outline-secondary btn-block"
                 >
@@ -1071,13 +1071,13 @@ const TypingPracticeApp: React.FC = () => {
               )}
               {typingState.isCompleted && (
                 <div className="completed-controls">
-                  <button 
+                  <button
                     onClick={startNewPractice}
                     className="btn btn-success btn-sm"
                   >
                     ↻ 再练一遍
                   </button>
-                  <button 
+                  <button
                     onClick={() => generateNewText()}
                     className="btn btn-outline-secondary btn-sm"
                   >
@@ -1113,8 +1113,8 @@ const TypingPracticeApp: React.FC = () => {
               <h3>排行榜</h3>
               <div className="leaderboard-list">
                 {initialData.leaderboard.slice(0, 5).map((entry: any, index: number) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`leaderboard-item ${entry.uid === initialData.user?.id ? 'current-user' : ''}`}
                   >
                     <span className="rank">{index + 1}</span>
@@ -1155,7 +1155,7 @@ const TypingPracticeApp: React.FC = () => {
         </div>
 
       </div>
-      
+
       {/* 模态框 */}
       {showCustomTextModal && (
         <div className="modal-overlay" onClick={() => setShowCustomTextModal(false)}>
@@ -1179,8 +1179,8 @@ const TypingPracticeApp: React.FC = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={handleCustomText}
                 disabled={!customText.trim() || customText.length > config.maxTextLength}
               >
@@ -1201,7 +1201,7 @@ const TypingPracticeApp: React.FC = () => {
 addPage(new NamedPage(['typing_practice'], () => {
   console.log('Typing Practice page loaded');
   console.log('Initial data available:', (window as any).TypingPracticeData);
-  
+
   // 初始化React应用
   const mountPoint = document.getElementById('typing-practice-app-mount-point');
   if (mountPoint) {

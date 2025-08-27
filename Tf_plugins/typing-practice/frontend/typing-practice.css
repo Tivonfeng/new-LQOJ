@@ -192,46 +192,6 @@
   padding: 0 var(--space-2);
 }
 
-/* 🎨 现代化头部区域 */
-.section__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-10);
-  padding: var(--space-6) 0;
-  position: relative;
-}
-
-.section__header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, 
-    var(--primary-500) 0%, 
-    var(--primary-300) 50%, 
-    transparent 100%
-  );
-}
-
-.section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: var(--text-4xl);
-  font-weight: 800;
-  color: var(--gray-900);
-  margin: 0;
-  font-family: var(--font-display);
-  letter-spacing: -0.025em;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .typing-icon {
   font-size: var(--text-4xl);
   filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
@@ -1849,12 +1809,6 @@
   
   .stats-display-card .stat-value {
     font-size: var(--text-lg);
-  }
-  
-  .section__header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-4);
   }
   
   .section__title {

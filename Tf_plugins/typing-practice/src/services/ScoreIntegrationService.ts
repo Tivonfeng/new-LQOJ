@@ -1,12 +1,10 @@
 import { Context } from 'hydrooj';
-import { TypingService } from './TypingService';
 import {
-    TypingResult,
-    TypingAchievement,
-    TypingUserStats,
     DifficultyLevel,
-    TextType
-} from '../types/typing';
+    TypingAchievement,
+    TypingResult,
+    TypingUserStats } from '../types/typing';
+import { TypingService } from './TypingService';
 
 // 定义积分记录类型（与score-system插件兼容）
 interface ScoreRecord {
@@ -34,8 +32,8 @@ export class ScoreIntegrationService {
             // 尝试检测score-system插件是否可用
             // 这里我们检查是否存在相关的数据库集合
             const collections = await this.ctx.db.db.listCollections().toArray();
-            const hasScoreCollections = collections.some(col => 
-                col.name === 'score.records' || col.name === 'score.users'
+            const hasScoreCollections = collections.some((col) =>
+                col.name === 'score.records' || col.name === 'score.users',
             );
 
             if (hasScoreCollections) {
@@ -58,7 +56,7 @@ export class ScoreIntegrationService {
         domainId: string,
         result: TypingResult,
         originalText: string,
-        userInput: string
+        userInput: string,
     ): Promise<{
         score: number;
         achievements: TypingAchievement[];
@@ -74,34 +72,34 @@ export class ScoreIntegrationService {
 
             // 计算基础积分
             const baseScore = this.typingService.calculateScore(result);
-            
+
             // 获取用户当前统计
             const userStats = await this.typingService.getUserStats(domainId, uid);
             const oldLevel = userStats.level;
-            
+
             // 检查成就
             const achievements = await this.typingService.checkAchievements(domainId, uid, result, userStats);
             const achievementScore = achievements.reduce((sum, ach) => sum + ach.reward.score, 0);
-            
+
             // 检查连续练习奖励
             const streakBonus = await this.calculateStreakBonus(userStats);
-            
+
             // 检查完美练习奖励
             const perfectionBonus = this.calculatePerfectionBonus(result);
-            
+
             // 检查个人记录突破奖励
             const recordBonus = this.calculateRecordBonus(result, userStats);
-            
+
             const totalEarned = baseScore + achievementScore + streakBonus + perfectionBonus + recordBonus;
-            
+
             // 更新用户统计（这会更新总积分和等级）
             const updatedStats = await this.typingService.updateUserStats(domainId, uid, result, totalEarned);
-            
+
             // 如果积分系统可用，同步积分到主积分系统
             if (this.isScoreSystemAvailable && totalEarned > 0) {
                 await this.syncScoreToMainSystem(domainId, uid, totalEarned, result);
             }
-            
+
             // 记录积分详情日志
             this.logScoreBreakdown(uid, {
                 baseScore,
@@ -109,15 +107,15 @@ export class ScoreIntegrationService {
                 streakBonus,
                 perfectionBonus,
                 recordBonus,
-                totalEarned
+                totalEarned,
             });
-            
+
             return {
                 score: totalEarned,
                 achievements,
                 totalScore: updatedStats.totalScore,
                 levelUp: updatedStats.level > oldLevel,
-                newLevel: updatedStats.level > oldLevel ? updatedStats.level : undefined
+                newLevel: updatedStats.level > oldLevel ? updatedStats.level : undefined,
             };
         } catch (error) {
             console.error('[ScoreIntegrationService] Error processing typing completion:', error);
@@ -130,13 +128,13 @@ export class ScoreIntegrationService {
      */
     private async calculateStreakBonus(userStats: TypingUserStats): Promise<number> {
         const today = new Date().toISOString().split('T')[0];
-        const todayRecord = userStats.practiceHistory.find(h => h.date === today);
+        const todayRecord = userStats.practiceHistory.find((h) => h.date === today);
         const practiceToday = todayRecord ? todayRecord.practices : 0;
-        
+
         // 计算当前连续天数
         let currentStreak = 0;
         let checkDate = today;
-        
+
         for (const record of userStats.practiceHistory.sort((a, b) => b.date.localeCompare(a.date))) {
             if (record.date === checkDate && record.practices > 0) {
                 currentStreak++;
@@ -147,20 +145,20 @@ export class ScoreIntegrationService {
                 break;
             }
         }
-        
+
         // 连续练习奖励规则
         const streakBonusMap: Record<number, number> = {
-            3: 10,   // 连续3天
-            7: 25,   // 连续7天
-            14: 50,  // 连续14天
+            3: 10, // 连续3天
+            7: 25, // 连续7天
+            14: 50, // 连续14天
             30: 100, // 连续30天
         };
-        
+
         // 只在达到里程碑的那一天给奖励，且今天是第一次练习
         if (practiceToday === 1) {
             return streakBonusMap[currentStreak] || 0;
         }
-        
+
         return 0;
     }
 
@@ -169,7 +167,7 @@ export class ScoreIntegrationService {
      */
     private calculatePerfectionBonus(result: TypingResult): number {
         let bonus = 0;
-        
+
         // 完美准确率奖励
         if (result.accuracy === 100) {
             bonus += 20;
@@ -178,7 +176,7 @@ export class ScoreIntegrationService {
         } else if (result.accuracy >= 98) {
             bonus += 5;
         }
-        
+
         // 高速度+高准确率组合奖励
         if (result.wpm >= 60 && result.accuracy >= 95) {
             bonus += 15;
@@ -187,7 +185,7 @@ export class ScoreIntegrationService {
         } else if (result.wpm >= 100 && result.accuracy >= 85) {
             bonus += 35;
         }
-        
+
         return bonus;
     }
 
@@ -196,19 +194,19 @@ export class ScoreIntegrationService {
      */
     private calculateRecordBonus(result: TypingResult, userStats: TypingUserStats): number {
         let bonus = 0;
-        
+
         // WPM个人记录突破
         if (result.wpm > userStats.bestWPM) {
             const improvement = result.wpm - userStats.bestWPM;
             bonus += Math.floor(improvement / 5) * 5; // 每提高5WPM奖励5分
         }
-        
+
         // 准确率个人记录突破
         if (result.accuracy > userStats.bestAccuracy) {
             const improvement = result.accuracy - userStats.bestAccuracy;
             bonus += Math.floor(improvement) * 2; // 每提高1%准确率奖励2分
         }
-        
+
         return bonus;
     }
 
@@ -219,7 +217,7 @@ export class ScoreIntegrationService {
         domainId: string,
         uid: number,
         score: number,
-        result: TypingResult
+        result: TypingResult,
     ): Promise<void> {
         try {
             const scoreRecord: ScoreRecord = {
@@ -228,23 +226,23 @@ export class ScoreIntegrationService {
                 score,
                 reason: `打字练习完成 - WPM:${result.wpm} 准确率:${result.accuracy.toFixed(1)}% 难度:${result.difficulty}`,
                 source: 'typing_practice',
-                createdAt: new Date()
+                createdAt: new Date(),
             };
 
             // 添加积分记录
             await this.ctx.db.collection('score.records' as any).insertOne(scoreRecord);
-            
+
             // 更新用户总积分
             // 更新用户总积分
             await this.ctx.db.collection('score.users' as any).updateOne(
                 { domainId, uid },
-                { 
+                {
                     $inc: { totalScore: score },
-                    $set: { lastUpdated: new Date() }
+                    $set: { lastUpdated: new Date() },
                 },
-                { upsert: true }
+                { upsert: true },
             );
-            
+
             console.log(`[ScoreIntegrationService] Synced ${score} points to main score system for user ${uid}`);
         } catch (error) {
             console.error('[ScoreIntegrationService] Error syncing score to main system:', error);
@@ -265,23 +263,23 @@ export class ScoreIntegrationService {
     }): void {
         console.log(`[ScoreIntegrationService] Score breakdown for user ${uid}:`);
         console.log(`  Base Score: ${breakdown.baseScore}`);
-        
+
         if (breakdown.achievementScore > 0) {
             console.log(`  Achievement Bonus: ${breakdown.achievementScore}`);
         }
-        
+
         if (breakdown.streakBonus > 0) {
             console.log(`  Streak Bonus: ${breakdown.streakBonus}`);
         }
-        
+
         if (breakdown.perfectionBonus > 0) {
             console.log(`  Perfection Bonus: ${breakdown.perfectionBonus}`);
         }
-        
+
         if (breakdown.recordBonus > 0) {
             console.log(`  Record Bonus: ${breakdown.recordBonus}`);
         }
-        
+
         console.log(`  Total Earned: ${breakdown.totalEarned}`);
     }
 
@@ -294,7 +292,7 @@ export class ScoreIntegrationService {
     } {
         return {
             available: this.isScoreSystemAvailable,
-            integration: this.isScoreSystemAvailable ? 'full' : 'standalone'
+            integration: this.isScoreSystemAvailable ? 'full' : 'standalone',
         };
     }
 
@@ -314,20 +312,20 @@ export class ScoreIntegrationService {
                     $group: {
                         _id: null,
                         users: { $push: { uid: '$uid', totalScore: '$totalScore' } },
-                        totalUsers: { $sum: 1 }
-                    }
-                }
+                        totalUsers: { $sum: 1 },
+                    },
+                },
             ];
 
             const result = await this.ctx.db.collection('typing.stats' as any).aggregate(pipeline).toArray();
-            
+
             if (!result || result.length === 0) {
                 return { rank: 1, totalUsers: 1, percentile: 100 };
             }
 
             const data = result[0];
             const userIndex = data.users.findIndex((u: any) => u.uid === uid);
-            
+
             if (userIndex === -1) {
                 return { rank: data.totalUsers, totalUsers: data.totalUsers, percentile: 0 };
             }
@@ -345,7 +343,7 @@ export class ScoreIntegrationService {
     /**
      * 获取用户可获得的潜在积分（基于当前表现）
      */
-    public calculatePotentialScore(result: TypingResult, userStats: TypingUserStats): {
+    public calculatePotentialScore(result: TypingResult, _userStats: TypingUserStats): {
         current: number;
         potential: number;
         improvementTips: string[];

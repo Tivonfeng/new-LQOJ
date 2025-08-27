@@ -1,15 +1,13 @@
 import { Context } from 'hydrooj';
 import {
-    TypingConfig,
-    TypingResult,
-    TypingRecord,
-    TypingUserStats,
-    TypingAchievement,
-    TypingSession,
     DifficultyLevel,
     TextType,
-    TypingLeaderboardEntry
-} from '../types/typing';
+    TypingAchievement,
+    TypingConfig,
+    TypingLeaderboardEntry,
+    TypingRecord,
+    TypingResult,
+    TypingUserStats } from '../types/typing';
 
 export class TypingService {
     constructor(private config: TypingConfig, private ctx: Context) {}
@@ -19,7 +17,7 @@ export class TypingService {
      */
     public calculateScore(result: TypingResult): number {
         let baseScore = 10; // 基础完成积分
-        
+
         // 准确率奖励
         if (result.accuracy >= 98) {
             baseScore += 20; // 极高准确率
@@ -32,7 +30,7 @@ export class TypingService {
         } else if (result.accuracy < this.config.minAccuracy) {
             baseScore = Math.max(1, baseScore - 5); // 准确率过低扣分
         }
-        
+
         // 速度奖励
         if (result.wpm >= 100) {
             baseScore += 25; // 极高速度
@@ -45,27 +43,27 @@ export class TypingService {
         } else if (result.wpm >= 20) {
             baseScore += 5; // 基础速度
         }
-        
+
         // 难度奖励
         const difficultyMultiplier = {
             [DifficultyLevel.BEGINNER]: 1.0,
             [DifficultyLevel.INTERMEDIATE]: 1.2,
             [DifficultyLevel.ADVANCED]: 1.5,
-            [DifficultyLevel.EXPERT]: 2.0
+            [DifficultyLevel.EXPERT]: 2.0,
         };
         baseScore *= difficultyMultiplier[result.difficulty] || 1.0;
-        
+
         // 文本长度奖励（每50个字符+1分）
         const lengthBonus = Math.floor(result.textLength / 50);
         baseScore += lengthBonus;
-        
+
         // 文本类型奖励
         if (result.textType === TextType.PROGRAMMING) {
             baseScore *= 1.3; // 编程文本额外奖励
         } else if (result.textType === TextType.CHINESE) {
             baseScore *= 1.2; // 中文文本额外奖励
         }
-        
+
         return Math.round(baseScore);
     }
 
@@ -78,7 +76,7 @@ export class TypingService {
                 ...record,
                 createdAt: new Date(),
             });
-            
+
             console.log(`[TypingService] Practice record saved for user ${record.uid}`);
             return insertResult.insertedId.toString();
         } catch (error) {
@@ -94,9 +92,9 @@ export class TypingService {
         try {
             const existingStats = await this.ctx.db.collection('typing.stats' as any).findOne({
                 domainId,
-                uid
+                uid,
             });
-            
+
             if (existingStats) {
                 return existingStats as TypingUserStats;
             }
@@ -133,7 +131,7 @@ export class TypingService {
         await this.ctx.db.collection('typing.stats' as any).insertOne({
             ...newStats,
             domainId,
-            uid
+            uid,
         });
 
         return newStats;
@@ -146,7 +144,7 @@ export class TypingService {
         domainId: string,
         uid: number,
         result: TypingResult,
-        scoreEarned: number
+        scoreEarned: number,
     ): Promise<TypingUserStats> {
         const stats = await this.getUserStats(domainId, uid);
         const now = new Date();
@@ -168,10 +166,10 @@ export class TypingService {
 
         // 重新计算平均值
         stats.averageWPM = Math.round(
-            (stats.averageWPM * (stats.totalPractices - 1) + result.wpm) / stats.totalPractices
+            (stats.averageWPM * (stats.totalPractices - 1) + result.wpm) / stats.totalPractices,
         );
         stats.averageAccuracy = Math.round(
-            (stats.averageAccuracy * (stats.totalPractices - 1) + result.accuracy) / stats.totalPractices
+            (stats.averageAccuracy * (stats.totalPractices - 1) + result.accuracy) / stats.totalPractices,
         );
         stats.averageTimePerPractice = Math.round(stats.totalTimeSpent / stats.totalPractices);
 
@@ -188,18 +186,18 @@ export class TypingService {
         stats.preferredTextType = result.textType;
 
         // 更新练习历史
-        let todayRecord = stats.practiceHistory.find(h => h.date === today);
+        let todayRecord = stats.practiceHistory.find((h) => h.date === today);
         if (!todayRecord) {
             todayRecord = {
                 date: today,
                 practices: 0,
                 totalTime: 0,
                 bestWPM: 0,
-                score: 0
+                score: 0,
             };
             stats.practiceHistory.push(todayRecord);
         }
-        
+
         todayRecord.practices += 1;
         todayRecord.totalTime += result.timeSpent;
         todayRecord.bestWPM = Math.max(todayRecord.bestWPM, result.wpm);
@@ -214,9 +212,9 @@ export class TypingService {
         stats.progressChart.push({
             date: today,
             wpm: result.wpm,
-            accuracy: result.accuracy
+            accuracy: result.accuracy,
         });
-        
+
         // 保持进步曲线最多100个记录点
         if (stats.progressChart.length > 100) {
             stats.progressChart = stats.progressChart.slice(-100);
@@ -233,7 +231,7 @@ export class TypingService {
         await this.ctx.db.collection('typing.stats' as any).updateOne(
             { domainId, uid },
             { $set: stats },
-            { upsert: true }
+            { upsert: true },
         );
 
         return stats;
@@ -244,14 +242,15 @@ export class TypingService {
      */
     private async updatePracticeStreak(stats: TypingUserStats): Promise<void> {
         const today = new Date().toISOString().split('T')[0];
+        // eslint-disable-next-line ts/no-unused-vars
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
+
         // 按日期排序历史记录
         const sortedHistory = stats.practiceHistory.sort((a, b) => b.date.localeCompare(a.date));
-        
+
         let currentStreak = 0;
         let checkDate = today;
-        
+
         for (const record of sortedHistory) {
             if (record.date === checkDate && record.practices > 0) {
                 currentStreak++;
@@ -263,7 +262,7 @@ export class TypingService {
                 break;
             }
         }
-        
+
         if (currentStreak > stats.longestStreak) {
             stats.longestStreak = currentStreak;
         }
@@ -276,21 +275,21 @@ export class TypingService {
         domainId: string,
         uid: number,
         result: TypingResult,
-        stats: TypingUserStats
+        stats: TypingUserStats,
     ): Promise<TypingAchievement[]> {
         const unlockedAchievements: TypingAchievement[] = [];
-        
+
         // 预定义的成就列表
         const achievements = await this.getAchievementDefinitions();
-        
+
         for (const achievement of achievements) {
             // 检查用户是否已经拥有这个成就
             if (stats.achievements.includes(achievement.id)) {
                 continue;
             }
-            
+
             // 检查成就条件
-            const meetsRequirements = achievement.requirements.every(req => {
+            const meetsRequirements = achievement.requirements.every((req) => {
                 switch (req.type) {
                     case 'wpm':
                         return this.compareValue(result.wpm, req.value, req.comparison);
@@ -306,15 +305,15 @@ export class TypingService {
                         return false;
                 }
             });
-            
+
             if (meetsRequirements) {
                 unlockedAchievements.push(achievement);
                 stats.achievements.push(achievement.id);
-                
+
                 console.log(`[TypingService] User ${uid} unlocked achievement: ${achievement.name}`);
             }
         }
-        
+
         return unlockedAchievements;
     }
 
@@ -346,12 +345,12 @@ export class TypingService {
                 icon: '🌟',
                 category: 'milestone',
                 requirements: [
-                    { type: 'practice_count', value: 1, comparison: 'gte' }
+                    { type: 'practice_count', value: 1, comparison: 'gte' },
                 ],
                 reward: { score: 10 },
                 rarity: 'common',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'speed_demon_40',
@@ -360,12 +359,12 @@ export class TypingService {
                 icon: '⚡',
                 category: 'speed',
                 requirements: [
-                    { type: 'wpm', value: 40, comparison: 'gte' }
+                    { type: 'wpm', value: 40, comparison: 'gte' },
                 ],
                 reward: { score: 50 },
                 rarity: 'common',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'speed_demon_60',
@@ -374,12 +373,12 @@ export class TypingService {
                 icon: '🚀',
                 category: 'speed',
                 requirements: [
-                    { type: 'wpm', value: 60, comparison: 'gte' }
+                    { type: 'wpm', value: 60, comparison: 'gte' },
                 ],
                 reward: { score: 100 },
                 rarity: 'rare',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'speed_demon_80',
@@ -388,12 +387,12 @@ export class TypingService {
                 icon: '💨',
                 category: 'speed',
                 requirements: [
-                    { type: 'wpm', value: 80, comparison: 'gte' }
+                    { type: 'wpm', value: 80, comparison: 'gte' },
                 ],
                 reward: { score: 200 },
                 rarity: 'epic',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'accuracy_master',
@@ -402,12 +401,12 @@ export class TypingService {
                 icon: '🎯',
                 category: 'accuracy',
                 requirements: [
-                    { type: 'accuracy', value: 98, comparison: 'gte' }
+                    { type: 'accuracy', value: 98, comparison: 'gte' },
                 ],
                 reward: { score: 150 },
                 rarity: 'epic',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'persistent_learner',
@@ -416,12 +415,12 @@ export class TypingService {
                 icon: '🔥',
                 category: 'streak',
                 requirements: [
-                    { type: 'streak', value: 7, comparison: 'gte' }
+                    { type: 'streak', value: 7, comparison: 'gte' },
                 ],
                 reward: { score: 100 },
                 rarity: 'rare',
                 hidden: false,
-                createdAt: new Date()
+                createdAt: new Date(),
             },
             {
                 id: 'practice_addict',
@@ -430,13 +429,13 @@ export class TypingService {
                 icon: '💪',
                 category: 'milestone',
                 requirements: [
-                    { type: 'practice_count', value: 100, comparison: 'gte' }
+                    { type: 'practice_count', value: 100, comparison: 'gte' },
                 ],
                 reward: { score: 500 },
                 rarity: 'legendary',
                 hidden: false,
-                createdAt: new Date()
-            }
+                createdAt: new Date(),
+            },
         ];
     }
 
@@ -446,7 +445,7 @@ export class TypingService {
     public async getLeaderboard(
         domainId: string,
         type: 'wpm' | 'accuracy' | 'score' = 'wpm',
-        limit: number = 10
+        limit: number = 10,
     ): Promise<TypingLeaderboardEntry[]> {
         try {
             const pipeline = [
@@ -456,8 +455,8 @@ export class TypingService {
                         from: 'user',
                         localField: 'uid',
                         foreignField: '_id',
-                        as: 'userInfo'
-                    }
+                        as: 'userInfo',
+                    },
                 },
                 { $unwind: '$userInfo' },
                 {
@@ -473,12 +472,12 @@ export class TypingService {
                         level: 1,
                         achievements: 1,
                         lastPracticeAt: 1,
-                        sortField: type === 'wpm' ? '$bestWPM' : 
-                                  type === 'accuracy' ? '$bestAccuracy' : '$totalScore'
-                    }
+                        sortField: type === 'wpm' ? '$bestWPM'
+                            : type === 'accuracy' ? '$bestAccuracy' : '$totalScore',
+                    },
                 },
                 { $sort: { sortField: -1, totalPractices: -1 } },
-                { $limit: limit }
+                { $limit: limit },
             ];
 
             const results = await this.ctx.db.collection('typing.stats' as any).aggregate(pipeline).toArray();
@@ -495,7 +494,7 @@ export class TypingService {
                 level: result.level || 1,
                 rank: index + 1,
                 achievementCount: (result.achievements || []).length,
-                lastActiveAt: result.lastPracticeAt || new Date()
+                lastActiveAt: result.lastPracticeAt || new Date(),
             }));
         } catch (error) {
             console.error('[TypingService] Error fetching leaderboard:', error);
@@ -509,16 +508,16 @@ export class TypingService {
     public async getUserPracticeHistory(
         domainId: string,
         uid: number,
-        limit: number = 20
+        limit: number = 20,
     ): Promise<TypingRecord[]> {
         try {
-            const records = await this.ctx.db.collection('typing.records' as any).find({ 
+            const records = await this.ctx.db.collection('typing.records' as any).find({
                 domainId,
-                uid 
+                uid,
             })
-            .sort({ createdAt: -1 })
-            .limit(limit)
-            .toArray();
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .toArray();
 
             return records as TypingRecord[];
         } catch (error) {
@@ -535,37 +534,37 @@ export class TypingService {
         if (!result || typeof result.wpm !== 'number' || typeof result.accuracy !== 'number') {
             return false;
         }
-        
+
         // WPM合理性检查（假设人类极限为200WPM）
         if (result.wpm < 0 || result.wpm > 200) {
             return false;
         }
-        
+
         // 准确率合理性检查
         if (result.accuracy < 0 || result.accuracy > 100) {
             return false;
         }
-        
+
         // 时间合理性检查（至少要有1秒，最多30分钟）
         if (result.timeSpent < 1 || result.timeSpent > 1800) {
             return false;
         }
-        
+
         // 文本长度一致性检查
         if (result.textLength !== originalText.length) {
             return false;
         }
-        
+
         // 输入长度合理性检查
         if (userInput.length > originalText.length * 2) {
             return false;
         }
-        
+
         // 按键次数合理性检查
         if (result.keystrokeCount < userInput.length || result.keystrokeCount > userInput.length * 3) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -576,10 +575,10 @@ export class TypingService {
         try {
             // 删除用户统计数据
             await this.ctx.db.collection('typing.stats' as any).deleteOne({ domainId, uid });
-            
+
             // 删除用户练习记录
             await this.ctx.db.collection('typing.records' as any).deleteMany({ domainId, uid });
-            
+
             console.log(`[TypingService] Reset data for user ${uid} in domain ${domainId}`);
         } catch (error) {
             console.error('[TypingService] Error resetting user data:', error);
@@ -598,7 +597,7 @@ export class TypingService {
             // 删除旧的练习记录
             const result = await this.ctx.db.collection('typing.records' as any).deleteMany({
                 domainId,
-                createdAt: { $lt: cutoffDate }
+                createdAt: { $lt: cutoffDate },
             });
 
             console.log(`[TypingService] Cleaned up ${result.deletedCount} records older than ${days} days`);
@@ -622,28 +621,28 @@ export class TypingService {
             // 活跃用户数（在指定期间内有练习）
             const activeUsers = await this.ctx.db.collection('typing.stats' as any).countDocuments({
                 domainId,
-                lastPracticeAt: { $gte: cutoffDate }
+                lastPracticeAt: { $gte: cutoffDate },
             });
 
             // 总练习次数
             const totalPracticesResult = await this.ctx.db.collection('typing.stats' as any)
                 .aggregate([
                     { $match: { domainId } },
-                    { $group: { _id: null, total: { $sum: '$totalPractices' } } }
+                    { $group: { _id: null, total: { $sum: '$totalPractices' } } },
                 ]).toArray();
             const totalPractices = totalPracticesResult[0]?.total || 0;
 
             // 期间内的练习次数
             const periodPractices = await this.ctx.db.collection('typing.records' as any).countDocuments({
                 domainId,
-                createdAt: { $gte: cutoffDate }
+                createdAt: { $gte: cutoffDate },
             });
 
             // 平均WPM
             const avgWPMResult = await this.ctx.db.collection('typing.stats' as any)
                 .aggregate([
                     { $match: { domainId, totalPractices: { $gt: 0 } } },
-                    { $group: { _id: null, avgWPM: { $avg: '$averageWPM' } } }
+                    { $group: { _id: null, avgWPM: { $avg: '$averageWPM' } } },
                 ]).toArray();
             const systemAvgWPM = Math.round(avgWPMResult[0]?.avgWPM || 0);
 
@@ -652,7 +651,7 @@ export class TypingService {
                 .aggregate([
                     { $match: { domainId } },
                     { $sort: { bestWPM: -1 } },
-                    { $limit: 1 }
+                    { $limit: 1 },
                 ]).toArray();
             const topWPM = topRecordsResult[0]?.bestWPM || 0;
 
@@ -664,7 +663,7 @@ export class TypingService {
                 periodPractices,
                 systemAvgWPM,
                 topWPM,
-                activityRate: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
+                activityRate: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0,
             };
         } catch (error) {
             console.error('[TypingService] Error calculating system stats:', error);
@@ -676,7 +675,7 @@ export class TypingService {
                 periodPractices: 0,
                 systemAvgWPM: 0,
                 topWPM: 0,
-                activityRate: 0
+                activityRate: 0,
             };
         }
     }
@@ -686,12 +685,12 @@ export class TypingService {
      */
     public async getRecentRecords(uid: number, limit: number = 5): Promise<TypingRecord[]> {
         try {
-            const records = await this.ctx.db.collection('typing.records' as any).find({ 
-                uid 
+            const records = await this.ctx.db.collection('typing.records' as any).find({
+                uid,
             })
-            .sort({ practiceTime: -1 })
-            .limit(limit)
-            .toArray();
+                .sort({ practiceTime: -1 })
+                .limit(limit)
+                .toArray();
 
             return records as TypingRecord[];
         } catch (error) {
@@ -715,11 +714,11 @@ export class TypingService {
                         totalPractices: 1,
                         totalScore: 1,
                         level: 1,
-                        lastPracticeAt: 1
-                    }
+                        lastPracticeAt: 1,
+                    },
                 },
                 { $sort: { bestWPM: -1, totalPractices: -1 } },
-                { $limit: limit }
+                { $limit: limit },
             ];
 
             const results = await this.ctx.db.collection('typing.stats' as any).aggregate(pipeline).toArray();
@@ -730,7 +729,7 @@ export class TypingService {
                 avgAccuracy: result.bestAccuracy || 0,
                 totalPractices: result.totalPractices || 0,
                 level: result.level || 1,
-                rank: index + 1
+                rank: index + 1,
             }));
         } catch (error) {
             console.error('[TypingService] Error fetching top users:', error);
@@ -743,8 +742,8 @@ export class TypingService {
      */
     public async getRecordsSince(date: Date): Promise<TypingRecord[]> {
         try {
-            const records = await this.ctx.db.collection('typing.records' as any).find({ 
-                practiceTime: { $gte: date }
+            const records = await this.ctx.db.collection('typing.records' as any).find({
+                practiceTime: { $gte: date },
             }).toArray();
 
             return records as TypingRecord[];
@@ -759,7 +758,7 @@ export class TypingService {
      */
     private calculateCutoffDate(period: string): Date {
         const now = new Date();
-        
+
         switch (period) {
             case '1d':
                 return new Date(now.getTime() - 24 * 60 * 60 * 1000);

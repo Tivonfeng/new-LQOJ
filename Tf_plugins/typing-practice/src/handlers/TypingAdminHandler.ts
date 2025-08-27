@@ -1,4 +1,4 @@
-import { Handler, param, query, Types, PRIV } from 'hydrooj';
+import { Handler, param, PRIV, query, Types } from 'hydrooj';
 import { TypingService } from '../services/TypingService';
 import { TypingConfig, TypingPracticeResponse } from '../types/typing';
 import { DEFAULT_CONFIG } from './config';
@@ -7,7 +7,7 @@ export class TypingAdminHandler extends Handler {
     private get typingService(): TypingService {
         return new TypingService(DEFAULT_CONFIG, this.ctx);
     }
-    
+
     private get config(): TypingConfig {
         return DEFAULT_CONFIG;
     }
@@ -28,14 +28,14 @@ export class TypingAdminHandler extends Handler {
                 enabled: this.config.enabled,
                 scoreIntegration: this.config.scoreIntegration,
                 maxTextLength: this.config.maxTextLength,
-                minAccuracy: this.config.minAccuracy
+                minAccuracy: this.config.minAccuracy,
             };
 
             this.response.template = 'typing_admin.html';
             this.response.body = {
                 systemInfo,
                 config: this.config,
-                page_name: 'typing_admin'
+                page_name: 'typing_admin',
             };
         } catch (error) {
             console.error('[TypingAdminHandler] Error loading admin page:', error);
@@ -57,8 +57,8 @@ export class TypingAdminHandler extends Handler {
             const response: TypingPracticeResponse = {
                 success: true,
                 data: {
-                    message: `User ${uid} data reset successfully`
-                }
+                    message: `User ${uid} data reset successfully`,
+                },
             };
 
             this.response.body = response;
@@ -66,15 +66,15 @@ export class TypingAdminHandler extends Handler {
             console.log(`[TypingAdminHandler] Admin ${this.user._id} reset data for user ${uid}`);
         } catch (error) {
             console.error('[TypingAdminHandler] Error resetting user data:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'RESET_USER_ERROR',
-                    message: 'Failed to reset user data'
-                }
+                    message: 'Failed to reset user data',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -94,8 +94,8 @@ export class TypingAdminHandler extends Handler {
                 success: true,
                 data: {
                     deletedRecords: deletedCount,
-                    message: `Cleaned up ${deletedCount} old records`
-                }
+                    message: `Cleaned up ${deletedCount} old records`,
+                },
             };
 
             this.response.body = response;
@@ -103,15 +103,15 @@ export class TypingAdminHandler extends Handler {
             console.log(`[TypingAdminHandler] Admin ${this.user._id} cleaned up ${deletedCount} records older than ${days} days`);
         } catch (error) {
             console.error('[TypingAdminHandler] Error cleaning up data:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'CLEANUP_ERROR',
-                    message: 'Failed to cleanup old data'
-                }
+                    message: 'Failed to cleanup old data',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -126,24 +126,24 @@ export class TypingAdminHandler extends Handler {
         try {
             // 使用TypingService获取统计信息
             const stats = await this.typingService.getSystemStats(domainId, period);
-            
+
             const response: TypingPracticeResponse = {
                 success: true,
-                data: stats
+                data: stats,
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingAdminHandler] Error fetching detailed stats:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'STATS_ERROR',
-                    message: 'Failed to fetch system statistics'
-                }
+                    message: 'Failed to fetch system statistics',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -164,22 +164,22 @@ export class TypingAdminHandler extends Handler {
             const response: TypingPracticeResponse = {
                 success: true,
                 data: {
-                    message: 'Broadcast sent successfully'
-                }
+                    message: 'Broadcast sent successfully',
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingAdminHandler] Error sending broadcast:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'BROADCAST_ERROR',
-                    message: 'Failed to send broadcast'
-                }
+                    message: 'Failed to send broadcast',
+                },
             };
-            
+
             this.response.body = response;
         }
     }

@@ -1,26 +1,25 @@
-import { Handler, param, query, Types, ValidationError, PRIV } from 'hydrooj';
+import { Handler, param, PRIV, query, Types, ValidationError } from 'hydrooj';
+import { ScoreIntegrationService } from '../services/ScoreIntegrationService';
+import { TextGeneratorService } from '../services/TextGeneratorService';
+import { TypingService } from '../services/TypingService';
 import {
-    TypingResult,
-    TypingRecord,
     DifficultyLevel,
     TextType,
     TypingConfig,
-    TypingPracticeResponse
-} from '../types/typing';
-import { TypingService } from '../services/TypingService';
-import { TextGeneratorService } from '../services/TextGeneratorService';
-import { ScoreIntegrationService } from '../services/ScoreIntegrationService';
+    TypingPracticeResponse,
+    TypingRecord,
+    TypingResult } from '../types/typing';
 import { DEFAULT_CONFIG } from './config';
 
 export class TypingPracticeHandler extends Handler {
     private get typingService(): TypingService {
         return new TypingService(DEFAULT_CONFIG, this.ctx);
     }
-    
+
     private get textGeneratorService(): TextGeneratorService {
         return new TextGeneratorService(DEFAULT_CONFIG);
     }
-    
+
     private get scoreIntegrationService(): ScoreIntegrationService | null {
         try {
             const typingService = new TypingService(DEFAULT_CONFIG, this.ctx);
@@ -30,7 +29,7 @@ export class TypingPracticeHandler extends Handler {
             return null;
         }
     }
-    
+
     private get config(): TypingConfig {
         return DEFAULT_CONFIG;
     }
@@ -48,7 +47,7 @@ export class TypingPracticeHandler extends Handler {
         if (this.request.path === '/typing/data') {
             return this.getData();
         }
-        
+
         // 如果是文本生成请求，返回JSON
         if (this.request.path === '/typing/text') {
             return this.getGenerateText();
@@ -57,24 +56,24 @@ export class TypingPracticeHandler extends Handler {
         try {
             // 获取用户统计信息
             const userStats = await this.typingService.getUserStats(this.domain._id, this.user._id);
-            
+
             // 获取排行榜信息
             const leaderboard = await this.typingService.getLeaderboard(this.domain._id, 'wpm', 10);
-            
+
             // 获取积分系统状态
             const scoreSystemStatus = this.scoreIntegrationService?.getScoreSystemStatus() || {
                 available: false,
-                integration: 'disabled'
+                integration: 'disabled',
             };
 
             // 获取URL参数
             const urlDifficulty = this.request.query.difficulty as string;
             const urlTextType = this.request.query.textType as string;
-            
+
             // 决定推荐文本的参数
             let difficulty: DifficultyLevel;
             let textType: TextType;
-            
+
             if (urlDifficulty && Object.values(DifficultyLevel).includes(urlDifficulty as DifficultyLevel)) {
                 difficulty = urlDifficulty as DifficultyLevel;
             } else {
@@ -82,11 +81,11 @@ export class TypingPracticeHandler extends Handler {
                 const rec = this.textGeneratorService.getRecommendedText({
                     averageWPM: userStats.averageWPM,
                     averageAccuracy: userStats.averageAccuracy,
-                    level: userStats.level
+                    level: userStats.level,
                 });
                 difficulty = rec.difficulty;
             }
-            
+
             if (urlTextType && Object.values(TextType).includes(urlTextType as TextType)) {
                 textType = urlTextType as TextType;
             } else {
@@ -94,7 +93,7 @@ export class TypingPracticeHandler extends Handler {
                 const rec = this.textGeneratorService.getRecommendedText({
                     averageWPM: userStats.averageWPM,
                     averageAccuracy: userStats.averageAccuracy,
-                    level: userStats.level
+                    level: userStats.level,
                 });
                 textType = rec.type;
             }
@@ -105,27 +104,27 @@ export class TypingPracticeHandler extends Handler {
                 text: generatedText,
                 difficulty,
                 type: textType,
-                reason: urlDifficulty || urlTextType ? '根据用户选择的模式生成' : '根据用户水平推荐'
+                reason: urlDifficulty || urlTextType ? '根据用户选择的模式生成' : '根据用户水平推荐',
             };
 
             // 确保推荐文本有正确的数据结构
             const recommendedText = {
-                text: recommendedTextData.text || "The quick brown fox jumps over the lazy dog.",
+                text: recommendedTextData.text || 'The quick brown fox jumps over the lazy dog.',
                 difficulty: recommendedTextData.difficulty || DifficultyLevel.BEGINNER,
                 type: recommendedTextData.type || TextType.ENGLISH,
-                reason: recommendedTextData.reason || "Default text for beginners"
+                reason: recommendedTextData.reason || 'Default text for beginners',
             };
 
             // 构建难度选项（带有友好名称）
-            const difficultyOptions = Object.values(DifficultyLevel).map(level => ({
+            const difficultyOptions = Object.values(DifficultyLevel).map((level) => ({
                 value: level,
-                title: level.charAt(0).toUpperCase() + level.slice(1).replace('_', ' ')
+                title: level.charAt(0).toUpperCase() + level.slice(1).replace('_', ' '),
             }));
 
             // 构建文本类型选项
-            const textTypeOptions = Object.values(TextType).map(type => ({
+            const textTypeOptions = Object.values(TextType).map((type) => ({
                 value: type,
-                title: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')
+                title: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
             }));
 
             // Ensure all data has safe defaults for JSON serialization
@@ -137,11 +136,11 @@ export class TypingPracticeHandler extends Handler {
                 progressChart: userStats.progressChart || [],
                 createdAt: userStats.createdAt ? userStats.createdAt.toISOString() : new Date().toISOString(),
                 updatedAt: userStats.updatedAt ? userStats.updatedAt.toISOString() : new Date().toISOString(),
-                lastPracticeAt: userStats.lastPracticeAt ? userStats.lastPracticeAt.toISOString() : null
+                lastPracticeAt: userStats.lastPracticeAt ? userStats.lastPracticeAt.toISOString() : null,
             }));
 
             const cleanLeaderboard = JSON.parse(JSON.stringify(leaderboard || []));
-            
+
             this.response.template = 'typing_practice.html';
             this.response.body = {
                 userStats: cleanUserStats,
@@ -151,7 +150,7 @@ export class TypingPracticeHandler extends Handler {
                 config: this.config,
                 difficulties: difficultyOptions,
                 textTypes: textTypeOptions,
-                page_name: 'typing_practice'
+                page_name: 'typing_practice',
             };
         } catch (error) {
             console.error('[TypingPracticeHandler] Error loading practice page:', error);
@@ -210,7 +209,7 @@ export class TypingPracticeHandler extends Handler {
                 achievements: [] as any[],
                 totalScore: 0,
                 levelUp: false,
-                newLevel: undefined
+                newLevel: undefined,
             };
 
             const domainId = this.domain._id;
@@ -222,20 +221,20 @@ export class TypingPracticeHandler extends Handler {
                     domainId,
                     result,
                     originalText,
-                    userInput
+                    userInput,
                 );
             } else {
                 // 即使不集成积分系统，也要更新基本统计
                 const baseScore = this.typingService.calculateScore(result);
                 const updatedStats = await this.typingService.updateUserStats(domainId, this.user._id, result, baseScore);
                 const achievements = await this.typingService.checkAchievements(domainId, this.user._id, result, updatedStats);
-                
+
                 scoreResult = {
                     score: baseScore,
                     achievements: achievements as any[],
                     totalScore: updatedStats.totalScore,
                     levelUp: false,
-                    newLevel: undefined
+                    newLevel: undefined,
                 };
             }
 
@@ -254,8 +253,8 @@ export class TypingPracticeHandler extends Handler {
                 completedAt: new Date(),
                 metadata: {
                     userAgent: this.request.headers['user-agent'],
-                    screen: this.request.body.screenInfo || undefined
-                }
+                    screen: this.request.body.screenInfo || undefined,
+                },
             };
 
             // 保存练习记录
@@ -267,8 +266,8 @@ export class TypingPracticeHandler extends Handler {
                     result,
                     score: scoreResult.score,
                     achievements: scoreResult.achievements,
-                    stats: await this.typingService.getUserStats(domainId, this.user._id)
-                }
+                    stats: await this.typingService.getUserStats(domainId, this.user._id),
+                },
             };
 
             this.response.body = response;
@@ -277,15 +276,15 @@ export class TypingPracticeHandler extends Handler {
             console.log(`[TypingPracticeHandler] User ${this.user._id} completed practice: ${result.wpm}WPM, ${result.accuracy}% accuracy, earned ${scoreResult.score} points`);
         } catch (error) {
             console.error('[TypingPracticeHandler] Error processing practice result:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: error.name || 'PROCESSING_ERROR',
-                    message: error.message || 'Failed to process typing result'
-                }
+                    message: error.message || 'Failed to process typing result',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -296,19 +295,19 @@ export class TypingPracticeHandler extends Handler {
     async postGenerateTextSimple() {
         try {
             const { difficulty, textType } = this.request.body;
-            
+
             // 验证和设置默认参数
-            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel) 
-                ? (difficulty as DifficultyLevel) 
+            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel)
+                ? (difficulty as DifficultyLevel)
                 : DifficultyLevel.BEGINNER;
-            
+
             const validTextType = Object.values(TextType).includes(textType as TextType)
                 ? (textType as TextType)
                 : TextType.ENGLISH;
 
             // 生成文本
             const generatedText = this.textGeneratorService.generateText(validDifficulty, validTextType);
-            
+
             // 分析文本难度
             const textAnalysis = this.textGeneratorService.analyzeTextDifficulty(generatedText);
 
@@ -318,22 +317,22 @@ export class TypingPracticeHandler extends Handler {
                     text: generatedText,
                     difficulty: textAnalysis.estimatedDifficulty,
                     textType: validTextType,
-                    analysis: textAnalysis.metrics
-                }
+                    analysis: textAnalysis.metrics,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error generating text:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: error.name || 'TEXT_GENERATION_ERROR',
-                    message: error.message || 'Failed to generate practice text'
-                }
+                    message: error.message || 'Failed to generate practice text',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -344,19 +343,19 @@ export class TypingPracticeHandler extends Handler {
     async getGenerateText() {
         try {
             const { difficulty, textType } = this.request.query;
-            
+
             // 验证和设置默认参数
-            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel) 
-                ? (difficulty as DifficultyLevel) 
+            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel)
+                ? (difficulty as DifficultyLevel)
                 : DifficultyLevel.BEGINNER;
-            
+
             const validTextType = Object.values(TextType).includes(textType as TextType)
                 ? (textType as TextType)
                 : TextType.ENGLISH;
 
             // 生成文本
             const generatedText = this.textGeneratorService.generateText(validDifficulty, validTextType);
-            
+
             // 分析文本难度
             const textAnalysis = this.textGeneratorService.analyzeTextDifficulty(generatedText);
 
@@ -366,22 +365,22 @@ export class TypingPracticeHandler extends Handler {
                     text: generatedText,
                     difficulty: textAnalysis.estimatedDifficulty,
                     textType: validTextType,
-                    analysis: textAnalysis.metrics
-                }
+                    analysis: textAnalysis.metrics,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error generating text:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: error.name || 'TEXT_GENERATION_ERROR',
-                    message: error.message || 'Failed to generate practice text'
-                }
+                    message: error.message || 'Failed to generate practice text',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -399,10 +398,10 @@ export class TypingPracticeHandler extends Handler {
 
         try {
             // 验证和设置默认参数
-            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel) 
-                ? (difficulty as DifficultyLevel) 
+            const validDifficulty = Object.values(DifficultyLevel).includes(difficulty as DifficultyLevel)
+                ? (difficulty as DifficultyLevel)
                 : DifficultyLevel.BEGINNER;
-            
+
             const validTextType = Object.values(TextType).includes(textType as TextType)
                 ? (textType as TextType)
                 : TextType.ENGLISH;
@@ -422,7 +421,7 @@ export class TypingPracticeHandler extends Handler {
                     minLength,
                     Math.min(maxLength, this.config.maxTextLength),
                     validDifficulty,
-                    validTextType
+                    validTextType,
                 );
             } else {
                 // 标准文本生成
@@ -438,22 +437,22 @@ export class TypingPracticeHandler extends Handler {
                     text: generatedText,
                     difficulty: textAnalysis.estimatedDifficulty,
                     textType: validTextType,
-                    analysis: textAnalysis.metrics
-                }
+                    analysis: textAnalysis.metrics,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error generating text:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: error.name || 'TEXT_GENERATION_ERROR',
-                    message: error.message || 'Failed to generate practice text'
-                }
+                    message: error.message || 'Failed to generate practice text',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -468,14 +467,14 @@ export class TypingPracticeHandler extends Handler {
             // 验证排行榜类型
             const validTypes = ['wpm', 'accuracy', 'score'];
             const leaderboardType = validTypes.includes(type) ? type : 'wpm';
-            
+
             // 限制查询数量
             const queryLimit = Math.min(Math.max(limit, 1), 50);
-            
+
             const leaderboard = await this.typingService.getLeaderboard(
-                domainId, 
-                leaderboardType as 'wpm' | 'accuracy' | 'score', 
-                queryLimit
+                domainId,
+                leaderboardType as 'wpm' | 'accuracy' | 'score',
+                queryLimit,
             );
 
             const response: TypingPracticeResponse = {
@@ -483,22 +482,22 @@ export class TypingPracticeHandler extends Handler {
                 data: {
                     leaderboard,
                     type: leaderboardType,
-                    total: leaderboard.length
-                }
+                    total: leaderboard.length,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error fetching leaderboard:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'LEADERBOARD_ERROR',
-                    message: 'Failed to fetch leaderboard data'
-                }
+                    message: 'Failed to fetch leaderboard data',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -515,29 +514,29 @@ export class TypingPracticeHandler extends Handler {
             const history = await this.typingService.getUserPracticeHistory(
                 domainId,
                 this.user._id,
-                queryLimit
+                queryLimit,
             );
 
             const response: TypingPracticeResponse = {
                 success: true,
                 data: {
                     history,
-                    total: history.length
-                }
+                    total: history.length,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error fetching practice history:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'HISTORY_ERROR',
-                    message: 'Failed to fetch practice history'
-                }
+                    message: 'Failed to fetch practice history',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -554,7 +553,7 @@ export class TypingPracticeHandler extends Handler {
 
             // 获取用户统计信息
             const userStats = await this.typingService.getUserStats(domainId, uid);
-            
+
             // 获取排行榜信息
             const leaderboard = await this.typingService.getLeaderboard(domainId, 'wpm', 10);
 
@@ -562,22 +561,22 @@ export class TypingPracticeHandler extends Handler {
                 success: true,
                 data: {
                     userStats,
-                    leaderboard
-                }
+                    leaderboard,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error fetching data:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'DATA_FETCH_ERROR',
-                    message: 'Failed to fetch typing practice data'
-                }
+                    message: 'Failed to fetch typing practice data',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
@@ -590,12 +589,12 @@ export class TypingPracticeHandler extends Handler {
 
         try {
             const userStats = await this.typingService.getUserStats(domainId, this.user._id);
-            
+
             // 获取推荐文本
             const recommendation = this.textGeneratorService.getRecommendedText({
                 averageWPM: userStats.averageWPM,
                 averageAccuracy: userStats.averageAccuracy,
-                level: userStats.level
+                level: userStats.level,
             });
 
             // 获取潜在积分信息（如果启用积分系统）
@@ -612,9 +611,9 @@ export class TypingPracticeHandler extends Handler {
                     textType: recommendation.type,
                     completedWords: Math.floor(recommendation.text.length / 5),
                     keystrokeCount: recommendation.text.length,
-                    correctKeystrokes: Math.floor(recommendation.text.length * userStats.averageAccuracy / 100)
+                    correctKeystrokes: Math.floor(recommendation.text.length * userStats.averageAccuracy / 100),
                 };
-                
+
                 potentialScore = this.scoreIntegrationService.calculatePotentialScore(mockResult, userStats) as any;
             }
 
@@ -629,24 +628,24 @@ export class TypingPracticeHandler extends Handler {
                         level: userStats.level,
                         averageWPM: userStats.averageWPM,
                         averageAccuracy: userStats.averageAccuracy,
-                        totalPractices: userStats.totalPractices
+                        totalPractices: userStats.totalPractices,
                     },
-                    potentialScore
-                }
+                    potentialScore,
+                },
             };
 
             this.response.body = response;
         } catch (error) {
             console.error('[TypingPracticeHandler] Error generating recommendations:', error);
-            
+
             const response: TypingPracticeResponse = {
                 success: false,
                 error: {
                     code: 'RECOMMENDATION_ERROR',
-                    message: 'Failed to generate recommendations'
-                }
+                    message: 'Failed to generate recommendations',
+                },
             };
-            
+
             this.response.body = response;
         }
     }
