@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable github/array-foreach */
 import { Context } from 'hydrooj';
 import { LotteryPrize } from './LotteryService';
 
@@ -10,22 +12,22 @@ export class WeightCalculationService {
 
     // 稀有度基础权重配置 (放大100倍避免小数)
     private readonly RARITY_BASE_WEIGHTS = {
-        common: 6000,      // 普通 50%
-        rare: 2000,        // 稀有 30%
-        epic: 1500,        // 史诗 15%
-        legendary: 500     // 传说 5%
+        common: 6000, // 普通 50%
+        rare: 2000, // 稀有 30%
+        epic: 1500, // 史诗 15%
+        legendary: 500, // 传说 5%
     };
 
     // 高级抽奖权重配置 (普通10%，稀有50%，史诗30%，传说10%)
     private readonly PREMIUM_RARITY_WEIGHTS = {
-        common: 3000,      // 普通 10%
-        rare: 5000,        // 稀有 50%
-        epic: 1500,        // 史诗 30%
-        legendary: 500    // 传说 10%
+        common: 3000, // 普通 10%
+        rare: 5000, // 稀有 50%
+        epic: 1500, // 史诗 30%
+        legendary: 500, // 传说 10%
     };
-    
+
     // 未中奖权重 - 降低未中奖概率，提升用户体验
-    private readonly NO_PRIZE_WEIGHT = 0;  // 0% 未中奖 (移除未中奖机制)
+    private readonly NO_PRIZE_WEIGHT = 0; // 0% 未中奖 (移除未中奖机制)
 
     constructor(ctx: Context) {
         this.ctx = ctx;
@@ -67,16 +69,16 @@ export class WeightCalculationService {
             console.log(`[WeightCalculation] ${rarity} 级别: ${prizes.length}个奖品, 每个权重: ${individualWeight}`);
 
             // 更新数据库中该稀有度所有奖品的权重
-            const prizeIds = prizes.map(p => p._id);
+            const prizeIds = prizes.map((p) => p._id);
             await this.ctx.db.collection('lottery.prizes' as any).updateMany(
                 { _id: { $in: prizeIds } },
-                { 
-                    $set: { 
+                {
+                    $set: {
                         weight: individualWeight,
                         calculatedWeight: individualWeight,
-                        lastWeightUpdate: new Date()
-                    } 
-                }
+                        lastWeightUpdate: new Date(),
+                    },
+                },
             );
         }
 
@@ -114,13 +116,13 @@ export class WeightCalculationService {
         // 更新权重
         await this.ctx.db.collection('lottery.prizes' as any).updateMany(
             { rarity, enabled: true },
-            { 
-                $set: { 
+            {
+                $set: {
                     weight: individualWeight,
                     calculatedWeight: individualWeight,
-                    lastWeightUpdate: new Date()
-                } 
-            }
+                    lastWeightUpdate: new Date(),
+                },
+            },
         );
     }
 
@@ -165,17 +167,17 @@ export class WeightCalculationService {
             .toArray();
 
         const groupedPrizes = this.groupByRarity(allPrizes);
-        
+
         // 根据抽奖类型选择权重配置
         const weightConfig = lotteryType === 'premium' ? this.PREMIUM_RARITY_WEIGHTS : this.RARITY_BASE_WEIGHTS;
         const totalSystemWeight = Object.values(weightConfig).reduce((sum, w) => sum + w, 0);
 
         const rarityLabels = {
             common: '普通',
-            rare: '稀有', 
+            rare: '稀有',
             epic: '史诗',
             legendary: '传说',
-            no_prize: '未中奖'
+            no_prize: '未中奖',
         };
 
         const result = Object.entries(groupedPrizes).map(([rarity, prizes]) => {
@@ -189,7 +191,7 @@ export class WeightCalculationService {
                 prizeCount: prizes.length,
                 totalWeight: baseWeight,
                 individualWeight,
-                probability: `${probability}%`
+                probability: `${probability}%`,
             };
         }).sort((a, b) => b.totalWeight - a.totalWeight);
 
@@ -205,10 +207,10 @@ export class WeightCalculationService {
             common: [],
             rare: [],
             epic: [],
-            legendary: []
+            legendary: [],
         };
 
-        prizes.forEach(prize => {
+        prizes.forEach((prize) => {
             if (groups[prize.rarity]) {
                 groups[prize.rarity].push(prize);
             }
@@ -226,13 +228,13 @@ export class WeightCalculationService {
         summary: any;
     }> {
         const issues: string[] = [];
-        
+
         // 获取所有奖品
         const allPrizes = await this.ctx.db.collection('lottery.prizes' as any)
             .find({})
             .toArray();
 
-        const enabledPrizes = allPrizes.filter(p => p.enabled);
+        const enabledPrizes = allPrizes.filter((p) => p.enabled);
         const groupedPrizes = this.groupByRarity(enabledPrizes);
 
         // 检查是否有奖品
@@ -244,14 +246,14 @@ export class WeightCalculationService {
         Object.entries(groupedPrizes).forEach(([rarity, prizes]) => {
             if (prizes.length === 0) return;
 
-            const weights = prizes.map(p => p.weight || p.calculatedWeight || 0);
+            const weights = prizes.map((p) => p.weight || p.calculatedWeight || 0);
             const uniqueWeights = [...new Set(weights)];
 
             if (uniqueWeights.length > 1) {
                 issues.push(`${rarity} 级别奖品权重不一致: ${uniqueWeights.join(', ')}`);
             }
 
-            if (weights.some(w => w <= 0)) {
+            if (weights.some((w) => w <= 0)) {
                 issues.push(`${rarity} 级别存在无效权重 (≤0)`);
             }
         });
@@ -259,7 +261,7 @@ export class WeightCalculationService {
         // 验证总概率是否为100%
         const totalPrizeWeight = Object.values(this.RARITY_BASE_WEIGHTS).reduce((sum, w) => sum + w, 0);
         const expectedTotal = 10000; // 100%
-        
+
         if (totalPrizeWeight !== expectedTotal) {
             issues.push(`总权重不正确: ${totalPrizeWeight}, 期望: ${expectedTotal}`);
         }
@@ -269,7 +271,7 @@ export class WeightCalculationService {
         return {
             isValid: issues.length === 0,
             issues,
-            summary
+            summary,
         };
     }
 

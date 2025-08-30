@@ -2,9 +2,8 @@ import {
     Handler,
 } from 'hydrooj';
 import {
-    ScoreService,
     RPSGameService,
-    type UserRPSStats
+    ScoreService,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
@@ -16,7 +15,7 @@ import { DEFAULT_CONFIG } from './config';
 export class RPSGameHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        
+
         if (!uid) {
             this.response.redirect = this.url('user_login');
             return;
@@ -24,14 +23,14 @@ export class RPSGameHandler extends Handler {
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const rpsService = new RPSGameService(this.ctx, scoreService);
-        
+
         // 获取用户积分
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
         const currentCoins = userScore?.totalScore || 0;
-        
+
         // 获取用户游戏统计
         const userStats = await rpsService.getUserRPSStats(this.domain._id, uid);
-        
+
         // 获取最近游戏记录
         const recentGames = await rpsService.getUserGameHistory(this.domain._id, uid, 6);
 
@@ -42,13 +41,13 @@ export class RPSGameHandler extends Handler {
         const canPlay = currentCoins >= gameConfig.baseCost;
 
         // 格式化游戏记录时间
-        const formattedGames = recentGames.map(game => ({
+        const formattedGames = recentGames.map((game) => ({
             ...game,
             time: game.gameTime.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             }),
             playerChoiceIcon: this.getChoiceIcon(game.playerChoice),
             aiChoiceIcon: this.getChoiceIcon(game.aiChoice),
@@ -66,7 +65,7 @@ export class RPSGameHandler extends Handler {
                 losses: 0,
                 netProfit: 0,
                 currentStreak: 0,
-                bestStreak: 0
+                bestStreak: 0,
             },
             recentGames: formattedGames,
         };
@@ -77,9 +76,9 @@ export class RPSGameHandler extends Handler {
      */
     private getChoiceIcon(choice: string): string {
         const icons = {
-            'rock': '🗿',
-            'paper': '📄',
-            'scissors': '✂️'
+            rock: '🗿',
+            paper: '📄',
+            scissors: '✂️',
         };
         return icons[choice] || '❓';
     }
@@ -98,10 +97,10 @@ export class RPSPlayHandler extends Handler {
     async post() {
         try {
             console.log(`[RPSPlayHandler] Starting RPS game request for user ${this.user._id}`);
-            console.log(`[RPSPlayHandler] Request body:`, this.request.body);
-            
+            console.log('[RPSPlayHandler] Request body:', this.request.body);
+
             const { choice } = this.request.body;
-            
+
             if (!['rock', 'paper', 'scissors'].includes(choice)) {
                 console.log(`[RPSPlayHandler] Invalid choice received: ${choice}`);
                 this.response.body = { success: false, message: '无效的选择' };
@@ -112,31 +111,31 @@ export class RPSPlayHandler extends Handler {
             console.log(`[RPSPlayHandler] Creating services for domain ${this.domain._id}`);
             const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
             const rpsService = new RPSGameService(this.ctx, scoreService);
-            
+
             console.log(`[RPSPlayHandler] Calling playRPSGame with choice: ${choice}`);
             const result = await rpsService.playRPSGame(
                 this.domain._id,
                 this.user._id,
-                choice as 'rock' | 'paper' | 'scissors'
+                choice as 'rock' | 'paper' | 'scissors',
             );
-            
-            console.log(`[RPSPlayHandler] Game result:`, result);
-            
+
+            console.log('[RPSPlayHandler] Game result:', result);
+
             // 添加选择图标到结果中
             if (result.success && result.playerChoice && result.aiChoice) {
                 (result as any).playerChoiceIcon = this.getChoiceIcon(result.playerChoice);
                 (result as any).aiChoiceIcon = this.getChoiceIcon(result.aiChoice);
-                console.log(`[RPSPlayHandler] Added choice icons`);
+                console.log('[RPSPlayHandler] Added choice icons');
             }
-            
+
             this.response.body = result;
             this.response.type = 'application/json';
-            console.log(`[RPSPlayHandler] Response set successfully`);
+            console.log('[RPSPlayHandler] Response set successfully');
         } catch (error) {
             console.error('[RPSPlayHandler] Error:', error);
-            this.response.body = { 
-                success: false, 
-                message: '服务器内部错误: ' + error.message 
+            this.response.body = {
+                success: false,
+                message: `服务器内部错误: ${error.message}`,
             };
             this.response.type = 'application/json';
         }
@@ -144,9 +143,9 @@ export class RPSPlayHandler extends Handler {
 
     private getChoiceIcon(choice: string): string {
         const icons = {
-            'rock': '🗿',
-            'paper': '📄',
-            'scissors': '✂️'
+            rock: '🗿',
+            paper: '📄',
+            scissors: '✂️',
         };
         return icons[choice] || '❓';
     }
@@ -163,35 +162,35 @@ export class RPSHistoryHandler extends Handler {
     }
 
     async get() {
-        const page = Math.max(1, parseInt(this.request.query.page as string) || 1);
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 20;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const rpsService = new RPSGameService(this.ctx, scoreService);
-        
+
         // 获取分页游戏历史
         const historyData = await rpsService.getUserGameHistoryPaged(
-            this.domain._id, 
-            this.user._id, 
-            page, 
-            limit
+            this.domain._id,
+            this.user._id,
+            page,
+            limit,
         );
 
         // 获取用户统计
         const userStats = await rpsService.getUserRPSStats(this.domain._id, this.user._id);
-        
+
         // 获取选择统计
         const choiceStats = await rpsService.getUserChoiceStats(this.domain._id, this.user._id);
-        
+
         // 格式化游戏记录
-        const formattedRecords = historyData.records.map(record => ({
+        const formattedRecords = historyData.records.map((record) => ({
             ...record,
             time: record.gameTime.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             }),
             playerChoiceIcon: this.getChoiceIcon(record.playerChoice),
             aiChoiceIcon: this.getChoiceIcon(record.aiChoice),
@@ -210,21 +209,21 @@ export class RPSHistoryHandler extends Handler {
                 losses: 0,
                 netProfit: 0,
                 currentStreak: 0,
-                bestStreak: 0
+                bestStreak: 0,
             },
             choiceStats: choiceStats || {
                 rock: 0,
                 paper: 0,
-                scissors: 0
+                scissors: 0,
             },
         };
     }
 
     private getChoiceIcon(choice: string): string {
         const icons = {
-            'rock': '🗿',
-            'paper': '📄',
-            'scissors': '✂️'
+            rock: '🗿',
+            paper: '📄',
+            scissors: '✂️',
         };
         return icons[choice] || '❓';
     }
@@ -244,10 +243,10 @@ export class RPSAdminHandler extends Handler {
     async get() {
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const rpsService = new RPSGameService(this.ctx, scoreService);
-        
+
         // 获取系统统计
         const systemStats = await rpsService.getSystemStats(this.domain._id);
-        
+
         // 获取最近游戏记录 (所有用户)
         const recentGames = await this.ctx.db.collection('rps.records' as any)
             .find({ domainId: this.domain._id })
@@ -256,18 +255,18 @@ export class RPSAdminHandler extends Handler {
             .toArray();
 
         // 获取用户信息
-        const uids = [...new Set(recentGames.map(g => g.uid))];
+        const uids = [...new Set(recentGames.map((g) => g.uid))];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
         // 格式化最近游戏记录
-        const formattedGames = recentGames.map(game => ({
+        const formattedGames = recentGames.map((game) => ({
             ...game,
             time: game.gameTime.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             }),
             playerChoiceIcon: this.getChoiceIcon(game.playerChoice),
             aiChoiceIcon: this.getChoiceIcon(game.aiChoice),
@@ -283,9 +282,9 @@ export class RPSAdminHandler extends Handler {
 
     private getChoiceIcon(choice: string): string {
         const icons = {
-            'rock': '🗿',
-            'paper': '📄',
-            'scissors': '✂️'
+            rock: '🗿',
+            paper: '📄',
+            scissors: '✂️',
         };
         return icons[choice] || '❓';
     }

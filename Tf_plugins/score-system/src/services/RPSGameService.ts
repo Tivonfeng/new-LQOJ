@@ -1,3 +1,5 @@
+/* eslint-disable github/array-foreach */
+/* eslint-disable no-prototype-builtins */
 import {
     Context,
 } from 'hydrooj';
@@ -72,7 +74,7 @@ export class RPSGameService {
             winReward: RPSGameService.WIN_REWARD,
             drawReward: RPSGameService.DRAW_REWARD,
             streakBonus: RPSGameService.STREAK_BONUS,
-            winMultiplier: 2
+            winMultiplier: 2,
         };
     }
 
@@ -96,7 +98,7 @@ export class RPSGameService {
     }> {
         try {
             console.log(`[RPSGameService] Starting game for user ${uid}, choice: ${playerChoice}`);
-            
+
             // 验证输入
             if (!RPSGameService.CHOICES.includes(playerChoice)) {
                 console.log(`[RPSGameService] Invalid choice: ${playerChoice}`);
@@ -106,26 +108,26 @@ export class RPSGameService {
             // 检查用户积分
             console.log(`[RPSGameService] Checking user score for domain ${domainId}, uid ${uid}`);
             const userScore = await this.scoreService.getUserScore(domainId, uid);
-            console.log(`[RPSGameService] User score result:`, userScore);
-            
+            console.log('[RPSGameService] User score result:', userScore);
+
             if (!userScore || userScore.totalScore < RPSGameService.BASE_COST) {
                 console.log(`[RPSGameService] Insufficient balance: ${userScore?.totalScore || 0} < ${RPSGameService.BASE_COST}`);
-                return { 
-                    success: false, 
-                    message: `积分不足，至少需要${RPSGameService.BASE_COST}积分` 
+                return {
+                    success: false,
+                    message: `积分不足，至少需要${RPSGameService.BASE_COST}积分`,
                 };
             }
         } catch (error) {
-            console.error(`[RPSGameService] Error in playRPSGame:`, error);
+            console.error('[RPSGameService] Error in playRPSGame:', error);
             return {
                 success: false,
-                message: `游戏服务错误: ${error.message}`
+                message: `游戏服务错误: ${error.message}`,
             };
         }
 
         try {
             // 获取当前用户统计（用于连胜计算）
-            console.log(`[RPSGameService] Getting user stats`);
+            console.log('[RPSGameService] Getting user stats');
             const userStats = await this.getUserRPSStats(domainId, uid);
             let currentStreak = userStats?.currentStreak || 0;
 
@@ -136,7 +138,7 @@ export class RPSGameService {
             // 判断游戏结果
             const gameResult = this.determineWinner(playerChoice, aiChoice);
             console.log(`[RPSGameService] Game result: ${gameResult}`);
-            
+
             // 计算奖励和连胜
             let reward = 0;
             let netGain = -RPSGameService.BASE_COST;
@@ -146,7 +148,7 @@ export class RPSGameService {
                 currentStreak += 1;
                 reward = RPSGameService.WIN_REWARD;
                 netGain = RPSGameService.WIN_REWARD - RPSGameService.BASE_COST;
-                
+
                 // 连胜奖励（从第2胜开始）
                 if (currentStreak >= 2) {
                     streakBonus = RPSGameService.STREAK_BONUS * (currentStreak - 1);
@@ -172,7 +174,7 @@ export class RPSGameService {
                 pid: 0, // 游戏类型记录，使用0表示非题目
                 recordId: null,
                 score: -RPSGameService.BASE_COST,
-                reason: `剪刀石头布游戏 - 游戏费用`,
+                reason: '剪刀石头布游戏 - 游戏费用',
                 problemTitle: '剪刀石头布',
             });
 
@@ -180,17 +182,17 @@ export class RPSGameService {
             if (reward > 0) {
                 console.log(`[RPSGameService] Adding reward: ${reward}`);
                 await this.scoreService.updateUserScore(domainId, uid, reward);
-                
+
                 let rewardReason = '';
                 if (gameResult === 'win') {
-                    rewardReason = `剪刀石头布游戏 - 胜利奖励`;
+                    rewardReason = '剪刀石头布游戏 - 胜利奖励';
                     if (streakBonus > 0) {
                         rewardReason += ` (连胜${currentStreak}次，奖励+${streakBonus})`;
                     }
                 } else if (gameResult === 'draw') {
-                    rewardReason = `剪刀石头布游戏 - 平局退款`;
+                    rewardReason = '剪刀石头布游戏 - 平局退款';
                 }
-                
+
                 await this.scoreService.addScoreRecord({
                     uid,
                     domainId,
@@ -214,18 +216,18 @@ export class RPSGameService {
                 netGain,
                 streakBonus,
                 currentStreak,
-                gameTime: new Date()
+                gameTime: new Date(),
             };
 
-            console.log(`[RPSGameService] Inserting game record`);
+            console.log('[RPSGameService] Inserting game record');
             await this.ctx.db.collection('rps.records' as any).insertOne(gameRecord);
 
             // 更新用户统计
-            console.log(`[RPSGameService] Updating user stats`);
+            console.log('[RPSGameService] Updating user stats');
             await this.updateUserStats(domainId, uid, gameRecord);
 
             // 获取更新后的用户积分
-            console.log(`[RPSGameService] Getting updated user score`);
+            console.log('[RPSGameService] Getting updated user score');
             const updatedScore = await this.scoreService.getUserScore(domainId, uid);
 
             const result = {
@@ -236,16 +238,16 @@ export class RPSGameService {
                 reward: netGain, // 返回净收益
                 newBalance: updatedScore?.totalScore || 0,
                 streak: currentStreak,
-                streakBonus
+                streakBonus,
             };
 
-            console.log(`[RPSGameService] Game completed successfully:`, result);
+            console.log('[RPSGameService] Game completed successfully:', result);
             return result;
         } catch (error) {
-            console.error(`[RPSGameService] Error in game execution:`, error);
+            console.error('[RPSGameService] Error in game execution:', error);
             return {
                 success: false,
-                message: `游戏执行错误: ${error.message}`
+                message: `游戏执行错误: ${error.message}`,
             };
         }
     }
@@ -259,9 +261,9 @@ export class RPSGameService {
         }
 
         const winConditions = {
-            'rock': 'scissors',
-            'paper': 'rock',
-            'scissors': 'paper'
+            rock: 'scissors',
+            paper: 'rock',
+            scissors: 'paper',
         };
 
         return winConditions[playerChoice] === aiChoice ? 'win' : 'lose';
@@ -272,18 +274,18 @@ export class RPSGameService {
      */
     private async updateUserStats(domainId: string, uid: number, gameRecord: RPSGameRecord) {
         const collection = this.ctx.db.collection('rps.stats' as any);
-        
+
         const updateData: any = {
             $inc: {
                 totalGames: 1,
                 totalCost: gameRecord.baseCost,
                 totalReward: gameRecord.reward,
-                netProfit: gameRecord.netGain
+                netProfit: gameRecord.netGain,
             },
             $set: {
                 lastGameTime: gameRecord.gameTime,
-                currentStreak: gameRecord.currentStreak
-            }
+                currentStreak: gameRecord.currentStreak,
+            },
         };
 
         // 根据游戏结果更新对应计数
@@ -299,7 +301,7 @@ export class RPSGameService {
         await collection.updateOne(
             { uid, domainId },
             updateData,
-            { upsert: true }
+            { upsert: true },
         );
     }
 
@@ -322,17 +324,17 @@ export class RPSGameService {
             {
                 $group: {
                     _id: '$playerChoice',
-                    count: { $sum: 1 }
-                }
-            }
+                    count: { $sum: 1 },
+                },
+            },
         ];
 
         const results = await this.ctx.db.collection('rps.records' as any)
             .aggregate(pipeline).toArray();
 
         const stats: UserChoiceStats = { rock: 0, paper: 0, scissors: 0 };
-        
-        results.forEach(result => {
+
+        results.forEach((result) => {
             if (result._id && stats.hasOwnProperty(result._id)) {
                 stats[result._id as keyof UserChoiceStats] = result.count;
             }
@@ -364,7 +366,7 @@ export class RPSGameService {
         currentPage: number;
     }> {
         const skip = (page - 1) * limit;
-        
+
         const [records, total] = await Promise.all([
             this.ctx.db.collection('rps.records' as any)
                 .find({ uid, domainId })
@@ -373,7 +375,7 @@ export class RPSGameService {
                 .limit(limit)
                 .toArray(),
             this.ctx.db.collection('rps.records' as any)
-                .countDocuments({ uid, domainId })
+                .countDocuments({ uid, domainId }),
         ]);
 
         const totalPages = Math.ceil(total / limit);
@@ -382,7 +384,7 @@ export class RPSGameService {
             records: records as RPSGameRecord[],
             total,
             totalPages,
-            currentPage: page
+            currentPage: page,
         };
     }
 
@@ -412,9 +414,9 @@ export class RPSGameService {
                         totalReward: { $sum: '$reward' },
                         wins: { $sum: { $cond: [{ $eq: ['$result', 'win'] }, 1, 0] } },
                         draws: { $sum: { $cond: [{ $eq: ['$result', 'draw'] }, 1, 0] } },
-                        losses: { $sum: { $cond: [{ $eq: ['$result', 'lose'] }, 1, 0] } }
-                    }
-                }
+                        losses: { $sum: { $cond: [{ $eq: ['$result', 'lose'] }, 1, 0] } },
+                    },
+                },
             ]).toArray(),
 
             // 玩家数量
@@ -426,10 +428,10 @@ export class RPSGameService {
                 {
                     $group: {
                         _id: '$playerChoice',
-                        count: { $sum: 1 }
-                    }
-                }
-            ]).toArray()
+                        count: { $sum: 1 },
+                    },
+                },
+            ]).toArray(),
         ]);
 
         const stats = gameStats[0] || {
@@ -438,11 +440,11 @@ export class RPSGameService {
             totalReward: 0,
             wins: 0,
             draws: 0,
-            losses: 0
+            losses: 0,
         };
 
         const choiceDistribution: UserChoiceStats = { rock: 0, paper: 0, scissors: 0 };
-        choiceStats.forEach(choice => {
+        choiceStats.forEach((choice) => {
             if (choice._id && choiceDistribution.hasOwnProperty(choice._id)) {
                 choiceDistribution[choice._id as keyof UserChoiceStats] = choice.count;
             }
@@ -457,7 +459,7 @@ export class RPSGameService {
             winRate: stats.totalGames > 0 ? (stats.wins / stats.totalGames * 100) : 0,
             drawRate: stats.totalGames > 0 ? (stats.draws / stats.totalGames * 100) : 0,
             loseRate: stats.totalGames > 0 ? (stats.losses / stats.totalGames * 100) : 0,
-            choiceDistribution
+            choiceDistribution,
         };
     }
 }

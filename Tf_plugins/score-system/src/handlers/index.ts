@@ -1,34 +1,34 @@
 // 处理器统一导出
 
-// 积分相关处理器
+// 掷骰子游戏相关处理器
 export {
-    ScoreHallHandler,
-    ScoreRankingHandler,
-    UserScoreHandler,
-    ScoreManageHandler
-} from './ScoreHandlers';
+    DiceAdminHandler,
+    DiceGameHandler,
+    DiceHistoryHandler,
+    DicePlayHandler,
+} from './DiceGameHandlers';
 
 // 抽奖相关处理器
 export {
-    LotteryHallHandler,
-    LotteryDrawHandler,
+    LotteryAdminHandler,
     LotteryClaimHandler,
+    LotteryDrawHandler,
+    LotteryHallHandler,
     LotteryHistoryHandler,
-    LotteryAdminHandler
 } from './LotteryHandlers';
-
-// 掷骰子游戏相关处理器
-export {
-    DiceGameHandler,
-    DicePlayHandler,
-    DiceHistoryHandler,
-    DiceAdminHandler
-} from './DiceGameHandlers';
 
 // 剪刀石头布游戏相关处理器
 export {
+    RPSAdminHandler,
     RPSGameHandler,
-    RPSPlayHandler,
     RPSHistoryHandler,
-    RPSAdminHandler
+    RPSPlayHandler,
 } from './RPSHandlers';
+
+// 积分相关处理器
+export {
+    ScoreHallHandler,
+    ScoreManageHandler,
+    ScoreRankingHandler,
+    UserScoreHandler,
+} from './ScoreHandlers';

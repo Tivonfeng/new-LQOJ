@@ -1,6 +1,6 @@
 import { Context } from 'hydrooj';
+import { LotteryService, UserLotteryStats } from './LotteryService';
 import { ScoreService, UserScore } from './ScoreService';
-import { LotteryService, LotteryRecord, UserLotteryStats } from './LotteryService';
 
 /**
  * 统计分析服务
@@ -38,9 +38,9 @@ export class StatisticsService {
                 $group: {
                     _id: null,
                     totalUsers: { $sum: 1 },
-                    totalScore: { $sum: '$totalScore' }
-                }
-            }
+                    totalScore: { $sum: '$totalScore' },
+                },
+            },
         ]).toArray();
 
         const scoreData = scoreStats[0] || { totalUsers: 0, totalScore: 0 };
@@ -51,8 +51,8 @@ export class StatisticsService {
         // 获取抽奖统计
         const lotteryStats = await this.lotteryService.getLotteryStats();
 
-        const winRate = lotteryStats.totalDraws > 0 ? 
-            (lotteryStats.totalWins / lotteryStats.totalDraws * 100) : 0;
+        const winRate = lotteryStats.totalDraws > 0
+            ? (lotteryStats.totalWins / lotteryStats.totalDraws * 100) : 0;
 
         return {
             totalUsers: scoreData.totalUsers,
@@ -61,7 +61,7 @@ export class StatisticsService {
             todayActiveUsers: todayStats.activeUsers,
             totalDraws: lotteryStats.totalDraws,
             totalWins: lotteryStats.totalWins,
-            winRate: Math.round(winRate * 100) / 100
+            winRate: Math.round(winRate * 100) / 100,
         };
     }
 
@@ -82,45 +82,45 @@ export class StatisticsService {
         startDate.setHours(0, 0, 0, 0);
 
         const dailyStats = await this.ctx.db.collection('score.records' as any).aggregate([
-            { 
-                $match: { 
+            {
+                $match: {
                     domainId,
-                    createdAt: { $gte: startDate }
-                }
+                    createdAt: { $gte: startDate },
+                },
             },
             {
                 $group: {
                     _id: {
                         year: { $year: '$createdAt' },
                         month: { $month: '$createdAt' },
-                        day: { $dayOfMonth: '$createdAt' }
+                        day: { $dayOfMonth: '$createdAt' },
                     },
                     activeUsers: { $addToSet: '$uid' },
-                    totalScore: { $sum: '$score' }
-                }
+                    totalScore: { $sum: '$score' },
+                },
             },
             {
                 $project: {
                     _id: 1,
                     activeUsers: { $size: '$activeUsers' },
                     totalScore: 1,
-                    avgScore: { 
+                    avgScore: {
                         $cond: [
                             { $gt: [{ $size: '$activeUsers' }, 0] },
                             { $divide: ['$totalScore', { $size: '$activeUsers' }] },
-                            0
-                        ]
-                    }
-                }
+                            0,
+                        ],
+                    },
+                },
             },
-            { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+            { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
         ]).toArray();
 
-        return dailyStats.map(stat => ({
+        return dailyStats.map((stat) => ({
             date: `${stat._id.year}-${String(stat._id.month).padStart(2, '0')}-${String(stat._id.day).padStart(2, '0')}`,
             activeUsers: stat.activeUsers,
             totalScore: stat.totalScore,
-            avgScore: Math.round(stat.avgScore * 100) / 100
+            avgScore: Math.round(stat.avgScore * 100) / 100,
         }));
     }
 
@@ -148,18 +148,18 @@ export class StatisticsService {
             { min: 101, max: 200, label: '101-200' },
             { min: 201, max: 500, label: '201-500' },
             { min: 501, max: 1000, label: '501-1000' },
-            { min: 1001, max: Infinity, label: '1000+' }
+            { min: 1001, max: Infinity, label: '1000+' },
         ];
 
-        const distribution = ranges.map(range => {
-            const count = users.filter(user => 
-                user.totalScore >= range.min && user.totalScore <= range.max
+        const distribution = ranges.map((range) => {
+            const count = users.filter((user) =>
+                user.totalScore >= range.min && user.totalScore <= range.max,
             ).length;
-            
+
             return {
                 range: range.label,
                 count,
-                percentage: Math.round((count / totalUsers) * 10000) / 100
+                percentage: Math.round((count / totalUsers) * 10000) / 100,
             };
         });
 
@@ -187,33 +187,33 @@ export class StatisticsService {
             {
                 $group: {
                     _id: '$prizeRarity',
-                    wonCount: { $sum: 1 }
-                }
-            }
+                    wonCount: { $sum: 1 },
+                },
+            },
         ]).toArray();
 
         const rarities = ['common', 'rare', 'epic', 'legendary'];
         const rarityLabels = {
             common: '普通',
-            rare: '稀有', 
+            rare: '稀有',
             epic: '史诗',
-            legendary: '传说'
+            legendary: '传说',
         };
 
-        return rarities.map(rarity => {
-            const prizeCount = prizes.filter(p => p.rarity === rarity).length;
-            const wonData = wonStats.find(s => s._id === rarity);
+        return rarities.map((rarity) => {
+            const prizeCount = prizes.filter((p) => p.rarity === rarity).length;
+            const wonData = wonStats.find((s) => s._id === rarity);
             const wonCount = wonData ? wonData.wonCount : 0;
-            const totalDraws = prizes.filter(p => p.rarity === rarity)
+            const totalDraws = prizes.filter((p) => p.rarity === rarity)
                 .reduce((sum, prize) => sum + prize.weight, 0);
-            
+
             const winRate = totalDraws > 0 ? (wonCount / totalDraws * 100) : 0;
 
             return {
                 rarity: rarityLabels[rarity],
                 count: prizeCount,
                 wonCount,
-                winRate: Math.round(winRate * 100) / 100
+                winRate: Math.round(winRate * 100) / 100,
             };
         });
     }
@@ -248,24 +248,24 @@ export class StatisticsService {
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
         });
 
         return {
-            scoreRecords: scoreRecords.map(record => ({
+            scoreRecords: scoreRecords.map((record) => ({
                 ...record,
-                createdAt: formatTime(record.createdAt)
+                createdAt: formatTime(record.createdAt),
             })),
-            lotteryRecords: lotteryRecords.map(record => ({
+            lotteryRecords: lotteryRecords.map((record) => ({
                 ...record,
-                drawTime: formatTime(record.drawTime)
-            }))
+                drawTime: formatTime(record.drawTime),
+            })),
         };
     }
 
     /**
      * 获取用户个人统计摘要
-     * @param domainId 域ID  
+     * @param domainId 域ID
      * @param uid 用户ID
      * @returns 用户统计摘要
      */
@@ -288,17 +288,17 @@ export class StatisticsService {
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
         const recentScoreCount = await this.ctx.db.collection('score.records' as any)
-            .countDocuments({ 
-                domainId, 
-                uid, 
-                createdAt: { $gte: oneWeekAgo } 
+            .countDocuments({
+                domainId,
+                uid,
+                createdAt: { $gte: oneWeekAgo },
             });
 
         const recentLotteryCount = await this.ctx.db.collection('lottery.records' as any)
-            .countDocuments({ 
-                domainId, 
-                uid, 
-                drawTime: { $gte: oneWeekAgo } 
+            .countDocuments({
+                domainId,
+                uid,
+                drawTime: { $gte: oneWeekAgo },
             });
 
         return {
@@ -306,7 +306,7 @@ export class StatisticsService {
             rank,
             lotteryStats,
             recentScoreCount,
-            recentLotteryCount
+            recentLotteryCount,
         };
     }
 }

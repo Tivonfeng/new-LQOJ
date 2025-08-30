@@ -76,9 +76,9 @@ export class DiceGameService {
         // 检查用户积分
         const userScore = await this.scoreService.getUserScore(domainId, uid);
         if (!userScore || userScore.totalScore < betAmount) {
-            return { 
-                success: false, 
-                message: `积分不足，需要${betAmount}积分才能游戏` 
+            return {
+                success: false,
+                message: `积分不足，需要${betAmount}积分才能游戏`,
             };
         }
 
@@ -100,7 +100,7 @@ export class DiceGameService {
             recordId: null,
             score: -betAmount,
             reason: `掷骰子游戏投注${betAmount}积分`,
-            problemTitle: '掷骰子游戏'
+            problemTitle: '掷骰子游戏',
         });
 
         // 如果获胜，发放奖励
@@ -113,7 +113,7 @@ export class DiceGameService {
                 recordId: null,
                 score: reward,
                 reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
-                problemTitle: '掷骰子游戏'
+                problemTitle: '掷骰子游戏',
             });
         }
 
@@ -128,7 +128,7 @@ export class DiceGameService {
             won,
             reward,
             netGain,
-            gameTime: new Date()
+            gameTime: new Date(),
         };
 
         const recordResult = await this.ctx.db.collection('dice.records' as any).insertOne(gameRecord);
@@ -154,7 +154,7 @@ export class DiceGameService {
     private async updateUserStats(domainId: string, uid: number, won: boolean, netGain: number, betAmount: number, reward: number): Promise<void> {
         // 先获取当前统计以计算连胜
         const currentStats = await this.ctx.db.collection('dice.stats' as any).findOne({ domainId, uid });
-        
+
         let newWinStreak = 0;
         let maxWinStreak = 0;
 
@@ -179,19 +179,19 @@ export class DiceGameService {
                 totalWins: won ? 1 : 0,
                 totalBet: betAmount,
                 totalReward: reward,
-                netProfit: netGain
+                netProfit: netGain,
             },
-            $set: { 
+            $set: {
                 lastGameTime: new Date(),
                 winStreak: newWinStreak,
-                maxWinStreak: maxWinStreak
-            }
+                maxWinStreak,
+            },
         };
 
         await this.ctx.db.collection('dice.stats' as any).updateOne(
             { domainId, uid },
             updateData,
-            { upsert: true }
+            { upsert: true },
         );
     }
 
@@ -235,7 +235,7 @@ export class DiceGameService {
         totalPages: number;
     }> {
         const skip = (page - 1) * limit;
-        
+
         const records = await this.ctx.db.collection('dice.records' as any)
             .find({ domainId, uid })
             .sort({ gameTime: -1 })
@@ -250,7 +250,7 @@ export class DiceGameService {
             records,
             total,
             page,
-            totalPages: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limit),
         };
     }
 
@@ -275,9 +275,9 @@ export class DiceGameService {
                     totalWins: { $sum: { $cond: ['$won', 1, 0] } },
                     totalBet: { $sum: '$bet' },
                     totalReward: { $sum: '$reward' },
-                    players: { $addToSet: '$uid' }
-                }
-            }
+                    players: { $addToSet: '$uid' },
+                },
+            },
         ]).toArray();
 
         const result = gameStats[0];
@@ -287,7 +287,7 @@ export class DiceGameService {
                 totalPlayers: 0,
                 totalBet: 0,
                 totalReward: 0,
-                winRate: 0
+                winRate: 0,
             };
         }
 
@@ -296,7 +296,7 @@ export class DiceGameService {
             totalPlayers: result.players.length,
             totalBet: result.totalBet,
             totalReward: result.totalReward,
-            winRate: result.totalGames > 0 ? (result.totalWins / result.totalGames * 100) : 0
+            winRate: result.totalGames > 0 ? (result.totalWins / result.totalGames * 100) : 0,
         };
     }
 
@@ -310,8 +310,8 @@ export class DiceGameService {
             winMultiplier: DiceGameService.WIN_MULTIPLIER,
             rules: {
                 small: '1-3',
-                big: '4-6'
-            }
+                big: '4-6',
+            },
         };
     }
 }

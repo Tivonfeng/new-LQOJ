@@ -1,44 +1,44 @@
 // 服务层统一导出
 
-// 积分服务
-export { 
-    ScoreService,
-    type ScoreRecord,
-    type UserScore,
-    type ScoreConfig
-} from './ScoreService';
+// 掷骰子游戏服务
+export {
+    type DiceGameRecord,
+    DiceGameService,
+    type UserDiceStats,
+} from './DiceGameService';
 
 // 抽奖服务
 export {
-    LotteryService,
+    LOTTERY_TYPES,
     type LotteryPrize,
     type LotteryRecord,
+    LotteryService,
+    PRIZE_RARITY,
     type UserLotteryStats,
-    LOTTERY_TYPES,
-    PRIZE_RARITY
 } from './LotteryService';
+
+// 剪刀石头布游戏服务
+export {
+    type RPSGameRecord,
+    RPSGameService,
+    type UserChoiceStats,
+    type UserRPSStats,
+} from './RPSGameService';
+
+// 积分服务
+export {
+    type ScoreConfig,
+    type ScoreRecord,
+    ScoreService,
+    type UserScore,
+} from './ScoreService';
 
 // 统计服务
 export {
-    StatisticsService
+    StatisticsService,
 } from './StatisticsService';
 
 // 权重计算服务
 export {
-    WeightCalculationService
+    WeightCalculationService,
 } from './WeightCalculationService';
-
-// 掷骰子游戏服务
-export {
-    DiceGameService,
-    type DiceGameRecord,
-    type UserDiceStats
-} from './DiceGameService';
-
-// 剪刀石头布游戏服务
-export {
-    RPSGameService,
-    type RPSGameRecord,
-    type UserRPSStats,
-    type UserChoiceStats
-} from './RPSGameService';

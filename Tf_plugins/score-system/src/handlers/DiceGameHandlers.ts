@@ -2,9 +2,8 @@ import {
     Handler,
 } from 'hydrooj';
 import {
-    ScoreService,
     DiceGameService,
-    type UserDiceStats
+    ScoreService,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
@@ -16,7 +15,7 @@ import { DEFAULT_CONFIG } from './config';
 export class DiceGameHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        
+
         if (!uid) {
             this.response.redirect = this.url('user_login');
             return;
@@ -24,14 +23,14 @@ export class DiceGameHandler extends Handler {
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
-        
+
         // 获取用户积分
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
         const currentCoins = userScore?.totalScore || 0;
-        
+
         // 获取用户游戏统计
         const userStats = await diceService.getUserDiceStats(this.domain._id, uid);
-        
+
         // 获取最近游戏记录
         const recentGames = await diceService.getUserGameHistory(this.domain._id, uid, 10);
 
@@ -39,21 +38,21 @@ export class DiceGameHandler extends Handler {
         const gameConfig = diceService.getGameConfig();
 
         // 检查用户可以下注的最大金额
-        const availableBets = gameConfig.availableBets.filter(bet => currentCoins >= bet);
+        const availableBets = gameConfig.availableBets.filter((bet) => currentCoins >= bet);
 
         // 格式化游戏记录时间
-        const formattedGames = recentGames.map(game => ({
+        const formattedGames = recentGames.map((game) => ({
             ...game,
             gameTime: game.gameTime.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
-            })
+                minute: '2-digit',
+            }),
         }));
 
         // 计算胜率
-        const winRate = userStats && userStats.totalGames > 0 
+        const winRate = userStats && userStats.totalGames > 0
             ? (userStats.totalWins / userStats.totalGames * 100).toFixed(1)
             : '0.0';
 
@@ -68,7 +67,7 @@ export class DiceGameHandler extends Handler {
                 totalWins: 0,
                 netProfit: 0,
                 winStreak: 0,
-                maxWinStreak: 0
+                maxWinStreak: 0,
             },
             winRate,
             recentGames: formattedGames,
@@ -88,13 +87,13 @@ export class DicePlayHandler extends Handler {
 
     async post() {
         const { guess, betAmount } = this.request.body;
-        
+
         if (!['big', 'small'].includes(guess)) {
             this.response.body = { success: false, message: '无效的猜测选项' };
             return;
         }
 
-        const betAmountNum = parseInt(betAmount);
+        const betAmountNum = Number.parseInt(betAmount);
         if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
             this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
             return;
@@ -102,14 +101,14 @@ export class DicePlayHandler extends Handler {
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
-        
+
         const result = await diceService.playDiceGame(
             this.domain._id,
             this.user._id,
             guess as 'big' | 'small',
-            betAmountNum
+            betAmountNum,
         );
-        
+
         this.response.body = result;
     }
 }
@@ -125,36 +124,36 @@ export class DiceHistoryHandler extends Handler {
     }
 
     async get() {
-        const page = Math.max(1, parseInt(this.request.query.page as string) || 1);
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 20;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
-        
+
         // 获取分页游戏历史
         const historyData = await diceService.getUserGameHistoryPaged(
-            this.domain._id, 
-            this.user._id, 
-            page, 
-            limit
+            this.domain._id,
+            this.user._id,
+            page,
+            limit,
         );
 
         // 获取用户统计
         const userStats = await diceService.getUserDiceStats(this.domain._id, this.user._id);
-        
+
         // 格式化游戏记录时间
-        const formattedRecords = historyData.records.map(record => ({
+        const formattedRecords = historyData.records.map((record) => ({
             ...record,
             gameTime: record.gameTime.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             }),
             diceEmoji: this.getDiceEmoji(record.diceValue),
             resultText: record.actualResult === 'big' ? '大' : '小',
-            guessText: record.guess === 'big' ? '大' : '小'
+            guessText: record.guess === 'big' ? '大' : '小',
         }));
 
         // 计算统计信息
@@ -173,7 +172,7 @@ export class DiceHistoryHandler extends Handler {
                 totalWins: 0,
                 netProfit: 0,
                 winStreak: 0,
-                maxWinStreak: 0
+                maxWinStreak: 0,
             },
             winRate,
         };
@@ -204,10 +203,10 @@ export class DiceAdminHandler extends Handler {
     async get() {
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
-        
+
         // 获取系统统计
         const systemStats = await diceService.getSystemStats(this.domain._id);
-        
+
         // 获取最近游戏记录 (所有用户)
         const recentGames = await this.ctx.db.collection('dice.records' as any)
             .find({ domainId: this.domain._id })
@@ -216,22 +215,22 @@ export class DiceAdminHandler extends Handler {
             .toArray();
 
         // 获取用户信息
-        const uids = [...new Set(recentGames.map(g => g.uid))];
+        const uids = [...new Set(recentGames.map((g) => g.uid))];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
         // 格式化最近游戏记录
-        const formattedGames = recentGames.map(game => ({
+        const formattedGames = recentGames.map((game) => ({
             ...game,
             gameTime: game.gameTime.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             }),
             diceEmoji: this.getDiceEmoji(game.diceValue),
             resultText: game.actualResult === 'big' ? '大' : '小',
-            guessText: game.guess === 'big' ? '大' : '小'
+            guessText: game.guess === 'big' ? '大' : '小',
         }));
 
         this.response.template = 'dice_admin.html';

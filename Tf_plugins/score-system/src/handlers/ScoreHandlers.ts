@@ -3,10 +3,10 @@ import {
     PRIV,
 } from 'hydrooj';
 import {
-    ScoreService,
     LotteryService,
+    ScoreService,
     StatisticsService,
-    type UserScore
+    type UserScore,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
@@ -35,23 +35,22 @@ export class ScoreHallHandler extends Handler {
             // 获取最近积分记录
             const rawRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 5);
 
-            recentRecords = rawRecords.map(record => ({
+            recentRecords = rawRecords.map((record) => ({
                 ...record,
                 createdAt: record.createdAt.toLocaleString('zh-CN', {
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
-                    minute: '2-digit'
-                })
+                    minute: '2-digit',
+                }),
             }));
         }
 
         // 获取积分排行榜前10
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
 
-
         // 获取用户信息
-        const uids = topUsers.map(u => u.uid);
+        const uids = topUsers.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -84,7 +83,7 @@ export class ScoreHallHandler extends Handler {
  */
 export class ScoreRankingHandler extends Handler {
     async get() {
-        const page = Math.max(1, parseInt(this.request.query.page as string) || 1);
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 50;
         const skip = (page - 1) * limit;
 
@@ -99,7 +98,7 @@ export class ScoreRankingHandler extends Handler {
             .countDocuments({ domainId: this.domain._id });
 
         // 获取用户信息
-        const uids = users.map(u => u.uid);
+        const uids = users.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -107,15 +106,15 @@ export class ScoreRankingHandler extends Handler {
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
         // 格式化日期
-        const formattedUsers = users.map(user => ({
+        const formattedUsers = users.map((user) => ({
             ...user,
             lastUpdated: user.lastUpdated.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
-            })
+                minute: '2-digit',
+            }),
         }));
 
         this.response.template = 'score_ranking.html';
@@ -139,24 +138,24 @@ export class UserScoreHandler extends Handler {
     async get() {
         const uid = this.user._id;
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        
+
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
         const recentRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 20);
 
         // 格式化日期
-        const formattedRecords = recentRecords.map(record => ({
+        const formattedRecords = recentRecords.map((record) => ({
             ...record,
             createdAt: record.createdAt.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit'
-            })
+                minute: '2-digit',
+            }),
         }));
 
         const userScoreData = userScore || { totalScore: 0, acCount: 0 };
-        const averageScore = userScoreData.acCount > 0 
+        const averageScore = userScoreData.acCount > 0
             ? (userScoreData.totalScore / userScoreData.acCount).toFixed(1)
             : '0';
 
@@ -186,12 +185,12 @@ export class ScoreManageHandler extends Handler {
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
-        
+
         // 获取积分排行榜前10名
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
-        
+
         // 获取用户信息用于显示用户名
-        const uids = topUsers.map(u => u.uid);
+        const uids = topUsers.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -204,14 +203,14 @@ export class ScoreManageHandler extends Handler {
             currentDomain: {
                 id: this.domain._id,
                 name: this.domain.name || this.domain._id,
-                displayName: this.domain.displayName || this.domain.name || this.domain._id
-            }
+                displayName: this.domain.displayName || this.domain.name || this.domain._id,
+            },
         };
     }
 
     async post() {
         const { action, username, scoreChange, reason } = this.request.body;
-        
+
         if (action !== 'adjust_score') {
             this.response.body = { success: false, message: '无效的操作' };
             return;
@@ -221,13 +220,13 @@ export class ScoreManageHandler extends Handler {
             // 根据用户名查找用户
             const UserModel = global.Hydro.model.user;
             const user = await UserModel.getByUname(this.domain._id, username);
-            
+
             if (!user) {
                 this.response.body = { success: false, message: '用户不存在' };
                 return;
             }
 
-            const scoreChangeNum = parseInt(scoreChange);
+            const scoreChangeNum = Number.parseInt(scoreChange);
             if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
                 this.response.body = { success: false, message: '积分变化值无效（范围：-10000 到 +10000）' };
                 return;
@@ -239,10 +238,10 @@ export class ScoreManageHandler extends Handler {
             }
 
             const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-            
+
             // 更新用户积分
             await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
-            
+
             // 添加积分记录
             await scoreService.addScoreRecord({
                 uid: user._id,
@@ -256,13 +255,13 @@ export class ScoreManageHandler extends Handler {
 
             console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
 
-            this.response.body = { 
-                success: true, 
-                message: `成功${scoreChangeNum > 0 ? '增加' : '减少'}用户 ${username} ${Math.abs(scoreChangeNum)} 积分` 
+            this.response.body = {
+                success: true,
+                message: `成功${scoreChangeNum > 0 ? '增加' : '减少'}用户 ${username} ${Math.abs(scoreChangeNum)} 积分`,
             };
         } catch (error) {
             console.error('[ScoreManage] Error adjusting score:', error);
-            this.response.body = { success: false, message: '操作失败：' + error.message };
+            this.response.body = { success: false, message: `操作失败：${error.message}` };
         }
     }
 }

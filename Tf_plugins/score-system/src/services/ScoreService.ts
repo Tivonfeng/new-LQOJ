@@ -50,10 +50,10 @@ export class ScoreService {
      */
     calculateACScore(isFirstAC: boolean): number {
         if (!this.config.enabled) return 0;
-        
+
         // 只有首次AC才得分，防止恶意刷题
         if (!isFirstAC) return 0;
-        
+
         // 固定每AC一题10分
         return 10;
     }
@@ -98,7 +98,7 @@ export class ScoreService {
                 $inc: { totalScore: scoreChange, acCount: scoreChange > 0 ? 1 : 0 },
                 $set: { lastUpdated: new Date() },
             },
-            { upsert: true }
+            { upsert: true },
         );
     }
 
@@ -154,9 +154,9 @@ export class ScoreService {
         const higherRankCount = await this.ctx.db.collection('score.users' as any)
             .countDocuments({
                 domainId,
-                totalScore: { $gt: userScore.totalScore }
+                totalScore: { $gt: userScore.totalScore },
             });
-        
+
         return higherRankCount + 1;
     }
 
@@ -171,16 +171,16 @@ export class ScoreService {
     }> {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const todayScores = await this.ctx.db.collection('score.records' as any)
-            .find({ 
+            .find({
                 domainId,
-                createdAt: { $gte: today }
+                createdAt: { $gte: today },
             })
             .toArray();
 
         const totalScore = todayScores.reduce((sum, record) => sum + record.score, 0);
-        const activeUsers = new Set(todayScores.map(record => record.uid)).size;
+        const activeUsers = new Set(todayScores.map((record) => record.uid)).size;
 
         return { totalScore, activeUsers };
     }

@@ -1,8 +1,9 @@
+/* eslint-disable github/array-foreach */
 import {
     Context,
     ObjectId,
 } from 'hydrooj';
-import { ScoreService, ScoreRecord } from './ScoreService';
+import { ScoreService } from './ScoreService';
 import { WeightCalculationService } from './WeightCalculationService';
 
 // 抽奖奖品接口
@@ -70,7 +71,7 @@ export const LOTTERY_TYPES = {
         cost: 20,
         icon: '🎲',
         description: '消耗20绿旗币，有机会获得各种奖励',
-        noPrizeChance: 0.3 // 30%未中奖概率
+        noPrizeChance: 0.3, // 30%未中奖概率
     },
     premium: {
         id: 'premium',
@@ -79,15 +80,15 @@ export const LOTTERY_TYPES = {
         icon: '💎',
         description: '消耗50绿旗币，获得稀有奖励概率更高',
         guaranteeDraws: 10,
-        noPrizeChance: 0.1 // 10%未中奖概率
-    }
+        noPrizeChance: 0.1, // 10%未中奖概率
+    },
 } as const;
 
 export const PRIZE_RARITY = {
     common: { name: '普通', color: '#9E9E9E', weight: 55 },
     rare: { name: '稀有', color: '#2196F3', weight: 30 },
     epic: { name: '史诗', color: '#9C27B0', weight: 12 },
-    legendary: { name: '传说', color: '#FF9800', weight: 3 }
+    legendary: { name: '传说', color: '#FF9800', weight: 3 },
 } as const;
 
 /**
@@ -111,7 +112,7 @@ export class LotteryService {
     async initializePrizes() {
         const existingPrizes = await this.ctx.db.collection('lottery.prizes' as any)
             .countDocuments({});
-        
+
         if (existingPrizes > 0) return; // 已有奖品，跳过初始化
 
         const defaultPrizes = [
@@ -119,21 +120,22 @@ export class LotteryService {
             { name: '绿旗币 x5', icon: '🪙', type: 'coin' as const, value: 5, rarity: 'common' as const, weight: 30 },
             { name: '绿旗币 x8', icon: '💰', type: 'coin' as const, value: 8, rarity: 'common' as const, weight: 20 },
             { name: '新手徽章', icon: '🔰', type: 'badge' as const, value: 'newbie', rarity: 'common' as const, weight: 15 },
-            
+
             // 稀有奖品
             { name: '绿旗币 x20', icon: '💎', type: 'coin' as const, value: 20, rarity: 'rare' as const, weight: 15 },
             { name: '解题达人徽章', icon: '🎯', type: 'badge' as const, value: 'solver', rarity: 'rare' as const, weight: 8 },
-            
+
             // 史诗奖品
             { name: '绿旗币 x50', icon: '💍', type: 'coin' as const, value: 50, rarity: 'epic' as const, weight: 7 },
             { name: '编程大师徽章', icon: '👑', type: 'badge' as const, value: 'master', rarity: 'epic' as const, weight: 3 },
-            
+
             // 传说奖品
             { name: '绿旗币 x100', icon: '🏆', type: 'coin' as const, value: 100, rarity: 'legendary' as const, weight: 2 },
-            { name: '传说程序员徽章', icon: '🌟', type: 'badge' as const, value: 'legend', rarity: 'legendary' as const, weight: 1 }
+            { name: '传说程序员徽章', icon: '🌟', type: 'badge' as const, value: 'legend', rarity: 'legendary' as const, weight: 1 },
         ];
 
         for (const prize of defaultPrizes) {
+            // eslint-disable-next-line no-await-in-loop
             await this.ctx.db.collection('lottery.prizes' as any).insertOne({
                 ...prize,
                 description: `${prize.name}奖励`,
@@ -144,7 +146,7 @@ export class LotteryService {
                 totalStock: -1, // 无限库存
                 currentStock: -1,
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
             });
         }
 
@@ -180,7 +182,7 @@ export class LotteryService {
 
         // 检查保底机制
         const shouldGuaranteeWin = await this.checkGuarantee(domainId, uid, lotteryType);
-        
+
         // 获取可用奖品(全域统一)
         const availablePrizes = await this.getAvailablePrizes(lotteryType, shouldGuaranteeWin);
         if (availablePrizes.length === 0) {
@@ -200,7 +202,7 @@ export class LotteryService {
             recordId: null,
             score: -cost,
             reason: `${lotteryType === 'basic' ? '普通' : '高级'}抽奖消费`,
-            problemTitle: '抽奖系统'
+            problemTitle: '抽奖系统',
         });
 
         // 创建抽奖记录
@@ -215,7 +217,7 @@ export class LotteryService {
             lotteryType,
             result: won ? 'win' : 'lose',
             drawTime: new Date(),
-            claimed: false
+            claimed: false,
         };
 
         const recordResult = await this.ctx.db.collection('lottery.records' as any).insertOne(record);
@@ -228,7 +230,7 @@ export class LotteryService {
         if (won && drawnPrize && drawnPrize.currentStock > 0) {
             await this.ctx.db.collection('lottery.prizes' as any).updateOne(
                 { _id: drawnPrize._id },
-                { $inc: { currentStock: -1 } }
+                { $inc: { currentStock: -1 } },
             );
         }
 
@@ -237,8 +239,8 @@ export class LotteryService {
             result: {
                 won,
                 prize: drawnPrize || undefined,
-                record: finalRecord
-            }
+                record: finalRecord,
+            },
         };
     }
 
@@ -252,8 +254,8 @@ export class LotteryService {
     private performDraw(prizes: LotteryPrize[], guarantee: boolean, noPrizeChance: number = 0): LotteryPrize | null {
         if (guarantee) {
             // 保底情况下，只从稀有以上奖品中选择，跳过未中奖逻辑
-            const guaranteePrizes = prizes.filter(p => 
-                p.rarity === 'rare' || p.rarity === 'epic' || p.rarity === 'legendary'
+            const guaranteePrizes = prizes.filter((p) =>
+                p.rarity === 'rare' || p.rarity === 'epic' || p.rarity === 'legendary',
             );
             if (guaranteePrizes.length > 0) {
                 // 保底抽奖不包含未中奖概率
@@ -298,8 +300,8 @@ export class LotteryService {
         }
 
         // 兜底：如果没有选中任何奖品，返回权重最大的奖品
-        const fallbackPrize = prizes.reduce((max, prize) => 
-            prize.weight > max.weight ? prize : max, prizes[0]
+        const fallbackPrize = prizes.reduce((max, prize) =>
+            prize.weight > max.weight ? prize : max, prizes[0],
         );
         console.log(`[LotteryService] 兜底中奖 - 奖品: ${fallbackPrize.name}`);
         return fallbackPrize;
@@ -316,11 +318,11 @@ export class LotteryService {
         if (lotteryType !== 'premium') return false;
 
         const recentRecords = await this.ctx.db.collection('lottery.records' as any)
-            .find({ 
-                domainId, 
-                uid, 
-                lotteryType: 'premium', 
-                result: 'lose' 
+            .find({
+                domainId,
+                uid,
+                lotteryType: 'premium',
+                result: 'lose',
             })
             .sort({ drawTime: -1 })
             .limit(LOTTERY_TYPES.premium.guaranteeDraws)
@@ -336,12 +338,13 @@ export class LotteryService {
      * @returns 可用奖品列表
      */
     private async getAvailablePrizes(lotteryType: string, guaranteeMode: boolean = false): Promise<LotteryPrize[]> {
-        let query: any = { 
+        // eslint-disable-next-line prefer-const
+        let query: any = {
             enabled: true,
             $or: [
                 { currentStock: -1 }, // 无限库存
-                { currentStock: { $gt: 0 } } // 有库存
-            ]
+                { currentStock: { $gt: 0 } }, // 有库存
+            ],
         };
 
         const prizes = await this.ctx.db.collection('lottery.prizes' as any)
@@ -362,10 +365,10 @@ export class LotteryService {
      */
     private adjustPremiumWeights(prizes: LotteryPrize[]): LotteryPrize[] {
         const premiumWeights = {
-            common: 3000,      // 普通 10%
-            rare: 5000,        // 稀有 50%
-            epic: 1500,        // 史诗 30%
-            legendary: 500    // 传说 10%
+            common: 3000, // 普通 10%
+            rare: 5000, // 稀有 50%
+            epic: 1500, // 史诗 30%
+            legendary: 500, // 传说 10%
         };
 
         // 按稀有度分组
@@ -373,10 +376,10 @@ export class LotteryService {
             common: [],
             rare: [],
             epic: [],
-            legendary: []
+            legendary: [],
         };
 
-        prizes.forEach(prize => {
+        prizes.forEach((prize) => {
             if (groupedPrizes[prize.rarity]) {
                 groupedPrizes[prize.rarity].push(prize);
             }
@@ -390,10 +393,10 @@ export class LotteryService {
             const totalWeight = premiumWeights[rarity as keyof typeof premiumWeights] || 0;
             const individualWeight = Math.floor(totalWeight / rarityPrizes.length);
 
-            rarityPrizes.forEach(prize => {
+            rarityPrizes.forEach((prize) => {
                 adjustedPrizes.push({
                     ...prize,
-                    weight: individualWeight
+                    weight: individualWeight,
                 });
             });
         });
@@ -417,18 +420,18 @@ export class LotteryService {
                     totalWins: 1,
                     currentStreak: 0, // 中奖后重置连续未中奖次数
                     [`rarityStats.${prize.rarity}`]: 1,
-                    ...(prize.type === 'coin' ? { totalValue: prize.value } : {})
+                    ...(prize.type === 'coin' ? { totalValue: prize.value } : {}),
                 } : {
-                    currentStreak: 1 // 未中奖增加连续次数
-                })
+                    currentStreak: 1, // 未中奖增加连续次数
+                }),
             },
-            $set: { lastDrawTime: new Date() }
+            $set: { lastDrawTime: new Date() },
         };
 
         await this.ctx.db.collection('lottery.stats' as any).updateOne(
             { domainId, uid },
             updateData,
-            { upsert: true }
+            { upsert: true },
         );
     }
 
@@ -450,7 +453,7 @@ export class LotteryService {
 
         // 正确的 ObjectId 转换方式
         let queryId = recordId;
-        
+
         // 如果是字符串，尝试转换为ObjectId
         if (typeof recordId === 'string') {
             if (ObjectId.isValid(recordId)) {
@@ -465,7 +468,7 @@ export class LotteryService {
             uid,
             domainId,
             result: 'win',
-            claimed: false
+            claimed: false,
         });
 
         if (!record) {
@@ -483,7 +486,7 @@ export class LotteryService {
         // 标记为已领取，使用相同的queryId确保一致性
         await this.ctx.db.collection('lottery.records' as any).updateOne(
             { _id: queryId },
-            { $set: { claimed: true, claimTime: new Date() } }
+            { $set: { claimed: true, claimTime: new Date() } },
         );
 
         return { success: true, message: '奖品领取成功' };
@@ -506,7 +509,7 @@ export class LotteryService {
                 recordId: null,
                 score: prize.value,
                 reason: `抽奖获得 ${prize.name}`,
-                problemTitle: '抽奖奖励'
+                problemTitle: '抽奖奖励',
             });
         } else if (prize.type === 'badge') {
             // 发放徽章 (可以根据实际需求实现徽章系统)
@@ -573,9 +576,9 @@ export class LotteryService {
                     totalWins: { $sum: { $cond: [{ $eq: ['$result', 'win'] }, 1, 0] } },
                     totalCost: { $sum: '$cost' },
                     basicDraws: { $sum: { $cond: [{ $eq: ['$lotteryType', 'basic'] }, 1, 0] } },
-                    premiumDraws: { $sum: { $cond: [{ $eq: ['$lotteryType', 'premium'] }, 1, 0] } }
-                }
-            }
+                    premiumDraws: { $sum: { $cond: [{ $eq: ['$lotteryType', 'premium'] }, 1, 0] } },
+                },
+            },
         ]).toArray();
 
         const result = stats[0];
@@ -584,7 +587,7 @@ export class LotteryService {
             totalWins: result?.totalWins || 0,
             totalCost: result?.totalCost || 0,
             basicDraws: result?.basicDraws || 0,
-            premiumDraws: result?.premiumDraws || 0
+            premiumDraws: result?.premiumDraws || 0,
         };
     }
 
