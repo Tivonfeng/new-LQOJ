@@ -1,4 +1,4 @@
-import { api, NamedPage, Notification } from '@hydrooj/ui-default';
+import { NamedPage, Notification, request } from '@hydrooj/ui-default';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -26,7 +26,7 @@ const EnhancedUserImportApp: React.FC = () => {
     // 获取域和角色数据
     const initData = async () => {
       try {
-        const response = await api('manage.userimport.enhanced', 'get');
+        const response = await request.get('/manage/userimport/enhanced');
         setDomains(response.domains);
         setSelectedDomain(response.currentDomain);
       } catch (error) {
@@ -53,7 +53,7 @@ const EnhancedUserImportApp: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await api('manage.userimport.enhanced', 'post', {
+      const response = await request.post('/manage/userimport/enhanced', {
         username: username.trim(),
         domainId: selectedDomain,
         role: selectedRole,
@@ -79,7 +79,7 @@ const EnhancedUserImportApp: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await api('manage.userimport.enhanced', 'post', {
+      const response = await request.post('/manage/userimport/enhanced', {
         username: username.trim(),
         domainId: selectedDomain,
         role: selectedRole,
