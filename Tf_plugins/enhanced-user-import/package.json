@@ -9,6 +9,19 @@
     "hydro",
     "user-import",
     "csv",
-    "batch-import"
-  ]
+    "batch-import",
+    "react"
+  ],
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "hydrooj": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
 }

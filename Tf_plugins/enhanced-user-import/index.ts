@@ -10,50 +10,6 @@ import {
 const user = global.Hydro.model.user;
 const domain = global.Hydro.model.domain;
 
-// 解析CSV格式数据
-function parseCSV(csvData: string): string[][] {
-    const lines = csvData.split('\n');
-    const result: string[][] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        // 简单的CSV解析（处理逗号分隔）
-        const fields = line.split(',').map((field) => field.trim().replace(/^"|"$/g, ''));
-        result.push(fields);
-    }
-
-    return result;
-}
-
-// 解析TSV格式数据
-function parseTSV(tsvData: string): string[][] {
-    const lines = tsvData.split('\n');
-    const result: string[][] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const fields = line.split('\t').map((field) => field.trim());
-        result.push(fields);
-    }
-
-    return result;
-}
-
-// 生成示例数据
-function generateSampleData(format: 'csv' | 'tsv'): string {
-    const separator = format === 'csv' ? ',' : '\t';
-    const samples = [
-        ['user1@example.com', 'user1', 'password123', '用户1', '{"group":"students","school":"北京大学","studentId":"2023001"}'],
-        ['user2@example.com', 'user2', 'password456', '用户2', '{"group":"students","school":"清华大学","studentId":"2023002"}'],
-        ['teacher@example.com', 'teacher1', 'teacher123', '教师1', '{"group":"teachers","school":"北京大学"}'],
-    ];
-
-    return samples.map((row) => row.join(separator)).join('\n');
-}
 
 // 生成随机密码
 function generateRandomPassword(length: number = 8): string {
@@ -71,43 +27,51 @@ class EnhancedUserImportHandler extends Handler {
     }
 
     async get() {
-        this.response.template = 'enhanced_user_import.html';
+        // 获取所有可用的域
+        const domains = await domain.getMulti({}, {}, {}).toArray();
+        const availableDomains = [];
+        
+        // 为每个域获取角色列表
+        for (const d of domains) {
+            const roles = await domain.getRoles(d._id);
+            availableDomains.push({
+                _id: d._id,
+                name: d.name || d._id,
+                roles: roles.map(r => ({
+                    _id: r._id,
+                    name: r._id,
+                    perm: r.perm.toString()
+                }))
+            });
+        }
+
+        this.response.template = 'enhanced_user_import_react.html';
         this.response.body = {
-            users: [],
-            sampleCSV: generateSampleData('csv'),
-            sampleTSV: generateSampleData('tsv'),
+            domains: availableDomains,
+            currentDomain: this.domainId,
         };
     }
 
-    async post(domainId: string) {
+    async post() {
+        const selectedDomainId = this.request.body.domainId || this.domainId;
+        const selectedRole = this.request.body.role || 'default';
         const _users = this.request.body.users || '';
         const draft = this.request.body.draft === 'true' || this.request.body.draft === true;
         const batchSize = parseInt(this.request.body.batchSize, 10) || 50;
         const format = this.request.body.format || 'quick';
-        const fileContent = this.request.body.fileContent || '';
-        const usernames = this.request.body.usernames || '';
         const singleUsername = this.request.body.username || '';
 
-        // 快速输入模式不需要复杂配置
-
         // 获取快速输入的密码配置
-        const passwordMode = this.request.body.passwordMode || 'random';
-        const fixedPasswordValue = this.request.body.fixedPasswordValue || '';
+        const passwordMode = this.request.body.passwordMode || 'fixed';
+        const fixedPasswordValue = this.request.body.fixedPasswordValue || '123456';
 
         let usersData = _users;
 
         // 处理快速输入的用户名
-        if (format === 'quick' && (usernames || singleUsername)) {
+        if (format === 'quick' && singleUsername) {
             try {
-                let userNameList: string[] = [];
-
-                if (singleUsername) {
-                    // 处理单个用户名
-                    userNameList = [singleUsername.trim()];
-                } else if (usernames) {
-                    // 处理多个用户名（向后兼容）
-                    userNameList = usernames.split('\n').map((name) => name.trim()).filter((name) => name);
-                }
+                const userNameList = [singleUsername.trim()];
+                
                 usersData = userNameList.map((userNameItem) => {
                     const email = `${userNameItem}@lqcode.fun`;
                     let password = '';
@@ -116,39 +80,17 @@ class EnhancedUserImportHandler extends Handler {
                     if (passwordMode === 'random') {
                         password = generateRandomPassword();
                     } else if (passwordMode === 'fixed') {
-                        password = fixedPasswordValue || generateRandomPassword();
+                        password = fixedPasswordValue || '123456';
                     } else if (passwordMode === 'username') {
                         password = userNameItem;
                     } else {
-                        password = generateRandomPassword();
+                        password = '123456';
                     }
 
                     return `${email}\t${userNameItem}\t${password}\t${userNameItem}\t{}`;
                 }).join('\n');
             } catch (e) {
                 throw new BadRequestError(`快速输入解析错误：${e instanceof Error ? e.message : String(e)}`);
-            }
-        }
-
-        // 处理文件上传的内容
-        if (fileContent && format !== 'quick') {
-            try {
-                let parsedData: string[][];
-                if (format === 'csv') {
-                    parsedData = parseCSV(fileContent);
-                } else if (format === 'tsv') {
-                    parsedData = parseTSV(fileContent);
-                } else {
-                    throw new BadRequestError('Unsupported format');
-                }
-
-                // 转换为标准格式
-                usersData = parsedData.map((row) => {
-                    const [email, username, password, displayName, extra] = row;
-                    return `${email}\t${username}\t${password}\t${displayName || ''}\t${extra || ''}`;
-                }).join('\n');
-            } catch (e) {
-                throw new BadRequestError(`文件解析错误：${e instanceof Error ? e.message : String(e)}`);
             }
         }
 
@@ -281,8 +223,12 @@ class EnhancedUserImportHandler extends Handler {
                         mapping[udoc.email] = uid;
 
                         const promises: Promise<any>[] = [];
+                        
+                        // 设置域内角色
+                        promises.push(domain.setUserRole(selectedDomainId, uid, selectedRole));
+                        
                         if (udoc.displayName) {
-                            promises.push(domain.setUserInDomain(domainId, uid, { displayName: udoc.displayName }));
+                            promises.push(domain.setUserInDomain(selectedDomainId, uid, { displayName: udoc.displayName }));
                         }
                         if (udoc.school) promises.push(user.setById(uid, { school: udoc.school }));
                         if (udoc.studentId) promises.push(user.setById(uid, { studentId: udoc.studentId }));
@@ -304,12 +250,12 @@ class EnhancedUserImportHandler extends Handler {
             }
 
             // 处理组
-            const existing = await user.listGroup(domainId);
+            const existing = await user.listGroup(selectedDomainId);
             for (const name in groups) {
                 const uids = groups[name].map((i) => mapping[i]).filter((i) => i);
                 const current = existing.find((i) => i.name === name)?.uids || [];
                 if (uids.length) {
-                    await user.updateGroup(domainId, name, Array.from(new Set([...current, ...uids])));
+                    await user.updateGroup(selectedDomainId, name, Array.from(new Set([...current, ...uids])));
                 }
             }
 
@@ -332,39 +278,16 @@ class EnhancedUserImportHandler extends Handler {
             messages,
             imported: !draft,
             statistics,
-            sampleCSV: generateSampleData('csv'),
-            sampleTSV: generateSampleData('tsv'),
         };
-    }
-}
-
-// 下载模板文件处理器
-class TemplateDownloadHandler extends Handler {
-    async prepare() {
-        this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
-    }
-
-    async get() {
-        const format = this.request.params.format;
-        if (!['csv', 'tsv'].includes(format)) {
-            throw new BadRequestError('Invalid format');
-        }
-
-        const sampleData = generateSampleData(format as 'csv' | 'tsv');
-        const fileName = `user_import_template.${format}`;
-
-        this.response.body = sampleData;
-        this.response.type = 'text/plain';
-        this.response.disposition = `attachment; filename="${fileName}"`;
+        this.response.type = 'application/json';
     }
 }
 
 export async function apply(ctx: Context) {
     // 注册增强版用户导入路由
     ctx.Route('manage_user_import_enhanced', '/manage/userimport/enhanced', EnhancedUserImportHandler, PRIV.PRIV_EDIT_SYSTEM);
-    ctx.Route('user_import_template', '/manage/userimport/template/:format', TemplateDownloadHandler, PRIV.PRIV_EDIT_SYSTEM);
 
-    // 将菜单项注入到控制面板中，放在原有用户导入功能下面
+    // 将菜单项注入到控制面板中
     ctx.injectUI('ControlPanel', 'manage_user_import_enhanced');
 
     console.log('Enhanced User Import Plugin loaded successfully!');
