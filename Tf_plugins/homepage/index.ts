@@ -1,57 +1,57 @@
 import {
     Context,
-    UserModel,
     RecordModel,
     STATUS,
     Time,
+    UserModel,
 } from 'hydrooj';
 
 async function getPersonal(domainId: string, userId: number, ctx: Context) {
     try {
         const tfUdoc = await UserModel.getById(domainId, userId);
         console.log('getPersonal - user found:', tfUdoc?.uname || 'no user');
-        
+
         // 获取用户积分(绿旗币)
         let userScore = 0;
         try {
             const scoreDoc = await ctx.db.collection('score.users' as any).findOne({
                 domainId,
-                uid: userId
+                uid: userId,
             });
             userScore = scoreDoc?.totalScore || 0;
         } catch (scoreError) {
             console.log('Score system not available or error:', scoreError.message);
         }
-        
+
         // 计算今日AC数量
         let todayAccept = 0;
         try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
-            
+
             todayAccept = await RecordModel.coll.countDocuments({
                 uid: userId,
-                domainId: domainId,
+                domainId,
                 status: STATUS.STATUS_ACCEPTED,
                 _id: {
                     $gte: Time.getObjectID(today),
-                    $lt: Time.getObjectID(tomorrow)
-                }
+                    $lt: Time.getObjectID(tomorrow),
+                },
             });
         } catch (recordError) {
             console.log('Today AC calculation error:', recordError.message);
         }
-        
+
         // 将积分数据和今日AC添加到用户对象中
         const enhancedUdoc = {
             ...tfUdoc,
             greenFlagCoins: userScore, // 绿旗币数量
-            todayAccept: todayAccept    // 今日AC数量
+            todayAccept, // 今日AC数量
         };
-        
+
         return [enhancedUdoc, domainId];
     } catch (error) {
         console.error('getPersonal error:', error);
@@ -113,22 +113,15 @@ async function getSwiderpic(domainId: string, info: any) {
 //     // return [sortedDayRanking, udictDay, sortedWeekRanking, udictWeek, sortedMonthRanking, udictMonth];
 // }
 
-// 插件的应用函数
 export async function apply(ctx: Context) {
-    // 运行时动态获取HomeHandler，避免弃用警告
-    ctx.on('app/started', () => {
-        const HomeHandler = require('hydrooj/src/handler/home').HomeHandler;
-
+    // 使用 withHandlerClass 正确扩展 HomeHandler
+    ctx.withHandlerClass('HomeHandler', (HomeHandler) => {
         // 扩展HomeHandler添加首页数据获取功能
         HomeHandler.prototype.getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
 
         HomeHandler.prototype.getPersonal = async function (domainId: string) {
             return await getPersonal(domainId, this.user._id, ctx);
         };
-
-        // HomeHandler.prototype.getTimeRanking = async (domainId: string) => {
-        //     return await getTimeRanking(domainId, this.user._id);
-        // };
 
         console.log('Homepage methods added to HomeHandler');
     });

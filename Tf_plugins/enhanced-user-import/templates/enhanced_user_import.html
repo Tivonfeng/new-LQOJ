@@ -1,0 +1,32 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+
+<div id="enhanced-user-import">
+</div>
+
+<script>
+console.log('🔵 Template script executing');
+console.log('🔵 window._hydroLoad:', typeof window._hydroLoad);
+console.log('🔵 Available pages:', window.Pages);
+
+// 确保 _hydroLoad 已执行
+if (typeof window._hydroLoad === 'function') {
+  console.log('🔵 Calling _hydroLoad...');
+  window._hydroLoad();
+  console.log('🔵 _hydroLoad completed, checking Pages again...');
+  console.log('🔵 Available pages after load:', window.Pages);
+  
+  // 再次尝试触发页面加载
+  if (window.Pages && window.Pages['manage_user_import_enhanced']) {
+    console.log('🔵 Manually triggering page load');
+    window.Pages['manage_user_import_enhanced']();
+  } else {
+    console.log('🔵 Page still not found in Pages registry');
+    console.log('🔵 Available page keys:', window.Pages ? Object.keys(window.Pages) : 'Pages is null');
+  }
+} else {
+  console.log('🔵 _hydroLoad not available');
+}
+</script>
+{% endblock %}
