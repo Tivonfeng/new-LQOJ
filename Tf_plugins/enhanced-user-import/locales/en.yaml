@@ -2,7 +2,8 @@
 __langname: English
 
 # Main Interface
-'Enhanced User Import': 'Enhanced User Import'
+'Enhanced User Import': 'Quick User Creation'
+'manage_user_import_enhanced': 'Quick User Creation'
 
 # Format Help
 'Format Help': 'Format Help'

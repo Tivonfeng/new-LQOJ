@@ -9,14 +9,6 @@ import {
 const user = global.Hydro.model.user;
 const domain = global.Hydro.model.domain;
 
-function generateRandomPassword(length: number = 8): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
 
 export class EnhancedUserImportHandler extends Handler {
     async prepare() {
@@ -61,6 +53,7 @@ export class EnhancedUserImportHandler extends Handler {
             this.response.body = {
                 domains: availableDomains,
                 currentDomain: this.domain._id,
+                page_name: 'manage_user_import_enhanced',
             };
         }
     }
@@ -70,26 +63,15 @@ export class EnhancedUserImportHandler extends Handler {
         const selectedRole = this.request.body.role || 'default';
         const singleUsername = this.request.body.username || '';
         const draft = this.request.body.draft === 'true' || this.request.body.draft === true;
-        const passwordMode = this.request.body.passwordMode || 'fixed';
-        const fixedPasswordValue = this.request.body.fixedPasswordValue || '123456';
 
         if (!singleUsername.trim()) {
             throw new BadRequestError('用户名不能为空');
         }
 
         const username = singleUsername.trim();
+        // 自动生成邮箱和密码
         const email = `${username}@lqcode.fun`;
-
-        let password = '';
-        if (passwordMode === 'random') {
-            password = generateRandomPassword();
-        } else if (passwordMode === 'fixed') {
-            password = fixedPasswordValue || '123456';
-        } else if (passwordMode === 'username') {
-            password = username;
-        } else {
-            password = '123456';
-        }
+        const password = '123456';
 
         const userDoc = {
             email,

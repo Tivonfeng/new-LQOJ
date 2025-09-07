@@ -17,211 +17,197 @@
 
 <!-- Main Container -->
 <div class="main-container">
-    <!-- Management Dashboard -->
-    <div class="dashboard-section">
-        <div class="section-header">
-            <h2>📊 {{ _('System Overview') }}</h2>
-        </div>
-        
-        <div class="dashboard-grid">
-            <!-- Top Scorers Panel -->
-            <div class="panel-card primary">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <div class="panel-icon">🏆</div>
-                        <h3>{{ _('Top Scorers') }}</h3>
-                    </div>
-                    <div class="panel-badge">{{ topUsers|length if topUsers else 0 }} {{ _('User') }}s</div>
+    <!-- Main Content Grid - Left Right Layout -->
+    <div class="main-content-grid">
+        <!-- Left Side - Manual Score Adjustment (Featured) -->
+        <div class="left-panel">
+            <div class="manual-adjustment-section featured-section">
+                <div class="section-header">
+                    <h2>⚖️ {{ _('Manual Score Adjustment') }}</h2>
                 </div>
                 
-                <div class="panel-content">
-                    {% if topUsers and topUsers|length > 0 %}
-                    <div class="ranking-list">
-                        {% for user in topUsers %}
-                        <div class="ranking-item {% if loop.index <= 3 %}top-{{ loop.index }}{% endif %}">
-                            <div class="ranking-rank">
-                                {% if loop.index == 1 %}
-                                <span class="rank-badge gold">🥇</span>
-                                {% elif loop.index == 2 %}
-                                <span class="rank-badge silver">🥈</span>
-                                {% elif loop.index == 3 %}
-                                <span class="rank-badge bronze">🥉</span>
-                                {% else %}
-                                <span class="rank-number">{{ loop.index }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="ranking-info">
-                                <div class="user-details">
-                                    <div class="user-avatar">👤</div>
-                                    <div class="user-data">
-                                        <div class="user-id">
-                                            {% if udocs[user.uid] %}
-                                                {{ udocs[user.uid].uname }}
-                                                {% if udocs[user.uid].displayName %}
-                                                <span class="display-name">({{ udocs[user.uid].displayName }})</span>
-                                                {% endif %}
-                                            {% else %}
-                                                User {{ user.uid }}
-                                            {% endif %}
-                                        </div>
-                                        <div class="user-stats">{{ user.acCount }} AC</div>
-                                    </div>
-                                </div>
-                                <div class="score-value">{{ user.totalScore }}</div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="empty-panel">
-                        <div class="empty-icon">📊</div>
-                        <p class="empty-text">{{ _('No score records found.') }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Recent Records Panel -->
-            <div class="panel-card secondary">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <div class="panel-icon">📋</div>
-                        <h3>{{ _('Recent Score Records') }}</h3>
-                    </div>
-                    <div class="panel-badge">{{ recentRecords|length if recentRecords else 0 }} {{ _('records') }}</div>
-                </div>
-                
-                <div class="panel-content">
-                    {% if recentRecords and recentRecords|length > 0 %}
-                    <div class="records-list">
-                        {% for record in recentRecords %}
-                        <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }}">
-                            <div class="record-info">
-                                <div class="record-header">
-                                    <div class="user-info">
-                                        <span class="user-icon">👤</span>
-                                        <span class="user-name">{{ record.uid }}</span>
-                                    </div>
-                                    <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
-                                        <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
-                                        <span class="score-number">{{ record.score | abs }}</span>
-                                    </div>
-                                </div>
-                                <div class="record-details">
-                                    <div class="problem-info">
-                                        <span class="problem-icon">📝</span>
-                                        <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
-                                    </div>
-                                    <div class="time-info">
-                                        {% if record.createdAt %}
-                                            {% if record.createdAt.strftime %}
-                                            {{ record.createdAt.strftime('%m/%d %H:%M') }}
-                                            {% elif record.createdAt|string %}
-                                            {{ record.createdAt|string }}
-                                            {% else %}
-                                            {{ _('Recent') }}
-                                            {% endif %}
-                                        {% else %}
-                                        {{ _('N/A') }}
-                                        {% endif %}
-                                    </div>
+                <div class="adjustment-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <div class="panel-icon">⚙️</div>
+                            <div class="title-content">
+                                <h3>{{ _('Adjust User Score') }}</h3>
+                                <div class="domain-info">
+                                    <span class="domain-icon">🌐</span>
+                                    <span class="domain-text">{{ _('Current Domain') }}: {{ currentDomain.displayName }}</span>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
+                        <div class="panel-badge">{{ _('Admin Only') }}</div>
                     </div>
-                    {% else %}
-                    <div class="empty-panel">
-                        <div class="empty-icon">📋</div>
-                        <p class="empty-text">{{ _('No recent records found.') }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Manual Score Adjustment -->
-    <div class="manual-adjustment-section">
-        <div class="section-header">
-            <h2>⚖️ {{ _('Manual Score Adjustment') }}</h2>
-        </div>
-        
-        <div class="adjustment-panel">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-icon">⚙️</div>
-                    <div class="title-content">
-                        <h3>{{ _('Adjust User Score') }}</h3>
-                        <div class="domain-info">
-                            <span class="domain-icon">🌐</span>
-                            <span class="domain-text">{{ _('Current Domain') }}: {{ currentDomain.displayName }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel-badge">{{ _('Admin Only') }}</div>
-            </div>
-            
-            <div class="panel-content">
-                <div class="domain-warning">
-                    <div class="warning-icon">⚠️</div>
-                    <div class="warning-content">
-                        <div class="warning-title">{{ _('Domain-Specific Operation') }}</div>
-                        <div class="warning-text">{{ _('Score adjustments will only affect users in the current domain') }} ({{ currentDomain.displayName }})</div>
-                    </div>
-                </div>
-                
-                <form id="scoreAdjustmentForm" class="adjustment-form">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="username" class="form-label">
-                                <span class="label-icon">👤</span>
-                                {{ _('Username') }}
-                            </label>
-                            <input type="text" id="username" name="username" class="form-input" 
-                                   placeholder="{{ _('Enter username') }}" required>
+                    
+                    <div class="panel-content">
+                        <!-- Quick Actions Section -->
+                        <div class="quick-actions-section">
+                            <div class="quick-actions-header">
+                                <h4>{{ _('Quick Actions') }}</h4>
+                            </div>
+                            
+                            <div class="quick-actions-compact">
+                                <!-- Positive Actions -->
+                                <div class="actions-row">
+                                    <button type="button" class="quick-action-btn positive compact" data-score="10" data-reason="{{ _('Answer Question') }}">
+                                        <span class="action-icon">🙋</span>
+                                        <span class="action-score">+10</span>
+                                    </button>
+                                    <button type="button" class="quick-action-btn positive compact" data-score="20" data-reason="{{ _('Assignment') }}">
+                                        <span class="action-icon">📝</span>
+                                        <span class="action-score">+20</span>
+                                    </button>
+                                    <button type="button" class="quick-action-btn positive compact" data-score="50" data-reason="{{ _('Quiz Excellence') }}">
+                                        <span class="action-icon">🏆</span>
+                                        <span class="action-score">+50</span>
+                                    </button>
+                                </div>
+                                
+                                <!-- Negative Actions -->
+                                <div class="actions-row">
+                                    <button type="button" class="quick-action-btn negative compact" data-score="-5" data-reason="{{ _('Minor Late') }}">
+                                        <span class="action-icon">⏰</span>
+                                        <span class="action-score">-5</span>
+                                    </button>
+                                    <button type="button" class="quick-action-btn negative compact" data-score="-10" data-reason="{{ _('Unexcused Absence') }}">
+                                        <span class="action-icon">❌</span>
+                                        <span class="action-score">-10</span>
+                                    </button>
+                                    <button type="button" class="quick-action-btn negative compact" data-score="-20" data-reason="{{ _('Major Late') }}">
+                                        <span class="action-icon">📅</span>
+                                        <span class="action-score">-20</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="scoreChange" class="form-label">
-                                <span class="label-icon">💰</span>
-                                {{ _('Score Change') }}
-                            </label>
-                            <input type="number" id="scoreChange" name="scoreChange" class="form-input" 
-                                   placeholder="{{ _('±1000') }}" min="-10000" max="10000" required>
-                            <div class="form-hint">{{ _('Range -10000 to +10000') }}</div>
+                        <form id="scoreAdjustmentForm" class="adjustment-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="username" class="form-label">
+                                        <span class="label-icon">👤</span>
+                                        {{ _('Username') }}
+                                    </label>
+                                    <input type="text" id="username" name="username" class="form-input" 
+                                           placeholder="{{ _('Search and select user...') }}" required>
+                                    <div class="form-hint">{{ _('Type to search users in current domain') }}</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="scoreChange" class="form-label">
+                                        <span class="label-icon">💰</span>
+                                        {{ _('Score Change') }}
+                                    </label>
+                                    <input type="number" id="scoreChange" name="scoreChange" class="form-input" 
+                                           placeholder="{{ _('±1000') }}" min="-10000" max="10000" required>
+                                    <div class="form-hint">{{ _('Range -10000 to +10000') }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group full-width">
+                                <label for="reason" class="form-label">
+                                    <span class="label-icon">📝</span>
+                                    {{ _('Adjustment Reason') }}
+                                </label>
+                                
+                                <!-- Simplified Reason Input -->
+                                <input type="text" id="reason" name="reason" class="form-input" 
+                                       placeholder="{{ _('Please specify the reason for this adjustment') }}" required>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="submit-btn">
+                                    <span class="btn-icon">⚡</span>
+                                    <span class="btn-text">{{ _('Apply Adjustment') }}</span>
+                                </button>
+                                <button type="reset" class="reset-btn">
+                                    <span class="btn-icon">🔄</span>
+                                    <span class="btn-text">{{ _('Reset') }}</span>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="adjustmentResult" class="result-message" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - System Overview -->
+        <div class="right-panel">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2>📊 {{ _('System Overview') }}</h2>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <!-- Recent Records Panel -->
+                    <div class="panel-card secondary">
+                        <div class="panel-header">
+                            <div class="panel-title">
+                                <div class="panel-icon">📋</div>
+                                <h3>{{ _('Recent Score Records') }}</h3>
+                            </div>
+                            <div class="panel-badge">{{ recentRecords|length if recentRecords else 0 }} {{ _('records') }}</div>
+                        </div>
+                        
+                        <div class="panel-content">
+                            {% if recentRecords and recentRecords|length > 0 %}
+                            <div class="records-list">
+                                {% for record in recentRecords %}
+                                <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }}">
+                                    <div class="record-info">
+                                        <div class="record-header">
+                                            <div class="user-info">
+                                                <span class="user-icon">👤</span>
+                                                <span class="user-name">{{ record.uid }}</span>
+                                            </div>
+                                            <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
+                                                <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
+                                                <span class="score-number">{{ record.score | abs }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="record-details">
+                                            <div class="problem-info">
+                                                <span class="problem-icon">📝</span>
+                                                <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                                            </div>
+                                            <div class="time-info">
+                                                {% if record.createdAt %}
+                                                    {% if record.createdAt.strftime %}
+                                                    {{ record.createdAt.strftime('%m/%d %H:%M') }}
+                                                    {% elif record.createdAt|string %}
+                                                    {{ record.createdAt|string }}
+                                                    {% else %}
+                                                    {{ _('Recent') }}
+                                                    {% endif %}
+                                                {% else %}
+                                                {{ _('N/A') }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="empty-panel">
+                                <div class="empty-icon">📋</div>
+                                <p class="empty-text">{{ _('No recent records found.') }}</p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <div class="form-group full-width">
-                        <label for="reason" class="form-label">
-                            <span class="label-icon">📝</span>
-                            {{ _('Adjustment Reason') }}
-                        </label>
-                        <textarea id="reason" name="reason" class="form-textarea" 
-                                  placeholder="{{ _('Please specify the reason for this adjustment') }}" 
-                                  rows="3" required></textarea>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="submit-btn">
-                            <span class="btn-icon">⚡</span>
-                            <span class="btn-text">{{ _('Apply Adjustment') }}</span>
-                        </button>
-                        <button type="reset" class="reset-btn">
-                            <span class="btn-icon">🔄</span>
-                            <span class="btn-text">{{ _('Reset') }}</span>
-                        </button>
-                    </div>
-                </form>
-                
-                <div id="adjustmentResult" class="result-message" style="display: none;"></div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Management Actions -->
-    <div class="actions-section">
+    {# <div class="actions-section">
         <div class="section-header">
             <h2>🔧 {{ _('Management Tools') }}</h2>
         </div>
@@ -275,7 +261,7 @@
                 <div class="card-arrow">→</div>
             </a>
         </div>
-    </div>
+    </div> #}
 </div>
 
 <style>
@@ -415,12 +401,52 @@
 
 /* Main Container */
 .main-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--spacing-6);
-    display: flex;
-    flex-direction: column;
+}
+
+/* Main Content Grid - Left Right Layout */
+.main-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 420px;
     gap: var(--spacing-8);
+    align-items: start;
+}
+
+/* Left Panel - System Overview */
+.left-panel {
+    min-height: 600px;
+}
+
+/* Right Panel - Manual Score Adjustment (Featured) */
+.right-panel {
+    position: sticky;
+    top: var(--spacing-4);
+}
+
+.featured-section {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(6, 214, 160, 0.05) 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.featured-section::before {
+    content: '⭐ {{ _("Featured") }}';
+    position: absolute;
+    top: var(--spacing-2);
+    right: var(--spacing-2);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    z-index: 1;
+    box-shadow: var(--shadow-md);
 }
 
 /* Section Headers */
@@ -444,9 +470,9 @@
 }
 
 .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: var(--spacing-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
 }
 
 /* Panel Cards */
@@ -546,7 +572,7 @@
 .adjustment-panel .panel-content {
     max-height: none;
     overflow: visible;
-    padding: var(--spacing-8);
+    padding: var(--spacing-5);
 }
 
 /* Ranking List */
@@ -891,7 +917,7 @@
 .manual-adjustment-section {
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
-    padding: var(--spacing-8);
+    padding: var(--spacing-6);
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-color);
 }
@@ -907,13 +933,13 @@
 .adjustment-form {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-6);
+    gap: var(--spacing-4);
 }
 
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-6);
+    gap: var(--spacing-4);
 }
 
 .form-group {
@@ -966,6 +992,83 @@
     font-family: inherit;
 }
 
+/* Reason Selection Styles */
+.reason-toggle {
+    display: flex;
+    gap: var(--spacing-1);
+    margin-left: auto;
+}
+
+.toggle-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-1) var(--spacing-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.toggle-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.toggle-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.form-select {
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-primary);
+    transition: all 0.3s ease;
+    font-family: inherit;
+    width: 100%;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-select optgroup {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-style: normal;
+}
+
+.form-select option {
+    padding: var(--spacing-2);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.reason-preset-container,
+.reason-custom-container {
+    transition: all 0.3s ease;
+}
+
+.reason-preset-container.fade-out,
+.reason-custom-container.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.reason-preset-container.fade-in,
+.reason-custom-container.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .form-actions {
     display: flex;
     gap: var(--spacing-4);
@@ -1016,6 +1119,210 @@
 
 .btn-icon {
     font-size: 1rem;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+    margin-bottom: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    border: 1px solid var(--border-color);
+}
+
+.quick-actions-header {
+    margin-bottom: var(--spacing-3);
+    text-align: center;
+}
+
+.quick-actions-header h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-1) 0;
+}
+
+.quick-actions-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-5);
+}
+
+.quick-actions-group {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-5);
+    border: 2px solid transparent;
+}
+
+.quick-actions-group.positive {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+}
+
+.quick-actions-group.negative {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+}
+
+.group-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-4);
+    text-align: center;
+    padding-bottom: var(--spacing-2);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.actions-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-3);
+}
+
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    text-align: center;
+    min-height: 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.quick-action-btn:active {
+    transform: translateY(0);
+}
+
+.quick-action-btn.positive {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
+.quick-action-btn.positive:hover {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.quick-action-btn.negative {
+    border-color: var(--error-color);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+}
+
+.quick-action-btn.negative:hover {
+    border-color: var(--error-color);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.action-icon {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-1);
+}
+
+.action-text {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.action-score {
+    font-weight: 800;
+    font-size: 1rem;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    min-width: 40px;
+}
+
+.quick-action-btn.positive .action-score {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.quick-action-btn.negative .action-score {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error-color);
+}
+
+.quick-actions-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    text-align: center;
+}
+
+.hint-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.hint-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Compact Quick Actions */
+.quick-actions-compact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.quick-actions-compact .actions-row {
+    display: flex;
+    gap: var(--spacing-2);
+    justify-content: space-between;
+}
+
+.quick-action-btn.compact {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.875rem;
+    min-height: 36px;
+    flex: 1;
+    max-width: none;
+}
+
+.quick-action-btn.compact .action-text {
+    display: none;
+}
+
+.quick-action-btn.compact .action-icon {
+    font-size: 1rem;
+    margin-right: var(--spacing-1);
+}
+
+.quick-action-btn.compact .action-score {
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .result-message {
@@ -1082,13 +1389,43 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+    .main-content-grid {
+        grid-template-columns: 1fr 380px;
+        gap: var(--spacing-6);
+    }
+    
+    .main-container {
+        max-width: 1200px;
+    }
+}
+
 @media (max-width: 1024px) {
-    .dashboard-grid {
+    .main-content-grid {
         grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .right-panel {
+        position: static;
+    }
+    
+    .main-container {
+        max-width: 1000px;
     }
     
     .actions-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    .actions-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-2);
     }
 }
 
@@ -1128,6 +1465,26 @@
     
     .submit-btn, .reset-btn {
         justify-content: center;
+    }
+    
+    .actions-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-3);
+    }
+    
+    .quick-action-btn {
+        min-height: 80px;
+        padding: var(--spacing-3);
+    }
+    
+    .quick-actions-hint {
+        flex-direction: column;
+        gap: var(--spacing-2);
+    }
+    
+    .featured-section::before {
+        font-size: 0.625rem;
+        padding: 2px var(--spacing-2);
     }
 }
 
@@ -1178,6 +1535,60 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('scoreAdjustmentForm');
     const resultDiv = document.getElementById('adjustmentResult');
     const submitBtn = form.querySelector('.submit-btn');
+    const usernameInput = form.querySelector('#username');
+    const scoreInput = form.querySelector('#scoreChange');
+    const reasonInput = form.querySelector('#reason');
+    
+    // Initialize UserSelectAutoComplete
+    let userSelectComponent = null;
+    if (window.Hydro && window.Hydro.components && window.Hydro.components.UserSelectAutoComplete) {
+        userSelectComponent = window.Hydro.components.UserSelectAutoComplete.getOrConstruct($(usernameInput), {
+            multi: false,
+            clearDefaultValue: false,
+            freeSolo: true,
+            freeSoloConverter: (input) => input,
+            onChange: (value) => {
+                // The component returns the username for single selection
+                usernameInput.value = value || '';
+            }
+        });
+        console.log('UserSelectAutoComplete initialized');
+    } else {
+        console.warn('UserSelectAutoComplete component not found, falling back to regular input');
+    }
+    
+    // Quick Action Buttons
+    const quickActionBtns = document.querySelectorAll('.quick-action-btn');
+    
+    // Quick action button handlers
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const score = this.dataset.score;
+            const reason = this.dataset.reason;
+            
+            // Fill the form
+            scoreInput.value = score;
+            reasonInput.value = reason;
+            
+            // Clear any existing validation messages
+            scoreInput.setCustomValidity('');
+            
+            // Add visual feedback
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            
+            // Focus on username input if it's empty
+            if (!usernameInput.value.trim()) {
+                usernameInput.focus();
+            } else {
+                // If username is already filled, focus on submit button
+                submitBtn.focus();
+            }
+        });
+    });
+    
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1190,12 +1601,20 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.style.display = 'none';
         
         try {
+            // Get username - try to get from UserSelectAutoComplete first
+            let username = '';
+            if (userSelectComponent && userSelectComponent.value) {
+                username = userSelectComponent.value();
+            } else {
+                username = usernameInput.value.trim();
+            }
+            
             const formData = new FormData(form);
             const data = {
                 action: 'adjust_score',
-                username: formData.get('username'),
+                username: username || formData.get('username'),
                 scoreChange: formData.get('scoreChange'),
-                reason: formData.get('reason')
+                reason: reasonInput.value || formData.get('reason')
             };
             
             const response = await fetch('{{ url("score_manage") }}', {
@@ -1237,11 +1656,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // 重置按钮功能
     form.addEventListener('reset', function() {
         resultDiv.style.display = 'none';
+        // Reset reason selection to preset mode
+        switchToPresetMode();
+        reasonPreset.value = '';
+        reasonInput.value = '';
+        reasonValue.value = '';
     });
     
-    // 实时验证
-    const scoreInput = form.querySelector('#scoreChange');
-    const usernameInput = form.querySelector('#username');
+    // 实时验证 (variables already declared above)
     
     scoreInput.addEventListener('input', function() {
         const value = parseInt(this.value);

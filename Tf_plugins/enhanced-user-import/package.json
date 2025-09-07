@@ -4,5 +4,16 @@
   "description": "Enhanced User Import Plugin for Hydro",
   "main": "index.ts",
   "author": "TivonFeng",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
 }

@@ -317,26 +317,6 @@
             <div class="actions-card">
                 <h4>{{ _('Quick Actions') }}</h4>
                 <div class="action-buttons">
-                    <a href="{{ url('typing_hall') }}" class="action-btn typing-action">
-                        <span class="btn-icon">⌨️</span>
-                        <span class="btn-text">{{ _('Typing Hall') }}</span>
-                    </a>
-                    <a href="{{ url('dice_game') }}" class="action-btn">
-                        <span class="btn-icon">🎲</span>
-                        <span class="btn-text">{{ _('Dice Game') }}</span>
-                    </a>
-                    <a href="{{ url('rock_paper_scissors') }}" class="action-btn">
-                        <span class="btn-icon">✂️</span>
-                        <span class="btn-text">{{ _('Rock Paper Scissors') }}</span>
-                    </a>
-                    <a href="{{ url('lottery_hall') }}" class="action-btn">
-                        <span class="btn-icon">🎰</span>
-                        <span class="btn-text">{{ _('Lottery') }}</span>
-                    </a>
-                    <a href="{{ url('score_ranking') }}" class="action-btn">
-                        <span class="btn-icon">🏆</span>
-                        <span class="btn-text">{{ _('Rankings') }}</span>
-                    </a>
                     {% if canManage %}
                     <a href="{{ url('score_manage') }}" class="action-btn">
                         <span class="btn-icon">⚙️</span>

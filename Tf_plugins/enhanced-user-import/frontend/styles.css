@@ -1,110 +1,3 @@
-{% extends "manage_base.html" %}
-
-{% block manage_content %}
-<div class="section">
-    <div class="section__header eui-enhanced-header">
-        <h1 class="section__title" data-heading>
-            <span class="icon icon-user-plus">👥</span>
-            用户快速创建
-        </h1>
-        <div class="section__tools">
-            <div class="eui-stat-badges">
-                <div class="eui-stat-badge">
-                    <span class="eui-stat-icon">📧</span>
-                    <span class="eui-stat-text">默认邮箱: @lqcode.fun</span>
-                </div>
-                <div class="eui-stat-badge">
-                    <span class="eui-stat-icon">🔑</span>
-                    <span class="eui-stat-text">默认密码: 123456</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="section__body eui-enhanced-body">
-        <div id="enhanced-user-import-app-mount-point">
-            <div class="eui-loading-container">
-                <div class="eui-loading-spinner">
-                    <div class="eui-spinner-icon">👥</div>
-                    <div class="eui-loading-text">正在加载用户快速创建界面</div>
-                    <div class="eui-loading-progress">初始化组件中...</div>
-                </div>
-                
-                <!-- Loading skeleton -->
-                <div class="eui-loading-skeleton">
-                    <div class="eui-skeleton-header"></div>
-                    <div class="eui-skeleton-line"></div>
-                    <div class="eui-skeleton-line"></div>
-                    <div class="eui-skeleton-line short"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- 将后端数据传递给前端React应用 -->
-<script>
-(function() {
-  'use strict';
-  
-  try {
-    // 初始化用户导入数据
-    window.EnhancedUserImportData = {
-      user: {
-        id: {{ user._id or 0 }},
-        username: "{{ (user.uname or 'Guest') | escape | safe }}"
-      },
-      domains: {{ domains | json | safe }},
-      currentDomain: "{{ currentDomain | escape | safe }}",
-      
-      // 元数据
-      meta: {
-        loadTime: Date.now(),
-        userAgent: navigator.userAgent,
-        language: navigator.language || 'zh-CN'
-      }
-    };
-    
-    console.log('Enhanced User Import Data loaded:', window.EnhancedUserImportData);
-    
-    // 标记数据已就绪
-    window.EnhancedUserImportDataReady = true;
-    document.dispatchEvent(new CustomEvent('enhancedUserImportDataReady'));
-    
-  } catch (error) {
-    console.error('Error initializing enhanced user import data:', error);
-  }
-})();
-
-// 应用加载超时保护
-(function() {
-  let loadTimeout = setTimeout(() => {
-    const loadingContainer = document.querySelector('.loading-container');
-    if (loadingContainer && loadingContainer.style.display !== 'none') {
-      console.error('Enhanced User Import app loading timeout');
-      loadingContainer.innerHTML = '<div style="text-align: center; padding: 20px;">加载超时，请刷新页面重试</div>';
-    }
-  }, 10000);
-  
-  // 监听应用成功挂载事件
-  document.addEventListener('enhancedUserImportAppMounted', function() {
-    clearTimeout(loadTimeout);
-    console.log('Enhanced User Import app mounted successfully');
-    
-    // 隐藏加载状态
-    const loadingContainer = document.querySelector('.loading-container');
-    if (loadingContainer) {
-      loadingContainer.style.opacity = '0';
-      loadingContainer.style.transition = 'opacity 0.3s ease-out';
-      setTimeout(() => {
-        loadingContainer.style.display = 'none';
-      }, 300);
-    }
-  });
-})();
-</script>
-
-<style>
 /* Enhanced User Import Plugin - Scoped Styles */
 /* 使用 .eui- (Enhanced User Import) 前缀避免全局样式冲突 */
 
@@ -172,7 +65,7 @@
     padding: var(--eui-spacing-6) var(--eui-spacing-8);
     border-radius: var(--eui-radius-lg) var(--eui-radius-lg) 0 0;
     overflow: hidden;
-    margin: -1.5rem -1.5rem 0 -1.5rem; /* 调整扩展边距 */
+    margin: -24px -24px 0 -24px; /* 扩展到section边缘 */
 }
 
 .eui-enhanced-header::before {
@@ -257,7 +150,7 @@
     box-shadow: var(--eui-shadow-lg);
     border: 1px solid var(--eui-border-color);
     border-top: none;
-    margin: 0 -1.5rem -1.5rem -1.5rem; /* 调整扩展边距 */
+    margin: 0 -24px -24px -24px; /* 扩展到section边缘 */
     padding: 0;
 }
 
@@ -765,7 +658,36 @@
     100% { transform: rotate(360deg); }
 }
 
+@keyframes eui-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes eui-slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .eui-col-md-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
 @media (max-width: 768px) {
     .eui-enhanced-header {
         padding: var(--eui-spacing-5) var(--eui-spacing-6);
@@ -870,6 +792,39 @@
         border-radius: var(--eui-radius-lg);
     }
 }
-</style>
 
-{% endblock %}
+/* Performance optimizations */
+.eui-loading-container,
+.eui-main-card,
+.eui-preview-section {
+    will-change: transform, opacity;
+}
+
+.eui-btn {
+    will-change: transform;
+}
+
+/* Accessibility improvements */
+.eui-btn:focus {
+    outline: 2px solid var(--eui-primary-color);
+    outline-offset: 2px;
+}
+
+.eui-form-control:focus {
+    outline: 2px solid var(--eui-primary-color);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .eui-loading-container,
+    .eui-main-card,
+    .eui-preview-section,
+    .eui-btn,
+    .eui-spinner-icon,
+    .eui-skeleton-header,
+    .eui-skeleton-line {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
