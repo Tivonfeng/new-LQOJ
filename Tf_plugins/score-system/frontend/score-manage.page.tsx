@@ -198,7 +198,7 @@ const ScoreManageApp: React.FC = () => {
                   <button
                     type="button"
                     className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(10, '回答问题')}
+                    onClick={() => handleQuickAction(10, '小小奖励')}
                   >
                     <span className="action-icon">🙋</span>
                     <span className="action-score">+10</span>
@@ -206,7 +206,7 @@ const ScoreManageApp: React.FC = () => {
                   <button
                     type="button"
                     className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(20, '作业')}
+                    onClick={() => handleQuickAction(20, '大大奖励')}
                   >
                     <span className="action-icon">📝</span>
                     <span className="action-score">+20</span>
@@ -214,7 +214,7 @@ const ScoreManageApp: React.FC = () => {
                   <button
                     type="button"
                     className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(50, '测验优秀')}
+                    onClick={() => handleQuickAction(50, '超级奖励')}
                   >
                     <span className="action-icon">🏆</span>
                     <span className="action-score">+50</span>
