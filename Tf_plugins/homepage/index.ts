@@ -15,7 +15,6 @@ async function getPersonal(domainId: string, userId: number, ctx: Context) {
         let userScore = 0;
         try {
             const scoreDoc = await ctx.db.collection('score.users' as any).findOne({
-                domainId,
                 uid: userId,
             });
             userScore = scoreDoc?.totalScore || 0;
