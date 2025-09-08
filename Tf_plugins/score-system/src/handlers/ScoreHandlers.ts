@@ -5,6 +5,7 @@ import {
 } from 'hydrooj';
 import {
     LotteryService,
+    MigrationService,
     ScoreService,
     StatisticsService,
     type UserScore,
@@ -89,14 +90,14 @@ export class ScoreRankingHandler extends Handler {
         const skip = (page - 1) * limit;
 
         const users = await this.ctx.db.collection('score.users' as any)
-            .find({ domainId: this.domain._id })
+            .find({}) // 移除域限制，显示全局排行榜
             .sort({ totalScore: -1, lastUpdated: 1 })
             .skip(skip)
             .limit(limit)
             .toArray();
 
         const total = await this.ctx.db.collection('score.users' as any)
-            .countDocuments({ domainId: this.domain._id });
+            .countDocuments({}); // 移除域限制，统计全局用户数
 
         // 获取用户信息
         const uids = users.map((u) => u.uid);
@@ -109,13 +110,13 @@ export class ScoreRankingHandler extends Handler {
         // 格式化日期
         const formattedUsers = users.map((user) => ({
             ...user,
-            lastUpdated: user.lastUpdated.toLocaleString('zh-CN', {
+            lastUpdated: user.lastUpdated ? user.lastUpdated.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-            }),
+            }) : null,
         }));
 
         this.response.template = 'score_ranking.html';
@@ -219,57 +220,127 @@ export class ScoreManageHandler extends Handler {
     async post() {
         const { action, username, scoreChange, reason } = this.request.body;
 
-        if (action !== 'adjust_score') {
+        if (action === 'adjust_score') {
+            try {
+                // 根据用户名查找用户
+                const UserModel = global.Hydro.model.user;
+                const user = await UserModel.getByUname(this.domain._id, username);
+
+                if (!user) {
+                    this.response.body = { success: false, message: '用户不存在' };
+                    return;
+                }
+
+                const scoreChangeNum = Number.parseInt(scoreChange);
+                if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
+                    this.response.body = { success: false, message: '积分变化值无效（范围：-10000 到 +10000）' };
+                    return;
+                }
+
+                if (!reason || reason.length < 2) {
+                    this.response.body = { success: false, message: '请填写调整原因' };
+                    return;
+                }
+
+                const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+                // 更新用户积分
+                await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
+
+                // 添加积分记录
+                await scoreService.addScoreRecord({
+                    uid: user._id,
+                    domainId: this.domain._id,
+                    pid: 0, // 管理员操作使用0
+                    recordId: null,
+                    score: scoreChangeNum,
+                    reason: `管理员调整：${reason}`,
+                    problemTitle: '管理员操作',
+                });
+
+                console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
+
+                this.response.body = {
+                    success: true,
+                    message: `成功${scoreChangeNum > 0 ? '增加' : '减少'}用户 ${username} ${Math.abs(scoreChangeNum)} 积分`,
+                };
+            } catch (error) {
+                console.error('[ScoreManage] Error adjusting score:', error);
+                this.response.body = { success: false, message: `操作失败：${error.message}` };
+            }
+        } else if (action === 'migrate_scores') {
+            try {
+                const migrationService = new MigrationService(this.ctx);
+
+                // 检查当前迁移状态
+                const status = await migrationService.checkMigrationStatus();
+
+                if (!status.hasDomainData) {
+                    this.response.body = { success: false, message: '没有需要迁移的分域数据' };
+                    return;
+                }
+
+                if (status.hasGlobalData) {
+                    this.response.body = { success: false, message: '已存在全局积分数据，请先清理或回滚' };
+                    return;
+                }
+
+                // 执行迁移
+                const result = await migrationService.mergeUserScores();
+
+                console.log(`[ScoreManage] Admin ${this.user._id} executed score migration: ${result.mergedUsers} users merged`);
+
+                this.response.body = {
+                    success: true,
+                    message: `成功合并 ${result.mergedUsers} 个用户的积分数据（来自 ${result.totalRecords} 条域记录）`,
+                    data: result,
+                };
+            } catch (error) {
+                console.error('[ScoreManage] Error during migration:', error);
+                this.response.body = { success: false, message: `迁移失败：${error.message}` };
+            }
+        } else if (action === 'rollback_migration') {
+            try {
+                const migrationService = new MigrationService(this.ctx);
+
+                // 检查当前状态
+                const status = await migrationService.checkMigrationStatus();
+
+                if (!status.hasGlobalData) {
+                    this.response.body = { success: false, message: '没有需要回滚的全局数据' };
+                    return;
+                }
+
+                // 执行回滚
+                const result = await migrationService.rollbackMigration();
+
+                console.log(`[ScoreManage] Admin ${this.user._id} executed migration rollback: ${result.rolledBackUsers} users`);
+
+                this.response.body = {
+                    success: true,
+                    message: `成功回滚 ${result.rolledBackUsers} 个用户的积分数据`,
+                    data: result,
+                };
+            } catch (error) {
+                console.error('[ScoreManage] Error during rollback:', error);
+                this.response.body = { success: false, message: `回滚失败：${error.message}` };
+            }
+        } else if (action === 'get_migration_status') {
+            try {
+                const migrationService = new MigrationService(this.ctx);
+                const status = await migrationService.checkMigrationStatus();
+                const stats = await migrationService.getMigrationStats();
+
+                this.response.body = {
+                    success: true,
+                    data: { status, stats },
+                };
+            } catch (error) {
+                console.error('[ScoreManage] Error getting migration status:', error);
+                this.response.body = { success: false, message: `获取状态失败：${error.message}` };
+            }
+        } else {
             this.response.body = { success: false, message: '无效的操作' };
-            return;
-        }
-
-        try {
-            // 根据用户名查找用户
-            const UserModel = global.Hydro.model.user;
-            const user = await UserModel.getByUname(this.domain._id, username);
-
-            if (!user) {
-                this.response.body = { success: false, message: '用户不存在' };
-                return;
-            }
-
-            const scoreChangeNum = Number.parseInt(scoreChange);
-            if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
-                this.response.body = { success: false, message: '积分变化值无效（范围：-10000 到 +10000）' };
-                return;
-            }
-
-            if (!reason || reason.length < 2) {
-                this.response.body = { success: false, message: '请填写调整原因' };
-                return;
-            }
-
-            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-
-            // 更新用户积分
-            await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
-
-            // 添加积分记录
-            await scoreService.addScoreRecord({
-                uid: user._id,
-                domainId: this.domain._id,
-                pid: 0, // 管理员操作使用0
-                recordId: null,
-                score: scoreChangeNum,
-                reason: `管理员调整：${reason}`,
-                problemTitle: '管理员操作',
-            });
-
-            console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
-
-            this.response.body = {
-                success: true,
-                message: `成功${scoreChangeNum > 0 ? '增加' : '减少'}用户 ${username} ${Math.abs(scoreChangeNum)} 积分`,
-            };
-        } catch (error) {
-            console.error('[ScoreManage] Error adjusting score:', error);
-            this.response.body = { success: false, message: `操作失败：${error.message}` };
         }
     }
 }

@@ -125,8 +125,9 @@
                 {% endif %}
                 
                 <div class="page-numbers">
-                    {% set start = [1, page - 2]|max %}
-                    {% set end = [totalPages, page + 2]|min %}
+                    {% set start = 1 if (page - 2) < 1 else (page - 2) %}
+                    {% set end = totalPages if (page + 2) > totalPages else (page + 2) %}
+                    {% if totalPages > 0 %}
                     
                     {% for p in range(start, end + 1) %}
                         {% if p == page %}
@@ -135,6 +136,7 @@
                         <a href="{{ url('score_ranking', query={page: p}) }}" class="page-number">{{ p }}</a>
                         {% endif %}
                     {% endfor %}
+                    {% endif %}
                 </div>
                 
                 {% if page < totalPages %}

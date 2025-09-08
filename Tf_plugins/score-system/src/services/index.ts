@@ -17,6 +17,11 @@ export {
     type UserLotteryStats,
 } from './LotteryService';
 
+// 数据迁移服务
+export {
+    MigrationService,
+} from './MigrationService';
+
 // 剪刀石头布游戏服务
 export {
     type RPSGameRecord,

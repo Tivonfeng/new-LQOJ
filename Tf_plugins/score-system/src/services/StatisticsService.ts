@@ -18,11 +18,11 @@ export class StatisticsService {
     }
 
     /**
-     * 获取系统总览统计
-     * @param domainId 域ID
+     * 获取系统总览统计 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @returns 系统统计信息
      */
-    async getSystemOverview(domainId: string): Promise<{
+    async getSystemOverview(_domainId: string): Promise<{
         totalUsers: number;
         totalScore: number;
         todayScore: number;
@@ -33,7 +33,7 @@ export class StatisticsService {
     }> {
         // 获取总用户数和总积分
         const scoreStats = await this.ctx.db.collection('score.users' as any).aggregate([
-            { $match: { domainId } },
+            { $match: {} }, // 移除域限制
             {
                 $group: {
                     _id: null,
@@ -46,7 +46,7 @@ export class StatisticsService {
         const scoreData = scoreStats[0] || { totalUsers: 0, totalScore: 0 };
 
         // 获取今日统计
-        const todayStats = await this.scoreService.getTodayStats(domainId);
+        const todayStats = await this.scoreService.getTodayStats(_domainId);
 
         // 获取抽奖统计
         const lotteryStats = await this.lotteryService.getLotteryStats();
@@ -66,12 +66,12 @@ export class StatisticsService {
     }
 
     /**
-     * 获取用户活跃度统计
-     * @param domainId 域ID
+     * 获取用户活跃度统计 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @param days 统计天数
      * @returns 用户活跃度统计
      */
-    async getUserActivityStats(domainId: string, days: number = 7): Promise<{
+    async getUserActivityStats(_domainId: string, days: number = 7): Promise<{
         date: string;
         activeUsers: number;
         totalScore: number;
@@ -84,8 +84,7 @@ export class StatisticsService {
         const dailyStats = await this.ctx.db.collection('score.records' as any).aggregate([
             {
                 $match: {
-                    domainId,
-                    createdAt: { $gte: startDate },
+                    createdAt: { $gte: startDate }, // 移除域限制
                 },
             },
             {
@@ -125,17 +124,17 @@ export class StatisticsService {
     }
 
     /**
-     * 获取积分分布统计
-     * @param domainId 域ID
+     * 获取积分分布统计 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @returns 积分分布统计
      */
-    async getScoreDistribution(domainId: string): Promise<{
+    async getScoreDistribution(_domainId: string): Promise<{
         range: string;
         count: number;
         percentage: number;
     }[]> {
         const users = await this.ctx.db.collection('score.users' as any)
-            .find({ domainId })
+            .find({}) // 移除域限制
             .toArray();
 
         const totalUsers = users.length;
@@ -219,25 +218,25 @@ export class StatisticsService {
     }
 
     /**
-     * 获取最近记录统计
-     * @param domainId 域ID
+     * 获取最近记录统计 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @param limit 记录数量
      * @returns 最近记录统计
      */
-    async getRecentActivity(domainId: string, limit: number = 20): Promise<{
+    async getRecentActivity(_domainId: string, limit: number = 20): Promise<{
         scoreRecords: any[];
         lotteryRecords: any[];
     }> {
         // 获取最近积分记录
         const scoreRecords = await this.ctx.db.collection('score.records' as any)
-            .find({ domainId })
+            .find({}) // 移除域限制
             .sort({ createdAt: -1 })
             .limit(limit)
             .toArray();
 
         // 获取最近抽奖记录
         const lotteryRecords = await this.ctx.db.collection('lottery.records' as any)
-            .find({ domainId })
+            .find({}) // 移除域限制
             .sort({ drawTime: -1 })
             .limit(limit)
             .toArray();
@@ -264,12 +263,12 @@ export class StatisticsService {
     }
 
     /**
-     * 获取用户个人统计摘要
-     * @param domainId 域ID
+     * 获取用户个人统计摘要 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @param uid 用户ID
      * @returns 用户统计摘要
      */
-    async getUserSummary(domainId: string, uid: number): Promise<{
+    async getUserSummary(_domainId: string, uid: number): Promise<{
         scoreInfo: UserScore | null;
         rank: number | null;
         lotteryStats: UserLotteryStats | null;
@@ -277,11 +276,11 @@ export class StatisticsService {
         recentLotteryCount: number;
     }> {
         // 获取用户积分信息和排名
-        const scoreInfo = await this.scoreService.getUserScore(domainId, uid);
-        const rank = await this.scoreService.getUserRank(domainId, uid);
+        const scoreInfo = await this.scoreService.getUserScore(_domainId, uid);
+        const rank = await this.scoreService.getUserRank(_domainId, uid);
 
         // 获取用户抽奖统计
-        const lotteryStats = await this.lotteryService.getUserLotteryStats(domainId, uid);
+        const lotteryStats = await this.lotteryService.getUserLotteryStats(_domainId, uid);
 
         // 获取最近活动数量
         const oneWeekAgo = new Date();
@@ -289,15 +288,13 @@ export class StatisticsService {
 
         const recentScoreCount = await this.ctx.db.collection('score.records' as any)
             .countDocuments({
-                domainId,
-                uid,
+                uid, // 移除域限制
                 createdAt: { $gte: oneWeekAgo },
             });
 
         const recentLotteryCount = await this.ctx.db.collection('lottery.records' as any)
             .countDocuments({
-                domainId,
-                uid,
+                uid, // 移除域限制
                 drawTime: { $gte: oneWeekAgo },
             });
 

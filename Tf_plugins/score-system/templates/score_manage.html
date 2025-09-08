@@ -25,77 +25,83 @@
             <div id="score-manage-react-app"></div>
         </div>
         
-        <!-- Recent Records Panel -->
-        <div class="records-area">
-            <div class="records-panel">
-                        <div class="panel-header">
-                            <div class="panel-title">
-                                <div class="panel-icon">📋</div>
-                                <h3>{{ _('Recent Score Records') }}</h3>
-                            </div>
-                            <div class="panel-badge">{{ recentRecords|length if recentRecords else 0 }} {{ _('records') }}</div>
+        <!-- Right Sidebar Area -->
+        <div class="sidebar-area">
+            <!-- Recent Records Panel -->
+            <div class="records-section">
+                <div class="records-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <div class="panel-icon">📋</div>
+                            <h3>{{ _('Recent Score Records') }}</h3>
                         </div>
-                        
-                        <div class="panel-content">
-                            {% if recentRecords and recentRecords|length > 0 %}
-                            <div class="records-list">
-                                {% for record in recentRecords %}
-                                <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }}">
-                                    <div class="record-info">
-                                        <div class="record-header">
-                                            <div class="user-info">
-                                                <span class="user-icon">👤</span>
-                                                <span class="user-name">
-                                                    {% set user = udocs[record.uid] %}
-                                                    {% if user %}
-                                                        {{ user.displayName or user.uname or record.uid }}
-                                                    {% else %}
-                                                        {{ record.uid }}
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                            <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
-                                                <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
-                                                <span class="score-number">{{ record.score | abs }}</span>
-                                            </div>
+                        <div class="panel-badge">{{ recentRecords|length if recentRecords else 0 }} {{ _('records') }}</div>
+                    </div>
+                    
+                    <div class="panel-content">
+                        {% if recentRecords and recentRecords|length > 0 %}
+                        <div class="records-list">
+                            {% for record in recentRecords %}
+                            <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }}">
+                                <div class="record-info">
+                                    <div class="record-header">
+                                        <div class="user-info">
+                                            <span class="user-icon">👤</span>
+                                            <span class="user-name">
+                                                {% set user = udocs[record.uid] %}
+                                                {% if user %}
+                                                    {{ user.displayName or user.uname or record.uid }}
+                                                {% else %}
+                                                    {{ record.uid }}
+                                                {% endif %}
+                                            </span>
                                         </div>
-                                        <div class="record-details">
-                                            <div class="problem-info">
-                                                {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
-                                                    <span class="problem-icon">⚙️</span>
-                                                    <span class="problem-title">{{ record.reason }}</span>
+                                        <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
+                                            <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
+                                            <span class="score-number">{{ record.score | abs }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="record-details">
+                                        <div class="problem-info">
+                                            {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
+                                                <span class="problem-icon">⚙️</span>
+                                                <span class="problem-title">{{ record.reason }}</span>
+                                            {% else %}
+                                                <span class="problem-icon">📝</span>
+                                                <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="time-info">
+                                            {% if record.createdAt %}
+                                                {% if record.createdAt.strftime %}
+                                                {{ record.createdAt.strftime('%m/%d %H:%M') }}
+                                                {% elif record.createdAt|string %}
+                                                {{ record.createdAt|string }}
                                                 {% else %}
-                                                    <span class="problem-icon">📝</span>
-                                                    <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                                                {{ _('Recent') }}
                                                 {% endif %}
-                                            </div>
-                                            <div class="time-info">
-                                                {% if record.createdAt %}
-                                                    {% if record.createdAt.strftime %}
-                                                    {{ record.createdAt.strftime('%m/%d %H:%M') }}
-                                                    {% elif record.createdAt|string %}
-                                                    {{ record.createdAt|string }}
-                                                    {% else %}
-                                                    {{ _('Recent') }}
-                                                    {% endif %}
-                                                {% else %}
-                                                {{ _('N/A') }}
-                                                {% endif %}
-                                            </div>
+                                            {% else %}
+                                            {{ _('N/A') }}
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
-                                {% endfor %}
                             </div>
-                            {% else %}
-                            <div class="empty-panel">
-                                <div class="empty-icon">📋</div>
-                                <p class="empty-text">{{ _('No recent records found.') }}</p>
-                            </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
+                        {% else %}
+                        <div class="empty-panel">
+                            <div class="empty-icon">📋</div>
+                            <p class="empty-text">{{ _('No recent records found.') }}</p>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+            </div>
+            
+            <!-- Migration Management Section -->
+            <div class="migration-section">
+                <div id="migration-manage-component"></div>
             </div>
         </div>
     </div>
@@ -315,10 +321,25 @@
     min-height: 600px;
 }
 
-/* Records Area */
-.records-area {
+/* Right Sidebar Area */
+.sidebar-area {
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+/* Records Section */
+.records-section {
+    flex-shrink: 0;
+}
+
+/* Migration Section */  
+.migration-section {
+    flex-shrink: 0;
+}
+
+.migration-manage-component {
+    width: 100%;
 }
 
 .records-panel {
@@ -1706,6 +1727,162 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
+}
+
+/* 迁移管理区域 */
+.migration-section {
+    background: var(--bg-primary);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-xl);
+    padding: 0;
+    margin-bottom: var(--spacing-8);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.migration-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-6);
+    text-align: center;
+}
+
+.migration-header h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 var(--spacing-2) 0;
+}
+
+.migration-subtitle {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.migration-status {
+    padding: var(--spacing-6);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.status-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.status-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2);
+}
+
+.status-value {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.status-value.has-data {
+    color: var(--success-color);
+}
+
+.status-value.no-data {
+    color: var(--text-muted);
+}
+
+.migration-actions {
+    display: flex;
+    gap: var(--spacing-4);
+    justify-content: center;
+    padding: var(--spacing-6);
+    background: var(--bg-primary);
+}
+
+.migration-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+    justify-content: center;
+}
+
+.migration-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.migrate-btn {
+    background: linear-gradient(135deg, var(--success-color), #0d9488);
+    color: white;
+}
+
+.migrate-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.rollback-btn {
+    background: linear-gradient(135deg, var(--error-color), #dc2626);
+    color: white;
+}
+
+.rollback-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.refresh-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.refresh-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.migration-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    margin: var(--spacing-6);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.info-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
 }
 
 .domain-warning {

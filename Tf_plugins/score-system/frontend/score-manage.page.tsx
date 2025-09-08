@@ -485,7 +485,7 @@ const ScoreManageApp: React.FC = () => {
 };
 
 // 注册页面组件
-addPage(new NamedPage(['score_manage'], () => {
+addPage(new NamedPage(['score_manage'], async () => {
   console.log('Score Manage React page loaded');
 
   // 初始化React应用
@@ -494,10 +494,18 @@ addPage(new NamedPage(['score_manage'], () => {
     const root = createRoot(mountPoint);
     root.render(<ScoreManageApp />);
     console.log('Score Manage React app mounted successfully');
-
-    // 通知应用已挂载成功
-    document.dispatchEvent(new CustomEvent('scoreManageAppMounted'));
   } else {
     console.error('Mount point not found: score-manage-react-app');
   }
+
+  // 初始化迁移管理组件
+  try {
+    const { initMigrationComponent } = await import('./migration-manage.component');
+    initMigrationComponent();
+  } catch (error) {
+    console.error('Failed to load migration component:', error);
+  }
+
+  // 通知应用已挂载成功
+  document.dispatchEvent(new CustomEvent('scoreManageAppMounted'));
 }));
