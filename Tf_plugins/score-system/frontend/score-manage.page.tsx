@@ -11,9 +11,46 @@ const ScoreManageApp: React.FC = () => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean, message: string } | null>(null);
+  const [recentUsers, setRecentUsers] = useState<string[]>([]);
+  const [, forceUpdate] = useState({});
 
   const userInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
+
+  // 加载最近用户列表
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('scoreManage_recentUsers');
+      if (stored) {
+        const users = JSON.parse(stored);
+        if (Array.isArray(users)) {
+          setRecentUsers(users.slice(0, 5)); // 只保留最多5个
+        }
+      }
+    } catch (error) {
+      console.warn('加载最近用户列表失败:', error);
+    }
+  }, []);
+
+  // 添加用户到最近列表
+  const addToRecentUsers = useCallback((user: string) => {
+    if (!user.trim()) return;
+
+    setRecentUsers((prev) => {
+      // 移除重复项并添加到开头
+      const filtered = prev.filter((u) => u !== user);
+      const newList = [user, ...filtered].slice(0, 5); // 保持最多5个用户
+
+      // 保存到localStorage
+      try {
+        localStorage.setItem('scoreManage_recentUsers', JSON.stringify(newList));
+      } catch (error) {
+        console.warn('保存最近用户列表失败:', error);
+      }
+
+      return newList;
+    });
+  }, []);
 
   // 初始化UserSelectAutoComplete组件
   useEffect(() => {
@@ -34,8 +71,6 @@ const ScoreManageApp: React.FC = () => {
             }
           },
         });
-
-        console.log('UserSelectAutoComplete initialized:', userSelectComponentRef.current);
       } catch (error) {
         console.error('Failed to initialize UserSelectAutoComplete:', error);
       }
@@ -51,6 +86,8 @@ const ScoreManageApp: React.FC = () => {
 
   // 快捷操作
   const handleQuickAction = useCallback((score: number, reasonText: string) => {
+    // 清除之前的结果消息
+    setResult(null);
     setScoreChange(score.toString());
     setReason(reasonText);
 
@@ -65,20 +102,70 @@ const ScoreManageApp: React.FC = () => {
     setUsername(e.target.value);
   }, []);
 
+  // 快速选择最近用户
+  const handleSelectRecentUser = useCallback((user: string) => {
+    // 首先更新React状态，这将触发重新渲染
+    setUsername(user);
+
+    // 使用setTimeout确保React状态更新和重新渲染完成
+    setTimeout(() => {
+      // 同步UserSelectAutoComplete组件状态
+      if (userSelectComponentRef.current && userInputRef.current) {
+        try {
+          // 通过组件的value方法设置值
+          const userObj = { uname: user, displayName: user };
+          if (typeof userSelectComponentRef.current.value === 'function') {
+            userSelectComponentRef.current.value(userObj);
+          }
+        } catch (error) {
+          console.warn('设置用户选择组件失败:', error);
+        }
+      }
+
+      // 确保所有输入框都显示正确的值
+      if (userInputRef.current) {
+        const parent = userInputRef.current.parentElement;
+        if (parent && userInputRef.current.value === user) {
+          // 强制React重新渲染
+          forceUpdate({});
+
+          // 更新所有可能的输入框
+          const allInputs = parent.querySelectorAll('input');
+          allInputs.forEach((input) => {
+            if ((input as HTMLInputElement).value !== user) {
+              (input as HTMLInputElement).value = user;
+            }
+          });
+        }
+      }
+    }, 0);
+  }, [forceUpdate]);
+
   // 提交表单
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 清除之前的结果消息
+    setResult(null);
+
     // 获取最终用户名
     let finalUsername = username.trim();
     if (userSelectComponentRef.current && userSelectComponentRef.current.value) {
-      const selectedUser = userSelectComponentRef.current.value();
-      if (selectedUser && typeof selectedUser === 'object' && selectedUser.uname) {
-        finalUsername = selectedUser.uname;
-      } else if (typeof selectedUser === 'string') {
-        finalUsername = selectedUser;
+      try {
+        const selectedUser = userSelectComponentRef.current.value();
+        if (selectedUser && typeof selectedUser === 'object' && selectedUser.uname) {
+          finalUsername = selectedUser.uname;
+        } else if (typeof selectedUser === 'string' && selectedUser.trim()) {
+          finalUsername = selectedUser.trim();
+        }
+      } catch (error) {
+        console.warn('获取用户选择失败，使用输入框值:', error);
+        // 如果获取选择失败，继续使用username状态值
       }
     }
+
+    // 确保用户名不为空
+    finalUsername ||= username.trim();
 
     if (!finalUsername || !scoreChange.trim() || !reason.trim()) {
       setResult({ success: false, message: '请填写所有必填字段' });
@@ -124,9 +211,25 @@ const ScoreManageApp: React.FC = () => {
       });
 
       if (data.success) {
-        // 重置表单（保留用户名）
+        // 添加用户到最近操作列表
+        addToRecentUsers(finalUsername);
+
+        // 重置表单（保留用户名以便连续操作）
         setScoreChange('');
         setReason('');
+
+        // 确保UserSelectAutoComplete组件与当前用户名状态同步
+        if (userSelectComponentRef.current && finalUsername) {
+          try {
+            // 设置组件的值为当前用户名，确保下次操作时可以正确获取
+            userSelectComponentRef.current.value(finalUsername);
+          } catch (error) {
+            console.warn('同步用户选择组件失败:', error);
+          }
+        }
+
+        // 清除结果消息，为下次操作做准备
+        setTimeout(() => setResult(null), 3000);
       }
     } catch (error) {
       console.error('提交失败:', error);
@@ -151,108 +254,149 @@ const ScoreManageApp: React.FC = () => {
 
   return (
     <div className="score-manage-react-app">
-      <div className="manual-adjustment-section featured-section">
-        <div className="section-header">
-          <h2>⚖️ 手动积分调整</h2>
-        </div>
-
-        <div className="adjustment-panel">
-          <div className="panel-header">
-            <div className="panel-title">
-              <div className="panel-icon">⚙️</div>
-              <div className="title-content">
-                <h3>调整用户积分</h3>
-                <div className="domain-info">
-                  <span className="domain-icon">🌐</span>
-                  <span className="domain-text">
-                    当前域: {(() => {
-                      const ctx = (window as any).UiContext;
-                      const scoreSystemDomain = (window as any).ScoreSystemDomain;
-                      const currentDomain = ctx?.currentDomain?.displayName;
-                      const domain = ctx?.domain?.displayName;
-                      const domainId = ctx?.domain?._id || ctx?.domain?.id;
-
-                      return scoreSystemDomain?.displayName
-                        || scoreSystemDomain?.name
-                        || scoreSystemDomain?.id
-                        || currentDomain
-                        || domain
-                        || domainId
-                        || 'Unknown';
-                    })()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="panel-badge">仅限管理员</div>
-          </div>
-
-          <div className="panel-content">
-            {/* 快捷操作按钮 */}
-            <div className="quick-actions-section">
+      {/* 快捷操作区域 - 左右布局 */}
+      <div className="quick-actions-section">
               <div className="quick-actions-header">
                 <h4>快捷操作</h4>
+                <p className="quick-actions-subtitle">先选择用户，再选择积分调整</p>
               </div>
 
-              <div className="quick-actions-compact">
-                <div className="actions-row">
-                  <button
-                    type="button"
-                    className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(10, '小小奖励')}
-                  >
-                    <span className="action-icon">🙋</span>
-                    <span className="action-score">+10</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(20, '大大奖励')}
-                  >
-                    <span className="action-icon">📝</span>
-                    <span className="action-score">+20</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-action-btn positive compact"
-                    onClick={() => handleQuickAction(50, '超级奖励')}
-                  >
-                    <span className="action-icon">🏆</span>
-                    <span className="action-score">+50</span>
-                  </button>
+              <div className="quick-actions-layout">
+                {/* 左侧：用户选择 */}
+                <div className="quick-users-panel">
+                  <div className="panel-header">
+                    <div className="panel-header-content">
+                      <span className="panel-icon">👥</span>
+                      <div>
+                        <div className="panel-title">选择用户</div>
+                        <div className="panel-subtitle">从最近操作中快速选择</div>
+                      </div>
+                    </div>
+                    <div className="panel-badge">Step 1</div>
+                  </div>
+
+                  <div className="panel-content">
+                    {recentUsers.length > 0 && (
+                      <div className="recent-users-quick">
+                        <div className="users-grid">
+                          {recentUsers.map((user, index) => (
+                            <button
+                              key={`${user}-${index}`}
+                              type="button"
+                              className={`user-quick-btn ${username === user ? 'active' : ''}`}
+                              onClick={() => handleSelectRecentUser(user)}
+                              aria-label={`选择用户: ${user}`}
+                            >
+                              <span className="user-icon">👤</span>
+                              <span className="user-name">{user}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="manual-input-hint">
+                      <span className="hint-icon">💡</span>
+                      <span className="hint-text">也可在下方表单中手动输入用户名</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="actions-row">
-                  <button
-                    type="button"
-                    className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-10, '轻微违纪')}
-                  >
-                    <span className="action-icon">⏰</span>
-                    <span className="action-score">-10</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-50, '严重违纪')}
-                  >
-                    <span className="action-icon">❌</span>
-                    <span className="action-score">-50</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-100, '重大违纪')}
-                  >
-                    <span className="action-icon">📅</span>
-                    <span className="action-score">-100</span>
-                  </button>
+                {/* 右侧：积分选择 */}
+                <div className="quick-scores-panel">
+                  <div className="panel-header">
+                    <div className="panel-header-content">
+                      <span className="panel-icon">⚡</span>
+                      <div>
+                        <div className="panel-title">积分调整</div>
+                        <div className="panel-subtitle">选择奖励或扣分操作</div>
+                      </div>
+                    </div>
+                    <div className="panel-badge">Step 2</div>
+                  </div>
+
+                  <div className="panel-content">
+                    <div className="scores-grid">
+                    <div className="scores-group positive">
+                      <div className="group-label">奖励</div>
+                      <div className="scores-row">
+                        <button
+                          type="button"
+                          className="quick-action-btn positive compact"
+                          onClick={() => handleQuickAction(10, '小小奖励')}
+                        >
+                          <span className="action-icon">🙋</span>
+                          <span className="action-score">+10</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="quick-action-btn positive compact"
+                          onClick={() => handleQuickAction(20, '大大奖励')}
+                        >
+                          <span className="action-icon">📝</span>
+                          <span className="action-score">+20</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="quick-action-btn positive compact"
+                          onClick={() => handleQuickAction(50, '超级奖励')}
+                        >
+                          <span className="action-icon">🏆</span>
+                          <span className="action-score">+50</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="scores-group negative">
+                      <div className="group-label">扣分</div>
+                      <div className="scores-row">
+                        <button
+                          type="button"
+                          className="quick-action-btn negative compact"
+                          onClick={() => handleQuickAction(-10, '轻微违纪')}
+                        >
+                          <span className="action-icon">⏰</span>
+                          <span className="action-score">-10</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="quick-action-btn negative compact"
+                          onClick={() => handleQuickAction(-50, '严重违纪')}
+                        >
+                          <span className="action-icon">❌</span>
+                          <span className="action-score">-50</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="quick-action-btn negative compact"
+                          onClick={() => handleQuickAction(-100, '重大违纪')}
+                        >
+                          <span className="action-icon">📅</span>
+                          <span className="action-score">-100</span>
+                        </button>
+                      </div>
+                    </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 调整表单 */}
-            <form onSubmit={handleSubmit} className="adjustment-form">
+            {/* 手动调整表单 */}
+            <div className="manual-form-section">
+              <div className="section-header">
+                <div className="section-header-content">
+                  <span className="section-icon">✏️</span>
+                  <div>
+                    <div className="section-title">手动调整</div>
+                    <div className="section-subtitle">自定义用户名、积分和原因</div>
+                  </div>
+                </div>
+                <div className="section-badge">Alternative</div>
+              </div>
+              
+              <div className="section-content">
+                <form onSubmit={handleSubmit} className="adjustment-form">
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">
@@ -262,11 +406,11 @@ const ScoreManageApp: React.FC = () => {
                   <input
                     ref={userInputRef}
                     type="text"
+                    name="username"
                     value={username}
                     onChange={handleUsernameChange}
                     className="form-input"
                     placeholder="搜索并选择用户..."
-                    required
                   />
                   <div className="form-hint">输入用户名进行搜索</div>
                 </div>
@@ -278,6 +422,7 @@ const ScoreManageApp: React.FC = () => {
                   </label>
                   <input
                     type="number"
+                    name="scoreChange"
                     value={scoreChange}
                     onChange={(e) => setScoreChange(e.target.value)}
                     className="form-input"
@@ -297,6 +442,7 @@ const ScoreManageApp: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  name="reason"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="form-input"
@@ -332,6 +478,8 @@ const ScoreManageApp: React.FC = () => {
                 {result.message}
               </div>
             )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
