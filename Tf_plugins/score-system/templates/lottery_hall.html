@@ -71,13 +71,6 @@
                         </div>
                     </div>
                     
-                    <div class="summary-item">
-                        <span class="summary-icon">💎</span>
-                        <div class="summary-text">
-                            <strong>高级抽奖</strong>
-                            <span>50币/次，10%几率未中奖，10次保底</span>
-                        </div>
-                    </div>
                     
                     <div class="summary-item">
                         <span class="summary-icon">🏆</span>
@@ -89,7 +82,6 @@
                 </div>
                 
                 <div class="instruction-tips">
-                    <div class="tip-item">💡 高级抽奖有保底机制，适合集中使用</div>
                     <div class="tip-item">⚠️ 抽奖结果完全随机，请理性参与</div>
                 </div>
             </div>
@@ -145,51 +137,6 @@
                 </button>
             </div>
             
-            <div class="machine-card premium-machine">
-                <div class="machine-header">
-                    <div class="machine-icon">💎</div>
-                    <div class="machine-info">
-                        <h3>{{ lotteryTypes.premium.name }}</h3>
-                        <p class="machine-desc">{{ lotteryTypes.premium.description }}</p>
-                        <div class="machine-cost">{{ lotteryTypes.premium.cost }} {{ _('coins per draw') }}</div>
-                        <div class="feature-tag premium">{{ lotteryTypes.premium.guaranteeDraws }}{{ _('draws guarantee') }}</div>
-                    </div>
-                </div>
-                
-                <div class="slot-machine premium-slot" id="premiumSlotMachine">
-                    <div class="slot-reel">
-                        <div class="slot-item">💎</div>
-                        <div class="slot-item">👑</div>
-                        <div class="slot-item">🏆</div>
-                        <div class="slot-item">🌟</div>
-                        <div class="slot-item">💍</div>
-                        <div class="slot-item">🎯</div>
-                    </div>
-                    <div class="slot-reel">
-                        <div class="slot-item">🌟</div>
-                        <div class="slot-item">💎</div>
-                        <div class="slot-item">🏆</div>
-                        <div class="slot-item">👑</div>
-                        <div class="slot-item">💍</div>
-                        <div class="slot-item">🎯</div>
-                    </div>
-                    <div class="slot-reel">
-                        <div class="slot-item">🏆</div>
-                        <div class="slot-item">🌟</div>
-                        <div class="slot-item">💎</div>
-                        <div class="slot-item">👑</div>
-                        <div class="slot-item">💍</div>
-                        <div class="slot-item">🎯</div>
-                    </div>
-                </div>
-                
-                <button class="draw-btn premium-draw" data-type="premium"
-                        {% if currentCoins < lotteryTypes.premium.cost %}disabled{% endif %}>
-                    <span class="btn-icon">💎</span>
-                    <span class="btn-text">{{ _('Premium Draw') }}</span>
-                    <span class="btn-cost">-{{ lotteryTypes.premium.cost }} 🏴</span>
-                </button>
-            </div>
         </div>
     </div>
 
@@ -671,15 +618,6 @@
     box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
 }
 
-.premium-machine {
-    border-color: var(--primary-color);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
-}
-
-.premium-machine:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.3), var(--shadow-xl);
-}
 
 .machine-header {
     display: flex;
@@ -730,10 +668,6 @@
     display: inline-block;
 }
 
-.feature-tag.premium {
-    background: var(--primary-color);
-    color: white;
-}
 
 /* Slot Machine */
 .slot-machine {
@@ -780,10 +714,6 @@
     to { transform: translateY(100%); }
 }
 
-.premium-slot .slot-reel {
-    border: 2px solid var(--primary-color);
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
-}
 
 /* Draw Button */
 .draw-btn {
@@ -813,15 +743,6 @@
     box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.4), var(--shadow-xl);
 }
 
-.premium-draw {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: white;
-}
-
-.premium-draw:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), var(--shadow-xl);
-}
 
 .draw-btn:disabled {
     opacity: 0.5;
@@ -1316,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', function() {
         button.disabled = true;
         button.classList.add('drawing');
         
-        const slotMachine = document.getElementById(type === 'basic' ? 'basicSlotMachine' : 'premiumSlotMachine');
+        const slotMachine = document.getElementById('basicSlotMachine');
         const reels = slotMachine.querySelectorAll('.slot-reel');
         
         // 启动老虎机动画

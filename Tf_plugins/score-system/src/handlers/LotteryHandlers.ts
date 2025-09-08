@@ -93,7 +93,7 @@ export class LotteryDrawHandler extends Handler {
     async post() {
         const { lotteryType } = this.request.body;
 
-        if (!lotteryType || !['basic', 'premium'].includes(lotteryType)) {
+        if (!lotteryType || lotteryType !== 'basic') {
             this.response.body = { success: false, message: '无效的抽奖类型' };
             return;
         }
@@ -104,7 +104,7 @@ export class LotteryDrawHandler extends Handler {
         const result = await lotteryService.drawLottery(
             this.domain._id,
             this.user._id,
-            lotteryType as 'basic' | 'premium',
+            lotteryType as 'basic',
         );
 
         this.response.body = result;

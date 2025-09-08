@@ -1,7 +1,7 @@
 import {
     Handler,
-    PRIV,
     PERM,
+    PRIV,
 } from 'hydrooj';
 import {
     LotteryService,

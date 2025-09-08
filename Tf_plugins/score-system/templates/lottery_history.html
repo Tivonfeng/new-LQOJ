@@ -55,17 +55,10 @@
                             </div>
                         </td>
                         <td class="type-cell">
-                            {% if record.lotteryType == 'basic' %}
                             <span class="lottery-type basic">
                                 <span class="type-icon">🎲</span>
                                 <span class="type-text">{{ _('Basic') }}</span>
                             </span>
-                            {% else %}
-                            <span class="lottery-type premium">
-                                <span class="type-icon">💎</span>
-                                <span class="type-text">{{ _('Premium') }}</span>
-                            </span>
-                            {% endif %}
                         </td>
                         <td class="cost-cell">
                             <span class="cost-amount">-{{ record.cost }}</span>
@@ -395,11 +388,6 @@
     color: var(--secondary-color);
 }
 
-.lottery-type.premium {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-}
 
 .type-icon {
     font-size: 1rem;

@@ -1,4 +1,3 @@
-/* eslint-disable github/array-foreach */
 import {
     Context,
     ObjectId,
@@ -37,7 +36,7 @@ export interface LotteryRecord {
     prizeIcon?: string;
     prizeRarity?: string;
     cost: number;
-    lotteryType: 'basic' | 'premium';
+    lotteryType: 'basic';
     result: 'win' | 'lose';
     drawTime: Date;
     claimed: boolean;
@@ -72,15 +71,6 @@ export const LOTTERY_TYPES = {
         icon: '🎲',
         description: '消耗20绿旗币，有机会获得各种奖励',
         noPrizeChance: 0.3, // 30%未中奖概率
-    },
-    premium: {
-        id: 'premium',
-        name: '高级抽奖',
-        cost: 50,
-        icon: '💎',
-        description: '消耗50绿旗币，获得稀有奖励概率更高',
-        guaranteeDraws: 10,
-        noPrizeChance: 0.1, // 10%未中奖概率
     },
 } as const;
 
@@ -162,7 +152,7 @@ export class LotteryService {
      * @param lotteryType 抽奖类型
      * @returns 抽奖结果
      */
-    async drawLottery(domainId: string, uid: number, lotteryType: 'basic' | 'premium'): Promise<{
+    async drawLottery(domainId: string, uid: number, lotteryType: 'basic'): Promise<{
         success: boolean;
         message?: string;
         result?: {
@@ -180,11 +170,11 @@ export class LotteryService {
             return { success: false, message: '绿旗币不足' };
         }
 
-        // 检查保底机制
-        const shouldGuaranteeWin = await this.checkGuarantee(domainId, uid, lotteryType);
+        // 普通抽奖无保底机制
+        const shouldGuaranteeWin = false;
 
         // 获取可用奖品(全域统一)
-        const availablePrizes = await this.getAvailablePrizes(lotteryType, shouldGuaranteeWin);
+        const availablePrizes = await this.getAvailablePrizes();
         if (availablePrizes.length === 0) {
             return { success: false, message: '暂无可用奖品' };
         }
@@ -201,7 +191,7 @@ export class LotteryService {
             pid: 0,
             recordId: null,
             score: -cost,
-            reason: `${lotteryType === 'basic' ? '普通' : '高级'}抽奖消费`,
+            reason: '普通抽奖消费',
             problemTitle: '抽奖系统',
         });
 
@@ -308,36 +298,10 @@ export class LotteryService {
     }
 
     /**
-     * 检查保底机制
-     * @param domainId 域ID
-     * @param uid 用户ID
-     * @param lotteryType 抽奖类型
-     * @returns 是否应该保底
-     */
-    private async checkGuarantee(domainId: string, uid: number, lotteryType: string): Promise<boolean> {
-        if (lotteryType !== 'premium') return false;
-
-        const recentRecords = await this.ctx.db.collection('lottery.records' as any)
-            .find({
-                domainId,
-                uid,
-                lotteryType: 'premium',
-                result: 'lose',
-            })
-            .sort({ drawTime: -1 })
-            .limit(LOTTERY_TYPES.premium.guaranteeDraws)
-            .toArray();
-
-        return recentRecords.length >= LOTTERY_TYPES.premium.guaranteeDraws;
-    }
-
-    /**
      * 获取可用奖品
-     * @param lotteryType 抽奖类型
-     * @param guaranteeMode 是否保底模式
      * @returns 可用奖品列表
      */
-    private async getAvailablePrizes(lotteryType: string, guaranteeMode: boolean = false): Promise<LotteryPrize[]> {
+    private async getAvailablePrizes(): Promise<LotteryPrize[]> {
         // eslint-disable-next-line prefer-const
         let query: any = {
             enabled: true,
@@ -351,57 +315,7 @@ export class LotteryService {
             .find(query)
             .toArray();
 
-        // 高级抽奖调整权重分配
-        if (lotteryType === 'premium' && !guaranteeMode) {
-            return this.adjustPremiumWeights(prizes);
-        }
-
         return prizes;
-    }
-
-    /**
-     * 为高级抽奖调整奖品权重
-     * 普通10%，稀有50%，史诗30%，传说10%
-     */
-    private adjustPremiumWeights(prizes: LotteryPrize[]): LotteryPrize[] {
-        const premiumWeights = {
-            common: 3000, // 普通 10%
-            rare: 5000, // 稀有 50%
-            epic: 1500, // 史诗 30%
-            legendary: 500, // 传说 10%
-        };
-
-        // 按稀有度分组
-        const groupedPrizes: Record<string, LotteryPrize[]> = {
-            common: [],
-            rare: [],
-            epic: [],
-            legendary: [],
-        };
-
-        prizes.forEach((prize) => {
-            if (groupedPrizes[prize.rarity]) {
-                groupedPrizes[prize.rarity].push(prize);
-            }
-        });
-
-        // 调整每个奖品的权重
-        const adjustedPrizes: LotteryPrize[] = [];
-        Object.entries(groupedPrizes).forEach(([rarity, rarityPrizes]) => {
-            if (rarityPrizes.length === 0) return;
-
-            const totalWeight = premiumWeights[rarity as keyof typeof premiumWeights] || 0;
-            const individualWeight = Math.floor(totalWeight / rarityPrizes.length);
-
-            rarityPrizes.forEach((prize) => {
-                adjustedPrizes.push({
-                    ...prize,
-                    weight: individualWeight,
-                });
-            });
-        });
-
-        return adjustedPrizes;
     }
 
     /**
@@ -565,7 +479,6 @@ export class LotteryService {
         totalWins: number;
         totalCost: number;
         basicDraws: number;
-        premiumDraws: number;
     }> {
         const stats = await this.ctx.db.collection('lottery.records' as any).aggregate([
             { $match: {} },
@@ -576,7 +489,6 @@ export class LotteryService {
                     totalWins: { $sum: { $cond: [{ $eq: ['$result', 'win'] }, 1, 0] } },
                     totalCost: { $sum: '$cost' },
                     basicDraws: { $sum: { $cond: [{ $eq: ['$lotteryType', 'basic'] }, 1, 0] } },
-                    premiumDraws: { $sum: { $cond: [{ $eq: ['$lotteryType', 'premium'] }, 1, 0] } },
                 },
             },
         ]).toArray();
@@ -587,7 +499,6 @@ export class LotteryService {
             totalWins: result?.totalWins || 0,
             totalCost: result?.totalCost || 0,
             basicDraws: result?.basicDraws || 0,
-            premiumDraws: result?.premiumDraws || 0,
         };
     }
 
@@ -622,7 +533,7 @@ export class LotteryService {
      * 获取权重分布预览
      * @param lotteryType 抽奖类型
      */
-    async getWeightDistribution(lotteryType: 'basic' | 'premium' = 'basic') {
+    async getWeightDistribution(lotteryType: 'basic' = 'basic') {
         return await this.weightCalculationService.getWeightDistribution(lotteryType);
     }
 

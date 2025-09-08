@@ -1,46 +1,43 @@
 import {
     Context,
-    RecordDoc,
     ProblemDoc,
+    RecordDoc,
     Schema,
     STATUS,
 } from 'hydrooj';
-
-// 导入服务层
-import {
-    ScoreService,
-    type ScoreRecord,
-    type UserScore,
-    type LotteryPrize,
-    type LotteryRecord,
-    type UserLotteryStats,
-    type ScoreConfig,
-    type DiceGameRecord,
-    type UserDiceStats,
-    type RPSGameRecord,
-    type UserRPSStats,
-} from './src/services';
-
 // 导入处理器
 import {
-    ScoreHallHandler,
-    ScoreRankingHandler,
-    UserScoreHandler,
-    ScoreManageHandler,
-    LotteryHallHandler,
-    LotteryDrawHandler,
-    LotteryClaimHandler,
-    LotteryHistoryHandler,
-    LotteryAdminHandler,
-    DiceGameHandler,
-    DicePlayHandler,
-    DiceHistoryHandler,
     DiceAdminHandler,
+    DiceGameHandler,
+    DiceHistoryHandler,
+    DicePlayHandler,
+    LotteryAdminHandler,
+    LotteryClaimHandler,
+    LotteryDrawHandler,
+    LotteryHallHandler,
+    LotteryHistoryHandler,
+    RPSAdminHandler,
     RPSGameHandler,
-    RPSPlayHandler,
     RPSHistoryHandler,
-    RPSAdminHandler
-} from './src/handlers';
+    RPSPlayHandler,
+    ScoreHallHandler,
+    ScoreManageHandler,
+    ScoreRankingHandler,
+    UserScoreHandler } from './src/handlers';
+// 导入服务层
+import {
+    type DiceGameRecord,
+    type LotteryPrize,
+    type LotteryRecord,
+    type RPSGameRecord,
+    type ScoreConfig,
+    type ScoreRecord,
+    ScoreService,
+    type UserDiceStats,
+    type UserLotteryStats,
+    type UserRPSStats,
+    type UserScore,
+} from './src/services';
 
 // 默认配置已移至各Handler文件中
 
@@ -68,19 +65,19 @@ declare module 'hydrooj' {
 export default function apply(ctx: Context, config: any = {}) {
     // 设置默认配置
     const defaultConfig: ScoreConfig = {
-        enabled: true
+        enabled: true,
     };
-    
+
     const finalConfig = { ...defaultConfig, ...config };
-    
+
     console.log('Score System plugin loading...');
     console.log('Score System config:', JSON.stringify(finalConfig, null, 2));
-    
+
     const scoreService = new ScoreService(finalConfig, ctx);
 
     // 监听判题完成事件
     console.log('Setting up event listeners...');
-    
+
     // 主要事件监听
     ctx.on('record/judge', async (rdoc: RecordDoc, updated: boolean, pdoc?: ProblemDoc) => {
         try {
@@ -127,22 +124,22 @@ export default function apply(ctx: Context, config: any = {}) {
     ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
-    
+
     // 抽奖系统路由
     ctx.Route('lottery_hall', '/score/lottery', LotteryHallHandler);
     ctx.Route('lottery_draw', '/score/lottery/draw', LotteryDrawHandler);
     ctx.Route('lottery_claim', '/score/lottery/claim', LotteryClaimHandler);
     ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
-    
+
     // 管理员路由
     ctx.Route('lottery_admin', '/score/lottery/admin', LotteryAdminHandler);
-    
+
     // 掷骰子游戏路由
     ctx.Route('dice_game', '/score/dice', DiceGameHandler);
     ctx.Route('dice_play', '/score/dice/play', DicePlayHandler);
     ctx.Route('dice_history', '/score/dice/history', DiceHistoryHandler);
     ctx.Route('dice_admin', '/score/dice/admin', DiceAdminHandler);
-    
+
     // 剪刀石头布游戏路由
     ctx.Route('rock_paper_scissors', '/score/rps', RPSGameHandler);
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);

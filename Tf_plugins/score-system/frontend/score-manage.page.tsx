@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage, UserSelectAutoComplete } from '@hydrooj/ui-default';
 import $ from 'jquery';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

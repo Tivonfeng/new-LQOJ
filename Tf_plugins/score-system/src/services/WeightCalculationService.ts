@@ -18,13 +18,6 @@ export class WeightCalculationService {
         legendary: 500, // 传说 5%
     };
 
-    // 高级抽奖权重配置 (普通10%，稀有50%，史诗30%，传说10%)
-    private readonly PREMIUM_RARITY_WEIGHTS = {
-        common: 3000, // 普通 10%
-        rare: 5000, // 稀有 50%
-        epic: 1500, // 史诗 30%
-        legendary: 500, // 传说 10%
-    };
 
     // 未中奖权重 - 降低未中奖概率，提升用户体验
     private readonly NO_PRIZE_WEIGHT = 0; // 0% 未中奖 (移除未中奖机制)
@@ -154,7 +147,7 @@ export class WeightCalculationService {
      * 获取权重分布预览
      * @param lotteryType 抽奖类型，用于显示不同权重分布
      */
-    async getWeightDistribution(lotteryType: 'basic' | 'premium' = 'basic'): Promise<{
+    async getWeightDistribution(lotteryType: 'basic' = 'basic'): Promise<{
         rarity: string;
         rarityLabel: string;
         prizeCount: number;
@@ -168,8 +161,8 @@ export class WeightCalculationService {
 
         const groupedPrizes = this.groupByRarity(allPrizes);
 
-        // 根据抽奖类型选择权重配置
-        const weightConfig = lotteryType === 'premium' ? this.PREMIUM_RARITY_WEIGHTS : this.RARITY_BASE_WEIGHTS;
+        // 使用基础权重配置
+        const weightConfig = this.RARITY_BASE_WEIGHTS;
         const totalSystemWeight = Object.values(weightConfig).reduce((sum, w) => sum + w, 0);
 
         const rarityLabels = {

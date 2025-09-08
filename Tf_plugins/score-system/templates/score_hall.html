@@ -54,23 +54,6 @@
                     </div>
                 </div>
                 
-                <div class="machine-card premium-machine">
-                    <div class="machine-header">
-                        <div class="machine-icon">💎</div>
-                        <div class="machine-info">
-                            <h3>{{ _('Premium Draw') }}</h3>
-                            <p>{{ _('Better Rewards') }}</p>
-                        </div>
-                    </div>
-                    <div class="machine-price">
-                        <span class="price-amount">50</span>
-                        <span class="price-unit">🏴</span>
-                    </div>
-                    <div class="machine-features">
-                        <span class="feature-tag premium">10{{ _('draws guarantee') }}</span>
-                        <span class="feature-tag">{{ _('Rare Rewards') }}</span>
-                    </div>
-                </div>
             </div>
             
             <div class="lottery-cta">
@@ -555,15 +538,6 @@
     box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
 }
 
-.premium-machine {
-    border-color: var(--primary-color);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
-}
-
-.premium-machine:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.3), var(--shadow-xl);
-}
 
 .machine-header {
     display: flex;
@@ -628,10 +602,6 @@
     font-weight: 600;
 }
 
-.feature-tag.premium {
-    background: var(--primary-color);
-    color: white;
-}
 
 /* CTA Button */
 .lottery-cta {
