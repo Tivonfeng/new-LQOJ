@@ -1,6 +1,7 @@
 import {
     Handler,
     PRIV,
+    PERM,
 } from 'hydrooj';
 import {
     LotteryService,
@@ -175,7 +176,10 @@ export class UserScoreHandler extends Handler {
  */
 export class ScoreManageHandler extends Handler {
     async prepare() {
-        this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
+        // 检查是否有系统权限或者域内的编辑权限
+        if (!(this.user?.priv & PRIV.PRIV_EDIT_SYSTEM)) {
+            this.checkPerm(PERM.PERM_EDIT_DOMAIN);
+        }
     }
 
     async get() {

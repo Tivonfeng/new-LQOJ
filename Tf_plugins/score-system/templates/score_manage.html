@@ -68,8 +68,13 @@
                                         </div>
                                         <div class="record-details">
                                             <div class="problem-info">
-                                                <span class="problem-icon">📝</span>
-                                                <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                                                {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
+                                                    <span class="problem-icon">⚙️</span>
+                                                    <span class="problem-title">{{ record.reason }}</span>
+                                                {% else %}
+                                                    <span class="problem-icon">📝</span>
+                                                    <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                                                {% endif %}
                                             </div>
                                             <div class="time-info">
                                                 {% if record.createdAt %}
@@ -1428,5 +1433,22 @@
 </style>
 
 <!-- React组件将处理所有JavaScript功能 -->
+
+<!-- 域信息传递给前端 -->
+<script>
+// 设置全局域信息和URL信息供React组件使用
+window.ScoreSystemDomain = {
+  id: '{{ currentDomain.id }}',
+  name: '{{ currentDomain.name }}',
+  displayName: '{{ currentDomain.displayName }}'
+};
+
+window.ScoreSystemConfig = {
+  submitUrl: '{{ url("score_manage") }}',
+  currentPath: '{{ handler.request.path }}',
+  domainId: '{{ handler.domain._id }}'
+};
+
+</script>
 
 {% endblock %}

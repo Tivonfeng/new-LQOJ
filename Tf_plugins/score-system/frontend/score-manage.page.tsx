@@ -99,7 +99,11 @@ const ScoreManageApp: React.FC = () => {
     setResult(null);
 
     try {
-      const response = await fetch(window.location.pathname, {
+      // 使用服务器提供的正确URL，如果不存在则回退到当前路径
+      const config = (window as any).ScoreSystemConfig;
+      const url = config?.submitUrl || window.location.pathname;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +163,23 @@ const ScoreManageApp: React.FC = () => {
                 <h3>调整用户积分</h3>
                 <div className="domain-info">
                   <span className="domain-icon">🌐</span>
-                  <span className="domain-text">当前域: {(window as any).UiContext?.domain?.displayName || 'Unknown'}</span>
+                  <span className="domain-text">
+                    当前域: {(() => {
+                      const ctx = (window as any).UiContext;
+                      const scoreSystemDomain = (window as any).ScoreSystemDomain;
+                      const currentDomain = ctx?.currentDomain?.displayName;
+                      const domain = ctx?.domain?.displayName;
+                      const domainId = ctx?.domain?._id || ctx?.domain?.id;
+
+                      return scoreSystemDomain?.displayName
+                        || scoreSystemDomain?.name
+                        || scoreSystemDomain?.id
+                        || currentDomain
+                        || domain
+                        || domainId
+                        || 'Unknown';
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -205,26 +225,26 @@ const ScoreManageApp: React.FC = () => {
                   <button
                     type="button"
                     className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-5, '轻微迟交')}
+                    onClick={() => handleQuickAction(-10, '轻微违纪')}
                   >
                     <span className="action-icon">⏰</span>
-                    <span className="action-score">-5</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-10, '无故缺席')}
-                  >
-                    <span className="action-icon">❌</span>
                     <span className="action-score">-10</span>
                   </button>
                   <button
                     type="button"
                     className="quick-action-btn negative compact"
-                    onClick={() => handleQuickAction(-20, '严重迟交')}
+                    onClick={() => handleQuickAction(-50, '严重违纪')}
+                  >
+                    <span className="action-icon">❌</span>
+                    <span className="action-score">-50</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="quick-action-btn negative compact"
+                    onClick={() => handleQuickAction(-100, '重大违纪')}
                   >
                     <span className="action-icon">📅</span>
-                    <span className="action-score">-20</span>
+                    <span className="action-score">-100</span>
                   </button>
                 </div>
               </div>
