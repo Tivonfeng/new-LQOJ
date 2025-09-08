@@ -189,10 +189,14 @@ export class ScoreManageHandler extends Handler {
         // 获取积分排行榜前10名
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
 
+        // 获取所有涉及的用户ID（包括排行榜和最近记录）
+        const rankingUids = topUsers.map((u) => u.uid);
+        const recentUids = recentActivity.scoreRecords.map((r: any) => r.uid);
+        const allUids = [...new Set([...rankingUids, ...recentUids])]; // 去重
+
         // 获取用户信息用于显示用户名
-        const uids = topUsers.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const udocs = await UserModel.getList(this.domain._id, allUids);
 
         this.response.template = 'score_manage.html';
         this.response.body = {
