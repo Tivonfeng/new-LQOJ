@@ -256,147 +256,146 @@ const ScoreManageApp: React.FC = () => {
     <div className="score-manage-react-app">
       {/* 快捷操作区域 - 左右布局 */}
       <div className="quick-actions-section">
-              <div className="quick-actions-header">
-                <h4>快捷操作</h4>
-                <p className="quick-actions-subtitle">先选择用户，再选择积分调整</p>
+        <div className="quick-actions-header">
+          <h4>快捷操作</h4>
+          <p className="quick-actions-subtitle">先选择用户，再选择积分调整</p>
+        </div>
+
+        <div className="quick-actions-layout">
+          {/* 左侧：用户选择 */}
+          <div className="quick-users-panel">
+            <div className="panel-header">
+              <div className="panel-header-content">
+                <span className="panel-icon">👥</span>
+                <div>
+                  <div className="panel-title">最近操作的用户</div>
+                  <div className="panel-subtitle">从最近操作中快速选择</div>
+                </div>
               </div>
+              <div className="panel-badge">Step 1</div>
+            </div>
 
-              <div className="quick-actions-layout">
-                {/* 左侧：用户选择 */}
-                <div className="quick-users-panel">
-                  <div className="panel-header">
-                    <div className="panel-header-content">
-                      <span className="panel-icon">👥</span>
-                      <div>
-                        <div className="panel-title">选择用户</div>
-                        <div className="panel-subtitle">从最近操作中快速选择</div>
-                      </div>
-                    </div>
-                    <div className="panel-badge">Step 1</div>
+            <div className="panel-content">
+              {recentUsers.length > 0 && (
+                <div className="recent-users-quick">
+                  <div className="users-grid">
+                    {recentUsers.map((user, index) => (
+                      <button
+                        key={`${user}-${index}`}
+                        type="button"
+                        className={`user-quick-btn ${username === user ? 'active' : ''}`}
+                        onClick={() => handleSelectRecentUser(user)}
+                        aria-label={`选择用户: ${user}`}
+                      >
+                        <span className="user-icon">👤</span>
+                        <span className="user-name">{user}</span>
+                      </button>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  <div className="panel-content">
-                    {recentUsers.length > 0 && (
-                      <div className="recent-users-quick">
-                        <div className="users-grid">
-                          {recentUsers.map((user, index) => (
-                            <button
-                              key={`${user}-${index}`}
-                              type="button"
-                              className={`user-quick-btn ${username === user ? 'active' : ''}`}
-                              onClick={() => handleSelectRecentUser(user)}
-                              aria-label={`选择用户: ${user}`}
-                            >
-                              <span className="user-icon">👤</span>
-                              <span className="user-name">{user}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              <div className="manual-input-hint">
+                <span className="hint-icon">💡</span>
+                <span className="hint-text">也可在下方表单中手动输入用户名</span>
+              </div>
+            </div>
+          </div>
 
-                    <div className="manual-input-hint">
-                      <span className="hint-icon">💡</span>
-                      <span className="hint-text">也可在下方表单中手动输入用户名</span>
-                    </div>
+          {/* 右侧：积分选择 */}
+          <div className="quick-scores-panel">
+            <div className="panel-header">
+              <div className="panel-header-content">
+                <span className="panel-icon">⚡</span>
+                <div>
+                  <div className="panel-title">积分调整</div>
+                  <div className="panel-subtitle">选择奖励或扣分操作</div>
+                </div>
+              </div>
+              <div className="panel-badge">Step 2</div>
+            </div>
+
+            <div className="panel-content">
+              <div className="scores-grid">
+                <div className="scores-group positive">
+                  <div className="group-label">奖励</div>
+                  <div className="scores-row">
+                    <button
+                      type="button"
+                      className="quick-action-btn positive compact"
+                      onClick={() => handleQuickAction(10, '小小奖励')}
+                    >
+                      <span className="action-icon">🙋</span>
+                      <span className="action-score">+10</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="quick-action-btn positive compact"
+                      onClick={() => handleQuickAction(20, '大大奖励')}
+                    >
+                      <span className="action-icon">📝</span>
+                      <span className="action-score">+20</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="quick-action-btn positive compact"
+                      onClick={() => handleQuickAction(50, '超级奖励')}
+                    >
+                      <span className="action-icon">🏆</span>
+                      <span className="action-score">+50</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* 右侧：积分选择 */}
-                <div className="quick-scores-panel">
-                  <div className="panel-header">
-                    <div className="panel-header-content">
-                      <span className="panel-icon">⚡</span>
-                      <div>
-                        <div className="panel-title">积分调整</div>
-                        <div className="panel-subtitle">选择奖励或扣分操作</div>
-                      </div>
-                    </div>
-                    <div className="panel-badge">Step 2</div>
-                  </div>
-
-                  <div className="panel-content">
-                    <div className="scores-grid">
-                    <div className="scores-group positive">
-                      <div className="group-label">奖励</div>
-                      <div className="scores-row">
-                        <button
-                          type="button"
-                          className="quick-action-btn positive compact"
-                          onClick={() => handleQuickAction(10, '小小奖励')}
-                        >
-                          <span className="action-icon">🙋</span>
-                          <span className="action-score">+10</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="quick-action-btn positive compact"
-                          onClick={() => handleQuickAction(20, '大大奖励')}
-                        >
-                          <span className="action-icon">📝</span>
-                          <span className="action-score">+20</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="quick-action-btn positive compact"
-                          onClick={() => handleQuickAction(50, '超级奖励')}
-                        >
-                          <span className="action-icon">🏆</span>
-                          <span className="action-score">+50</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="scores-group negative">
-                      <div className="group-label">扣分</div>
-                      <div className="scores-row">
-                        <button
-                          type="button"
-                          className="quick-action-btn negative compact"
-                          onClick={() => handleQuickAction(-10, '轻微违纪')}
-                        >
-                          <span className="action-icon">⏰</span>
-                          <span className="action-score">-10</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="quick-action-btn negative compact"
-                          onClick={() => handleQuickAction(-50, '严重违纪')}
-                        >
-                          <span className="action-icon">❌</span>
-                          <span className="action-score">-50</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="quick-action-btn negative compact"
-                          onClick={() => handleQuickAction(-100, '重大违纪')}
-                        >
-                          <span className="action-icon">📅</span>
-                          <span className="action-score">-100</span>
-                        </button>
-                      </div>
-                    </div>
-                    </div>
+                <div className="scores-group negative">
+                  <div className="group-label">扣分</div>
+                  <div className="scores-row">
+                    <button
+                      type="button"
+                      className="quick-action-btn negative compact"
+                      onClick={() => handleQuickAction(-10, '轻微违纪')}
+                    >
+                      <span className="action-icon">⏰</span>
+                      <span className="action-score">-10</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="quick-action-btn negative compact"
+                      onClick={() => handleQuickAction(-50, '严重违纪')}
+                    >
+                      <span className="action-icon">❌</span>
+                      <span className="action-score">-50</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="quick-action-btn negative compact"
+                      onClick={() => handleQuickAction(-100, '重大违纪')}
+                    >
+                      <span className="action-icon">📅</span>
+                      <span className="action-score">-100</span>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* 手动调整表单 */}
-            <div className="manual-form-section">
-              <div className="section-header">
-                <div className="section-header-content">
-                  <span className="section-icon">✏️</span>
-                  <div>
-                    <div className="section-title">手动调整</div>
-                    <div className="section-subtitle">自定义用户名、积分和原因</div>
-                  </div>
-                </div>
-                <div className="section-badge">Alternative</div>
+        {/* 手动调整表单 */}
+        <div className="manual-form-section">
+          <div className="section-header">
+            <div className="section-header-content">
+              <span className="section-icon">✏️</span>
+              <div>
+                <div className="section-title">手动调整</div>
+                <div className="section-subtitle">自定义用户名、积分和原因</div>
               </div>
-              
-              <div className="section-content">
-                <form onSubmit={handleSubmit} className="adjustment-form">
+            </div>
+            <div className="section-badge">Alternative</div>
+          </div>
+
+          <div className="section-content">
+            <form onSubmit={handleSubmit} className="adjustment-form">
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">
@@ -478,8 +477,6 @@ const ScoreManageApp: React.FC = () => {
                 {result.message}
               </div>
             )}
-              </div>
-            </div>
           </div>
         </div>
       </div>
