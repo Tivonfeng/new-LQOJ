@@ -57,7 +57,7 @@ const ScoreManageApp: React.FC = () => {
     if (userInputRef.current) {
       try {
         const $input = $(userInputRef.current);
-        userSelectComponentRef.current = UserSelectAutoComplete.getOrConstruct($input, {
+        userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
           multi: false,
           freeSolo: true,
           freeSoloConverter: (input: string) => input,
