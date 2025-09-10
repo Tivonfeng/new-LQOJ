@@ -104,17 +104,6 @@
             <a class="bp6-tag bp6-large bp6-minimal bp6-interactive problem__tag-item" href="{{ url('record_main', query={pid:pdoc.docId}) }}">{{ _('Tried') }}: {{ pdoc.nSubmit }}</a>
             <a class="bp6-tag bp6-large bp6-minimal bp6-interactive problem__tag-item" href="{{ url('record_main', query={pid:pdoc.docId, status:1}) }}">{{ _('Accepted') }}: {{ pdoc.nAccept if ((not tdoc) or showAccept) else '?' }}</a>
             <span class="bp6-tag bp6-large bp6-minimal problem__tag-item">{{ _('Difficulty') }}: {{ pdoc['difficulty'] or lib.difficulty(pdoc.nSubmit, pdoc.nAccept) or _('(None)') }}</span>
-            <!-- 调试思考时间统计 -->
-            <script>
-              console.log('🔍 题目思考时间调试:', {
-                pid: {{ pdoc.docId }},
-                hasThinkingTimeStats: {{ 'true' if pdoc.thinkingTimeStats else 'false' }},
-                hasAcAvgTime: {{ 'true' if (pdoc.thinkingTimeStats and pdoc.thinkingTimeStats.acAvgTime) else 'false' }},
-                acAvgTime: {{ pdoc.thinkingTimeStats.acAvgTime if pdoc.thinkingTimeStats and pdoc.thinkingTimeStats.acAvgTime else 'null' }},
-                thinkingTimeStatsKeys: '{{ pdoc.thinkingTimeStats.keys()|list if pdoc.thinkingTimeStats else "null" }}'
-              });
-            </script>
-            
             {% if pdoc.thinkingTimeStats and pdoc.thinkingTimeStats.acAvgTime %}
               <span class="bp6-tag bp6-large bp6-minimal problem__tag-item icon icon-clock">
                 平均做题时间: 
@@ -126,11 +115,6 @@
                 {% else %}
                   {{ avgTime }}秒
                 {% endif %}
-              </span>
-            {% else %}
-              <!-- 调试用：显示没有数据的原因 -->
-              <span class="bp6-tag bp6-large bp6-minimal problem__tag-item" style="color: orange;">
-                调试: 暂无平均做题时间数据
               </span>
             {% endif %}
             <span class="bp6-tag bp6-large bp6-minimal bp6-interactive problem__tag-item">{{ _('Uploaded By') }}: {{ user.render_inline(udoc, badge=false) }}</span>

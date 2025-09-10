@@ -34,16 +34,17 @@ export class ThinkingTimeService {
         // 获取提交记录信息，触发题目统计更新
         const record = await this.recordColl.findOne({ _id: rid });
         if (record) {
-            // 异步更新题目统计，不阻塞提交流程
+            // 延迟更新，给足够时间让评测完成
             setTimeout(() => {
                 this.updateProblemThinkingTimeStats(record.pid, record.domainId).catch(console.error);
-            }, 1000);
+            }, 5000); // 增加到5秒，给评测充足时间
         }
     }
 
     // 更新题目的思考时间统计数据
     async updateProblemThinkingTimeStats(pid: number, domainId: string): Promise<void> {
         const stats = await this.calculateProblemThinkingTimeStats(pid, domainId);
+
         if (stats) {
             await this.documentColl.updateOne(
                 { docType: 10, domainId, docId: pid }, // TYPE_PROBLEM = 10
@@ -301,15 +302,21 @@ export default function apply(ctx: Context) {
                 console.warn('⚠️ 无法找到 RecordModel 或 PROJECTION_LIST');
             }
 
-            // 动态添加 thinkingTimeStats 到 ProblemModel 的 PROJECTION_LIST
+            // 动态添加 thinkingTimeStats 到 ProblemModel 的所有 PROJECTION 列表
             const ProblemModel = (global as any).Hydro?.model?.problem;
-            if (ProblemModel && ProblemModel.PROJECTION_LIST) {
-                if (!ProblemModel.PROJECTION_LIST.includes('thinkingTimeStats')) {
-                    ProblemModel.PROJECTION_LIST.push('thinkingTimeStats');
-                    console.log('✅ 已添加 thinkingTimeStats 到 ProblemModel PROJECTION_LIST');
+            if (ProblemModel) {
+                // 添加到所有相关的投影列表
+                const projectionLists = ['PROJECTION_LIST', 'PROJECTION_PUBLIC', 'PROJECTION_CONTEST_DETAIL'];
+                for (const listName of projectionLists) {
+                    if (ProblemModel[listName] && Array.isArray(ProblemModel[listName])) {
+                        if (!ProblemModel[listName].includes('thinkingTimeStats')) {
+                            ProblemModel[listName].push('thinkingTimeStats');
+                            console.log(`✅ 已添加 thinkingTimeStats 到 ProblemModel.${listName}`);
+                        }
+                    }
                 }
             } else {
-                console.warn('⚠️ 无法找到 ProblemModel 或 PROJECTION_LIST');
+                console.warn('⚠️ 无法找到 ProblemModel');
             }
 
             const recordColl = ctx.db.collection('record');
