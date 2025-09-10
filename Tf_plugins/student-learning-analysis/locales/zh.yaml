@@ -1,0 +1,63 @@
+# 中文本地化文件
+"Learning Analysis Hall": "学情分析大厅"
+"Unlock Your Learning Potential with AI-Powered Insights": "用AI洞察解锁你的学习潜能"
+
+# 统计指标
+"Problems Solved": "解决题目"
+"Rank": "排名"  
+"Day Streak": "天连击"
+"Learning Progress": "学习进度"
+"Success Rate": "成功率"
+"Avg Solution Time": "平均解题时间"
+"Active Days": "活跃天数"
+"Efficiency Analysis": "效率分析"
+"Peak Hours": "高效时段"
+"Problems/Hour": "题/小时"
+"Effective Hours": "有效小时"
+"Knowledge Mastery": "知识掌握"
+"Start solving problems to see knowledge analysis": "开始解题查看知识分析"
+
+# 图表标题
+"Learning Progress Trend": "学习进度趋势"
+"Activity Heatmap": "活跃度热力图"
+"Last 12 weeks learning activity": "最近12周学习活动"
+"Error Pattern Analysis": "错误模式分析"
+"Common mistakes and improvement suggestions": "常见错误和改进建议"
+
+# 时间范围
+"Less": "少"
+"More": "多"
+"7d": "7天"
+"30d": "30天" 
+"90d": "90天"
+
+# 推荐系统
+"Smart Recommendations": "智能推荐"
+"Refresh": "刷新"
+"No recommendations yet": "暂无推荐"
+"Generate Recommendations": "生成推荐"
+"Mark as Viewed": "标记已查看"
+"Viewed": "已查看"
+
+# 同伴对比
+"Peer Comparison": "同伴对比"
+"Top": "前"
+"Stronger Areas": "优势领域"
+"Areas to Improve": "需要改进的领域"
+
+# 快速操作
+"Quick Actions": "快速操作"
+"Detailed Progress": "详细进度"
+"Knowledge Map": "知识地图"
+"All Recommendations": "全部推荐"
+"Start Coding": "开始编程"
+
+# 错误消息
+"Failed to refresh recommendations": "刷新推荐失败"
+"Operation failed": "操作失败"
+
+# 导航和页面标题
+learning_analysis: "学情分析大厅"
+learning_progress: "学习进度"
+knowledge_points: "知识地图"
+recommendations: "智能推荐"

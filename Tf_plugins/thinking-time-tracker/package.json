@@ -1,0 +1,18 @@
+{
+  "name": "@tf/thinking-time-tracker",
+  "version": "1.0.0",
+  "description": "记录用户做题思考时间的插件",
+  "main": "index.ts",
+  "author": "TiVoN",
+  "license": "MIT",
+  "dependencies": {
+    "hydrooj": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
+  },
+  "hydrooj": {
+    "main": "index.ts"
+  }
+}

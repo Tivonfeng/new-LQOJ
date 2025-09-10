@@ -1,0 +1,534 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div class="section">
+    <div class="section__header">
+        <h1 class="section__title">{{ _('Knowledge Map') }}</h1>
+        <div class="section__body typo">
+            <p>{{ _('Explore your knowledge mastery across different topics and areas') }}</p>
+        </div>
+    </div>
+
+    <div class="knowledge-map-container">
+        <!-- Knowledge Overview -->
+        <div class="knowledge-overview">
+            <div class="overview-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ knowledgeStats.totalCategories || 0 }}</div>
+                    <div class="stat-label">Knowledge Areas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ (knowledgeStats.averageMastery * 100)|round }}%</div>
+                    <div class="stat-label">Average Mastery</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ knowledgeStats.masteredCount || 0 }}</div>
+                    <div class="stat-label">Mastered Topics</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Knowledge Categories -->
+        <div class="knowledge-categories">
+            {% if knowledgePoints %}
+                {% for category in knowledgePoints %}
+                <div class="category-card">
+                    <div class="category-header">
+                        <h2 class="category-title">{{ category.name }}</h2>
+                        <div class="category-progress">
+                            <span class="progress-text">{{ (category.overallMastery * 100)|round }}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ category.overallMastery * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="category-content">
+                        <div class="subcategories">
+                            {% for subcategory in category.subcategories %}
+                            <div class="subcategory-item">
+                                <div class="subcategory-header">
+                                    <span class="subcategory-name">{{ subcategory.name }}</span>
+                                    <span class="mastery-badge mastery-{{ subcategory.masteryLevel }}">
+                                        {% if subcategory.masteryLevel >= 0.8 %}Expert
+                                        {% elif subcategory.masteryLevel >= 0.6 %}Proficient
+                                        {% elif subcategory.masteryLevel >= 0.4 %}Learning
+                                        {% else %}Beginner{% endif %}
+                                    </span>
+                                </div>
+                                <div class="subcategory-stats">
+                                    <span class="solved-count">{{ subcategory.solvedCount }}/{{ subcategory.totalCount }} solved</span>
+                                    <div class="mini-progress">
+                                        <div class="mini-fill" style="width: {{ subcategory.masteryLevel * 100 }}%"></div>
+                                    </div>
+                                </div>
+                                
+                                {% if subcategory.recentProblems %}
+                                <div class="recent-problems">
+                                    <span class="problems-label">Recent:</span>
+                                    {% for problem in subcategory.recentProblems.slice(0, 3) %}
+                                    <span class="problem-tag status-{{ problem.status }}">{{ problem.title }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if category.recommendations %}
+                        <div class="category-recommendations">
+                            <h4 class="recommendations-title">Recommended for you:</h4>
+                            <div class="recommendation-list">
+                                {% for rec in category.recommendations.slice(0, 3) %}
+                                <a href="/p/{{ rec.pid }}" class="recommendation-item">
+                                    <span class="problem-title">{{ rec.title }}</span>
+                                    <span class="difficulty difficulty-{{ rec.difficulty }}">{{ rec.difficulty }}</span>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🗺️</div>
+                <h3>{{ _('Start solving problems to see knowledge analysis') }}</h3>
+                <p>Your knowledge map will be built as you solve problems and demonstrate your skills.</p>
+                <a href="/p" class="start-coding-btn">{{ _('Start Coding') }}</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Knowledge Growth Chart -->
+        {% if knowledgeGrowth %}
+        <div class="growth-chart-section">
+            <div class="section-header">
+                <h2>Knowledge Growth Over Time</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="knowledgeGrowthChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.knowledge-map-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.knowledge-overview {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 500;
+}
+
+.knowledge-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.category-card {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.category-header {
+    padding: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.category-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 150px;
+}
+
+.progress-text {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.category-content {
+    padding: 24px;
+}
+
+.subcategories {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.subcategory-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.subcategory-item:hover {
+    border-color: #667eea;
+    background: #f8fafc;
+}
+
+.subcategory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.subcategory-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.mastery-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.mastery-expert { background: #c6f6d5; color: #22543d; }
+.mastery-proficient { background: #bee3f8; color: #1a365d; }
+.mastery-learning { background: #fed7d7; color: #742a2a; }
+.mastery-beginner { background: #e2e8f0; color: #4a5568; }
+
+.subcategory-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.solved-count {
+    font-size: 14px;
+    color: #718096;
+}
+
+.mini-progress {
+    width: 80px;
+    height: 4px;
+    background: #f1f5f9;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.mini-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.recent-problems {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.problems-label {
+    font-size: 12px;
+    color: #718096;
+    font-weight: 500;
+}
+
+.problem-tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.problem-tag.status-Accepted {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.problem-tag:not(.status-Accepted) {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.category-recommendations {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+}
+
+.recommendations-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 12px 0;
+}
+
+.recommendation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.recommendation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #f1f5f9;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.recommendation-item:hover {
+    border-color: #667eea;
+    background: #f8fafc;
+    text-decoration: none;
+}
+
+.problem-title {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.difficulty {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.difficulty-Easy { background: #c6f6d5; color: #22543d; }
+.difficulty-Medium { background: #fbb6ce; color: #97266d; }
+.difficulty-Hard { background: #fed7d7; color: #742a2a; }
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 12px 0;
+}
+
+.empty-state p {
+    color: #718096;
+    margin-bottom: 24px;
+}
+
+.start-coding-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.start-coding-btn:hover {
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: white;
+}
+
+.growth-chart-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 20px 0;
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .knowledge-map-container {
+        padding: 15px;
+    }
+    
+    .category-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .category-progress {
+        width: 100%;
+    }
+    
+    .subcategory-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .recommendation-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .overview-stats {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Initialize knowledge growth chart
+function initializeKnowledgeGrowthChart() {
+    const ctx = document.getElementById('knowledgeGrowthChart');
+    if (!ctx) return;
+
+    const growthData = {{ knowledgeGrowth | dump | safe }} || [];
+    
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: growthData.map(d => d.category),
+            datasets: [{
+                label: 'Current Mastery',
+                data: growthData.map(d => d.currentMastery * 100),
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#667eea'
+            }, {
+                label: '3 Months Ago',
+                data: growthData.map(d => d.pastMastery * 100),
+                borderColor: '#cbd5e0',
+                backgroundColor: 'rgba(203, 213, 224, 0.1)',
+                pointBackgroundColor: '#cbd5e0',
+                pointBorderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeKnowledgeGrowthChart();
+});
+</script>
+
+{% endblock %}

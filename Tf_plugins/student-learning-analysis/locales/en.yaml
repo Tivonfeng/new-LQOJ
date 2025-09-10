@@ -1,0 +1,63 @@
+# English localization file
+"Learning Analysis Hall": "Learning Analysis Hall"
+"Unlock Your Learning Potential with AI-Powered Insights": "Unlock Your Learning Potential with AI-Powered Insights"
+
+# Statistics
+"Problems Solved": "Problems Solved"
+"Rank": "Rank"
+"Day Streak": "Day Streak"
+"Learning Progress": "Learning Progress"
+"Success Rate": "Success Rate"
+"Avg Solution Time": "Avg Solution Time"
+"Active Days": "Active Days"
+"Efficiency Analysis": "Efficiency Analysis"
+"Peak Hours": "Peak Hours"
+"Problems/Hour": "Problems/Hour"
+"Effective Hours": "Effective Hours"
+"Knowledge Mastery": "Knowledge Mastery"
+"Start solving problems to see knowledge analysis": "Start solving problems to see knowledge analysis"
+
+# Chart Titles
+"Learning Progress Trend": "Learning Progress Trend"
+"Activity Heatmap": "Activity Heatmap"
+"Last 12 weeks learning activity": "Last 12 weeks learning activity"
+"Error Pattern Analysis": "Error Pattern Analysis"
+"Common mistakes and improvement suggestions": "Common mistakes and improvement suggestions"
+
+# Time Range
+"Less": "Less"
+"More": "More"
+"7d": "7d"
+"30d": "30d"
+"90d": "90d"
+
+# Recommendation System
+"Smart Recommendations": "Smart Recommendations"
+"Refresh": "Refresh"
+"No recommendations yet": "No recommendations yet"
+"Generate Recommendations": "Generate Recommendations"
+"Mark as Viewed": "Mark as Viewed"
+"Viewed": "Viewed"
+
+# Peer Comparison
+"Peer Comparison": "Peer Comparison"
+"Top": "Top"
+"Stronger Areas": "Stronger Areas"
+"Areas to Improve": "Areas to Improve"
+
+# Quick Actions
+"Quick Actions": "Quick Actions"
+"Detailed Progress": "Detailed Progress"
+"Knowledge Map": "Knowledge Map"
+"All Recommendations": "All Recommendations"
+"Start Coding": "Start Coding"
+
+# Error Messages
+"Failed to refresh recommendations": "Failed to refresh recommendations"
+"Operation failed": "Operation failed"
+
+# Navigation and Page Titles
+learning_analysis: "Learning Analysis Hall"
+learning_progress: "Learning Progress"
+knowledge_points: "Knowledge Map"
+recommendations: "Smart Recommendations"
