@@ -76,6 +76,9 @@ class ConfettiCelebration {
   private audioContext: AudioContext | null = null;
   private audioBuffer: AudioBuffer | null = null;
   private lastCelebrationTime: number = 0;
+  private ws: WebSocket | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isDestroyed: boolean = false;
 
   constructor(private tracker: ThinkingTimeTracker) {
     console.log('🎊 ConfettiCelebration初始化开始');
@@ -304,6 +307,8 @@ class ConfettiCelebration {
   }
 
   private connectWebSocket() {
+    if (this.isDestroyed) return;
+
     const UiContext = (window as any).UiContext;
     if (!UiContext?.ws_prefix || !UiContext?.pretestConnUrl) {
       console.warn('WebSocket连接参数不可用，彩带庆祝功能可能无法正常工作');
@@ -311,14 +316,25 @@ class ConfettiCelebration {
     }
 
     try {
-      const ws = new WebSocket(UiContext.ws_prefix + UiContext.pretestConnUrl);
+      // 关闭之前的连接
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+
+      this.ws = new WebSocket(UiContext.ws_prefix + UiContext.pretestConnUrl);
       console.log('✅ 正在连接WebSocket...');
 
-      ws.onopen = () => {
+      this.ws.onopen = () => {
         console.log('✅ WebSocket连接成功，开始监听AC消息');
+        // 清除重连定时器
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
       };
 
-      ws.onmessage = (event: MessageEvent) => {
+      this.ws.onmessage = (event: MessageEvent) => {
         try {
           // 处理非JSON消息（如心跳）
           if (typeof event.data === 'string' && (event.data === 'ping' || event.data === 'pong')) {
@@ -355,19 +371,47 @@ class ConfettiCelebration {
         }
       };
 
-      ws.onclose = () => {
-        console.warn('WebSocket连接已关闭');
+      this.ws.onclose = () => {
+        console.warn('WebSocket连接已关闭，3秒后尝试重连...');
+        this.ws = null;
+        // 5秒后自动重连
+        if (!this.isDestroyed && !this.reconnectTimer) {
+          this.reconnectTimer = setTimeout(() => {
+            this.connectWebSocket();
+          }, 3000);
+        }
       };
 
-      ws.onerror = (error) => {
+      this.ws.onerror = (error) => {
         console.error('WebSocket连接错误:', error);
       };
     } catch (error) {
       console.error('创建WebSocket连接失败:', error);
+      // 出错后也尝试重连
+      if (!this.isDestroyed && !this.reconnectTimer) {
+        this.reconnectTimer = setTimeout(() => {
+          this.connectWebSocket();
+        }, 3000);
+      }
     }
   }
 
   destroy() {
+    this.isDestroyed = true;
+
+    // 清理WebSocket连接
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+
+    // 清理重连定时器
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    // 清理音频资源
     this.audioContext?.close();
     this.audioContext = null;
     this.audioBuffer = null;
