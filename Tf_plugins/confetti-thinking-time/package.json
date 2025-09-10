@@ -1,0 +1,20 @@
+{
+  "name": "@tf/confetti-thinking-time",
+  "version": "1.0.0",
+  "description": "彩带庆祝与思考时间记录合并插件",
+  "main": "index.ts",
+  "author": "TiVoN",
+  "license": "MIT",
+  "dependencies": {
+    "canvas-confetti": "^1.6.0",
+    "hydrooj": "*"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.6.0",
+    "@types/node": "*",
+    "typescript": "*"
+  },
+  "hydrooj": {
+    "main": "index.ts"
+  }
+}

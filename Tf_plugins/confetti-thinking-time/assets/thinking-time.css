@@ -1,0 +1,49 @@
+/* 思考时间列样式 - 与 col--memory 保持一致 */
+.page--record_main .col--thinking-time {
+    width: 6rem; /* 95px converted to rem */
+    text-align: center;
+}
+
+/* 平板设备隐藏 */
+@media screen and (max-width: 768px) {
+    .page--record_main .col--thinking-time {
+        display: none;
+    }
+}
+
+/* 手机设备隐藏 */
+@media screen and (max-width: 480px) {
+    .page--record_main .col--thinking-time {
+        display: none;
+    }
+}
+
+/* 确保思考时间列在各个页面中都有正确的样式 */
+.col--thinking-time {
+    width: 6rem;
+    text-align: center;
+}
+
+/* 比赛页面样式兼容 */
+.page--contest .col--thinking-time {
+    width: 6rem;
+    text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+    .page--contest .col--thinking-time {
+        display: none;
+    }
+}
+
+/* 问题统计页面样式兼容 */
+.page--problem_statistics .col--thinking-time {
+    width: 6rem;
+    text-align: center;
+}
+
+/* 提交详情页面样式兼容 */
+.page--record_detail .col--thinking-time {
+    width: 6rem;
+    text-align: center;
+}
