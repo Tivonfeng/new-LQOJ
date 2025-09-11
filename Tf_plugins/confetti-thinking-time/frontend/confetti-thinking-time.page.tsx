@@ -81,8 +81,6 @@ class ConfettiCelebration {
   private isDestroyed: boolean = false;
 
   constructor(private tracker: ThinkingTimeTracker) {
-    console.log('🎊 ConfettiCelebration初始化开始');
-    console.log('🎊 confetti库状态:', typeof confetti, confetti);
     this.initAudio();
     this.connectWebSocket();
     console.log('🎊 ConfettiCelebration初始化完成');

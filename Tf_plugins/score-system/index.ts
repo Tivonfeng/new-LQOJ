@@ -71,12 +71,7 @@ export default function apply(ctx: Context, config: any = {}) {
     const finalConfig = { ...defaultConfig, ...config };
 
     console.log('Score System plugin loading...');
-    console.log('Score System config:', JSON.stringify(finalConfig, null, 2));
-
     const scoreService = new ScoreService(finalConfig, ctx);
-
-    // 监听判题完成事件
-    console.log('Setting up event listeners...');
 
     // 主要事件监听
     ctx.on('record/judge', async (rdoc: RecordDoc, updated: boolean, pdoc?: ProblemDoc) => {
@@ -116,9 +111,6 @@ export default function apply(ctx: Context, config: any = {}) {
         }
     });
 
-    // 事件监听设置完成
-    console.log('[Score System] Event listeners registered successfully!');
-
     // 注册路由
     ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
     ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
@@ -151,11 +143,6 @@ export default function apply(ctx: Context, config: any = {}) {
         prefix: 'score',
         before: 'ranking', // 插入到排行榜前面
     });
-
-    console.log('积分大厅路由已注册，可通过 /score/hall 访问');
-    console.log('掷骰子游戏路由已注册，可通过 /score/dice 访问');
-    console.log('剪刀石头布游戏路由已注册，可通过 /score/rps 访问');
-
     console.log('Score System plugin loaded successfully!');
 }
 

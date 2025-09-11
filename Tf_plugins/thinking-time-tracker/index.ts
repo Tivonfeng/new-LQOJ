@@ -2,7 +2,6 @@ import {
     Context,
     Handler,
     ObjectId,
-    STATUS,
 } from 'hydrooj';
 
 // 时间记录服务 - 直接操作Record集合
@@ -20,18 +19,6 @@ export class ThinkingTimeService {
             {
                 $set: {
                     thinkingTime,
-                },
-            },
-        );
-    }
-
-    // 重置思考时间（AC时调用）
-    async resetThinkingTime(rid: ObjectId): Promise<void> {
-        await this.recordColl.updateOne(
-            { _id: rid },
-            {
-                $unset: {
-                    thinkingTime: '',
                 },
             },
         );
@@ -130,30 +117,6 @@ export class ThinkingTimeHandler extends Handler {
 
 // 插件主函数
 export default function apply(ctx: Context) {
-    const service = new ThinkingTimeService(ctx);
-
     // 注册 API 路由
     ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
-
-    // 监听判题完成事件
-    ctx.on('record/judge', async (rdoc: any, updated: boolean) => {
-        try {
-            // 只有当记录更新且状态改变时才处理
-            if (!updated || !rdoc.thinkingTime) return;
-
-            // 如果AC了，清除思考时间字段（表示计时重置）
-            if (rdoc.status === STATUS.STATUS_ACCEPTED) {
-                console.log(`🎉 记录 ${rdoc._id} AC成功，清除思考时间字段`);
-                await service.resetThinkingTime(rdoc._id);
-            } else if (rdoc.status > 0) {
-                // 其他终结状态（WA、TLE等），保留思考时间
-                console.log(`❌ 记录 ${rdoc._id} 未AC (status: ${rdoc.status})，保留思考时间: ${rdoc.thinkingTime}秒`);
-            }
-        } catch (error) {
-            console.warn('处理判题完成事件失败:', error);
-        }
-    });
-
-    console.log('Thinking Time Tracker plugin loaded successfully!');
-    console.log('思考时间将直接存储到提交记录(record)中');
 }
