@@ -3,13 +3,14 @@ import axios from 'axios';
 import {
     Context,
     Handler,
+    SystemModel,
 } from 'hydrooj';
 
 // 硬编码配置
 const WECHAT_CONFIG = {
     appId: process.env.WECHAT_APP_ID || 'wx8f8d991dfd127dca',
     appSecret: process.env.WECHAT_APP_SECRET || '05068710fde31b2e914dceb3f45a8aa1',
-    domain: process.env.WECHAT_DOMAIN || 'https://noj.lqcode.fun',
+    domain: process.env.WECHAT_DOMAIN || 'yz.lqcode.fun',
 };
 
 interface WechatToken {
@@ -176,10 +177,14 @@ export class WechatService {
 
             console.log('[WechatService] 验证域名:', hostname, '允许的域名:', allowedDomain);
 
-            const isValid = hostname === allowedDomain
-                || hostname.endsWith(`.${allowedDomain}`);
+            // 允许本地开发环境域名
+            const isLocalDev = !!hostname.match(/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/);
 
-            console.log('[WechatService] 域名验证结果:', isValid);
+            const isValid = hostname === allowedDomain
+                || hostname.endsWith(`.${allowedDomain}`)
+                || isLocalDev;
+
+            console.log('[WechatService] 域名验证结果:', isValid, isLocalDev ? '(本地开发环境)' : '');
             return isValid;
         } catch (error) {
             console.error('[WechatService] 域名验证失败:', error.message);
@@ -190,8 +195,23 @@ export class WechatService {
 
 class WechatShareHandler extends Handler {
     wechatService = new WechatService();
+    allowCors = true;
+
+    async options() {
+        // 使用addHeader设置CORS头部
+        this.response.addHeader('Access-Control-Allow-Origin', '*');
+        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        this.response.status = 200;
+        this.response.body = {};
+    }
 
     async get(args: any) {
+        // 使用addHeader设置CORS头部
+        this.response.addHeader('Access-Control-Allow-Origin', '*');
+        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
         console.log('[WechatShareHandler] 收到分享配置请求:', args);
         try {
             const url = args.url as string;
@@ -244,6 +264,13 @@ export default function apply(ctx: Context) {
         domain: WECHAT_CONFIG.domain,
         hasSecret: !!WECHAT_CONFIG.appSecret,
     });
+
+    // 设置CORS配置以允许跨域请求
+    const currentCors = SystemModel.get('server.cors') || '';
+    const allowedDomains = ['yz.lqcode.fun', 'localhost', '127.0.0.1', '10.0.1.146'];
+    const newCorsValue = [...new Set([...currentCors.split(','), ...allowedDomains])].filter(Boolean).join(',');
+    SystemModel.set('server.cors', newCorsValue);
+    console.log('[WechatShare] 设置CORS允许域名:', newCorsValue);
 
     ctx.Route('wechat_share', '/wechat/share', WechatShareHandler);
     console.log('[WechatShare] 注册路由: /wechat/share ');
