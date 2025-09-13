@@ -114,8 +114,10 @@
                     <tr class="game-row {{ game.result }}">
                         <td class="time-cell">
                             <div class="time-display">
-                                {% if game.time %}
-                                    {{ game.time.strftime('%m-%d %H:%M') }}
+                                {% if game.createdAt %}
+                                    {{ game.createdAt }}
+                                {% elif game.time %}
+                                    {{ game.time }}
                                 {% else %}
                                     {{ _('N/A') }}
                                 {% endif %}
@@ -123,14 +125,26 @@
                         </td>
                         <td class="choice-cell">
                             <div class="choice-display">
-                                <span class="choice-icon">{{ game.playerChoiceIcon }}</span>
-                                <span class="choice-text">{{ _(game.playerChoice.title()) }}</span>
+                                <span class="choice-icon">{{ game.playerChoiceIcon or '❓' }}</span>
+                                <span class="choice-text">
+                                    {% if game.playerChoice %}
+                                        {{ _(game.playerChoice | capitalize) }}
+                                    {% else %}
+                                        {{ _('Unknown') }}
+                                    {% endif %}
+                                </span>
                             </div>
                         </td>
                         <td class="choice-cell">
                             <div class="choice-display">
-                                <span class="choice-icon">{{ game.aiChoiceIcon }}</span>
-                                <span class="choice-text">{{ _(game.aiChoice.title()) }}</span>
+                                <span class="choice-icon">{{ game.aiChoiceIcon or '❓' }}</span>
+                                <span class="choice-text">
+                                    {% if game.aiChoice %}
+                                        {{ _(game.aiChoice | capitalize) }}
+                                    {% else %}
+                                        {{ _('Unknown') }}
+                                    {% endif %}
+                                </span>
                             </div>
                         </td>
                         <td class="result-cell">
@@ -197,6 +211,96 @@
 </div>
 
 <style>
+/* CSS Variables */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-16: 64px;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hero-text h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+}
+
+.hero-nav {
+    display: flex;
+    gap: var(--spacing-3);
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
 /* Page Specific Styles */
 .main-container {
     max-width: 1200px;
@@ -479,7 +583,7 @@
 
 .pagination-section {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-top: var(--spacing-6);
     padding-top: var(--spacing-4);
@@ -549,6 +653,16 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-4);
+    }
+    
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+    
     .main-container {
         padding: var(--spacing-4);
     }
