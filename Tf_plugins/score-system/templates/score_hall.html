@@ -17,6 +17,7 @@
             <div class="stat-badge">
                 <span class="stat-icon">💰</span>
                 <span class="stat-text">{{ _('Your Balance') }}: {{ currentCoins or 0 }} 🏴</span>
+                <a href="{{ url('transfer_exchange') }}" class="exchange-btn">💱 {{ _('Exchange') }}</a>
             </div>
             {% endif %}
         </div>
@@ -434,6 +435,29 @@
 
 .stat-icon {
     font-size: 1.25rem;
+}
+
+.exchange-btn {
+    background: linear-gradient(135deg, var(--secondary-color), #059669);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-2);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.exchange-btn:hover {
+    background: linear-gradient(135deg, #059669, var(--secondary-color));
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(6, 214, 160, 0.3);
 }
 
 /* Main Container */

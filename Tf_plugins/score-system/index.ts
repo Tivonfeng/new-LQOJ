@@ -23,6 +23,10 @@ import {
     ScoreHallHandler,
     ScoreManageHandler,
     ScoreRankingHandler,
+    TransferAdminHandler,
+    TransferCreateHandler,
+    TransferExchangeHandler,
+    TransferHistoryHandler,
     UserScoreHandler } from './src/handlers';
 // 导入服务层
 import {
@@ -33,6 +37,7 @@ import {
     type ScoreConfig,
     type ScoreRecord,
     ScoreService,
+    type TransferRecord,
     type UserDiceStats,
     type UserLotteryStats,
     type UserRPSStats,
@@ -58,6 +63,7 @@ declare module 'hydrooj' {
         'dice.stats': UserDiceStats;
         'rps.records': RPSGameRecord;
         'rps.stats': UserRPSStats;
+        'transfer.records': TransferRecord;
     }
 }
 
@@ -137,6 +143,12 @@ export default function apply(ctx: Context, config: any = {}) {
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
     ctx.Route('rps_admin', '/score/rps/admin', RPSAdminHandler);
+
+    // 转账系统路由
+    ctx.Route('transfer_exchange', '/score/transfer', TransferExchangeHandler);
+    ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
+    ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
+    ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler);
 
     // 注入导航栏
     ctx.injectUI('Nav', 'score_hall', {

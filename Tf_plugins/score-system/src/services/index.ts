@@ -43,6 +43,13 @@ export {
     StatisticsService,
 } from './StatisticsService';
 
+// 转账服务
+export {
+    type TransferConfig,
+    type TransferRecord,
+    TransferService,
+} from './TransferService';
+
 // 权重计算服务
 export {
     WeightCalculationService,

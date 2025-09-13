@@ -48,6 +48,55 @@ Recent Score Records: Recent Score Records
 "Quick Actions": Quick Actions
 "Your Progress": Your Progress
 "Your Balance": Your Balance
+
+# Transfer System Translations
+Exchange: Exchange
+Score Exchange: Score Exchange
+Transfer Points: Transfer Points
+Transfer History: Transfer History
+Transfer Administration: Transfer Administration
+Transfer points between users safely and quickly: Transfer points between users safely and quickly
+Recipient Username: Recipient Username
+Enter amount: Enter amount
+Memo Optional: Memo (Optional)
+Transfer reason: Transfer reason
+Send Transfer: Send Transfer
+Amount + Fee: Amount + Fee
+Transfer Statistics: Transfer Statistics
+Total Transfers: Total Transfers
+Total Amount: Total Amount
+Today Transfers: Today Transfers
+Today Amount: Today Amount
+My Transfer History: My Transfer History
+Recent Transfers: Recent Transfers
+User identities anonymized: (User identities anonymized)
+No transfer records yet: No transfer records yet
+No public transfers yet: No public transfers yet
+To: To
+From: From
+View all your transfer records: View all your transfer records
+My Transfer Records: My Transfer Records
+Transaction Records: Transaction Records
+No Transfer Records: No Transfer Records
+You haven't made any transfers yet: You haven't made any transfers yet
+Make Your First Transfer: Make Your First Transfer
+Transfer Previous: Previous
+Transfer Next: Next
+Completed: Completed
+Pending: Pending
+Failed: Failed
+Cancelled: Cancelled
+Transaction ID: Transaction ID
+Fee: Fee
+Min: Min
+Max: Max
+Outgoing: Outgoing
+Incoming: Incoming
+Monitor and manage all transfer activities: Monitor and manage all transfer activities
+Administrator Panel: Administrator Panel
+Refresh: Refresh
+Recent Transfer Activities: Recent Transfer Activities
+No transfer activities found in the system: No transfer activities found in the system
 "Active Today": Active Today
 "Coins Earned": Coins Earned
 "Start Coding": Start Coding
