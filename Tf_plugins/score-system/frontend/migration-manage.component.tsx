@@ -8,6 +8,15 @@ const MigrationManageComponent: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<any>(null);
   const [isMigrationLoading, setIsMigrationLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean, message: string } | null>(null);
+  const [showMigrationFeature, setShowMigrationFeature] = useState(false); // 控制迁移功能是否显示
+
+  // 从配置中获取迁移功能显示状态
+  useEffect(() => {
+    const config = (window as any).ScoreSystemConfig;
+    if (config && typeof config.enableMigrationFeature === 'boolean') {
+      setShowMigrationFeature(config.enableMigrationFeature);
+    }
+  }, []);
 
   // 获取迁移状态
   const loadMigrationStatus = useCallback(async () => {
@@ -118,6 +127,25 @@ const MigrationManageComponent: React.FC = () => {
       setIsMigrationLoading(false);
     }
   }, [loadMigrationStatus]);
+
+  // 切换迁移功能显示状态（用于开发和测试）
+  const toggleMigrationFeature = useCallback(() => {
+    setShowMigrationFeature((prev) => !prev);
+    console.log('Migration feature visibility toggled:', !showMigrationFeature);
+  }, [showMigrationFeature]);
+
+  // 将切换函数暴露到全局，方便调试
+  useEffect(() => {
+    (window as any).toggleMigrationFeature = toggleMigrationFeature;
+    return () => {
+      delete (window as any).toggleMigrationFeature;
+    };
+  }, [toggleMigrationFeature]);
+
+  // 如果迁移功能被禁用，不渲染组件
+  if (!showMigrationFeature) {
+    return null;
+  }
 
   return (
     <div className="migration-manage-component">
