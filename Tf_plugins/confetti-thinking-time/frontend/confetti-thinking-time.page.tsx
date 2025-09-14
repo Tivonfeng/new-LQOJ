@@ -78,7 +78,14 @@ class ConfettiCelebration {
   private lastCelebrationTime: number = 0;
   private ws: WebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
   private isDestroyed: boolean = false;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 10;
+  private baseReconnectDelay: number = 1000; // 1 second
+  private maxReconnectDelay: number = 30000; // 30 seconds
+  private heartbeatInterval: number = 25000; // 25 seconds
+  private connectionState: 'connecting' | 'connected' | 'disconnected' | 'failed' = 'disconnected';
 
   constructor(private tracker: ThinkingTimeTracker) {
     this.initAudio();
@@ -305,37 +312,55 @@ class ConfettiCelebration {
   }
 
   private connectWebSocket() {
-    if (this.isDestroyed) return;
+    if (this.isDestroyed || this.connectionState === 'connecting') return;
+
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('❌ WebSocket重连次数超过限制，停止重连');
+      this.connectionState = 'failed';
+      return;
+    }
 
     const UiContext = (window as any).UiContext;
-    if (!UiContext?.ws_prefix || !UiContext?.pretestConnUrl) {
+    if (!UiContext?.pretestConnUrl) {
       console.warn('WebSocket连接参数不可用，彩带庆祝功能可能无法正常工作');
       return;
     }
 
+    this.connectionState = 'connecting';
+
     try {
-      // 关闭之前的连接
-      if (this.ws) {
-        this.ws.close();
-        this.ws = null;
+      // 关闭之前的连接和定时器
+      this.closeConnection();
+
+      // 构建WebSocket URL，处理ws_prefix为空或无效的情况
+      let wsUrl = '';
+      if (UiContext.ws_prefix && UiContext.ws_prefix.startsWith('ws')) {
+        wsUrl = UiContext.ws_prefix + UiContext.pretestConnUrl;
+      } else {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const wsPrefix = UiContext.ws_prefix || '';
+        wsUrl = `${protocol}//${host}${wsPrefix}${UiContext.pretestConnUrl}`;
       }
 
-      this.ws = new WebSocket(UiContext.ws_prefix + UiContext.pretestConnUrl);
-      console.log('✅ 正在连接WebSocket...');
+      console.log(`🔗 正在连接WebSocket (尝试 ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}):`, wsUrl);
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('✅ WebSocket连接成功，开始监听AC消息');
-        // 清除重连定时器
-        if (this.reconnectTimer) {
-          clearTimeout(this.reconnectTimer);
-          this.reconnectTimer = null;
-        }
+        this.connectionState = 'connected';
+        this.reconnectAttempts = 0; // 重置重连计数
+        this.startHeartbeat(); // 开始心跳检测
       };
 
       this.ws.onmessage = (event: MessageEvent) => {
         try {
-          // 处理非JSON消息（如心跳）
+          // 处理心跳消息
           if (typeof event.data === 'string' && (event.data === 'ping' || event.data === 'pong')) {
+            if (event.data === 'ping') {
+              // 收到ping，回复pong
+              this.ws?.send('pong');
+            }
             return;
           }
 
@@ -369,41 +394,91 @@ class ConfettiCelebration {
         }
       };
 
-      this.ws.onclose = () => {
-        console.warn('WebSocket连接已关闭，3秒后尝试重连...');
+      this.ws.onclose = (event) => {
+        console.log(`Connection closed, ${event.code} ${event.reason}`);
+        this.connectionState = 'disconnected';
         this.ws = null;
-        // 5秒后自动重连
-        if (!this.isDestroyed && !this.reconnectTimer) {
-          this.reconnectTimer = setTimeout(() => {
-            this.connectWebSocket();
-          }, 3000);
+        this.stopHeartbeat();
+
+        // 根据关闭代码决定是否重连
+        if (!this.isDestroyed && this.shouldReconnect(event.code)) {
+          this.scheduleReconnect();
         }
       };
 
       this.ws.onerror = (error) => {
         console.error('WebSocket连接错误:', error);
+        this.connectionState = 'disconnected';
       };
     } catch (error) {
       console.error('创建WebSocket连接失败:', error);
-      // 出错后也尝试重连
-      if (!this.isDestroyed && !this.reconnectTimer) {
-        this.reconnectTimer = setTimeout(() => {
-          this.connectWebSocket();
-        }, 3000);
+      this.connectionState = 'disconnected';
+      if (!this.isDestroyed) {
+        this.scheduleReconnect();
       }
+    }
+  }
+
+  private shouldReconnect(closeCode: number): boolean {
+    // 某些关闭代码不应该重连
+    const noReconnectCodes = [1000, 1001, 1005, 4000, 4001, 4002, 4003];
+    return !noReconnectCodes.includes(closeCode);
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer || this.isDestroyed) return;
+
+    this.reconnectAttempts++;
+
+    // 指数退避算法：delay = min(baseDelay * 2^attempts, maxDelay) + jitter
+    const exponentialDelay = Math.min(
+      this.baseReconnectDelay * 2 ** (this.reconnectAttempts - 1),
+      this.maxReconnectDelay,
+    );
+
+    // 添加随机抖动，避免多个客户端同时重连
+    const jitter = Math.random() * 1000;
+    const delay = exponentialDelay + jitter;
+
+    console.warn(`⏰ WebSocket将在 ${Math.round(delay / 1000)} 秒后重连 (尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connectWebSocket();
+    }, delay);
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setTimeout(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send('ping');
+        this.startHeartbeat(); // 递归调用以继续心跳
+      }
+    }, this.heartbeatInterval);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearTimeout(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private closeConnection() {
+    this.stopHeartbeat();
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
     }
   }
 
   destroy() {
     this.isDestroyed = true;
+    this.connectionState = 'disconnected';
 
-    // 清理WebSocket连接
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-
-    // 清理重连定时器
+    // 清理所有定时器和连接
+    this.closeConnection();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
