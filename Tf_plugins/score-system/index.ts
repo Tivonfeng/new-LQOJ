@@ -7,6 +7,7 @@ import {
 } from 'hydrooj';
 // 导入处理器
 import {
+    CheckInHandler,
     DiceAdminHandler,
     DiceGameHandler,
     DiceHistoryHandler,
@@ -30,6 +31,7 @@ import {
     UserScoreHandler } from './src/handlers';
 // 导入服务层
 import {
+    type DailyCheckInRecord,
     type DiceGameRecord,
     type LotteryPrize,
     type LotteryRecord,
@@ -38,6 +40,7 @@ import {
     type ScoreRecord,
     ScoreService,
     type TransferRecord,
+    type UserCheckInStats,
     type UserDiceStats,
     type UserLotteryStats,
     type UserRPSStats,
@@ -64,6 +67,8 @@ declare module 'hydrooj' {
         'rps.records': RPSGameRecord;
         'rps.stats': UserRPSStats;
         'transfer.records': TransferRecord;
+        'checkin.records': DailyCheckInRecord;
+        'checkin.stats': UserCheckInStats;
     }
 }
 
@@ -149,6 +154,9 @@ export default function apply(ctx: Context, config: any = {}) {
     ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
     ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
     ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler);
+
+    // 签到系统路由
+    ctx.Route('daily_checkin', '/score/checkin', CheckInHandler);
 
     // 注入导航栏
     ctx.injectUI('Nav', 'score_hall', {

@@ -26,175 +26,158 @@
 
 <!-- Main Content -->
 <div class="main-container">
-    <!-- Lottery Spotlight -->
-    <div class="lottery-spotlight">
-        <div class="spotlight-header">
-            <div class="spotlight-title">
-                <span class="title-icon">🎰</span>
-                <h2>{{ _('Lottery Hall') }}</h2>
-                <span class="subtitle">{{ _('Spend Your Coins') }}</span>
+    <!-- Games Grid -->
+    <div class="games-grid">
+        <!-- Row 1: Check-in + Lottery -->
+        <div class="games-row">
+            <!-- Daily Check-in Spotlight -->
+            <div class="game-card checkin-spotlight">
+                <div class="spotlight-header">
+                    <div class="spotlight-title">
+                        <span class="title-icon">📅</span>
+                        <h2>{{ _('Daily Check-in') }}</h2>
+                        <span class="subtitle">{{ _('Earn Daily Rewards') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-content">
+                    <div class="game-info">
+                        <div class="game-icon">📅</div>
+                        <div class="game-text">
+                            <h3>{{ _('Daily Check-in') }}</h3>
+                            <p>{{ _('Earn up to 30 coins daily') }}</p>
+                        </div>
+                        <div class="game-reward">
+                            <span class="reward-amount">+10</span>
+                            <span class="reward-unit">🏴</span>
+                        </div>
+                    </div>
+                    <div class="game-features">
+                        <span class="feature-tag checkin">{{ _('Streak Bonus') }}</span>
+                        <span class="feature-tag">{{ _('Daily Reset') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-cta">
+                    <a href="{{ url('daily_checkin') }}" class="cta-button checkin-style">
+                        <span class="cta-icon">✨</span>
+                        <span class="cta-text">{{ _('Check In Now') }}</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
+                </div>
             </div>
-        </div>
-        
-        <div class="lottery-content">
-            <div class="lottery-machines">
-                <div class="machine-card basic-machine">
-                    <div class="machine-header">
-                        <div class="machine-icon">🎲</div>
-                        <div class="machine-info">
+
+            <!-- Lottery Spotlight -->
+            <div class="game-card lottery-spotlight">
+                <div class="spotlight-header">
+                    <div class="spotlight-title">
+                        <span class="title-icon">🎰</span>
+                        <h2>{{ _('Lottery Hall') }}</h2>
+                        <span class="subtitle">{{ _('Spend Your Coins') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-content">
+                    <div class="game-info">
+                        <div class="game-icon">🎲</div>
+                        <div class="game-text">
                             <h3>{{ _('Basic Draw') }}</h3>
                             <p>{{ _('Quick & Easy') }}</p>
                         </div>
+                        <div class="game-reward">
+                            <span class="reward-amount">20</span>
+                            <span class="reward-unit">🏴</span>
+                        </div>
                     </div>
-                    <div class="machine-price">
-                        <span class="price-amount">20</span>
-                        <span class="price-unit">🏴</span>
-                    </div>
-                    <div class="machine-features">
+                    <div class="game-features">
                         <span class="feature-tag">{{ _('Common Rewards') }}</span>
                     </div>
                 </div>
                 
-            </div>
-            
-            <div class="lottery-cta">
-                <a href="{{ url('lottery_hall') }}" class="cta-button primary">
-                    <span class="cta-icon">🎰</span>
-                    <span class="cta-text">{{ _('Start Drawing') }}</span>
-                    <span class="cta-arrow">→</span>
-                </a>
+                <div class="game-cta">
+                    <a href="{{ url('lottery_hall') }}" class="cta-button primary">
+                        <span class="cta-icon">🎰</span>
+                        <span class="cta-text">{{ _('Start Drawing') }}</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Dice Game Spotlight -->
-    <div class="dice-game-spotlight">
-        <div class="spotlight-header">
-            <div class="spotlight-title">
-                <span class="title-icon">🎲</span>
-                <h2>{{ _('Dice Game') }}</h2>
-                <span class="subtitle">{{ _('Test Your Luck') }}</span>
-            </div>
-        </div>
-        
-        <div class="dice-content">
-            <div class="dice-machines">
-                <div class="machine-card dice-machine">
-                    <div class="machine-header">
-                        <div class="machine-icon">🎯</div>
-                        <div class="machine-info">
+        <!-- Row 2: Dice + RPS -->
+        <div class="games-row">
+            <!-- Dice Game Spotlight -->
+            <div class="game-card dice-game-spotlight">
+                <div class="spotlight-header">
+                    <div class="spotlight-title">
+                        <span class="title-icon">🎲</span>
+                        <h2>{{ _('Dice Game') }}</h2>
+                        <span class="subtitle">{{ _('Test Your Luck') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-content">
+                    <div class="game-info">
+                        <div class="game-icon">🎯</div>
+                        <div class="game-text">
                             <h3>{{ _('Guess Big or Small') }}</h3>
                             <p>{{ _('50% Win Rate') }}</p>
                         </div>
+                        <div class="game-reward">
+                            <span class="reward-amount">20</span>
+                            <span class="reward-unit">🏴</span>
+                        </div>
                     </div>
-                    <div class="machine-price">
-                        <span class="price-amount">20</span>
-                        <span class="price-unit">🏴</span>
-                    </div>
-                    <div class="machine-features">
+                    <div class="game-features">
                         <span class="feature-tag dice">{{ _('Double or Nothing') }}</span>
                         <span class="feature-tag">{{ _('Instant Result') }}</span>
                     </div>
                 </div>
                 
-                <div class="game-rules-card">
-                    <div class="rules-header">
-                        <div class="rules-icon">📋</div>
-                        <h4>{{ _('Game Rules') }}</h4>
-                    </div>
-                    <div class="rules-content">
-                        <div class="rule-item">
-                            <span class="rule-icon">💰</span>
-                            <span class="rule-text">{{ _('Bet 20 coins per game') }}</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">🔢</span>
-                            <span class="rule-text">{{ _('Small Big Range Rule') }}</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">🎉</span>
-                            <span class="rule-text">{{ _('Win: +40 coins (+20 profit)') }}</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">💸</span>
-                            <span class="rule-text">{{ _('Lose: -20 coins') }}</span>
-                        </div>
-                    </div>
+                <div class="game-cta">
+                    <a href="{{ url('dice_game') }}" class="cta-button secondary">
+                        <span class="cta-icon">🎲</span>
+                        <span class="cta-text">{{ _('Start Playing') }}</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
                 </div>
             </div>
-            
-            <div class="dice-cta">
-                <a href="{{ url('dice_game') }}" class="cta-button secondary">
-                    <span class="cta-icon">🎲</span>
-                    <span class="cta-text">{{ _('Start Playing') }}</span>
-                    <span class="cta-arrow">→</span>
-                </a>
-            </div>
-        </div>
-    </div>
 
-    <!-- Rock Paper Scissors Spotlight -->
-    <div class="rps-game-spotlight">
-        <div class="spotlight-header">
-            <div class="spotlight-title">
-                <span class="title-icon">✂️</span>
-                <h2>{{ _('Rock Paper Scissors') }}</h2>
-                <span class="subtitle">{{ _('Challenge the AI') }}</span>
-            </div>
-        </div>
-        
-        <div class="rps-content">
-            <div class="rps-machines">
-                <div class="machine-card rps-machine">
-                    <div class="machine-header">
-                        <div class="machine-icon">⚡</div>
-                        <div class="machine-info">
+            <!-- Rock Paper Scissors Spotlight -->
+            <div class="game-card rps-game-spotlight">
+                <div class="spotlight-header">
+                    <div class="spotlight-title">
+                        <span class="title-icon">✂️</span>
+                        <h2>{{ _('Rock Paper Scissors') }}</h2>
+                        <span class="subtitle">{{ _('Challenge the AI') }}</span>
+                    </div>
+                </div>
+                
+                <div class="game-content">
+                    <div class="game-info">
+                        <div class="game-icon">⚡</div>
+                        <div class="game-text">
                             <h3>{{ _('Battle Arena') }}</h3>
                             <p>{{ _('Quick Strategy Game') }}</p>
                         </div>
+                        <div class="game-reward">
+                            <span class="reward-amount">15</span>
+                            <span class="reward-unit">🏴</span>
+                        </div>
                     </div>
-                    <div class="machine-price">
-                        <span class="price-amount">15</span>
-                        <span class="price-unit">🏴</span>
-                    </div>
-                    <div class="machine-features">
+                    <div class="game-features">
                         <span class="feature-tag rps">{{ _('2x Reward') }}</span>
                         <span class="feature-tag">{{ _('Streak Bonus') }}</span>
                     </div>
                 </div>
                 
-                <div class="game-rules-card">
-                    <div class="rules-header">
-                        <div class="rules-icon">🎯</div>
-                        <h4>{{ _('How to Play') }}</h4>
-                    </div>
-                    <div class="rules-content">
-                        <div class="rule-item">
-                            <span class="rule-icon">💰</span>
-                            <span class="rule-text">{{ _('Cost') }}: 15 🏴 {{ _('per game') }}</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">🏆</span>
-                            <span class="rule-text">{{ _('Win') }}: +30 🏴 (2x {{ _('reward') }})</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">🤝</span>
-                            <span class="rule-text">{{ _('Draw') }}: {{ _('Refund bet') }}</span>
-                        </div>
-                        <div class="rule-item">
-                            <span class="rule-icon">🔥</span>
-                            <span class="rule-text">{{ _('Streak') }}: +5 🏴 {{ _('bonus') }}</span>
-                        </div>
-                    </div>
+                <div class="game-cta">
+                    <a href="{{ url('rock_paper_scissors') }}" class="cta-button rps-style">
+                        <span class="cta-icon">✂️</span>
+                        <span class="cta-text">{{ _('Start Battle') }}</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
                 </div>
-            </div>
-            
-            <div class="rps-cta">
-                <a href="{{ url('rock_paper_scissors') }}" class="cta-button rps-style">
-                    <span class="cta-icon">✂️</span>
-                    <span class="cta-text">{{ _('Start Battle') }}</span>
-                    <span class="cta-arrow">→</span>
-                </a>
             </div>
         </div>
     </div>
@@ -285,6 +268,13 @@
                     <span class="earn-icon">💡</span>
                 </div>
                 <div class="earn-method">
+                    <div class="method-icon">📅</div>
+                    <div class="method-info">
+                        <span class="method-title">{{ _('Daily Check-in') }}</span>
+                        <span class="method-reward">+10 🏴</span>
+                    </div>
+                </div>
+                <div class="earn-method">
                     <div class="method-icon">✅</div>
                     <div class="method-info">
                         <span class="method-title">{{ _('Solve Problems') }}</span>
@@ -301,6 +291,10 @@
             <div class="actions-card">
                 <h4>{{ _('Quick Actions') }}</h4>
                 <div class="action-buttons">
+                    <a href="{{ url('daily_checkin') }}" class="action-btn">
+                        <span class="btn-icon">📅</span>
+                        <span class="btn-text">{{ _('Check In') }}</span>
+                    </a>
                     {% if canManage %}
                     <a href="{{ url('score_manage') }}" class="action-btn">
                         <span class="btn-icon">⚙️</span>
@@ -467,33 +461,161 @@
     padding: 0 var(--spacing-6);
 }
 
-/* Lottery Spotlight */
-.lottery-spotlight {
-    background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-8);
+/* Games Grid Layout */
+.games-grid {
     margin-bottom: var(--spacing-8);
-    box-shadow: var(--shadow-xl);
+}
+
+.games-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.games-row:last-child {
+    margin-bottom: 0;
+}
+
+/* Game Card Base Styles */
+.game-card {
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.lottery-spotlight::before {
+.game-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Game Card Content Structure */
+.game-content {
+    position: relative;
+    z-index: 1;
+    margin-bottom: var(--spacing-6);
+}
+
+.game-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.game-icon {
+    font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+
+.game-text {
+    flex: 1;
+}
+
+.game-text h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-1);
+    color: white;
+}
+
+.game-text p {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    font-weight: 500;
+    color: white;
+}
+
+.game-reward {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2) var(--spacing-3);
+    flex-shrink: 0;
+}
+
+.reward-amount {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: white;
+}
+
+.reward-unit {
+    font-size: 1rem;
+}
+
+.game-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+}
+
+.game-cta {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+/* Game Card Specific Styles */
+.checkin-spotlight {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.checkin-spotlight::before {
     content: '';
     position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 70%);
-    pointer-events: none;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">📅</text></svg>') no-repeat;
+    background-size: contain;
+    opacity: 0.3;
 }
 
+.feature-tag.checkin {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.3));
+    color: white;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.cta-button.checkin-style {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.3));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.cta-button.checkin-style:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.4));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Shared Header Styles */
 .spotlight-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-8);
+    margin-bottom: var(--spacing-6);
     position: relative;
     z-index: 1;
 }
@@ -505,159 +627,63 @@
 }
 
 .title-icon {
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
 
 .spotlight-title h2 {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: white;
     margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .subtitle {
-    background: var(--accent-color);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
-    padding: var(--spacing-1) var(--spacing-3);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-
-/* Lottery Machines */
-.lottery-content {
-    position: relative;
-    z-index: 1;
-}
-
-.lottery-machines {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-6);
-    margin-bottom: var(--spacing-8);
-}
-
-.machine-card {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-6);
-    box-shadow: var(--shadow-lg);
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.machine-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl);
-}
-
-.basic-machine {
-    border-color: var(--secondary-color);
-}
-
-.basic-machine:hover {
-    border-color: var(--secondary-color);
-    box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.3), var(--shadow-xl);
-}
-
-
-.machine-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    margin-bottom: var(--spacing-4);
-}
-
-.machine-icon {
-    font-size: 2.5rem;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-lg);
-    background: var(--bg-secondary);
-}
-
-.machine-info h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-1);
-}
-
-.machine-info p {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.machine-price {
-    display: flex;
-    align-items: baseline;
-    gap: var(--spacing-2);
-    margin-bottom: var(--spacing-4);
-}
-
-.price-amount {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--accent-color);
-}
-
-.price-unit {
-    font-size: 1.25rem;
-}
-
-.machine-features {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-2);
-}
-
-.feature-tag {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
     padding: var(--spacing-1) var(--spacing-3);
     border-radius: var(--radius-md);
     font-size: 0.75rem;
     font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-
-/* CTA Button */
-.lottery-cta {
-    text-align: center;
+/* Feature Tags */
+.feature-tag {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* CTA Button Base */
 .cta-button {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-3);
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: var(--spacing-4) var(--spacing-8);
+    padding: var(--spacing-3) var(--spacing-6);
     border-radius: var(--radius-xl);
     text-decoration: none;
     font-weight: 700;
-    font-size: 1.125rem;
+    font-size: 1rem;
     box-shadow: var(--shadow-lg);
     transition: all 0.3s ease;
-    border: none;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     cursor: pointer;
 }
 
 .cta-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), var(--shadow-xl);
     text-decoration: none;
     color: white;
 }
 
 .cta-icon {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
 }
 
 .cta-arrow {
@@ -667,6 +693,71 @@
 
 .cta-button:hover .cta-arrow {
     transform: translateX(4px);
+}
+
+/* Lottery Spotlight */
+.lottery-spotlight {
+    background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+}
+
+.lottery-spotlight .spotlight-title h2 {
+    color: var(--text-primary);
+    text-shadow: none;
+}
+
+.lottery-spotlight .subtitle {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+}
+
+.lottery-spotlight .game-icon {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.lottery-spotlight .game-text h3 {
+    color: var(--text-primary);
+}
+
+.lottery-spotlight .game-text p {
+    color: var(--text-secondary);
+}
+
+.lottery-spotlight .game-reward {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid var(--accent-color);
+}
+
+.lottery-spotlight .reward-amount {
+    color: var(--accent-color);
+}
+
+.lottery-spotlight .feature-tag {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+}
+
+.lottery-spotlight::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(245,158,11,0.2)">🎰</text></svg>') no-repeat;
+    background-size: contain;
+    opacity: 0.5;
+}
+
+.cta-button.primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.cta-button.primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #3730a3);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
 /* Content Grid */
@@ -1050,23 +1141,6 @@
 /* Dice Game Spotlight */
 .dice-game-spotlight {
     background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-8);
-    margin-bottom: var(--spacing-8);
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    overflow: hidden;
-}
-
-.dice-game-spotlight .spotlight-title h2 {
-    color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.dice-game-spotlight .subtitle {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .dice-game-spotlight::before {
@@ -1074,126 +1148,32 @@
     position: absolute;
     top: 0;
     right: 0;
-    width: 200px;
-    height: 200px;
+    width: 120px;
+    height: 120px;
     background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">🎲</text></svg>') no-repeat;
     background-size: contain;
     opacity: 0.3;
 }
 
-.dice-content {
-    position: relative;
-    z-index: 1;
-}
-
-.dice-machines {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-6);
-    margin-bottom: var(--spacing-6);
-}
-
-.machine-card.dice-machine {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    color: var(--text-primary);
-}
-
-.dice-machine .machine-info h3 {
-    color: var(--text-primary);
-}
-
-.dice-machine .machine-info p {
-    color: var(--text-secondary);
-}
-
-.game-rules-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-6);
-    color: var(--text-primary);
-}
-
-.rules-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
-}
-
-.rules-header h4 {
-    color: var(--text-primary);
-    font-weight: 700;
-}
-
-.rules-icon {
-    font-size: 1.5rem;
-}
-
-.rules-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-3);
-}
-
-.rule-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-}
-
-.rule-icon {
-    font-size: 1.125rem;
-    width: 24px;
-    text-align: center;
-}
-
-.rule-text {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
 .feature-tag.dice {
-    background: var(--accent-color);
-    color: white;
+    background: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .cta-button.secondary {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
 }
 
 .cta-button.secondary:hover {
-    box-shadow: 0 20px 25px -5px rgba(220, 38, 38, 0.4), var(--shadow-xl);
-}
-
-.dice-cta {
-    text-align: center;
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
 }
 
 /* Rock Paper Scissors Game Spotlight */
 .rps-game-spotlight {
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-8);
-    margin-bottom: var(--spacing-8);
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    overflow: hidden;
-}
-
-.rps-game-spotlight .spotlight-title h2 {
-    color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.rps-game-spotlight .subtitle {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .rps-game-spotlight::before {
@@ -1201,102 +1181,84 @@
     position: absolute;
     top: 0;
     right: 0;
-    width: 200px;
-    height: 200px;
+    width: 120px;
+    height: 120px;
     background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">✂️</text></svg>') no-repeat;
     background-size: contain;
     opacity: 0.3;
 }
 
-.rps-content {
-    position: relative;
-    z-index: 1;
-}
-
-.rps-machines {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-6);
-    margin-bottom: var(--spacing-6);
-}
-
-.machine-card.rps-machine {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    color: var(--text-primary);
-}
-
-.machine-card.rps-machine .machine-icon {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    color: white;
-}
-
 .feature-tag.rps {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    color: white;
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
     font-weight: 600;
-}
-
-.rps-cta {
-    text-align: center;
+    border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .cta-button.rps-style {
     background: linear-gradient(135deg, #a855f7, #9333ea);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
 }
 
 .cta-button.rps-style:hover {
     background: linear-gradient(135deg, #9333ea, #7c3aed);
-    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
 }
 
-/* Additional responsive styles for dice game */
+/* Responsive Design for Games Grid */
 @media (max-width: 768px) {
-    .dice-machines {
+    .games-row {
         grid-template-columns: 1fr;
         gap: var(--spacing-4);
     }
     
-    .dice-game-spotlight {
-        padding: var(--spacing-6);
+    .game-card {
+        padding: var(--spacing-5);
     }
     
-    .rps-machines {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-4);
+    .game-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-3);
     }
     
-    .rps-game-spotlight {
-        padding: var(--spacing-6);
+    .game-reward {
+        align-self: flex-end;
     }
 }
 
 @media (max-width: 640px) {
-    .dice-game-spotlight {
+    .game-card {
         padding: var(--spacing-4);
     }
     
-    .rps-game-spotlight {
-        padding: var(--spacing-4);
-    }
-    
-    .rules-content {
+    .spotlight-title {
+        flex-direction: column;
+        align-items: flex-start;
         gap: var(--spacing-2);
     }
     
-    .rule-text {
+    .spotlight-title h2 {
+        font-size: 1.25rem;
+    }
+    
+    .title-icon {
+        font-size: 1.25rem;
+    }
+    
+    .game-icon {
+        font-size: 2rem;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .game-text h3 {
+        font-size: 1.125rem;
+    }
+    
+    .game-text p {
         font-size: 0.8125rem;
     }
-}
-
-
 }
 
 </style>

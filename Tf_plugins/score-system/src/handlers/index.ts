@@ -1,5 +1,10 @@
 // 处理器统一导出
 
+// 签到相关处理器
+export {
+    CheckInHandler,
+} from './CheckInHandlers';
+
 // 掷骰子游戏相关处理器
 export {
     DiceAdminHandler,

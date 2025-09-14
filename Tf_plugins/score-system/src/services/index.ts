@@ -1,5 +1,13 @@
 // 服务层统一导出
 
+// 签到服务
+export {
+    type CheckInResult,
+    CheckInService,
+    type DailyCheckInRecord,
+    type UserCheckInStats,
+} from './CheckInService';
+
 // 掷骰子游戏服务
 export {
     type DiceGameRecord,
