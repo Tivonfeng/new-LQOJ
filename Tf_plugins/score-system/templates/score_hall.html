@@ -17,11 +17,13 @@
             <div class="stat-badge">
                 <span class="stat-icon">💰</span>
                 <span class="stat-text">{{ _('Your Balance') }}: {{ currentCoins or 0 }} 🏴</span>
+            </div>
+            <div class="action-buttons">
                 <a href="{{ url('user_score') }}" class="details-btn">📊 {{ _('Score Records') }}</a>
+                <a href="{{ url('transfer_exchange') }}" class="exchange-btn">💱 {{ _('Exchange') }}</a>
                 {% if canManage %}
                 <a href="{{ url('score_manage') }}" class="manage-btn">⚙️ {{ _('Manage') }}</a>
                 {% endif %}
-                <a href="{{ url('transfer_exchange') }}" class="exchange-btn">💱 {{ _('Exchange') }}</a>
             </div>
             {% endif %}
         </div>
@@ -435,6 +437,12 @@
     transition: all 0.3s ease;
 }
 
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
 .stat-badge:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
@@ -445,74 +453,75 @@
 }
 
 .details-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
     color: white;
-    padding: var(--spacing-1) var(--spacing-2);
-    border-radius: var(--radius-md);
     text-decoration: none;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin-left: var(--spacing-2);
-    margin-right: var(--spacing-1);
+    margin: 0;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-1);
+    gap: var(--spacing-2);
 }
 
 .details-btn:hover {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
     text-decoration: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .exchange-btn {
-    background: linear-gradient(135deg, var(--secondary-color), #059669);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
     color: white;
-    padding: var(--spacing-1) var(--spacing-2);
-    border-radius: var(--radius-md);
     text-decoration: none;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin-left: var(--spacing-2);
+    margin: 0;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-1);
+    gap: var(--spacing-2);
 }
 
 .exchange-btn:hover {
-    background: linear-gradient(135deg, #059669, var(--secondary-color));
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
     text-decoration: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(6, 214, 160, 0.3);
 }
 
 .manage-btn {
-    background: linear-gradient(135deg, var(--warning-color), #d97706);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
     color: white;
-    padding: var(--spacing-1) var(--spacing-2);
-    border-radius: var(--radius-md);
     text-decoration: none;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin-left: var(--spacing-2);
-    margin-right: var(--spacing-1);
+    margin: 0;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-1);
+    gap: var(--spacing-2);
 }
 
 .manage-btn:hover {
-    background: linear-gradient(135deg, #d97706, var(--warning-color));
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
     text-decoration: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* Main Container */
