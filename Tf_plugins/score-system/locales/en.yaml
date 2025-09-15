@@ -49,6 +49,45 @@ Recent Score Records: Recent Score Records
 "Your Progress": Your Progress
 "Your Balance": Your Balance
 
+# Check-in System Translations
+Daily Check-in: Daily Check-in
+Earn Daily Rewards: Earn Daily Rewards
+Earn up to 30 coins daily: Earn up to 30 coins daily
+Daily Streak Bonus: Daily Streak Bonus
+Daily Reset: Daily Reset
+Already Checked In Today: Already Checked In Today
+Check In Now: Check In Now
+Checking in...: Checking in...
+Network error: Network error
+Current Balance: Current Balance
+Already Checked In Today!: Already Checked In Today!
+Come back tomorrow for more rewards: Come back tomorrow for more rewards
+Ready to Check In?: Ready to Check In?
+Get your daily reward now: Get your daily reward now
+Today: Today
+Daily Current Streak: Current Streak
+Daily Total Days: Total Days
+Daily Best Streak: Best Streak
+Mission Completed!: Mission Completed!
+Check-in Calendar: Check-in Calendar
+Sun: Sun
+Mon: Mon
+Tue: Tue
+Wed: Wed
+Thu: Thu
+Fri: Fri
+Sat: Sat
+Next 7 Days Rewards: Next 7 Days Rewards
+Recent Check-ins: Recent Check-ins
+days: days
+No check-in records yet: No check-in records yet
+Check-in Tips: Check-in Tips
+Keep your streak to get bonus rewards: Keep your streak to get bonus rewards
+Check in daily to maximize your coins: Check in daily to maximize your coins
+Check-in resets at midnight: Check-in resets at midnight
+Check In: Check In
+Earn coins every day by checking in!: Earn coins every day by checking in!
+
 # Transfer System Translations
 Exchange: Exchange
 Score Exchange: Score Exchange
@@ -78,7 +117,7 @@ View all your transfer records: View all your transfer records
 My Transfer Records: My Transfer Records
 Transaction Records: Transaction Records
 No Transfer Records: No Transfer Records
-You haven't made any transfers yet: You haven't made any transfers yet
+"You haven't made any transfers yet": "You have not made any transfers yet"
 Make Your First Transfer: Make Your First Transfer
 Transfer Previous: Previous
 Transfer Next: Next

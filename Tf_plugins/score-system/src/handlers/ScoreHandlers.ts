@@ -4,6 +4,7 @@ import {
     PRIV,
 } from 'hydrooj';
 import {
+    CheckInService,
     LotteryService,
     MigrationService,
     ScoreService,
@@ -21,9 +22,12 @@ export class ScoreHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+        const checkInService = new CheckInService(this.ctx, scoreService);
         let userScore: UserScore | null = null;
         let userRank: number | string = '-';
         let recentRecords: any[] = [];
+        let hasCheckedInToday = false;
+        let nextReward = 10;
 
         if (uid) {
             // 获取用户积分信息
@@ -46,6 +50,16 @@ export class ScoreHallHandler extends Handler {
                     minute: '2-digit',
                 }),
             }));
+
+            // 获取签到相关信息
+            hasCheckedInToday = await checkInService.hasCheckedInToday(uid);
+
+            // 计算下次签到奖励
+            if (!hasCheckedInToday) {
+                const userStats = await checkInService.getUserCheckInStats(uid);
+                const currentStreak = userStats?.currentStreak || 0;
+                nextReward = checkInService.calculateCheckInScore(currentStreak + 1);
+            }
         }
 
         // 获取积分排行榜前10
@@ -74,6 +88,8 @@ export class ScoreHallHandler extends Handler {
             todayActiveUsers: todayStats.activeUsers,
             canManage,
             isLoggedIn: !!uid,
+            hasCheckedInToday,
+            nextReward,
         };
     }
 }
