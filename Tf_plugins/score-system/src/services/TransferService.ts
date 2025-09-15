@@ -34,7 +34,7 @@ export class TransferService {
         this.scoreService = scoreService;
         this.config = {
             enabled: true,
-            minAmount: 10,
+            minAmount: 1,
             maxAmount: 1000,
             dailyLimit: 20,
             transferFee: 1,

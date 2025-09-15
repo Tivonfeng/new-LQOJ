@@ -27,17 +27,15 @@ export class CheckInHandler extends Handler {
 
         // 获取用户签到统计
         let userStats: UserCheckInStats | null = await checkInService.getUserCheckInStats(uid);
-        if (!userStats) {
-            // 创建初始统计记录
-            userStats = {
-                uid,
-                totalDays: 0,
-                currentStreak: 0,
-                maxStreak: 0,
-                lastCheckIn: '',
-                lastUpdated: new Date(),
-            };
-        }
+        // 创建初始统计记录
+        userStats ||= {
+            uid,
+            totalDays: 0,
+            currentStreak: 0,
+            maxStreak: 0,
+            lastCheckIn: '',
+            lastUpdated: new Date(),
+        };
 
         // 检查今日是否已签到
         const hasCheckedInToday = await checkInService.hasCheckedInToday(uid);
@@ -188,9 +186,9 @@ export class CheckInHandler extends Handler {
             date.setDate(date.getDate() + (hasCheckedInToday ? i + 1 : i));
 
             let specialBonus = '';
-            if (streak === 7) specialBonus = '周奖励';
-            else if (streak === 14) specialBonus = '双周奖励';
-            else if (streak % 7 === 0) specialBonus = '周奖励';
+            specialBonus ||= streak === 7 ? '周奖励' : '';
+            specialBonus ||= streak === 14 ? '双周奖励' : '';
+            specialBonus ||= streak % 7 === 0 ? '周奖励' : '';
 
             preview.push({
                 day: i + 1,
