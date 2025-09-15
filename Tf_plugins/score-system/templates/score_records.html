@@ -1,0 +1,595 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">📋 {{ _('All Score Records') }}</h1>
+            <p class="hero-subtitle">{{ _('Complete score history') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
+            <a href="{{ url('score_ranking') }}" class="nav-button primary">{{ _('Ranking') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Records Info -->
+    <div class="records-info-section">
+        <div class="info-card">
+            <div class="info-icon">📊</div>
+            <div class="info-content">
+                <div class="info-title">{{ _('Total Records') }}</div>
+                <div class="info-value">{{ total }}</div>
+            </div>
+        </div>
+        <div class="info-card">
+            <div class="info-icon">📄</div>
+            <div class="info-content">
+                <div class="info-title">{{ _('Current Page') }}</div>
+                <div class="info-value">{{ page }} / {{ totalPages }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Records List -->
+    <div class="records-section">
+        <div class="section-header">
+            <h2>📋 {{ _('Score Records') }}</h2>
+        </div>
+        
+        {% if records and records|length > 0 %}
+        <div class="records-table-container">
+            <div class="records-table">
+                <div class="table-header">
+                    <div class="header-cell user-col">{{ _('User') }}</div>
+                    <div class="header-cell score-col">{{ _('Score') }}</div>
+                    <div class="header-cell problem-col">{{ _('Problem') }}</div>
+                    <div class="header-cell reason-col">{{ _('Reason') }}</div>
+                    <div class="header-cell time-col">{{ _('Time') }}</div>
+                </div>
+                
+                {% for record in records %}
+                <div class="table-row {{ 'positive' if record.score > 0 else 'negative' }}">
+                    <div class="table-cell user-col">
+                        <div class="user-info">
+                            <span class="user-icon">👤</span>
+                            <span class="user-name">
+                                {% set user = udocs[record.uid] %}
+                                {% if user %}
+                                    {{ user.displayName or user.uname or record.uid }}
+                                {% else %}
+                                    {{ record.uid }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-cell score-col">
+                        <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
+                            <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
+                            <span class="score-number">{{ record.score }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-cell problem-col">
+                        {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
+                            <div class="problem-info admin">
+                                <span class="problem-icon">⚙️</span>
+                                <span class="problem-title">{{ _('Admin Operation') }}</span>
+                            </div>
+                        {% else %}
+                            <div class="problem-info">
+                                <span class="problem-icon">📝</span>
+                                <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="table-cell reason-col">
+                        <span class="reason-text">{{ record.reason }}</span>
+                    </div>
+                    
+                    <div class="table-cell time-col">
+                        <span class="time-text">{{ record.createdAt }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if totalPages > 1 %}
+        <div class="pagination-section">
+            <div class="pagination">
+                {% if hasPrev %}
+                    <a href="{{ url('score_records') }}?page={{ page - 1 }}" class="page-btn prev">
+                        <span class="btn-icon">←</span>
+                        <span class="btn-text">{{ _('Previous') }}</span>
+                    </a>
+                {% else %}
+                    <span class="page-btn prev disabled">
+                        <span class="btn-icon">←</span>
+                        <span class="btn-text">{{ _('Previous') }}</span>
+                    </span>
+                {% endif %}
+                
+                <div class="page-numbers">
+                    {% set start_page = 1 if (page - 2) < 1 else (page - 2) %}
+                    {% set end_page = totalPages if (page + 2) > totalPages else (page + 2) %}
+                    
+                    {% if start_page > 1 %}
+                        <a href="{{ url('score_records') }}?page=1" class="page-num">1</a>
+                        {% if start_page > 2 %}
+                            <span class="page-ellipsis">...</span>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% for p in range(start_page, end_page + 1) %}
+                        {% if p == page %}
+                            <span class="page-num current">{{ p }}</span>
+                        {% else %}
+                            <a href="{{ url('score_records') }}?page={{ p }}" class="page-num">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if end_page < totalPages %}
+                        {% if end_page < totalPages - 1 %}
+                            <span class="page-ellipsis">...</span>
+                        {% endif %}
+                        <a href="{{ url('score_records') }}?page={{ totalPages }}" class="page-num">{{ totalPages }}</a>
+                    {% endif %}
+                </div>
+                
+                {% if hasNext %}
+                    <a href="{{ url('score_records') }}?page={{ page + 1 }}" class="page-btn next">
+                        <span class="btn-text">{{ _('Next') }}</span>
+                        <span class="btn-icon">→</span>
+                    </a>
+                {% else %}
+                    <span class="page-btn next disabled">
+                        <span class="btn-text">{{ _('Next') }}</span>
+                        <span class="btn-icon">→</span>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-records">
+            <div class="empty-icon">📋</div>
+            <div class="empty-title">{{ _('No records found') }}</div>
+            <div class="empty-text">{{ _('No score records available.') }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* 使用与其他页面一致的设计系统变量 */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: var(--spacing-10) 0 var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+}
+
+.hero-nav {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    color: white;
+}
+
+.nav-button.primary {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--primary-color);
+}
+
+/* Main Container */
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+/* Records Info Section */
+.records-info-section {
+    display: flex;
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+
+.info-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+    flex: 1;
+}
+
+.info-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.info-title {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-1);
+}
+
+.info-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Section Header */
+.section-header {
+    margin-bottom: var(--spacing-6);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Records Section */
+.records-section {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Records Table */
+.records-table-container {
+    overflow-x: auto;
+    margin-bottom: var(--spacing-6);
+}
+
+.records-table {
+    width: 100%;
+    min-width: 800px;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 200px 120px 250px 1fr 150px;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-2);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 200px 120px 250px 1fr 150px;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-2);
+    background: var(--bg-primary);
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.table-row:hover {
+    background: var(--bg-secondary);
+}
+
+.table-row.positive {
+    border-left-color: var(--success-color);
+}
+
+.table-row.negative {
+    border-left-color: var(--error-color);
+}
+
+.table-cell {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+/* User Info */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.user-icon {
+    font-size: 1rem;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Score Badge */
+.score-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.score-badge.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.score-badge.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+/* Problem Info */
+.problem-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.problem-icon {
+    font-size: 0.875rem;
+}
+
+.problem-title {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.problem-info.admin .problem-title {
+    color: var(--primary-color);
+}
+
+/* Reason and Time */
+.reason-text, .time-text {
+    color: var(--text-secondary);
+}
+
+.time-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Pagination */
+.pagination-section {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--spacing-6);
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+}
+
+.page-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(.disabled) {
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-numbers {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.page-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.page-num:hover {
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+}
+
+.page-num.current {
+    background: var(--primary-color);
+    color: white;
+}
+
+.page-ellipsis {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Empty State */
+.empty-records {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-12);
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.empty-text {
+    color: var(--text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .main-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .records-info-section {
+        flex-direction: column;
+        gap: var(--spacing-4);
+    }
+    
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-2);
+    }
+    
+    .table-cell {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: var(--spacing-2);
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: var(--spacing-4);
+    }
+    
+    .page-numbers {
+        order: -1;
+    }
+}
+</style>
+
+{% endblock %}

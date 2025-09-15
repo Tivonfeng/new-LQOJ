@@ -38,19 +38,6 @@ export class ScoreHallHandler extends Handler {
                 userRank = await scoreService.getUserRank(this.domain._id, uid) || '-';
             }
 
-            // 获取最近积分记录
-            const rawRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 5);
-
-            recentRecords = rawRecords.map((record) => ({
-                ...record,
-                createdAt: record.createdAt.toLocaleString('zh-CN', {
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }),
-            }));
-
             // 获取签到相关信息
             hasCheckedInToday = await checkInService.hasCheckedInToday(uid);
 
@@ -62,13 +49,32 @@ export class ScoreHallHandler extends Handler {
             }
         }
 
+        // 获取全局最近积分记录（所有用户）
+        const rawRecords = await this.ctx.db.collection('score.records' as any)
+            .find({ domainId: this.domain._id })
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .toArray();
+
+        recentRecords = rawRecords.map((record) => ({
+            ...record,
+            createdAt: record.createdAt.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
         // 获取积分排行榜前10
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
 
-        // 获取用户信息
-        const uids = topUsers.map((u) => u.uid);
+        // 获取用户信息（包括排行榜和最近记录的用户）
+        const rankingUids = topUsers.map((u) => u.uid);
+        const recentRecordUids = recentRecords.map((r) => r.uid);
+        const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const udocs = await UserModel.getList(this.domain._id, allUids);
 
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
@@ -182,6 +188,59 @@ export class UserScoreHandler extends Handler {
             userScore: userScoreData,
             averageScore,
             recentRecords: formattedRecords,
+        };
+    }
+}
+
+/**
+ * 全部积分记录处理器
+ * 路由: /score/records
+ * 功能: 显示所有用户的积分记录，支持分页
+ */
+export class ScoreRecordsHandler extends Handler {
+    async get() {
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
+        const limit = 20;
+        const skip = (page - 1) * limit;
+
+        // 获取积分记录
+        const records = await this.ctx.db.collection('score.records' as any)
+            .find({ domainId: this.domain._id })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
+        // 获取总记录数
+        const total = await this.ctx.db.collection('score.records' as any)
+            .countDocuments({ domainId: this.domain._id });
+
+        // 获取涉及的用户信息
+        const uids = [...new Set(records.map((r: any) => r.uid))];
+        const UserModel = global.Hydro.model.user;
+        const udocs = await UserModel.getList(this.domain._id, uids);
+
+        // 格式化记录
+        const formattedRecords = records.map((record: any) => ({
+            ...record,
+            createdAt: record.createdAt.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
+        this.response.template = 'score_records.html';
+        this.response.body = {
+            records: formattedRecords,
+            udocs,
+            page,
+            total,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page < Math.ceil(total / limit),
+            hasPrev: page > 1,
         };
     }
 }

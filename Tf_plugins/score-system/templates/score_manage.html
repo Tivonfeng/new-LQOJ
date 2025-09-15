@@ -35,7 +35,10 @@
                             <div class="panel-icon">📋</div>
                             <h3>{{ _('Recent Score Records') }}</h3>
                         </div>
-                        <div class="panel-badge">{{ recentRecords|length if recentRecords else 0 }} {{ _('records') }}</div>
+                        <a href="{{ url('score_records') }}" class="more-records-btn">
+                            <span class="btn-icon">📋</span>
+                            <span class="btn-text">{{ _('More Records') }}</span>
+                        </a>
                     </div>
                     
                     <div class="panel-content">
@@ -539,6 +542,40 @@
     border-radius: var(--radius-lg);
     font-size: 0.875rem;
     font-weight: 600;
+}
+
+/* More Records Button */
+.more-records-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.more-records-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    text-decoration: none;
+    color: white;
+}
+
+.more-records-btn .btn-icon {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.more-records-btn .btn-text {
+    font-weight: 600;
+    letter-spacing: 0.025em;
 }
 
 /* Panel Content */

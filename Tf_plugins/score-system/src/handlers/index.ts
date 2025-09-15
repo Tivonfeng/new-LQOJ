@@ -35,6 +35,7 @@ export {
     ScoreHallHandler,
     ScoreManageHandler,
     ScoreRankingHandler,
+    ScoreRecordsHandler,
     UserScoreHandler,
 } from './ScoreHandlers';
 

@@ -24,6 +24,7 @@ import {
     ScoreHallHandler,
     ScoreManageHandler,
     ScoreRankingHandler,
+    ScoreRecordsHandler,
     TransferAdminHandler,
     TransferCreateHandler,
     TransferExchangeHandler,
@@ -125,6 +126,7 @@ export default function apply(ctx: Context, config: any = {}) {
     // 注册路由
     ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
     ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
+    ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
 

@@ -17,6 +17,10 @@
             <div class="stat-badge">
                 <span class="stat-icon">💰</span>
                 <span class="stat-text">{{ _('Your Balance') }}: {{ currentCoins or 0 }} 🏴</span>
+                <a href="{{ url('user_score') }}" class="details-btn">📊 {{ _('Score Records') }}</a>
+                {% if canManage %}
+                <a href="{{ url('score_manage') }}" class="manage-btn">⚙️ {{ _('Manage') }}</a>
+                {% endif %}
                 <a href="{{ url('transfer_exchange') }}" class="exchange-btn">💱 {{ _('Exchange') }}</a>
             </div>
             {% endif %}
@@ -203,6 +207,66 @@
 
     <!-- Content Grid -->
     <div class="content-grid">
+        <!-- Recent Records -->
+        <div class="recent-records-section">
+            <div class="section-header">
+                <h3>{{ _('Recent Score Records') }}</h3>
+                <a href="{{ url('score_records') }}" class="view-all-link">
+                    {{ _('View All') }} →
+                </a>
+            </div>
+            
+            {% if recentRecords and recentRecords|length > 0 %}
+            <div class="records-list">
+                {% for record in recentRecords %}
+                <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }} {{ 'current-user' if isLoggedIn and record.uid == handler.user._id }}">
+                    <div class="record-badge badge-{{ 'positive' if record.score > 0 else 'negative' }}">
+                        {% if record.score > 0 %}
+                            📈
+                        {% else %}
+                            📉
+                        {% endif %}
+                    </div>
+                    <div class="record-info">
+                        <div class="record-title">
+                            <span class="user-name">
+                                {% if udocs[record.uid] %}
+                                    {{ udocs[record.uid].uname }}
+                                    {% if udocs[record.uid].displayName %}
+                                    <span class="display-name">({{ udocs[record.uid].displayName }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    User {{ record.uid }}
+                                {% endif %}
+                            </span>
+                            {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
+                                <span class="source-type admin">{{ _('Admin Operation') }}</span>
+                            {% else %}
+                                <span class="source-type problem">{{ record.problemTitle or ('Problem ' + record.pid|string) }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="record-details">
+                            <span class="record-reason">{{ record.reason or _('Score adjustment') }}</span>
+                            <span class="record-time">{{ record.createdAt }}</span>
+                        </div>
+                    </div>
+                    <div class="record-score">
+                        <span class="score-change {{ 'positive' if record.score > 0 else 'negative' }}">
+                            {{ '+' if record.score > 0 else '' }}{{ record.score }}
+                        </span>
+                        <span class="score-unit">pts</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">📋</span>
+                <p>{{ _('No recent records found') }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
         <!-- Leaderboard -->
         <div class="leaderboard-section">
             <div class="section-header">
@@ -251,76 +315,6 @@
                     <p>{{ _('No rankings yet') }}</p>
                 </div>
                 {% endif %}
-            </div>
-        </div>
-        
-        <!-- Sidebar -->
-        <div class="sidebar">
-            {% if isLoggedIn %}
-            <!-- Personal Stats -->
-            <div class="stats-card">
-                <div class="stats-header">
-                    <h4>{{ _('Your Progress') }}</h4>
-                    <a href="{{ url('user_score') }}" class="details-link">{{ _('Details') }}</a>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-value">{{ userScore.totalScore }}</span>
-                        <span class="stat-label">{{ _('Total Score') }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">{{ userScore.acCount }}</span>
-                        <span class="stat-label">{{ _('Solved') }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">#{{ userRank }}</span>
-                        <span class="stat-label">{{ _('Rank') }}</span>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- How to Earn -->
-            <div class="earn-card">
-                <div class="earn-header">
-                    <h4>{{ _('Earn Coins') }}</h4>
-                    <span class="earn-icon">💡</span>
-                </div>
-                <div class="earn-method">
-                    <div class="method-icon">📅</div>
-                    <div class="method-info">
-                        <span class="method-title">{{ _('Daily Check-in') }}</span>
-                        <span class="method-reward">+10 🏴</span>
-                    </div>
-                </div>
-                <div class="earn-method">
-                    <div class="method-icon">✅</div>
-                    <div class="method-info">
-                        <span class="method-title">{{ _('Solve Problems') }}</span>
-                        <span class="method-reward">+10 🏴</span>
-                    </div>
-                </div>
-                <a href="{{ url('problem_main') }}" class="earn-cta">
-                    <span class="cta-text">{{ _('Start Coding') }}</span>
-                    <span class="cta-icon">💻</span>
-                </a>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="actions-card">
-                <h4>{{ _('Quick Actions') }}</h4>
-                <div class="action-buttons">
-                    <a href="{{ url('daily_checkin') }}" class="action-btn">
-                        <span class="btn-icon">📅</span>
-                        <span class="btn-text">{{ _('Check In') }}</span>
-                    </a>
-                    {% if canManage %}
-                    <a href="{{ url('score_manage') }}" class="action-btn">
-                        <span class="btn-icon">⚙️</span>
-                        <span class="btn-text">{{ _('Manage') }}</span>
-                    </a>
-                    {% endif %}
-                </div>
             </div>
         </div>
     </div>
@@ -450,6 +444,30 @@
     font-size: 1.25rem;
 }
 
+.details-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-2);
+    margin-right: var(--spacing-1);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.details-btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
 .exchange-btn {
     background: linear-gradient(135deg, var(--secondary-color), #059669);
     color: white;
@@ -471,6 +489,30 @@
     text-decoration: none;
     color: white;
     box-shadow: 0 2px 8px rgba(6, 214, 160, 0.3);
+}
+
+.manage-btn {
+    background: linear-gradient(135deg, var(--warning-color), #d97706);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: var(--spacing-2);
+    margin-right: var(--spacing-1);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.manage-btn:hover {
+    background: linear-gradient(135deg, #d97706, var(--warning-color));
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* Main Container */
@@ -955,153 +997,10 @@
     gap: var(--spacing-6);
 }
 
-.stats-card, .earn-card, .actions-card {
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-6);
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-}
 
-.stats-header, .earn-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-4);
-}
 
-.stats-header h4, .earn-header h4, .actions-card h4 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
 
-.details-link {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-4);
-}
-
-.stats-grid .stat-item {
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-1);
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.earn-icon {
-    font-size: 1.25rem;
-}
-
-.earn-method {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
-    padding: var(--spacing-3);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
-}
-
-.method-icon {
-    font-size: 1.25rem;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--success-color);
-    color: white;
-    border-radius: var(--radius-md);
-}
-
-.method-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.method-title {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.method-reward {
-    font-weight: 700;
-    color: var(--success-color);
-}
-
-.earn-cta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-2);
-    background: var(--success-color);
-    color: white;
-    padding: var(--spacing-3) var(--spacing-4);
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.earn-cta:hover {
-    background: #059669;
-    transform: translateY(-1px);
-    text-decoration: none;
-    color: white;
-}
-
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-2);
-}
-
-.action-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-3);
-    padding: var(--spacing-3) var(--spacing-4);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--text-primary);
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.action-btn:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--primary-color);
-    transform: translateX(4px);
-    text-decoration: none;
-    color: var(--text-primary);
-}
-
-.btn-icon {
-    font-size: 1.125rem;
-}
 
 /* Empty State */
 .empty-state {
@@ -1125,10 +1024,6 @@
     
     .sidebar {
         order: -1;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -1165,11 +1060,6 @@
     .lottery-spotlight {
         padding: var(--spacing-6);
     }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-3);
-    }
 }
 
 @media (max-width: 640px) {
@@ -1185,7 +1075,7 @@
         padding: 0 var(--spacing-3);
     }
     
-    .lottery-spotlight, .leaderboard-section, .stats-card, .earn-card, .actions-card {
+    .lottery-spotlight, .leaderboard-section {
         padding: var(--spacing-4);
     }
     
@@ -1484,6 +1374,206 @@
     
     .game-text p {
         font-size: 0.8125rem;
+    }
+}
+
+/* Recent Records Section - Matching Leaderboard Style */
+.recent-records-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.records-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.record-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.record-item:hover {
+    background: var(--bg-secondary);
+    transform: translateX(4px);
+}
+
+.record-item.positive:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.record-item.negative:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.record-item.current-user {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%);
+    border-color: rgba(99, 102, 241, 0.3);
+    position: relative;
+}
+
+.record-item.current-user::before {
+    content: '👤';
+    position: absolute;
+    right: var(--spacing-2);
+    top: var(--spacing-2);
+    font-size: 0.875rem;
+    opacity: 0.6;
+}
+
+.record-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.record-badge.badge-positive {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+}
+
+.record-badge.badge-negative {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.record-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.record-title {
+    margin-bottom: var(--spacing-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.user-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.user-name .display-name {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.8125rem;
+}
+
+.source-type {
+    font-weight: 500;
+    {# color: var(--text-secondary); #}
+    font-size: 0.75rem;
+    padding: 0;
+    border-radius: 2px;
+    display: inline;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.source-type.admin {
+    color: var(--warning-color);
+    {# background: rgba(245, 158, 11, 0.1); #}
+    {# border: 1px solid rgba(245, 158, 11, 0.2); #}
+}
+
+.source-type.problem {
+    color: var(--primary-color);
+    {# background: rgba(99, 102, 241, 0.1); #}
+    {# border: 1px solid rgba(99, 102, 241, 0.2); #}
+}
+
+.record-details {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-1);
+}
+
+.record-reason {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+}
+
+.record-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.record-score {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.score-change {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-1);
+}
+
+.score-change.positive {
+    color: var(--success-color);
+}
+
+.score-change.negative {
+    color: var(--error-color);
+}
+
+.score-unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Responsive adjustments for recent records */
+@media (max-width: 768px) {
+    .recent-records-section {
+        padding: var(--spacing-4);
+    }
+    
+    .record-item {
+        padding: var(--spacing-3);
+        gap: var(--spacing-3);
+    }
+    
+    .record-badge {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    .record-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-1);
+    }
+    
+    .score-change {
+        font-size: 1rem;
     }
 }
 
