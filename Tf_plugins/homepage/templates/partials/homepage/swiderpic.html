@@ -57,154 +57,222 @@
 {% endif %}
 
 <style>
-   #carousel__container {
-      position: relative;
-      {# display: flex; #}
-      height: 100%;
-      overflow: hidden;
-  }
+/* 现代化设计系统变量 */
+:root {
+    --swiper-primary: #3b82f6;
+    --swiper-primary-dark: #1d4ed8;
+    --swiper-purple: #7c3aed;
+    --swiper-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #7c3aed 100%);
+    --swiper-accent: #fbbf24;
+    --swiper-accent-light: #fcd34d;
+    
+    --swiper-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+    --swiper-shadow-hover: 0 12px 40px rgba(59, 130, 246, 0.3);
+    --swiper-border-radius: 20px;
+    --swiper-transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
 
-  .img__container {
-      width: 100%;
-      height: 100%;
-      flex-shrink: 0;
-  }
+#carousel__container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--swiper-border-radius);
+    box-shadow: var(--swiper-shadow);
+    transition: var(--swiper-transition);
+    background: var(--swiper-gradient);
+}
 
-  .img__container > img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain; /* 保证图片按比例缩放 */
-  }
+#carousel__container:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--swiper-shadow-hover);
+}
+
+#carousel__container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+    opacity: 0.6;
+    z-index: 1;
+    transition: var(--swiper-transition);
+}
+
+#carousel__container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s ease;
+    z-index: 1;
+}
+
+#carousel__container:hover::after {
+    left: 100%;
+}
+
+.img__container {
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.img__container > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--swiper-border-radius);
+}
+
+.carousel__img {
+    transition: var(--swiper-transition);
+    filter: brightness(1.1);
+}
+
+#carousel__container:hover .carousel__img {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+}
 
 
-  .carousel__img {
-      transition: transform 0.8s ease;
-  }
 
+.card-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
 
+/* 覆盖Hydro默认样式 - 仅针对包含卡片容器的section */
+.section.side:has(.card-container) {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+}
 
-  .card-container {
-      display: flex;
-      {# gap: 5px; #}
-  }
+/* 如果浏览器不支持:has()，使用更具体的选择器 */
+#carousel__container + .section.side {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+}
 
-  .card {
-      width: 50%;
-      height: 100px;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative; /* 为背景动画准备 */
-      display: flex; /* 使内容上下居中 */
-      justify-content: center; /* 使内容水平居中 */
-      align-items: center; /* 使内容垂直居中 */
-      text-decoration: none; /* 去除链接下划线 */
-  }
+.card {
+    width: 50%;
+    height: 120px;
+    overflow: hidden;
+    transition: var(--swiper-transition);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    border-radius: var(--swiper-border-radius);
+    box-shadow: var(--swiper-shadow);
+    cursor: pointer;
+}
 
-  .card:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      text-decoration: none; /* 确保悬停时没有下划线 */
-  }
+.card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--swiper-shadow-hover);
+    text-decoration: none;
+}
 
-  .card-content {
-      text-align: center; /* 标题居中 */
-  }
+.card-content {
+    text-align: center;
+    position: relative;
+    z-index: 3;
+    transition: var(--swiper-transition);
+}
 
+.card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    margin: 0;
+    letter-spacing: -0.02em;
+    transition: var(--swiper-transition);
+}
 
-  .tech-background {
-      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%),
-                  linear-gradient(135deg, rgba(0, 153, 255, 0.4), rgba(0, 255, 204, 0.4));
-      background-blend-mode: overlay;
-      overflow: hidden;
-      border-radius: 12px; /* 增加圆角 */
-  }
+.card:hover .card-title {
+    color: var(--swiper-accent);
+    text-shadow: 0 4px 12px rgba(251, 191, 36, 0.5);
+    transform: translateY(-2px);
+}
 
-  .tech-background::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: conic-gradient(from 180deg at center, rgba(255, 255, 255, 0.3), transparent 90%);
-      animation: rotate 10s linear infinite;
-  }
+.tech-background {
+    background: var(--swiper-gradient);
+    overflow: hidden;
+}
 
-  @keyframes rotate {
-      0% {
-          transform: rotate(0deg);
-      }
-      100% {
-          transform: rotate(360deg);
-      }
-  }
+.tech-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+    opacity: 0.6;
+    z-index: 1;
+    transition: var(--swiper-transition);
+}
 
-  .scrolling-announcement {
-        overflow: hidden;
-        white-space: nowrap;
-        background-color: #FFFFE0; /* 设置背景颜色为深绿色 */
-        color: darkgreen; /* 设置文字颜色为白色 */
-        height: 20px;
-        display: flex;
-        align-items: center;
-      }
-  .scrolling-text p {
-        display: inline-block;
-        padding-left: 100%;
-        animation: scroll-left 10s linear infinite;
-      }
-  @keyframes scroll-left {
-        from {
-          transform: translateX(0);
-        }
-        to {
-          transform: translateX(-100%);
-        }
-      }
-  .tf-icon {
-      margin-left: 5px;
-      margin-right: 10px;
-  }
-   .scrolling-text {
-        flex-grow: 1; /* 让文本容器填充剩余空间 */
-        overflow: hidden;
-      }
-  .recent-records {
-      color: white;
-      font-size: 12px;
-      text-align: center;
-      align-items: center;
-      width: 45%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 5px;
-      display: flex; /* 添加flex布局 */
-      justify-content: center; /* 水平居中 */
-      align-items: center; /* 垂直居中 */
-  }
-  .recent-records span {
-          margin-right: 10px; /* 在每个span元素的右侧添加10px的间隔 */
-      }
-  .recent-records span:last-child {
-          margin-right: 0; /* 最后一个span元素不添加间隔 */
-      }
+.tech-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s ease;
+    z-index: 2;
+}
 
-  .recent-record-text, .recent-record-time {
-      animation: slide-up-fade 5s linear infinite;
-  }
+.card:hover.tech-background::after {
+    left: 100%;
+}
 
-  @keyframes slide-up-fade {
-       0%, 10% {
-          opacity: 0;
-          transform: translateY(20px);
-      }
-      20%, 80% {
-          opacity: 1;
-          transform: translateY(0);
-      }
-      90%, 100% {
-          opacity: 0;
-          transform: translateY(-20px);
-      }
-  }
+/* 动画效果 */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#carousel__container {
+    animation: slideInUp 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.card-container {
+    animation: slideInUp 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+    animation-delay: 0.2s;
+}
+
+/* 微交互动画 */
+.card:hover .card-content {
+    transform: scale(1.05);
+}
+
+/* 焦点可访问性 */
+.card:focus {
+    outline: none;
+    ring: 3px solid rgba(59, 130, 246, 0.3);
+}
 </style>

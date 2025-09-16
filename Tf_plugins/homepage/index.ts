@@ -116,9 +116,9 @@ export async function apply(ctx: Context) {
     // 使用 withHandlerClass 正确扩展 HomeHandler
     ctx.withHandlerClass('HomeHandler', (HomeHandler) => {
         // 扩展HomeHandler添加首页数据获取功能
-        HomeHandler.prototype.getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
+        (HomeHandler.prototype as any).getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
 
-        HomeHandler.prototype.getPersonal = async function (domainId: string) {
+        (HomeHandler.prototype as any).getPersonal = async function (domainId: string) {
             return await getPersonal(domainId, this.user._id, ctx);
         };
 

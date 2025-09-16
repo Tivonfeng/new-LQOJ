@@ -1,0 +1,294 @@
+{% set docsData = payload[0] %}
+
+{% if docsData and docsData.display %}
+<!-- VuePress文档按钮 -->
+<div class="docs-button-container">
+    <a href="{{ docsData.basePath }}" class="docs-action-btn" target="_blank" rel="noopener noreferrer">
+        <div class="docs-btn-main">
+            <div class="docs-btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10,9 9,9 8,9"></polyline>
+                </svg>
+            </div>
+            <div class="docs-btn-content">
+                <div class="docs-btn-title">{{ docsData.title }}</div>
+                <div class="docs-btn-subtitle">学习文档与教程</div>
+            </div>
+        </div>
+        <div class="docs-btn-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9,18 15,12 9,6"></polyline>
+            </svg>
+        </div>
+    </a>
+</div>
+
+<style>
+/* 设计系统变量 */
+:root {
+    --docs-primary: #3b82f6;
+    --docs-primary-dark: #2563eb;
+    --docs-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #7c3aed 100%);
+    --docs-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+    --docs-shadow-hover: 0 12px 40px rgba(59, 130, 246, 0.3);
+    --docs-border-radius: 20px;
+    --docs-transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.docs-button-container {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+}
+
+.docs-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 80px;
+    padding: 20px 24px;
+    background: var(--docs-gradient);
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: var(--docs-border-radius);
+    box-shadow: var(--docs-shadow);
+    transition: var(--docs-transition);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.docs-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+    opacity: 0.6;
+    transition: var(--docs-transition);
+}
+
+.docs-action-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.6s ease;
+}
+
+.docs-action-btn:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--docs-shadow-hover);
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.docs-action-btn:hover::after {
+    left: 100%;
+}
+
+.docs-btn-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.docs-btn-icon {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+    transition: var(--docs-transition);
+    position: relative;
+}
+
+.docs-btn-icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+    opacity: 0;
+    transition: var(--docs-transition);
+}
+
+.docs-action-btn:hover .docs-btn-icon {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1) rotate(5deg);
+}
+
+.docs-action-btn:hover .docs-btn-icon::before {
+    opacity: 1;
+}
+
+.docs-btn-content {
+    flex: 1;
+    text-align: left;
+}
+
+.docs-btn-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: var(--docs-transition);
+}
+
+.docs-btn-subtitle {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: var(--docs-transition);
+}
+
+.docs-action-btn:hover .docs-btn-title {
+    color: #fbbf24;
+    text-shadow: 0 4px 12px rgba(251, 191, 36, 0.5);
+    transform: translateX(2px);
+}
+
+.docs-action-btn:hover .docs-btn-subtitle {
+    color: #fcd34d;
+    text-shadow: 0 2px 8px rgba(252, 211, 77, 0.4);
+    transform: translateX(2px);
+}
+
+
+.docs-btn-arrow {
+    flex-shrink: 0;
+    opacity: 0.8;
+    transition: var(--docs-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.docs-action-btn:hover .docs-btn-arrow {
+    transform: translateX(4px);
+    opacity: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .docs-action-btn {
+        min-height: 70px;
+        padding: 16px 20px;
+        border-radius: 16px;
+    }
+    
+    .docs-btn-main {
+        gap: 12px;
+    }
+    
+    .docs-btn-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+    
+    .docs-btn-title {
+        font-size: 15px;
+    }
+    
+    .docs-btn-subtitle {
+        font-size: 12px;
+    }
+    
+}
+
+@media (max-width: 480px) {
+    .docs-action-btn {
+        min-height: 65px;
+        padding: 14px 18px;
+    }
+    
+    .docs-btn-main {
+        gap: 10px;
+    }
+    
+    .docs-btn-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .docs-btn-title {
+        font-size: 14px;
+    }
+    
+    .docs-btn-subtitle {
+        font-size: 11px;
+    }
+    
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .docs-action-btn {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* 动画效果 */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.docs-button-container {
+    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 焦点可访问性 */
+.docs-action-btn:focus {
+    outline: none;
+    ring: 3px solid rgba(99, 102, 241, 0.3);
+}
+
+/* 微交互动画 */
+.docs-btn-icon svg,
+.docs-btn-arrow svg {
+    transition: var(--docs-transition);
+}
+
+.docs-action-btn:hover .docs-btn-icon svg {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.docs-action-btn:hover .docs-btn-arrow svg {
+    filter: brightness(1.3);
+}
+</style>
+{% endif %}

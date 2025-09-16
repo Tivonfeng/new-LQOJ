@@ -57,11 +57,21 @@ export default function apply(ctx: Context, config: any = {}) {
     // 主路由（用于导航）- 添加权限检查
     ctx.Route('docs_main', finalConfig.basePath, VuePressHandler, PRIV.PRIV_USER_PROFILE);
 
-    // 导航栏显示也需要权限检查
-    ctx.injectUI('Nav', 'docs_main', {
-        prefix: 'docs',
-        before: 'ranking', // 插入到排行榜前面
-    }, PRIV.PRIV_USER_PROFILE);
+    // 扩展HomeHandler添加文档按钮到首页侧边栏
+    ctx.withHandlerClass('HomeHandler', (HomeHandler) => {
+        (HomeHandler.prototype as any).getDocs = async function (domainId: string) {
+            const isValidUser = this.user && this.user.hasPriv(PRIV.PRIV_USER_PROFILE);
+
+            return [{
+                title: finalConfig.title,
+                basePath: finalConfig.basePath,
+                enabled: finalConfig.enabled,
+                display: isValidUser,
+            }, domainId];
+        };
+
+        console.log('VuePress docs button added to HomeHandler');
+    });
 
     console.log(`VuePress Docs Plugin loaded at ${finalConfig.basePath}`);
 }
