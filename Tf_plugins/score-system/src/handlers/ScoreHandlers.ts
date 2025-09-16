@@ -419,3 +419,45 @@ export class ScoreManageHandler extends Handler {
         }
     }
 }
+
+/**
+ * 首次AC检查处理器
+ * 路由: /score/check-first-ac
+ * 功能: 检查是否为首次AC并返回积分信息
+ */
+export class CheckFirstACHandler extends Handler {
+    async post() {
+        try {
+            const { pid, uid } = this.request.body;
+
+            if (!pid || !uid) {
+                this.response.body = {
+                    success: false,
+                    message: '缺少必要参数: pid和uid',
+                };
+                return;
+            }
+
+            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+            // 检查是否为首次AC
+            const isFirstAC = await scoreService.isFirstAC(this.domain._id, uid, pid);
+
+            // 计算积分
+            const score = scoreService.calculateACScore(isFirstAC);
+
+            this.response.body = {
+                success: true,
+                isFirstAC,
+                score,
+                message: isFirstAC ? '首次AC' : '重复AC',
+            };
+        } catch (error) {
+            console.error('[CheckFirstAC] Error:', error);
+            this.response.body = {
+                success: false,
+                message: `检查失败：${error.message}`,
+            };
+        }
+    }
+}

@@ -19,10 +19,10 @@ const TransferExchangeApp: React.FC = () => {
 
   // 转账配置 - 从全局变量获取或使用默认值
   const transferConfig = (window as any).transferConfig || {
-    minAmount: 10,
+    minAmount: 1,
     maxAmount: 1000,
     transferFee: 1,
-    dailyLimit: 20,
+    dailyLimit: 100,
   };
 
   // 加载最近转账用户列表
@@ -531,20 +531,20 @@ addPage(new NamedPage(['transfer_exchange'], async () => {
 
   // 等待DOM完全加载
   if (document.readyState === 'loading') {
-    await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+    await new Promise((resolve) => document.addEventListener('DOMContentLoaded', resolve));
   }
 
   // 初始化React应用
   const mountPoint = document.getElementById('transfer-exchange-react-app');
   console.log('Mount point found:', !!mountPoint);
   console.log('Mount point element:', mountPoint);
-  
+
   if (mountPoint) {
     try {
       const root = createRoot(mountPoint);
       root.render(<TransferExchangeApp />);
       console.log('Transfer Exchange React app rendered successfully');
-      
+
       // 通知应用已挂载成功
       setTimeout(() => {
         document.dispatchEvent(new CustomEvent('transferExchangeAppMounted'));

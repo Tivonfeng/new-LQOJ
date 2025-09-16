@@ -7,6 +7,7 @@ import {
 } from 'hydrooj';
 // 导入处理器
 import {
+    CheckFirstACHandler,
     CheckInHandler,
     DiceAdminHandler,
     DiceGameHandler,
@@ -129,6 +130,7 @@ export default function apply(ctx: Context, config: any = {}) {
     ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
+    ctx.Route('check_first_ac', '/score/check-first-ac', CheckFirstACHandler);
 
     // 抽奖系统路由
     ctx.Route('lottery_hall', '/score/lottery', LotteryHallHandler);

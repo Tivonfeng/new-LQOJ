@@ -5,8 +5,8 @@ import {
 } from 'hydrooj';
 import {
     ScoreService,
-    TransferService,
     type TransferRecord,
+    TransferService,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
@@ -69,9 +69,9 @@ export class TransferExchangeHandler extends Handler {
             currentUid: uid,
             userBalance: userScore?.totalScore || 0,
             transferConfig: {
-                minAmount: 10,
+                minAmount: 1,
                 maxAmount: 1000,
-                dailyLimit: 20,
+                dailyLimit: 100,
                 transferFee: 1,
             },
         };

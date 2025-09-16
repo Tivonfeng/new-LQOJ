@@ -36,7 +36,7 @@ export class TransferService {
             enabled: true,
             minAmount: 1,
             maxAmount: 1000,
-            dailyLimit: 20,
+            dailyLimit: 100,
             transferFee: 1,
             ...config,
         };

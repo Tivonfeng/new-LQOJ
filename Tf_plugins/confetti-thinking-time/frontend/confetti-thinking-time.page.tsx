@@ -144,7 +144,40 @@ class ConfettiCelebration {
     return `${remainingSeconds}秒`;
   }
 
-  private showCelebrationImage(thinkingTime: number | null) {
+  // 检查是否为首次AC并获取积分信息
+  private async checkScoreInfo(pid: number, uid: number): Promise<{ isFirstAC: boolean; score: number }> {
+    try {
+      // 调用积分系统API检查是否为首次AC
+      const response = await fetch('/score/check-first-ac', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pid, uid }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          isFirstAC: data.isFirstAC || false,
+          score: data.score || 0,
+        };
+      }
+    } catch (error) {
+      console.warn('获取积分信息失败:', error);
+    }
+
+    // 默认返回值：假设是首次AC，10分
+    return { isFirstAC: true, score: 10 };
+  }
+
+  private async showCelebrationImage(thinkingTime: number | null, pid?: number, uid?: number) {
+    // 获取积分信息
+    let scoreInfo = { isFirstAC: true, score: 10 };
+    if (pid && uid) {
+      scoreInfo = await this.checkScoreInfo(pid, uid);
+    }
+
     // 创建样式表 - 简洁版
     const style = document.createElement('style');
     style.textContent = `
@@ -202,6 +235,31 @@ class ConfettiCelebration {
       animation: simple-scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     `;
 
+    // 生成积分显示内容
+    const scoreContent = scoreInfo.isFirstAC && scoreInfo.score > 0 
+      ? `<div style="
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        ">🎁 积分 +${scoreInfo.score}</div>`
+      : scoreInfo.isFirstAC 
+        ? '' // 首次AC但无积分奖励
+        : `<div style="
+            background: linear-gradient(135deg, #6c757d, #adb5bd);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+          ">💡 重复通过</div>`;
+
     // 创建内容
     popup.innerHTML = `
       <div style="
@@ -223,16 +281,7 @@ class ConfettiCelebration {
         margin-bottom: 16px;
       ">题目已成功解决</div>
       
-      <div style="
-        background: linear-gradient(135deg, #28a745, #20c997);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-      ">🎁 积分 +10</div>
+      ${scoreContent}
       
       ${thinkingTime ? `
         <div style="
@@ -375,13 +424,16 @@ class ConfettiCelebration {
               this.lastCelebrationTime = now;
 
               const thinkingTime = this.getThinkingTimeData();
+              const pid = msg.rdoc?.pid;
+              const uid = msg.rdoc?.uid;
               console.log('⏱️ 获取到思考时间:', thinkingTime);
+              console.log('📝 题目ID:', pid, '用户ID:', uid);
 
               setTimeout(() => {
                 console.log('🎉 开始执行庆祝动画');
                 this.playSound();
                 this.triggerConfetti();
-                this.showCelebrationImage(thinkingTime);
+                this.showCelebrationImage(thinkingTime, pid, uid);
 
                 this.tracker.resetTimer();
               }, 100);

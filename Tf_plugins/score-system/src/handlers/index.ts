@@ -32,6 +32,7 @@ export {
 
 // 积分相关处理器
 export {
+    CheckFirstACHandler,
     ScoreHallHandler,
     ScoreManageHandler,
     ScoreRankingHandler,
