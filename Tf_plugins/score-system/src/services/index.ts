@@ -8,6 +8,12 @@ export {
     type UserCheckInStats,
 } from './CheckInService';
 
+// 每日游戏限制服务
+export {
+    type DailyGameLimit,
+    DailyGameLimitService,
+} from './DailyGameLimitService';
+
 // 掷骰子游戏服务
 export {
     type DiceGameRecord,

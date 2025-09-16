@@ -5,6 +5,7 @@ import {
 } from 'hydrooj';
 import {
     CheckInService,
+    DailyGameLimitService,
     LotteryService,
     MigrationService,
     ScoreService,
@@ -28,6 +29,7 @@ export class ScoreHallHandler extends Handler {
         let recentRecords: any[] = [];
         let hasCheckedInToday = false;
         let nextReward = 10;
+        let gameRemainingPlays = { lottery: 0, dice: 0, rps: 0 };
 
         if (uid) {
             // 获取用户积分信息
@@ -47,14 +49,14 @@ export class ScoreHallHandler extends Handler {
                 const currentStreak = userStats?.currentStreak || 0;
                 nextReward = checkInService.calculateCheckInScore(currentStreak + 1);
             }
+
+            // 获取各游戏剩余次数
+            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            gameRemainingPlays = await dailyLimitService.getAllRemainingPlays(this.domain._id, uid);
         }
 
         // 获取全局最近积分记录（所有用户）
-        const rawRecords = await this.ctx.db.collection('score.records' as any)
-            .find({ domainId: this.domain._id })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .toArray();
+        const { records: rawRecords } = await scoreService.getScoreRecordsWithPagination(this.domain._id, 1, 10);
 
         recentRecords = rawRecords.map((record) => ({
             ...record,
@@ -96,6 +98,8 @@ export class ScoreHallHandler extends Handler {
             isLoggedIn: !!uid,
             hasCheckedInToday,
             nextReward,
+            gameRemainingPlays,
+            maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
         };
     }
 }

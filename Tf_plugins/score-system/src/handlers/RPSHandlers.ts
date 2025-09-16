@@ -2,6 +2,7 @@ import {
     Handler,
 } from 'hydrooj';
 import {
+    DailyGameLimitService,
     RPSGameService,
     ScoreService,
 } from '../services';
@@ -34,11 +35,15 @@ export class RPSGameHandler extends Handler {
         // 获取最近游戏记录
         const recentGames = await rpsService.getUserGameHistory(this.domain._id, uid, 6);
 
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const rpsLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'rps');
+
         // 获取游戏配置
         const gameConfig = rpsService.getGameConfig();
 
-        // 检查用户是否有足够积分游戏
-        const canPlay = currentCoins >= gameConfig.baseCost;
+        // 检查用户是否有足够积分游戏并且没有超过每日限制
+        const canPlay = currentCoins >= gameConfig.baseCost && rpsLimit.canPlay;
 
         // 格式化游戏记录时间
         const formattedGames = recentGames.map((game) => ({
@@ -68,6 +73,7 @@ export class RPSGameHandler extends Handler {
                 bestStreak: 0,
             },
             recentGames: formattedGames,
+            dailyLimit: rpsLimit,
         };
     }
 
@@ -108,6 +114,19 @@ export class RPSPlayHandler extends Handler {
                 return;
             }
 
+            // 检查每日游戏次数限制
+            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'rps');
+
+            if (!limitCheck.canPlay) {
+                this.response.body = {
+                    success: false,
+                    message: `今日剪刀石头布游戏次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
+                };
+                this.response.type = 'application/json';
+                return;
+            }
+
             console.log(`[RPSPlayHandler] Creating services for domain ${this.domain._id}`);
             const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
             const rpsService = new RPSGameService(this.ctx, scoreService);
@@ -120,6 +139,11 @@ export class RPSPlayHandler extends Handler {
             );
 
             console.log('[RPSPlayHandler] Game result:', result);
+
+            // 如果游戏成功，记录游戏次数
+            if (result.success) {
+                await dailyLimitService.recordPlay(this.domain._id, this.user._id, 'rps');
+            }
 
             // 添加选择图标到结果中
             if (result.success && result.playerChoice && result.aiChoice) {

@@ -98,7 +98,10 @@
                         <h3>{{ lotteryTypes.basic.name }}</h3>
                         <p class="machine-desc">{{ lotteryTypes.basic.description }}</p>
                         <div class="machine-cost">{{ lotteryTypes.basic.cost }} {{ _('coins per draw') }}</div>
-                        <div class="feature-tag">{{ _('Quick & Easy') }}</div>
+                        <div class="machine-limits">
+                            <div class="feature-tag">{{ _('Quick & Easy') }}</div>
+                            <div class="limit-badge">{{ _('Today:') }} {{ dailyLimit.remainingPlays }}/{{ dailyLimit.maxPlays }}</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -130,7 +133,7 @@
                 </div>
                 
                 <button class="draw-btn basic-draw" data-type="basic" 
-                        {% if currentCoins < lotteryTypes.basic.cost %}disabled{% endif %}>
+                        {% if currentCoins < lotteryTypes.basic.cost or not dailyLimit.canPlay %}disabled{% endif %}>
                     <span class="btn-icon">🎲</span>
                     <span class="btn-text">{{ _('Draw Now') }}</span>
                     <span class="btn-cost">-{{ lotteryTypes.basic.cost }} 🏴</span>
@@ -658,6 +661,13 @@
     margin-bottom: var(--spacing-2);
 }
 
+.machine-limits {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    flex-wrap: wrap;
+}
+
 .feature-tag {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
@@ -665,6 +675,18 @@
     border-radius: var(--radius-md);
     font-size: 0.75rem;
     font-weight: 600;
+    display: inline-block;
+}
+
+.limit-badge {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.8) 0%, rgba(21, 128, 61, 0.8) 100%);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
     display: inline-block;
 }
 

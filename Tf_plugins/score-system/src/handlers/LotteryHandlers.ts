@@ -4,6 +4,7 @@ import {
     PERM,
 } from 'hydrooj';
 import {
+    DailyGameLimitService,
     LOTTERY_TYPES,
     LotteryService,
     PRIZE_RARITY,
@@ -41,6 +42,10 @@ export class LotteryHallHandler extends Handler {
         // 获取最近抽奖记录
         const recentRecords = await lotteryService.getUserLotteryHistory(this.domain._id, uid, 10);
 
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const lotteryLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'lottery');
+
         // 获取所有可用奖品用于展示(全域统一)
         const allPrizes = await lotteryService.getAllPrizes(true);
 
@@ -76,6 +81,7 @@ export class LotteryHallHandler extends Handler {
             prizesByRarity,
             lotteryTypes: LOTTERY_TYPES,
             rarityInfo: PRIZE_RARITY,
+            dailyLimit: lotteryLimit,
         };
     }
 }
@@ -98,6 +104,18 @@ export class LotteryDrawHandler extends Handler {
             return;
         }
 
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'lottery');
+
+        if (!limitCheck.canPlay) {
+            this.response.body = {
+                success: false,
+                message: `今日抽奖次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
+            };
+            return;
+        }
+
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const lotteryService = new LotteryService(this.ctx, scoreService);
 
@@ -106,6 +124,11 @@ export class LotteryDrawHandler extends Handler {
             this.user._id,
             lotteryType as 'basic',
         );
+
+        // 如果抽奖成功，记录游戏次数
+        if (result.success) {
+            await dailyLimitService.recordPlay(this.domain._id, this.user._id, 'lottery');
+        }
 
         this.response.body = result;
     }

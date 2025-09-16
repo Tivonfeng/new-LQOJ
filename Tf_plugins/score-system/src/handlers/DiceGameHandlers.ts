@@ -2,6 +2,7 @@ import {
     Handler,
 } from 'hydrooj';
 import {
+    DailyGameLimitService,
     DiceGameService,
     ScoreService,
 } from '../services';
@@ -34,6 +35,10 @@ export class DiceGameHandler extends Handler {
         // 获取最近游戏记录
         const recentGames = await diceService.getUserGameHistory(this.domain._id, uid, 10);
 
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const diceLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'dice');
+
         // 获取游戏配置
         const gameConfig = diceService.getGameConfig();
 
@@ -59,7 +64,7 @@ export class DiceGameHandler extends Handler {
         this.response.template = 'dice_game.html';
         this.response.body = {
             currentCoins,
-            canPlay: availableBets.length > 0,
+            canPlay: availableBets.length > 0 && diceLimit.canPlay,
             availableBets,
             gameConfig,
             userStats: userStats || {
@@ -71,6 +76,7 @@ export class DiceGameHandler extends Handler {
             },
             winRate,
             recentGames: formattedGames,
+            dailyLimit: diceLimit,
         };
     }
 }
@@ -99,6 +105,18 @@ export class DicePlayHandler extends Handler {
             return;
         }
 
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'dice');
+
+        if (!limitCheck.canPlay) {
+            this.response.body = {
+                success: false,
+                message: `今日骰子游戏次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
+            };
+            return;
+        }
+
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
 
@@ -108,6 +126,11 @@ export class DicePlayHandler extends Handler {
             guess as 'big' | 'small',
             betAmountNum,
         );
+
+        // 如果游戏成功，记录游戏次数
+        if (result.success) {
+            await dailyLimitService.recordPlay(this.domain._id, this.user._id, 'dice');
+        }
 
         this.response.body = result;
     }
