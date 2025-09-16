@@ -161,13 +161,8 @@ if (window.__HYDRO_CONTEXT__.isHydroEmbedded) {
  */
 export class VuePressRouteHandler extends VuePressHandler {
     async get() {
-        const requestPath = this.request.path;
-        const basePath = '/docs';
-
-        // 提取相对于basePath的路径
-        const relativePath = requestPath.replace(basePath, '') || '/';
-
-        await this.serveVuePressPage(relativePath);
+        const requestPath = this.request.params.path || '/';
+        await this.serveVuePressPage(requestPath);
     }
 }
 
@@ -182,7 +177,7 @@ export class VuePressStaticHandler extends Handler {
         console.log('[VuePress Static] Path param:', this.request.params.path);
         console.log('[VuePress Static] __dirname:', __dirname);
 
-        const requestedFile = this.request.params[0] || this.request.params.path || '';
+        const requestedFile = this.request.params.path || '';
         const pluginDir = path.resolve(__dirname, '../..');
         const distDir = path.join(pluginDir, 'vuepress');
         const assetsDir = path.join(distDir, 'assets');

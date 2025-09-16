@@ -1,10 +1,10 @@
 import {
     Context,
+    PRIV,
     ProblemDoc,
     RecordDoc,
     Schema,
-    STATUS,
-} from 'hydrooj';
+    STATUS } from 'hydrooj';
 // 导入处理器
 import {
     CheckFirstACHandler,
@@ -162,11 +162,11 @@ export default function apply(ctx: Context, config: any = {}) {
     // 签到系统路由
     ctx.Route('daily_checkin', '/score/checkin', CheckInHandler);
 
-    // 注入导航栏
+    // 注入导航栏 - 添加权限检查，只有内部用户可见
     ctx.injectUI('Nav', 'score_hall', {
         prefix: 'score',
         before: 'ranking', // 插入到排行榜前面
-    });
+    }, PRIV.PRIV_USER_PROFILE);
     console.log('Score System plugin loaded successfully!');
 }
 

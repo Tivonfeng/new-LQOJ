@@ -1,5 +1,8 @@
-import { Context, Schema } from 'hydrooj';
-import { VuePressHandler, VuePressRouteHandler, VuePressStaticHandler } from './src/handlers/VuePressHandler';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as mime from 'mime-types';
+import { Context, PRIV, Schema } from 'hydrooj';
+import { VuePressHandler } from './src/handlers/VuePressHandler';
 
 const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('启用VuePress文档'),
@@ -19,20 +22,46 @@ export default function apply(ctx: Context, config: any = {}) {
 
     console.log('VuePress Docs Plugin loading...');
 
-    // 静态资源路由 - 必须在通配符路由之前注册
-    console.log('Registering assets route:', `${finalConfig.basePath}/assets/(.*)`);
-    ctx.Route('docs_assets', `${finalConfig.basePath}/assets/(.*)`, VuePressStaticHandler);
+    // 使用捕获路由处理所有文档请求
+    ctx.server.addCaptureRoute(`${finalConfig.basePath}/`, async (c: any, _next: any) => {
+        const filePath = c.path.substring(`${finalConfig.basePath}/`.length);
 
-    // 直接模式：VuePress独立运行
-    ctx.Route('docs_main', finalConfig.basePath, VuePressHandler);
-    ctx.Route('docs_routes', `${finalConfig.basePath}/(.*)?`, VuePressRouteHandler);
+        if (filePath.startsWith('assets/')) {
+            // 静态资源处理 - 直接处理而不创建Handler实例
+            const requestedFile = filePath.substring('assets/'.length);
+            const pluginDir = __dirname;
+            const distDir = path.join(pluginDir, 'vuepress');
+            const assetsDir = path.join(distDir, 'assets');
+            const fullPath = path.join(assetsDir, requestedFile);
 
-    ctx.injectUI('Nav', 'docs_main', {
-        name: 'docs_main',
-        displayName: finalConfig.title,
-        icon: 'book',
-        args: {},
+            try {
+                if (fs.existsSync(fullPath)) {
+                    const fileContent = fs.readFileSync(fullPath);
+                    const mimeType = mime.lookup(fullPath) || 'application/octet-stream';
+                    c.type = mimeType;
+                    c.body = fileContent;
+                } else {
+                    c.status = 404;
+                    c.body = `File not found: ${requestedFile}`;
+                }
+            } catch (error) {
+                c.status = 500;
+                c.body = `Error: ${error.message}`;
+            }
+        } else {
+            // 页面路由处理 - 重定向到主路由
+            c.redirect(`${finalConfig.basePath}`);
+        }
     });
+
+    // 主路由（用于导航）- 添加权限检查
+    ctx.Route('docs_main', finalConfig.basePath, VuePressHandler, PRIV.PRIV_USER_PROFILE);
+
+    // 导航栏显示也需要权限检查
+    ctx.injectUI('Nav', 'docs_main', {
+        prefix: 'docs',
+        before: 'ranking', // 插入到排行榜前面
+    }, PRIV.PRIV_USER_PROFILE);
 
     console.log(`VuePress Docs Plugin loaded at ${finalConfig.basePath}`);
 }
