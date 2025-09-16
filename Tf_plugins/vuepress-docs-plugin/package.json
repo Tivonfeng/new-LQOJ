@@ -1,0 +1,19 @@
+{
+  "name": "@hydrooj/vuepress-docs",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "VuePress Hope主题文档集成插件",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "hydrooj": "workspace:^",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^2.1.1",
+    "@types/node": "^20.0.0"
+  }
+}
