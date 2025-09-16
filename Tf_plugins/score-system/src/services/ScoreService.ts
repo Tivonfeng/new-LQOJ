@@ -184,4 +184,57 @@ export class ScoreService {
 
         return { totalScore, activeUsers };
     }
+
+    /**
+     * 分页获取所有积分记录
+     * @param domainId 域ID
+     * @param page 页码（从1开始）
+     * @param limit 每页数量
+     * @returns 分页的积分记录
+     */
+    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number): Promise<{
+        records: ScoreRecord[];
+        total: number;
+        totalPages: number;
+    }> {
+        const skip = (page - 1) * limit;
+
+        // 获取积分记录
+        const records = await this.ctx.db.collection('score.records' as any)
+            .find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
+        // 获取总记录数
+        const total = await this.ctx.db.collection('score.records' as any)
+            .countDocuments();
+
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            records,
+            total,
+            totalPages,
+        };
+    }
+
+    /**
+     * 格式化积分记录的日期
+     * @param records 原始记录数组
+     * @returns 格式化后的记录数组
+     */
+    formatScoreRecords(records: ScoreRecord[]): Array<Omit<ScoreRecord, 'createdAt'> & { createdAt: string }> {
+        return records.map((record) => ({
+            ...record,
+            createdAt: record.createdAt.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+    }
 }

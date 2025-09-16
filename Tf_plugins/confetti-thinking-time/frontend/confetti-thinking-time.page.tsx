@@ -145,7 +145,7 @@ class ConfettiCelebration {
   }
 
   // 检查是否为首次AC并获取积分信息
-  private async checkScoreInfo(pid: number, uid: number): Promise<{ isFirstAC: boolean; score: number }> {
+  private async checkScoreInfo(pid: number, uid: number): Promise<{ isFirstAC: boolean, score: number }> {
     try {
       // 调用积分系统API检查是否为首次AC
       const response = await fetch('/score/check-first-ac', {
@@ -236,7 +236,7 @@ class ConfettiCelebration {
     `;
 
     // 生成积分显示内容
-    const scoreContent = scoreInfo.isFirstAC && scoreInfo.score > 0 
+    const scoreContent = scoreInfo.isFirstAC && scoreInfo.score > 0
       ? `<div style="
           background: linear-gradient(135deg, #28a745, #20c997);
           color: white;
@@ -247,7 +247,7 @@ class ConfettiCelebration {
           margin-bottom: 20px;
           box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
         ">🎁 积分 +${scoreInfo.score}</div>`
-      : scoreInfo.isFirstAC 
+      : scoreInfo.isFirstAC
         ? '' // 首次AC但无积分奖励
         : `<div style="
             background: linear-gradient(135deg, #6c757d, #adb5bd);

@@ -201,36 +201,23 @@ export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 20;
-        const skip = (page - 1) * limit;
 
-        // 获取积分记录
-        const records = await this.ctx.db.collection('score.records' as any)
-            .find({ domainId: this.domain._id })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
+        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
-        // 获取总记录数
-        const total = await this.ctx.db.collection('score.records' as any)
-            .countDocuments({ domainId: this.domain._id });
+        // 使用 service 方法获取分页数据
+        const { records, total, totalPages } = await scoreService.getScoreRecordsWithPagination(
+            this.domain._id,
+            page,
+            limit,
+        );
 
         // 获取涉及的用户信息
-        const uids = [...new Set(records.map((r: any) => r.uid))];
+        const uids = [...new Set(records.map((r) => r.uid))];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
-        // 格式化记录
-        const formattedRecords = records.map((record: any) => ({
-            ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
-        }));
+        // 使用 service 方法格式化记录
+        const formattedRecords = scoreService.formatScoreRecords(records);
 
         this.response.template = 'score_records.html';
         this.response.body = {
@@ -238,8 +225,8 @@ export class ScoreRecordsHandler extends Handler {
             udocs,
             page,
             total,
-            totalPages: Math.ceil(total / limit),
-            hasNext: page < Math.ceil(total / limit),
+            totalPages,
+            hasNext: page < totalPages,
             hasPrev: page > 1,
         };
     }
