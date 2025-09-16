@@ -1,7 +1,10 @@
 import {
     Context,
+    db,
     Handler,
     ObjectId,
+    ProblemModel,
+    RecordModel,
 } from 'hydrooj';
 
 // 时间记录服务 - 直接操作Record集合
@@ -9,11 +12,11 @@ export class ThinkingTimeService {
     constructor(private ctx: Context) {}
 
     get recordColl() {
-        return this.ctx.db.collection('record');
+        return db.collection('record');
     }
 
     get documentColl() {
-        return this.ctx.db.collection('document');
+        return db.collection('document');
     }
 
     // 更新提交记录的思考时间
@@ -292,10 +295,9 @@ export default function apply(ctx: Context) {
     ctx.on('app/started' as any, async () => {
         try {
             // 动态添加 thinkingTime 到 RecordModel 的 PROJECTION_LIST
-            const RecordModel = (global as any).Hydro?.model?.record;
             if (RecordModel && RecordModel.PROJECTION_LIST) {
-                if (!RecordModel.PROJECTION_LIST.includes('thinkingTime')) {
-                    RecordModel.PROJECTION_LIST.push('thinkingTime');
+                if (!RecordModel.PROJECTION_LIST.includes('thinkingTime' as any)) {
+                    RecordModel.PROJECTION_LIST.push('thinkingTime' as any);
                     console.log('✅ 已添加 thinkingTime 到 RecordModel PROJECTION_LIST');
                 }
             } else {
@@ -303,14 +305,13 @@ export default function apply(ctx: Context) {
             }
 
             // 动态添加 thinkingTimeStats 到 ProblemModel 的所有 PROJECTION 列表
-            const ProblemModel = (global as any).Hydro?.model?.problem;
             if (ProblemModel) {
                 // 添加到所有相关的投影列表
-                const projectionLists = ['PROJECTION_LIST', 'PROJECTION_PUBLIC', 'PROJECTION_CONTEST_DETAIL'];
+                const projectionLists = ['PROJECTION_LIST', 'PROJECTION_PUBLIC', 'PROJECTION_CONTEST_LIST'];
                 for (const listName of projectionLists) {
                     if (ProblemModel[listName] && Array.isArray(ProblemModel[listName])) {
-                        if (!ProblemModel[listName].includes('thinkingTimeStats')) {
-                            ProblemModel[listName].push('thinkingTimeStats');
+                        if (!ProblemModel[listName].includes('thinkingTimeStats' as any)) {
+                            ProblemModel[listName].push('thinkingTimeStats' as any);
                             console.log(`✅ 已添加 thinkingTimeStats 到 ProblemModel.${listName}`);
                         }
                     }
@@ -319,7 +320,7 @@ export default function apply(ctx: Context) {
                 console.warn('⚠️ 无法找到 ProblemModel');
             }
 
-            const recordColl = ctx.db.collection('record');
+            const recordColl = db.collection('record');
 
             // 为思考时间查询创建复合索引
             await recordColl.createIndex(
