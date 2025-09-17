@@ -173,11 +173,14 @@ class DomainUserHandler extends ManageHandler {
     @requireSudo
     @param('uids', Types.NumericArray)
     @param('role', Types.Role)
-    async postSetUsers(domainId: string, uid: number[], role: string) {
+    @param('join', Types.Boolean)
+    async postSetUsers(domainId: string, uid: number[], role: string, join = false) {
+        if (join) this.checkPriv(PRIV.PRIV_MANAGE_ALL_DOMAIN);
         await Promise.all([
             domain.setUserRole(domainId, uid, role),
-            oplog.log(this, 'domain.setRole', { uid, role }),
+            oplog.log(this, 'domain.setRole', { uid, role, join }),
         ]);
+        if (join) await domain.setJoin(domainId, uid, true);
         this.back();
     }
 
@@ -187,8 +190,10 @@ class DomainUserHandler extends ManageHandler {
         const original = await domain.getMultiUserInDomain(domainId, { uid: { $in: uids } }).toArray();
         const needUpdate = uids.filter((uid) => original.find((i) => i.uid === uid)?.join);
         if (!needUpdate.length) return;
+        const target = needUpdate.length > 1 ? needUpdate : needUpdate[0];
         await Promise.all([
-            domain.setJoin(domainId, needUpdate.length > 1 ? needUpdate : needUpdate[0], false),
+            domain.setJoin(domainId, target, false),
+            domain.setUserRole(domainId, target, 'guest'),
             oplog.log(this, 'domain.kick', { uids: needUpdate }),
         ]);
         const msg = JSON.stringify({
