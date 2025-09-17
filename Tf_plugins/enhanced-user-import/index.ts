@@ -4,6 +4,7 @@ import {
     Context,
     Handler,
     PRIV,
+    SettingModel,
 } from 'hydrooj';
 import { EnhancedUserImportHandler } from './src/handlers';
 
@@ -37,7 +38,15 @@ class StaticHandler extends Handler {
 }
 
 export default function apply(ctx: Context) {
-    console.log('Quick User Creation plugin loading...');
+    console.log('Enhanced User Import plugin loading...');
+
+    // 注册系统设置
+    SettingModel.SystemSetting(
+        SettingModel.Setting('enhanced_user_import', 'defaultEmailDomain', 'lqcode.fun', 'text',
+            'Default Email Domain', 'Default email domain for user creation'),
+        SettingModel.Setting('enhanced_user_import', 'defaultPassword', '123456', 'text',
+            'Default Password', 'Default password for new users'),
+    );
 
     // 注册路由 - 用户快速创建功能
     ctx.Route('manage_user_import_enhanced', '/manage/userimport/enhanced', EnhancedUserImportHandler, PRIV.PRIV_EDIT_SYSTEM);
@@ -48,5 +57,5 @@ export default function apply(ctx: Context) {
     // 注入到控制面板侧边栏
     ctx.injectUI('ControlPanel', 'manage_user_import_enhanced');
 
-    console.log('Quick User Creation plugin loaded successfully!');
+    console.log('Enhanced User Import plugin loaded successfully!');
 }

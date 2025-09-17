@@ -5,88 +5,54 @@ __langname: 简体中文
 'Enhanced User Import': '用户快速创建'
 'manage_user_import_enhanced': '用户快速创建'
 
-# Format Help
-'Format Help': '格式帮助'
-'User data format': '用户数据格式'
-'Each line should contain': '每行应包含'
-'email, username, password, displayName, extra': '邮箱, 用户名, 密码, 显示名, 额外信息'
-'Extra field can be JSON with group, school, studentId': '额外字段可以是包含组、学校、学号的JSON'
+# Plugin Settings
+'Default Email Domain': '默认邮箱域名'
+'Default email domain for user creation': '创建用户时使用的默认邮箱域名'
+'Default Password': '默认密码'
+'Default password for new users': '新用户的默认密码'
 
-# Form Fields
-'User Data': '用户数据'
-'Or paste user data below': '或在下方粘贴用户数据'
-'Batch size': '批次大小'
-'Import in batches of': '每批导入'
-'users': '用户'
-'Preview only (do not import)': '仅预览（不导入）'
+# Messages
+'Username cannot be empty': '用户名不能为空'
+'Invalid email format': '邮箱格式无效'
+'Invalid username format': '用户名格式无效'
+'Invalid password format': '密码格式无效'
+'Email {0} already exists': '邮箱 {0} 已存在'
+'Username {0} already exists': '用户名 {0} 已存在'
+'User {0} created successfully!': '用户 {0} 创建成功！'
+'User {0} ready': '用户 {0} 准备就绪'
+'Failed to create user: {0}': '创建用户失败：{0}'
 
-# Buttons
-'Preview Results': '预览结果'
-'Import Now': '立即导入'
-
-# Results
-'Validation Results': '验证结果'
-'Total Users': '用户总数'
-'Email': '邮箱'
+# Form Elements
 'Username': '用户名'
-'Display Name': '显示名'
-'Extra Info': '额外信息'
-'Import completed!': '导入完成！'
-'Successfully imported {0} users.': '成功导入 {0} 个用户。'
+'Email': '邮箱'
+'Password': '密码'
+'Domain': '域'
+'Role': '角色'
+'Preview Mode': '预览模式'
 
-# Tabs
-'File Upload': '文件上传'
-'Paste Text': '粘贴文本'
-'CSV Format': 'CSV格式'
-'TSV Format': 'TSV格式'
-'Manual Input': '手动输入'
-'Import Method': '导入方式'
-'Choose import method': '选择导入方式'
-'Data Format': '数据格式'
-'Choose data format': '选择数据格式'
+# Form Actions
+'Create User': '创建用户'
+'Preview': '预览'
+'Create': '创建'
+'Cancel': '取消'
+'Clear': '清除'
 
-# File Upload
-'Select File': '选择文件'
-'Upload CSV/TSV File': '上传CSV/TSV文件'
-'File size limit: 5MB': '文件大小限制：5MB'
-'Supported formats: CSV, TSV': '支持格式：CSV, TSV'
-'Drag and drop files here': '拖拽文件到这里'
-'or click to browse': '或点击浏览'
-'Processing file...': '处理文件中...'
-'Clear Data': '清除数据'
+# Status Messages
+'Ready': '准备就绪'
+'Creating...': '创建中...'
+'Success': '成功'
+'Failed': '失败'
+'Processing': '处理中'
 
-# Templates
-'Download Template': '下载模板'
-'Download Sample CSV': '下载示例CSV'
-'Download Sample TSV': '下载示例TSV'
-'CSV Template': 'CSV模板'
-'TSV Template': 'TSV模板'
-'Export Template': '导出模板'
+# Configuration
+'Configuration': '配置'
+'Current Settings': '当前设置'
+'Default email domain': '默认邮箱域名'
+'Default password': '默认密码'
 
-# Statistics
-'Sample Data': '示例数据'
-'Validation': '验证'
-'Progress': '进度'
-'Import Progress': '导入进度'
-'Validating data...': '验证数据中...'
-'Importing users...': '导入用户中...'
-'Real-time Validation': '实时验证'
-'Line {0}: {1}': '第 {0} 行：{1}'
-'Valid format': '格式正确'
-'Invalid format': '格式错误'
-'Valid Users': '有效用户'
-'Invalid Users': '无效用户'
-'Duplicates': '重复项'
-'Status': '状态'
-'Import Statistics': '导入统计'
-
-# Help and Tips
-'Import History': '导入历史'
-'Example': '示例'
-'Tips': '提示'
-'Use CSV or TSV format for best results': '使用CSV或TSV格式以获得最佳效果'
-'Maximum 5MB file size': '最大5MB文件大小'
-'Batch import for large datasets': '大数据集的批量导入'
-'Preview before importing': '导入前预览'
-'Comma-separated values format': '逗号分隔值格式'
-'Tab-separated values format': '制表符分隔值格式' 
+# Help
+'Help': '帮助'
+'Usage Instructions': '使用说明'
+'Enter username to create user automatically': '输入用户名即可自动创建用户'
+'Email and password will be generated automatically': '邮箱和密码将自动生成' 
+enhanced_user_import: 高级用户导入功能

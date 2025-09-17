@@ -12,11 +12,11 @@
             <div class="eui-stat-badges">
                 <div class="eui-stat-badge">
                     <span class="eui-stat-icon">📧</span>
-                    <span class="eui-stat-text">默认邮箱: @lqcode.fun</span>
+                    <span class="eui-stat-text">默认邮箱: @{{ config.defaultEmailDomain | escape }}</span>
                 </div>
                 <div class="eui-stat-badge">
                     <span class="eui-stat-icon">🔑</span>
-                    <span class="eui-stat-text">默认密码: 123456</span>
+                    <span class="eui-stat-text">默认密码: {{ config.defaultPassword | escape }}</span>
                 </div>
             </div>
         </div>
@@ -57,6 +57,7 @@
       },
       domains: {{ domains | json | safe }},
       currentDomain: "{{ currentDomain | escape | safe }}",
+      config: {{ config | json | safe }},
       
       // 元数据
       meta: {
