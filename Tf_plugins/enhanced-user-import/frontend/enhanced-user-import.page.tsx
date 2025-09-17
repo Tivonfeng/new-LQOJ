@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
