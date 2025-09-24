@@ -1,0 +1,26 @@
+{
+  "name": "@tivonfeng/score-games",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "HydroOJ积分系统游戏插件 - 提供掷骰子和剪刀石头布等积分游戏",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "@tivonfeng/score-core": "workspace:^",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "hydrooj",
+    "score",
+    "games",
+    "plugin",
+    "dice",
+    "rock-paper-scissors"
+  ]
+}

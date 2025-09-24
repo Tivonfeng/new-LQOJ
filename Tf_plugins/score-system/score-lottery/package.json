@@ -1,0 +1,25 @@
+{
+  "name": "@tivonfeng/score-lottery",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "HydroOJ积分系统抽奖插件 - 提供积分抽奖和奖品管理功能",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "@tivonfeng/score-core": "workspace:^",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "hydrooj",
+    "score",
+    "lottery",
+    "plugin",
+    "prize"
+  ]
+}

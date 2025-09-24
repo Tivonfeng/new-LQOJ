@@ -1,42 +1,23 @@
 import {
     Context,
 } from 'hydrooj';
+import type {
+    IScoreService,
+    ScoreConfig,
+    ScoreOperationResult,
+    ScoreRecord,
+    UserScore,
+} from '../types';
+import { SCORE_EVENTS } from '../events/ScoreEvents';
 
-// 积分记录接口
-export interface ScoreRecord {
-    _id?: any;
-    uid: number;
-    domainId: string;
-    pid: number;
-    recordId: any;
-    score: number;
-    reason: string;
-    createdAt: Date;
-    problemTitle?: string;
-}
-
-// 用户积分统计接口
-export interface UserScore {
-    _id?: any;
-    uid: number;
-    domainId?: string; // 可选，用于向后兼容
-    totalScore: number;
-    acCount: number;
-    lastUpdated: Date;
-    migratedFrom?: string[]; // 迁移来源域列表
-    migratedAt?: Date; // 迁移时间
-}
-
-// 积分系统配置接口
-export interface ScoreConfig {
-    enabled: boolean;
-}
+// 导出类型以保持向后兼容
+export type { ScoreConfig, ScoreRecord, UserScore } from '../types';
 
 /**
  * 积分计算与管理服务
  * 负责：AC积分计算、用户积分管理、排行榜查询
  */
-export class ScoreService {
+export class ScoreService implements IScoreService {
     private config: ScoreConfig;
     private ctx: Context;
 
@@ -186,6 +167,7 @@ export class ScoreService {
             records,
             total,
             totalPages,
+            currentPage: page,
         };
     }
 
@@ -205,5 +187,100 @@ export class ScoreService {
                 minute: '2-digit',
             }),
         }));
+    }
+
+    /**
+     * 检查用户积分是否足够
+     */
+    async checkSufficientScore(domainId: string, uid: number, requiredScore: number): Promise<boolean> {
+        const userScore = await this.getUserScore(domainId, uid);
+        return userScore ? userScore.totalScore >= requiredScore : false;
+    }
+
+    /**
+     * 扣除用户积分（带检查）
+     */
+    async deductUserScore(domainId: string, uid: number, score: number, reason: string): Promise<ScoreOperationResult> {
+        try {
+            const sufficientScore = await this.checkSufficientScore(domainId, uid, score);
+            if (!sufficientScore) {
+                const currentScore = await this.getUserScore(domainId, uid);
+                this.ctx.emit(SCORE_EVENTS.SCORE_INSUFFICIENT, {
+                    uid,
+                    domainId,
+                    required: score,
+                    current: currentScore?.totalScore || 0,
+                    action: reason,
+                });
+                return {
+                    success: false,
+                    message: '积分不足',
+                    data: { required: score, current: currentScore?.totalScore || 0 },
+                };
+            }
+
+            await this.updateUserScore(domainId, uid, -score);
+            await this.addScoreRecord({
+                uid,
+                domainId,
+                pid: 0, // 非题目相关的积分变化
+                recordId: null,
+                score: -score,
+                reason,
+            });
+
+            this.ctx.emit(SCORE_EVENTS.SCORE_CHANGE, {
+                uid,
+                domainId,
+                change: -score,
+                reason,
+            });
+
+            return {
+                success: true,
+                message: '积分扣除成功',
+            };
+        } catch (error) {
+            console.error('[ScoreService] 扣除积分失败:', error);
+            return {
+                success: false,
+                message: '积分扣除失败',
+            };
+        }
+    }
+
+    /**
+     * 增加用户积分
+     */
+    async addUserScore(domainId: string, uid: number, score: number, reason: string): Promise<ScoreOperationResult> {
+        try {
+            await this.updateUserScore(domainId, uid, score);
+            await this.addScoreRecord({
+                uid,
+                domainId,
+                pid: 0, // 非题目相关的积分变化
+                recordId: null,
+                score,
+                reason,
+            });
+
+            this.ctx.emit(SCORE_EVENTS.SCORE_CHANGE, {
+                uid,
+                domainId,
+                change: score,
+                reason,
+            });
+
+            return {
+                success: true,
+                message: '积分增加成功',
+            };
+        } catch (error) {
+            console.error('[ScoreService] 增加积分失败:', error);
+            return {
+                success: false,
+                message: '积分增加失败',
+            };
+        }
     }
 }

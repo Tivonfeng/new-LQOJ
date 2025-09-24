@@ -1,0 +1,621 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="admin-hero">
+    <div class="hero-content">
+        <h1 class="hero-title">🛡️ {{ _('Transfer Administration') }}</h1>
+        <p class="hero-subtitle">{{ _('Monitor and manage all transfer activities') }}</p>
+        <div class="admin-badge">
+            <span class="badge-icon">👨‍💼</span>
+            <span class="badge-text">{{ _('Administrator Panel') }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Overview -->
+<div class="stats-overview">
+    <div class="overview-container">
+        <div class="stat-card primary">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ transferStats.totalTransfers }}</div>
+                <div class="stat-label">{{ _('Total Transfers') }}</div>
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ transferStats.totalAmount }}</div>
+                <div class="stat-label">{{ _('Total Amount') }}</div>
+            </div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-icon">💸</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ transferStats.totalFees }}</div>
+                <div class="stat-label">{{ _('Total Fees') }}</div>
+            </div>
+        </div>
+        
+        <div class="stat-card accent">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <div class="stat-value">{{ transferStats.todayTransfers }}</div>
+                <div class="stat-label">{{ _('Today Transfers') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="admin-container">
+    <div class="section-card">
+        <div class="section-header">
+            <h3>🔍 {{ _('Recent Transfer Activities') }}</h3>
+            <div class="header-controls">
+                <button class="refresh-btn" onclick="location.reload()">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">{{ _('Refresh') }}</span>
+                </button>
+            </div>
+        </div>
+        
+        {% if transfers and transfers|length > 0 %}
+        <div class="transfer-table">
+            <div class="table-header">
+                <div class="th time">{{ _('Time') }}</div>
+                <div class="th users">{{ _('From → To') }}</div>
+                <div class="th amount">{{ _('Amount') }}</div>
+                <div class="th fee">{{ _('Fee') }}</div>
+                <div class="th status">{{ _('Status') }}</div>
+                <div class="th transaction">{{ _('Transaction ID') }}</div>
+                <div class="th memo">{{ _('Memo') }}</div>
+            </div>
+            
+            <div class="table-body">
+                {% for transfer in transfers %}
+                <div class="table-row {{ transfer.status }}">
+                    <div class="td time">
+                        <div class="time-display">
+                            <div class="time-main">{{ transfer.createdAt.split(' ')[1] }}</div>
+                            <div class="time-date">{{ transfer.createdAt.split(' ')[0] }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="td users">
+                        <div class="user-flow">
+                            <div class="user-from">
+                                {% if udocs[transfer.fromUid] %}
+                                    <span class="user-name">{{ udocs[transfer.fromUid].uname }}</span>
+                                    {% if udocs[transfer.fromUid].displayName %}
+                                    <span class="user-display">({{ udocs[transfer.fromUid].displayName }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="user-name">User {{ transfer.fromUid }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="transfer-arrow">→</div>
+                            <div class="user-to">
+                                {% if udocs[transfer.toUid] %}
+                                    <span class="user-name">{{ udocs[transfer.toUid].uname }}</span>
+                                    {% if udocs[transfer.toUid].displayName %}
+                                    <span class="user-display">({{ udocs[transfer.toUid].displayName }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="user-name">User {{ transfer.toUid }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="td amount">
+                        <span class="amount-value">{{ transfer.amount }}</span>
+                        <span class="amount-currency">🏴</span>
+                    </div>
+                    
+                    <div class="td fee">
+                        <span class="fee-value">{{ transfer.fee }}</span>
+                        <span class="fee-currency">🏴</span>
+                    </div>
+                    
+                    <div class="td status">
+                        <span class="status-badge {{ transfer.status }}">
+                            {% if transfer.status == 'completed' %}
+                            ✅ {{ _('Completed') }}
+                            {% elif transfer.status == 'pending' %}
+                            ⏳ {{ _('Pending') }}
+                            {% elif transfer.status == 'failed' %}
+                            ❌ {{ _('Failed') }}
+                            {% elif transfer.status == 'cancelled' %}
+                            🚫 {{ _('Cancelled') }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="td transaction">
+                        <code class="transaction-id">{{ transfer.transactionId }}</code>
+                    </div>
+                    
+                    <div class="td memo">
+                        {% if transfer.reason %}
+                        <span class="memo-text">{{ transfer.reason }}</span>
+                        {% else %}
+                        <span class="memo-empty">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>{{ _('No Transfer Records') }}</h3>
+            <p>{{ _('No transfer activities found in the system') }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Transfer Admin Page Styles */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+}
+
+/* Hero Section */
+.admin-hero {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+    color: white;
+    padding: var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin-bottom: var(--spacing-6);
+}
+
+.admin-badge {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-6);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    font-weight: 600;
+}
+
+/* Statistics Overview */
+.stats-overview {
+    margin-bottom: var(--spacing-8);
+}
+
+.overview-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-6);
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+.stat-card.primary {
+    border-color: var(--primary-color);
+}
+
+.stat-card.success {
+    border-color: var(--success-color);
+}
+
+.stat-card.warning {
+    border-color: var(--warning-color);
+}
+
+.stat-card.accent {
+    border-color: var(--accent-color);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Main Container */
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+.section-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.section-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.refresh-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.refresh-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+/* Transfer Table */
+.transfer-table {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 100px 200px 80px 60px 100px 120px 1fr;
+    background: var(--text-primary);
+    color: white;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.th {
+    padding: var(--spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.table-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 100px 200px 80px 60px 100px 120px 1fr;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.table-row:hover {
+    background: white;
+}
+
+.table-row.completed {
+    border-left: 4px solid var(--success-color);
+}
+
+.table-row.pending {
+    border-left: 4px solid var(--warning-color);
+}
+
+.table-row.failed {
+    border-left: 4px solid var(--error-color);
+}
+
+.td {
+    padding: var(--spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* Time Display */
+.time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-main {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.time-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* User Flow */
+.user-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.user-from, .user-to {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.user-display {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.transfer-arrow {
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+/* Amount and Fee */
+.amount-value, .fee-value {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.amount-currency, .fee-currency {
+    margin-left: var(--spacing-1);
+}
+
+/* Status Badge */
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+}
+
+.status-badge.completed {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.status-badge.failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+.status-badge.cancelled {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--text-secondary);
+}
+
+/* Transaction ID */
+.transaction-id {
+    font-family: monospace;
+    font-size: 0.75rem;
+    background: var(--bg-tertiary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
+/* Memo */
+.memo-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    text-align: left;
+}
+
+.memo-empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-6);
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .overview-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-2);
+    }
+    
+    .th,
+    .td {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    
+    .th:before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: var(--spacing-2);
+    }
+}
+
+@media (max-width: 768px) {
+    .overview-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        align-items: flex-start;
+    }
+    
+    .transfer-table {
+        overflow-x: auto;
+    }
+    
+    .user-flow {
+        flex-direction: row;
+        gap: var(--spacing-2);
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .section-card {
+        padding: var(--spacing-4);
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 2rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+{% endblock %}

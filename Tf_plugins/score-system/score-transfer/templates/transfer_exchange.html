@@ -1,0 +1,989 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="exchange-hero">
+    <div class="hero-content">
+        <h1 class="hero-title">💱 {{ _('Score Exchange') }}</h1>
+        <p class="hero-subtitle">{{ _('Transfer points between users safely and quickly') }}</p>
+        <div class="balance-display">
+            <span class="balance-label">{{ _('Your Balance') }}:</span>
+            <span class="balance-amount">{{ userScore.totalScore }} 🏴</span>
+        </div>
+    </div>
+</div>
+
+<!-- React App Container -->
+<div id="transfer-exchange-react-app">
+    <!-- Loading Fallback -->
+    <div class="loading-fallback">
+        <div class="loading-spinner">⏳</div>
+        <div class="loading-text">Loading Transfer Exchange...</div>
+    </div>
+</div>
+
+<!-- Transfer Statistics Section -->
+<div class="stats-container">
+    <div class="section-card">
+        <div class="section-header">
+            <h3>📊 {{ _('Transfer Statistics') }}</h3>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-value">{{ transferStats.totalTransfers or 0 }}</span>
+                <span class="stat-label">{{ _('Total Transfers') }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ transferStats.totalAmount or 0 }} 🏴</span>
+                <span class="stat-label">{{ _('Total Amount') }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ transferStats.todayTransfers or 0 }}</span>
+                <span class="stat-label">{{ _('Today Transfers') }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ transferStats.todayAmount or 0 }} 🏴</span>
+                <span class="stat-label">{{ _('Today Amount') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer History Sections -->
+<div class="history-container">
+    <!-- My Transfer History -->
+    <div class="my-history-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>📋 {{ _('My Transfer History') }}</h3>
+                <a href="{{ url('transfer_history') }}" class="view-all-link">{{ _('View All') }} →</a>
+            </div>
+            
+            <div class="transfer-list">
+                {% if myTransfers and myTransfers|length > 0 %}
+                {% for transfer in myTransfers %}
+                <div class="transfer-item {{ 'outgoing' if transfer.fromUid == currentUid else 'incoming' }}">
+                    <div class="transfer-info">
+                        <div class="transfer-users">
+                            {% if transfer.fromUid == currentUid %}
+                            <span class="transfer-direction">{{ _('To') }}:</span>
+                            <span class="transfer-username">
+                                {% if udocs[transfer.toUid] %}
+                                    {{ udocs[transfer.toUid].uname }}
+                                {% else %}
+                                    User {{ transfer.toUid }}
+                                {% endif %}
+                            </span>
+                            {% else %}
+                            <span class="transfer-direction">{{ _('From') }}:</span>
+                            <span class="transfer-username">
+                                {% if udocs[transfer.fromUid] %}
+                                    {{ udocs[transfer.fromUid].uname }}
+                                {% else %}
+                                    User {{ transfer.fromUid }}
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="transfer-details">
+                            <span class="transfer-time">{{ transfer.createdAt }}</span>
+                            {% if transfer.reason %}
+                            <span class="transfer-reason">{{ transfer.reason }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="transfer-amount {{ 'outgoing' if transfer.fromUid == currentUid else 'incoming' }}">
+                        {% if transfer.fromUid == currentUid %}
+                        -{{ transfer.amount + transfer.fee }}
+                        {% else %}
+                        +{{ transfer.amount }}
+                        {% endif %}
+                        🏴
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">📝</span>
+                    <p>{{ _('No transfer records yet') }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- All Transfers -->
+    <div class="all-transfers-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>🌐 {{ _('Recent Transfers') }}</h3>
+                <span class="privacy-note">{{ _('(User identities anonymized)') }}</span>
+            </div>
+            
+            <div class="transfer-list">
+                {% if allTransfers and allTransfers|length > 0 %}
+                {% for transfer in allTransfers %}
+                <div class="transfer-item public">
+                    <div class="transfer-info">
+                        <div class="transfer-users">
+                            <span class="anonymous-user">User ***{{ transfer.fromUid % 100 }}</span>
+                            <span class="transfer-arrow">→</span>
+                            <span class="anonymous-user">User ***{{ transfer.toUid % 100 }}</span>
+                        </div>
+                        <div class="transfer-details">
+                            <span class="transfer-time">{{ transfer.createdAt }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="transfer-amount public">
+                        {{ transfer.amount }} 🏴
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">🌐</span>
+                    <p>{{ _('No public transfers yet') }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Exchange Page Styles */
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary-color: #06d6a0;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+}
+
+/* Hero Section */
+.exchange-hero {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #059669 100%);
+    color: white;
+    padding: var(--spacing-8) 0;
+    margin-bottom: var(--spacing-8);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-2);
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin-bottom: var(--spacing-6);
+}
+
+.balance-display {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4) var(--spacing-6);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    font-weight: 600;
+}
+
+.balance-amount {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+/* Main Container */
+.exchange-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+}
+
+.stats-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+
+.history-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-8);
+}
+
+/* Section Cards */
+.section-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Transfer Limits */
+.transfer-limits {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.limit-tag {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Transfer Form */
+.transfer-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.1);
+}
+
+.amount-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.transfer-btn {
+    background: linear-gradient(135deg, var(--secondary-color), #059669);
+    color: white;
+    border: none;
+    padding: var(--spacing-4) var(--spacing-6);
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+}
+
+.transfer-btn:hover {
+    background: linear-gradient(135deg, #059669, var(--secondary-color));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Statistics Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-4);
+}
+
+.stat-item {
+    text-align: center;
+    padding: var(--spacing-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--secondary-color);
+    margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Transfer List */
+.transfer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.transfer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.transfer-item:hover {
+    background: var(--bg-secondary);
+    transform: translateX(4px);
+}
+
+.transfer-item.outgoing {
+    border-left: 4px solid var(--error-color);
+}
+
+.transfer-item.incoming {
+    border-left: 4px solid var(--success-color);
+}
+
+.transfer-item.public {
+    border-left: 4px solid var(--text-muted);
+}
+
+.transfer-info {
+    flex: 1;
+}
+
+.transfer-users {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.transfer-direction {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.transfer-arrow {
+    color: var(--text-muted);
+    margin: 0 var(--spacing-2);
+}
+
+.anonymous-user {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.transfer-details {
+    display: flex;
+    gap: var(--spacing-3);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.transfer-amount {
+    font-weight: 700;
+    font-size: 1.125rem;
+    text-align: right;
+}
+
+.transfer-amount.outgoing {
+    color: var(--error-color);
+}
+
+.transfer-amount.incoming {
+    color: var(--success-color);
+}
+
+.transfer-amount.public {
+    color: var(--text-primary);
+}
+
+/* Privacy Note */
+.privacy-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* View All Link */
+.view-all-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+}
+
+.view-all-link:hover {
+    color: #059669;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-8) var(--spacing-4);
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .exchange-container,
+    .history-container {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-6);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* React App Styles */
+.loading-fallback {
+    text-align: center;
+    padding: var(--spacing-8);
+    color: var(--text-muted);
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-4);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Transfer Exchange React App Styles */
+.transfer-exchange-react-app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-6);
+}
+
+.quick-transfer-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-8);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-8);
+}
+
+.quick-transfer-header {
+    text-align: center;
+    margin-bottom: var(--spacing-8);
+}
+
+.quick-transfer-header h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
+}
+
+.quick-transfer-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.quick-transfer-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-8);
+}
+
+.quick-recipients-panel,
+.quick-amounts-panel {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    border: 1px solid var(--border-color);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-3);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.panel-icon {
+    font-size: 1.5rem;
+}
+
+.panel-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.panel-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.panel-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.recipients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+}
+
+.recipient-quick-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3);
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.recipient-quick-btn:hover {
+    border-color: var(--secondary-color);
+    background: rgba(6, 214, 160, 0.05);
+}
+
+.recipient-quick-btn.active {
+    border-color: var(--secondary-color);
+    background: rgba(6, 214, 160, 0.1);
+    color: var(--secondary-color);
+}
+
+.recipient-icon {
+    font-size: 1rem;
+}
+
+.amounts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.amounts-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.group-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.amounts-row {
+    display: flex;
+    gap: var(--spacing-2);
+    flex-wrap: wrap;
+}
+
+.quick-amount-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.quick-amount-btn.small:hover {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.quick-amount-btn.medium:hover {
+    border-color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.quick-amount-btn.large:hover {
+    border-color: var(--error-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.amount-icon {
+    font-size: 1rem;
+}
+
+.amount-value {
+    font-weight: 700;
+}
+
+.amount-unit {
+    font-size: 0.875rem;
+}
+
+.manual-input-hint,
+.transfer-fee-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2);
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.manual-transfer-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    border: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.section-icon {
+    font-size: 1.5rem;
+}
+
+.section-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+}
+
+.section-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.section-badge {
+    background: var(--accent-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.transfer-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-4);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.label-icon {
+    font-size: 1rem;
+}
+
+.form-input {
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    transition: border-color 0.3s ease;
+    background: var(--bg-primary);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.1);
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    justify-content: flex-end;
+    margin-top: var(--spacing-4);
+}
+
+.submit-btn,
+.reset-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-6);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 0.875rem;
+}
+
+.submit-btn {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.reset-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.reset-btn:hover:not(:disabled) {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.result-message {
+    margin-top: var(--spacing-4);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.result-message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 640px) {
+    .exchange-hero {
+        padding: var(--spacing-6) 0;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .exchange-container,
+    .history-container {
+        padding: 0 var(--spacing-4);
+    }
+    
+    .section-card {
+        padding: var(--spacing-4);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .transfer-limits {
+        flex-direction: column;
+        gap: var(--spacing-1);
+    }
+}
+</style>
+
+<script>
+
+// 传递数据给React组件
+window.userBalance = {{ userBalance }};
+window.transferConfig = {
+    minAmount: {{ transferConfig.minAmount }},
+    maxAmount: {{ transferConfig.maxAmount }},
+    transferFee: {{ transferConfig.transferFee }},
+    dailyLimit: {{ transferConfig.dailyLimit }}
+};
+
+// 调试信息
+console.log('Transfer Exchange Page loaded');
+console.log('User Balance:', window.userBalance);
+console.log('Transfer Config:', window.transferConfig);
+
+// 监听React组件挂载事件
+document.addEventListener('transferExchangeAppMounted', () => {
+    console.log('Transfer Exchange React App mounted successfully!');
+    const loadingFallback = document.querySelector('.loading-fallback');
+    if (loadingFallback) {
+        loadingFallback.style.display = 'none';
+    }
+});
+
+// 如果5秒后React组件还没挂载，显示错误信息
+setTimeout(() => {
+    const loadingFallback = document.querySelector('.loading-fallback');
+    if (loadingFallback && loadingFallback.style.display !== 'none') {
+        loadingFallback.innerHTML = `
+            <div class="loading-error">
+                <div class="error-icon">❌</div>
+                <div class="error-text">Failed to load Transfer Exchange</div>
+                <div class="error-hint">Please refresh the page or contact support</div>
+            </div>
+        `;
+    }
+}, 5000);
+</script>
+
+{% endblock %}

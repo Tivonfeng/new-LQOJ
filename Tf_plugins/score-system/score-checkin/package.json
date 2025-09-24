@@ -1,0 +1,25 @@
+{
+  "name": "@tivonfeng/score-checkin",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "HydroOJ积分系统签到插件 - 提供每日签到积分奖励功能",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "@tivonfeng/score-core": "workspace:^",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "hydrooj",
+    "score",
+    "checkin",
+    "plugin",
+    "daily-reward"
+  ]
+}

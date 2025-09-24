@@ -1,0 +1,25 @@
+{
+  "name": "@tivonfeng/score-transfer",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "HydroOJ积分系统转账插件 - 提供用户间积分转账功能",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "@tivonfeng/score-core": "workspace:^",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "hydrooj",
+    "score",
+    "transfer",
+    "plugin",
+    "transaction"
+  ]
+}

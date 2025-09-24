@@ -1,10 +1,10 @@
 {
-  "name": "@hydrooj/tf-page",
+  "name": "@tivonfeng/score-core",
   "version": "1.0.0",
   "main": "index.ts",
   "author": "tivonfeng",
   "license": "AGPL-3.0",
-  "description": "TF 个人页面插件",
+  "description": "HydroOJ积分系统核心插件 - 提供AC积分奖励和基础积分管理功能",
   "hydro": {
     "cli": false
   },
@@ -13,5 +13,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0"
-  }
+  },
+  "keywords": [
+    "hydrooj",
+    "score",
+    "core",
+    "plugin",
+    "ac-reward"
+  ]
 }

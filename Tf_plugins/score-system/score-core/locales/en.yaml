@@ -1,0 +1,411 @@
+Score System Management: Score System Management
+Score Hall: Score Hall
+Score Ranking: Score Ranking
+My Score: My Score
+Total Score: Total Score
+AC Count: AC Count
+Average Score per AC: Average Score per AC
+Top Scorers: Top Scorers
+Rank: Rank
+User: User
+User ID: User ID
+Problem: Problem
+Score: Score
+Time: Time
+Last Updated: Last Updated
+Previous: Previous
+Next: Next
+Manage Scores: Manage Scores
+
+# Manual Score Adjustment Translations
+Manual Score Adjustment: "Manual Score Adjustment"
+Adjust User Score: "Adjust User Score"
+Admin Only: "Admin Only"
+Username: "Username"
+Enter username: "Enter username"
+Score Change: "Score Change"
+Range -10000 to +10000: "Range: -10000 to +10000"
+Adjustment Reason: "Adjustment Reason"
+Please specify the reason for this adjustment: "Please specify the reason for this adjustment..."
+Apply Adjustment: "Apply Adjustment"
+Reset: "Reset"
+Processing: "Processing..."
+Network error please try again: "Network error, please try again"
+Score change must be between -10000 and +10000: "Score change must be between -10000 and +10000"
+Score change cannot be zero: "Score change cannot be zero"
+Current Domain: "Current Domain"
+Domain-Specific Operation: "Domain-Specific Operation"
+Score adjustments will only affect users in the current domain: "Score adjustments will only affect users in the current domain"
+Manage: Manage
+View Full Ranking: View Full Ranking
+View Details: View Details
+View All: View All
+Solve Problems: Solve Problems
+Rankings: Rankings
+Details: Details
+Solved: Solved
+Recent Score Records: Recent Score Records
+Score Records: Score Records
+"Quick Actions": Quick Actions
+"Your Progress": Your Progress
+"Your Balance": Your Balance
+
+# Check-in System Translations
+Daily Check-in: Daily Check-in
+Earn Daily Rewards: Earn Daily Rewards
+Earn up to 30 coins daily: Earn up to 30 coins daily
+Daily Streak Bonus: Daily Streak Bonus
+Daily Reset: Daily Reset
+Already Checked In Today: Already Checked In Today
+Check In Now: Check In Now
+Checking in...: Checking in...
+Network error: Network error
+Current Balance: Current Balance
+Already Checked In Today!: Already Checked In Today!
+Come back tomorrow for more rewards: Come back tomorrow for more rewards
+Ready to Check In?: Ready to Check In?
+Get your daily reward now: Get your daily reward now
+Today: Today
+Daily Current Streak: Current Streak
+Daily Total Days: Total Days
+Daily Best Streak: Best Streak
+Mission Completed!: Mission Completed!
+Check-in Calendar: Check-in Calendar
+Sun: Sun
+Mon: Mon
+Tue: Tue
+Wed: Wed
+Thu: Thu
+Fri: Fri
+Sat: Sat
+Next 7 Days Rewards: Next 7 Days Rewards
+Recent Check-ins: Recent Check-ins
+days: days
+No check-in records yet: No check-in records yet
+Check-in Tips: Check-in Tips
+Keep your streak to get bonus rewards: Keep your streak to get bonus rewards
+Check in daily to maximize your coins: Check in daily to maximize your coins
+Check-in resets at midnight: Check-in resets at midnight
+Check In: Check In
+Earn coins every day by checking in!: Earn coins every day by checking in!
+
+# Transfer System Translations
+Exchange: Exchange
+Score Exchange: Score Exchange
+Transfer Points: Transfer Points
+Transfer History: Transfer History
+Transfer Administration: Transfer Administration
+Transfer points between users safely and quickly: Transfer points between users safely and quickly
+Recipient Username: Recipient Username
+Enter amount: Enter amount
+Memo Optional: Memo (Optional)
+Transfer reason: Transfer reason
+Send Transfer: Send Transfer
+Amount + Fee: Amount + Fee
+Transfer Statistics: Transfer Statistics
+Total Transfers: Total Transfers
+Total Amount: Total Amount
+Today Transfers: Today Transfers
+Today Amount: Today Amount
+My Transfer History: My Transfer History
+Recent Transfers: Recent Transfers
+User identities anonymized: (User identities anonymized)
+No transfer records yet: No transfer records yet
+No public transfers yet: No public transfers yet
+To: To
+From: From
+View all your transfer records: View all your transfer records
+My Transfer Records: My Transfer Records
+Transaction Records: Transaction Records
+No Transfer Records: No Transfer Records
+"You haven't made any transfers yet": "You have not made any transfers yet"
+Make Your First Transfer: Make Your First Transfer
+Transfer Previous: Previous
+Transfer Next: Next
+Completed: Completed
+Pending: Pending
+Failed: Failed
+Cancelled: Cancelled
+Transaction ID: Transaction ID
+Fee: Fee
+Min: Min
+Max: Max
+Outgoing: Outgoing
+Incoming: Incoming
+Monitor and manage all transfer activities: Monitor and manage all transfer activities
+Administrator Panel: Administrator Panel
+Refresh: Refresh
+Recent Transfer Activities: Recent Transfer Activities
+No transfer activities found in the system: No transfer activities found in the system
+"Active Today": Active Today
+"Coins Earned": Coins Earned
+"Start Coding": Start Coding
+"Earn Coins": Earn Coins
+"Turn Your Achievements Into Rewards!": Turn Your Achievements Into Rewards!
+
+# Lottery System
+Lottery Hall: Lottery Hall
+Lottery History: Lottery History
+Lottery Administration: Lottery Administration
+Lottery Statistics: Lottery Statistics
+Premium Draw: Premium Draw
+Basic Draw: Basic Draw
+Draw Now: Draw Now
+Current Coins: Current Coins
+Total Draws: Total Draws
+Total Wins: Total Wins
+Current Streak: Current Streak
+Win Rate: Win Rate
+Available Prizes: Available Prizes
+Recent Records: Recent Records
+Back to Lottery: Back to Lottery
+Claim Prize: Claim Prize
+Continue: Continue
+Basic: Basic
+Premium: Premium
+Win: Win
+Lose: Lose
+No Prize: No Prize
+Claimed: Claimed
+Unclaimed: Unclaimed
+Type: Type
+Cost: Cost
+Result: Result
+Prize: Prize
+Status: Status
+
+# Prize Management
+Add New Prize: Add New Prize
+Prize Name: Prize Name
+Icon: Icon
+Value: Value
+Weight: Weight
+Stock: Stock
+Description: Description
+Add Prize: Add Prize
+Prize Management: Prize Management
+Update: Update
+Delete: Delete
+
+# Rarity & Rewards
+Common: Common
+Rare: Rare
+Epic: Epic
+Legendary: Legendary
+"Common Rewards": Common Rewards
+"Better Rewards": Better Rewards
+"Rare Rewards": Rare Rewards
+Green Flag Coins: Green Flag Coins
+Special Badges: Special Badges
+Privilege: Privilege
+Virtual Item: Virtual Item
+
+# Messages & Notifications
+"Congratulations!": Congratulations!
+"Better luck next time!": Better luck next time!
+"No prize this time": No prize this time
+"Prize claimed successfully!": Prize claimed successfully!
+Failed to claim prize: Failed to claim prize
+"Are you sure to delete this prize?": Are you sure to delete this prize?
+"Prize added successfully!": Prize added successfully!
+"Prize deleted successfully!": Prize deleted successfully!
+"Prize updated successfully!": Prize updated successfully!
+
+# Special Features
+"Quick & Easy": Quick & Easy
+coins per draw: coins per draw
+draws guarantee: draws guarantee
+"per draw": per draw
+"Spend Your Coins": Spend Your Coins
+
+# Empty States
+"No score records found. Start solving problems to earn points!": No score records found. Start solving problems to earn points!
+"No lottery records yet": No lottery records yet
+"Start drawing to see your history!": Start drawing to see your history!
+"No rankings yet": No rankings yet
+"No lottery history yet": No lottery history yet
+"No prizes found. Add some prizes to get started!": No prizes found. Add some prizes to get started!
+
+# Additional missing translations
+"Try Your Luck!": Try Your Luck!
+"Your drawing records": Your drawing records
+"Go to Lottery Hall": Go to Lottery Hall
+Next milestone 10000 points: Next milestone 10000 points
+"Milestone reached!": Milestone reached!
+"High efficiency!": High efficiency!
+"Good progress": Good progress
+"No recent records found.": No recent records found.
+"System Overview": System Overview
+"Management Tools": Management Tools
+"Personal": Personal
+"Admin": Admin
+"Overview": Overview
+"Turn Your Achievements Into Rewards": Turn Your Achievements Into Rewards
+"Top Players": Top Players
+Reason: Reason
+Rarity: Rarity
+"Start Drawing": Start Drawing
+"Manage prizes and lottery settings": Manage prizes and lottery settings
+"Basic Draws": Basic Draws
+"Premium Draws": Premium Draws
+
+# Pagination
+Page: Page
+of: of
+Total: Total
+records: records
+
+# Dice Game
+Dice Game: Dice Game
+Dice Game History: Dice Game History
+Roll the Dice: Roll the Dice
+Guess Big or Small: Guess Big or Small
+Test Your Luck: Test Your Luck
+Test Your Luck with Big or Small: Test Your Luck with Big or Small
+Your Complete Gaming Records: Your Complete Gaming Records
+Small: Small
+Big: Big
+Bet: Bet
+"Choose Bet Amount": Choose Bet Amount
+"Bet Options": Bet Options
+"Insufficient balance. Need at least 20": Insufficient balance. Need at least 20
+Dice Win: Win
+Dice Loss: Loss
+Loss: Loss
+Profitable Session: Profitable Session
+Losing Session: Losing Session
+Small Big Range: 1-3 Small 4-6 Big
+Bet 20 coins per game: Bet 20 coins per game
+Win Double Bet: Win Double your bet
+"Choose your prediction and roll!": "Choose your prediction and roll!"
+"Insufficient balance. Need": "Insufficient balance. Need"
+to play: to play
+Earn More Coins: Earn More Coins
+Start Your First Game: Start Your First Game
+Continue Playing: Continue Playing
+Game Statistics: Game Statistics
+Total Games: Total Games
+Wins: Wins
+Net Profit: Net Profit
+Streak Records: Streak Records
+Dice Current Streak: Current Streak
+Best Streak: Best Streak
+Game Records: Game Records
+total records: total records
+"Start playing to build your gaming history!": "Start playing to build your gaming history!"
+This Page Stats: This Page Stats
+Games: Games
+Net: Net
+Quick Navigation: Quick Navigation
+Play Dice Game: Play Dice Game
+Dice Score Hall: Score Hall
+Lottery: Lottery
+Game Rules: Game Rules
+Profit: Profit
+coins: coins
+
+# Missing dice_game.html translations
+Dice Range Rule: "1-3: Small, 4-6: Big"
+"Better luck next time": "Better luck next time"
+"Dice Value": "Dice Value"
+"Game History": "Game History"
+"Game failed": "Game failed"
+"Guessed": "Guessed"
+"Network error, please try again": "Network error, please try again"
+"Page will refresh in 3 seconds...": "Page will refresh in 3 seconds..."
+"Recent Games": "Recent Games"
+"View History": "View History"
+"Your Guess": "Your Guess"
+"Your Statistics": "Your Statistics"
+"games": "games"
+"Rolling...": "Rolling..."
+
+# score_hall.html missing translations
+"50% Win Rate": "50% Win Rate"
+"Double or Nothing": "Double or Nothing"
+"Instant Result": "Instant Result"
+Win Coins Profit: "Win: +40 coins (+20 profit)"
+Lose Coins: "Lose: -20 coins"
+"Start Playing": "Start Playing"
+
+# Quick Actions and User Selection Translations
+"Click to auto-fill common score adjustments": "Click to auto-fill common score adjustments"
+"Add Points": "Add Points"
+"Deduct Points": "Deduct Points"
+"Answer Question": "Answer Question"
+"Assignment": "Assignment"
+"Group Work": "Group Work"
+"Quiz Excellence": "Quiz Excellence"
+"Minor Late": "Minor Late"
+"Unexcused Absence": "Unexcused Absence"
+"Major Late": "Major Late"
+"Misconduct": "Misconduct"
+"Select a user below and click any quick action button to auto-fill the form": "Select a user below and click any quick action button to auto-fill the form"
+"Search and select user...": "Search and select user..."
+"Type to search users in current domain": "Type to search users in current domain"
+"Quick Select": "Quick Select"
+"Custom Input": "Custom Input"
+"Select a reason": "Select a reason"
+"Positive Actions": "Positive Actions"  
+"Negative Actions": "Negative Actions"
+"Administrative": "Administrative"
+"Active Participation": "Active Participation"
+"Help Others": "Help Others"
+"Creative Solution": "Creative Solution"
+"Perfect Attendance": "Perfect Attendance"
+"Improvement": "Improvement"
+"Incomplete Work": "Incomplete Work"
+"Disruption": "Disruption"
+"Not Following Rules": "Not Following Rules"
+"Poor Collaboration": "Poor Collaboration"
+"Admin Adjustment": "Admin Adjustment"
+"Score Correction": "Score Correction"
+"System Fix": "System Fix"
+"Event Bonus": "Event Bonus"
+"Select": "Select"
+"Input": "Input"
+"Featured": "Featured"
+
+# Rock Paper Scissors Game Translations
+Rock Paper Scissors: Rock Paper Scissors
+"Challenge the AI": "Challenge the AI"
+"Challenge the AI and Win Coins": "Challenge the AI and Win Coins"
+"Battle Arena": "Battle Arena"
+"Quick Strategy Game": "Quick Strategy Game"
+"2x Reward": "2x Reward"
+"Streak Bonus": "Streak Bonus"
+Rock: Rock
+Paper: Paper
+Scissors: Scissors
+"Choose your weapon!": "Choose your weapon!"
+"Choose Your Weapon": "Choose Your Weapon"
+"AI is thinking...": "AI is thinking..."
+"You Win!": "You Win!"
+"You Lose!": "You Lose!"
+"Draw!": "Draw!"
+"Beats Scissors": "Beats Scissors"
+"Beats Rock": "Beats Rock"
+"Beats Paper": "Beats Paper"
+"AI Opponent": "AI Opponent"
+"You": "You"
+"Refund bet": "Refund bet"
+"per game": "per game"
+"reward": "reward"
+"Refund": "Refund"
+"How to Play": "How to Play"
+"bonus": "bonus"
+"Start Battle": "Start Battle"
+"Play Again": "Play Again"
+"Rock Paper Scissors History": "Rock Paper Scissors History"
+"Play Game": "Play Game"
+"Your Performance": "Your Performance"
+"Choice Statistics": "Choice Statistics"
+"Losses": "Losses"
+"AI Choice": "AI Choice"
+"Your Choice": "Your Choice"
+"Streak": "Streak"
+"No Game Records Yet": "No Game Records Yet"
+"Play Your First Game": "Play Your First Game"
+"Small Big Range Rule": "1-3: Small, 4-6: Big"
+
+

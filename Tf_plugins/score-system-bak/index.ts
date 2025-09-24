@@ -48,6 +48,8 @@ import {
     type UserRPSStats,
     type UserScore,
 } from './src/services';
+import { ServiceRegistry } from './src/registry/ServiceRegistry';
+import { SCORE_EVENTS } from './src/events/ScoreEvents';
 
 // 积分系统配置Schema
 const Config = Schema.object({
@@ -99,6 +101,10 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('Score System plugin loading...');
     const scoreService = new ScoreService(finalConfig, ctx);
+
+    // 注册积分服务到服务注册器
+    const serviceRegistry = ServiceRegistry.getInstance(ctx);
+    serviceRegistry.registerScoreService(scoreService);
 
     // 🔒 确保积分记录的唯一索引，防止并发竞态条件
     try {
@@ -199,7 +205,7 @@ export default async function apply(ctx: Context, config: any = {}) {
             }
 
             // 统一发布事件（无论首次还是重复）
-            ctx.emit(isFirstAC ? 'score/ac-rewarded' : 'score/ac-repeated', {
+            ctx.emit(isFirstAC ? SCORE_EVENTS.AC_REWARDED : SCORE_EVENTS.AC_REPEATED, {
                 uid: rdoc.uid,
                 pid: rdoc.pid,
                 domainId: rdoc.domainId,

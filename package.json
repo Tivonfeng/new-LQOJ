@@ -6,7 +6,8 @@
         "framework/*",
         "plugins/*",
         "modules/*",
-        "Tf_plugins/*"
+        "Tf_plugins/*",
+        "Tf_plugins/score-system/*"
     ],
     "main": "package.json",
     "scripts": {
