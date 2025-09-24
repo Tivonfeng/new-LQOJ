@@ -1,0 +1,15 @@
+Change User Password: 修改用户密码
+User ID: 用户ID
+New Password: 新密码
+Confirm Password: 确认密码
+Change Password: 修改密码
+Password Change Successful: 密码修改成功
+Password changed successfully: 密码修改成功
+Password changed successfully for user: 用户密码修改成功
+Passwords do not match: 密码不匹配
+Password must be at least 6 characters: 密码长度至少为6位
+Password too short: 密码太短
+Permission denied: 权限不足
+Loading...: 加载中...
+If this page does not load properly, please enable JavaScript.: 如果页面无法正常加载，请启用JavaScript。
+manage_user_password_change: 管理员修改密码
