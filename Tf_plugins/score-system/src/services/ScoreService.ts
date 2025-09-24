@@ -46,37 +46,6 @@ export class ScoreService {
     }
 
     /**
-     * 计算AC积分
-     * @param isFirstAC 是否首次AC
-     * @returns 获得的积分
-     */
-    calculateACScore(isFirstAC: boolean): number {
-        if (!this.config.enabled) return 0;
-
-        // 只有首次AC才得分，防止恶意刷题
-        if (!isFirstAC) return 0;
-
-        // 固定每AC一题10分
-        return 10;
-    }
-
-    /**
-     * 检查是否为首次AC (全局)
-     * @param _domainId 域ID (保留用于记录，但不影响检查逻辑)
-     * @param uid 用户ID
-     * @param pid 题目ID
-     * @returns 是否首次AC
-     */
-    async isFirstAC(_domainId: string, uid: number, pid: number): Promise<boolean> {
-        // 检查该用户是否在任何域中AC过这道题
-        const existingRecord = await this.ctx.db.collection('score.records' as any).findOne({
-            uid,
-            pid,
-        });
-        return !existingRecord;
-    }
-
-    /**
      * 添加积分记录
      * @param record 积分记录（不包含_id和createdAt）
      */
