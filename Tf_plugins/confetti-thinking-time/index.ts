@@ -4,11 +4,10 @@ import {
     ProblemModel,
     RecordModel,
 } from 'hydrooj';
-import { ConfettiStatusHandler, ThinkingTimeHandler } from './src/handlers';
+import { ThinkingTimeHandler } from './src/handlers';
 
 export default function apply(ctx: Context) {
     ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
-    ctx.Route('confetti_status', '/confetti/status', ConfettiStatusHandler);
 
     ctx.on('app/started' as any, async () => {
         try {
