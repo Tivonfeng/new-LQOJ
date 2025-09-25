@@ -48,21 +48,21 @@ export default async function apply(ctx: Context, config: any = {}) {
     const serviceRegistry = ServiceRegistry.getInstance(ctx);
     serviceRegistry.registerScoreService(scoreService);
 
-    // 🔒 先删除旧的唯一索引（如果存在）
-    try {
-        await ctx.db.collection('score.records' as any).dropIndex('uid_1_pid_1_domainId_1');
-        console.log('[Score Core] 🗑️ 删除旧的唯一索引');
-    } catch (error) {
-        // 索引不存在时会报错，这是正常的
-        console.log('[Score Core] ℹ️ 旧索引不存在或已删除');
-    }
+    // // 🔒 先删除旧的唯一索引（如果存在）
+    // try {
+    //     await ctx.db.collection('score.records' as any).dropIndex('uid_1_pid_1_domainId_1');
+    //     console.log('[Score Core] 🗑️ 删除旧的唯一索引');
+    // } catch (error) {
+    //     // 索引不存在时会报错，这是正常的
+    //     console.log('[Score Core] ℹ️ 旧索引不存在或已删除');
+    // }
 
     // 🔒 为题目相关记录创建部分唯一索引，防止重复AC奖励
     try {
         await ctx.db.collection('score.records' as any).createIndex(
             { uid: 1, pid: 1, domainId: 1 },
-            { 
-                unique: true, 
+            {
+                unique: true,
                 partialFilterExpression: { pid: { $gt: 0 } }, // 只对题目记录生效
                 background: false,
             },
