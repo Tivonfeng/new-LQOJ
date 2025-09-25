@@ -2,15 +2,14 @@ import {
     Context,
 } from 'hydrooj';
 import { SCORE_EVENTS } from '../events/ScoreEvents';
+import { getConfigManagerOrThrow } from '../registry/ServiceRegistry';
 import type {
     DuplicateRecordsGroup,
     IScoreService,
-    ScoreConfig,
     ScoreOperationResult,
     ScoreRecord,
     UserScore,
 } from '../types';
-
 // 导出类型以保持向后兼容
 export type { ScoreConfig, ScoreRecord, UserScore } from '../types';
 
@@ -19,12 +18,10 @@ export type { ScoreConfig, ScoreRecord, UserScore } from '../types';
  * 负责：AC积分计算、用户积分管理、排行榜查询
  */
 export class ScoreService implements IScoreService {
-    private config: ScoreConfig;
     private ctx: Context;
     private static recordIdCounter = 0;
-
-    constructor(config: ScoreConfig, ctx: Context) {
-        this.config = config;
+    private config = getConfigManagerOrThrow();
+    constructor(ctx: Context) {
         this.ctx = ctx;
     }
 
@@ -32,14 +29,14 @@ export class ScoreService implements IScoreService {
      * 检查积分系统是否启用
      */
     isEnabled(): boolean {
-        return this.config.enabled;
+        return this.config.config.score.ENABLED;
     }
 
     /**
      * 获取AC奖励积分
      */
     getAcReward(): number {
-        return this.config.acReward;
+        return this.config.config.score.AC_REWARD_DEFAULT;
     }
 
     /**
