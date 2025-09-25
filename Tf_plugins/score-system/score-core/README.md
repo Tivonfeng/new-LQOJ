@@ -16,12 +16,18 @@
 
 ### 配置参数
 
+插件配置通过 HydroOJ 的 Schema 系统管理，支持自动验证和默认值：
+
 ```javascript
 {
-  enabled: true,    // 是否启用积分系统，默认为true
-  acReward: 10      // AC题目奖励积分，默认为10分（范围：1-100）
+  enabled: true,    // 是否启用积分系统，默认为 true
+  acReward: 10      // AC题目奖励积分，默认为 10 分（范围：1-100）
 }
 ```
+
+配置会自动进行以下验证：
+- `enabled`: 必须为布尔值
+- `acReward`: 必须为 1-100 之间的整数
 
 ### 路由列表
 
@@ -111,22 +117,21 @@ ctx.emit(SCORE_EVENTS.SCORE_INSUFFICIENT, {
 ### 2. 获取积分服务
 
 ```typescript
-import { getScoreService } from '@hydrooj/score-core';
+import { getScoreServiceOrThrow } from '@hydrooj/score-core';
 
 // 在插件中使用
 export default async function apply(ctx: Context) {
-  const scoreService = getScoreService();
+  // 获取积分服务，自动确保服务可用性
+  const scoreService = getScoreServiceOrThrow();
   
-  if (scoreService) {
-    // 检查用户积分
-    const userScore = await scoreService.getUserScore('system', uid);
-    
-    // 扣除积分
-    const result = await scoreService.deductUserScore('system', uid, 10, '购买道具');
-    
-    if (result.success) {
-      console.log('积分扣除成功');
-    }
+  // 检查用户积分
+  const userScore = await scoreService.getUserScore('system', uid);
+  
+  // 扣除积分
+  const result = await scoreService.deductUserScore('system', uid, 10, '购买道具');
+  
+  if (result.success) {
+    console.log('积分扣除成功');
   }
 }
 ```

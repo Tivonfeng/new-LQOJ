@@ -1,3 +1,4 @@
+import { getScoreServiceOrThrow } from '@tivonfeng/score-core';
 import {
     Handler,
     PERM,
@@ -7,7 +8,6 @@ import {
     type TransferRecord,
     TransferService,
 } from '../services';
-import { getScoreService } from '@tivonfeng/score-core';
 import { DEFAULT_CONFIG } from './config';
 
 export class TransferExchangeHandler extends Handler {
@@ -18,8 +18,7 @@ export class TransferExchangeHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const transferService = new TransferService(DEFAULT_CONFIG, this.ctx, scoreService);
 
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
@@ -100,8 +99,7 @@ export class TransferCreateHandler extends Handler {
             return;
         }
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const transferService = new TransferService(DEFAULT_CONFIG, this.ctx, scoreService);
 
         const result = await transferService.createTransfer(uid, recipient.trim(), amountNum, reason?.trim());
@@ -124,8 +122,7 @@ export class TransferHistoryHandler extends Handler {
         const limit = 20;
         const skip = (page - 1) * limit;
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const transferService = new TransferService(DEFAULT_CONFIG, this.ctx, scoreService);
 
         const allTransfers = await transferService.getUserTransferHistory(uid, 100);
@@ -179,8 +176,7 @@ export class TransferAdminHandler extends Handler {
     }
 
     async get() {
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const transferService = new TransferService(DEFAULT_CONFIG, this.ctx, scoreService);
 
         const allTransfers = await transferService.getAllTransferHistory(50);

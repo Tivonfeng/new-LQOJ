@@ -1,3 +1,4 @@
+import { getScoreServiceOrThrow } from '@tivonfeng/score-core';
 import {
     Handler,
 } from 'hydrooj';
@@ -5,7 +6,6 @@ import {
     DailyGameLimitService,
     DiceGameService,
 } from '../services';
-import { getScoreService } from '@tivonfeng/score-core';
 import { DEFAULT_CONFIG } from './config';
 
 /**
@@ -22,8 +22,7 @@ export class DiceGameHandler extends Handler {
             return;
         }
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const dailyLimitService = new DailyGameLimitService(this.ctx);
         const diceService = new DiceGameService(DEFAULT_CONFIG, this.ctx, scoreService, dailyLimitService);
 
@@ -117,8 +116,7 @@ export class DicePlayHandler extends Handler {
             return;
         }
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const diceService = new DiceGameService(DEFAULT_CONFIG, this.ctx, scoreService, dailyLimitService);
 
         const result = await diceService.playDiceGame(
@@ -151,8 +149,7 @@ export class DiceHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 20;
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const dailyLimitService = new DailyGameLimitService(this.ctx);
         const diceService = new DiceGameService(DEFAULT_CONFIG, this.ctx, scoreService, dailyLimitService);
 
@@ -227,8 +224,7 @@ export class DiceAdminHandler extends Handler {
     }
 
     async get() {
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const dailyLimitService = new DailyGameLimitService(this.ctx);
         const diceService = new DiceGameService(DEFAULT_CONFIG, this.ctx, scoreService, dailyLimitService);
 

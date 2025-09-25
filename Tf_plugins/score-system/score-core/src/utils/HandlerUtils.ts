@@ -4,18 +4,22 @@
  */
 
 import type { Handler } from 'hydrooj';
-import { SYSTEM_CONFIG } from '../config/ConfigManager';
-import { getScoreService } from '../registry/ServiceRegistry';
+import { getConfigManagerOrThrow } from '../registry/ServiceRegistry';
 
 /**
- * 分页配置常量（从系统配置获取）
+ * 获取分页配置常量
  */
-export const PAGINATION_CONFIG = {
-    RANKING_PAGE_SIZE: SYSTEM_CONFIG.RANKING_PAGE_SIZE,
-    RECORDS_PAGE_SIZE: SYSTEM_CONFIG.RECORDS_PAGE_SIZE,
-    MANAGEMENT_PAGE_SIZE: SYSTEM_CONFIG.MANAGEMENT_PAGE_SIZE,
-    MAX_PAGE_SIZE: SYSTEM_CONFIG.MAX_PAGE_SIZE,
-} as const;
+function getPaginationConfig() {
+    const configManager = getConfigManagerOrThrow();
+    return {
+        RANKING_PAGE_SIZE: configManager.config.pagination.RANKING_PAGE_SIZE,
+        RECORDS_PAGE_SIZE: configManager.config.pagination.RECORDS_PAGE_SIZE,
+        MANAGEMENT_PAGE_SIZE: configManager.config.pagination.DEFAULT_PAGE_SIZE,
+        MAX_PAGE_SIZE: configManager.config.pagination.MAX_PAGE_SIZE,
+    };
+}
+
+export const PAGINATION_CONFIG = getPaginationConfig();
 
 /**
  * 解析分页参数
@@ -33,19 +37,6 @@ export function parsePaginationParams(request: any, defaultLimit: number = 20): 
         PAGINATION_CONFIG.MAX_PAGE_SIZE,
     );
     return { page, limit };
-}
-
-/**
- * 获取积分服务实例（带错误检查）
- * @returns 积分服务实例
- * @throws 如果服务不可用则抛出错误
- */
-export function getScoreServiceOrThrow() {
-    const scoreService = getScoreService();
-    if (!scoreService) {
-        throw new Error('积分核心服务不可用');
-    }
-    return scoreService;
 }
 
 /**

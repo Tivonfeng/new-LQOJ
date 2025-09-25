@@ -3,8 +3,7 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
-import { ConfigValidator } from '../config/ConfigManager';
-import { getScoreService } from '../registry/ServiceRegistry';
+import { getScoreServiceOrThrow } from '../registry/ServiceRegistry';
 import type {
     UserScore,
 } from '../services';
@@ -12,7 +11,6 @@ import { ScoreService } from '../services/ScoreService';
 import {
     checkManagePermission,
     fetchUserInfoBatch,
-    getScoreServiceOrThrow,
     PAGINATION_CONFIG,
     parsePaginationParams,
 } from '../utils/HandlerUtils';
@@ -25,8 +23,7 @@ import {
 export class ScoreHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         let userScore: UserScore | null = null;
         let userRank: number | string = '-';
         let recentRecords: any[] = [];
@@ -139,8 +136,7 @@ export class ScoreRankingHandler extends Handler {
 export class UserScoreHandler extends Handler {
     async get() {
         const uid = this.user._id;
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
 
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
         const recentRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 20);
@@ -213,8 +209,7 @@ export class ScoreManageHandler extends Handler {
     }
 
     async get() {
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
 
         // TODO: These services are from other plugins
         // const lotteryService = new LotteryService(this.ctx, scoreService);
@@ -270,18 +265,7 @@ export class ScoreManageHandler extends Handler {
 
                 const scoreChangeNum = Number.parseInt(scoreChange);
 
-                // 使用配置验证器验证参数
-                const validationErrors = ConfigValidator.validateScoreAdjustment(scoreChangeNum, reason);
-                if (validationErrors.length > 0) {
-                    this.response.body = {
-                        success: false,
-                        message: `参数验证失败: ${validationErrors.join(', ')}`,
-                    };
-                    return;
-                }
-
-                const scoreService = getScoreService();
-                if (!scoreService) throw new Error('积分核心服务不可用');
+                const scoreService = getScoreServiceOrThrow();
 
                 // 更新用户积分
                 await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
@@ -311,8 +295,7 @@ export class ScoreManageHandler extends Handler {
             try {
                 console.log('[ScoreManage] Starting manual duplicate cleanup...');
 
-                const scoreService = getScoreService();
-                if (!scoreService) throw new Error('积分核心服务不可用');
+                const scoreService = getScoreServiceOrThrow();
 
                 // 使用 service 方法删除重复记录
                 const result = await scoreService.deleteDuplicateRecords(this.domain._id);

@@ -6,7 +6,7 @@ import {
     Schema,
     STATUS,
 } from 'hydrooj';
-import { DEFAULT_SYSTEM_CONFIG } from './src/config/ConfigManager';
+import { ConfigManager } from './src/config/ConfigManager';
 import { SCORE_EVENTS } from './src/events/ScoreEvents';
 import {
     ScoreHallHandler,
@@ -17,15 +17,17 @@ import {
 } from './src/handlers/ScoreHandlers';
 import { ServiceRegistry } from './src/registry/ServiceRegistry';
 import { ScoreService } from './src/services/ScoreService';
-import type { ScoreConfig, ScoreEventData } from './src/types';
+import type { ScoreEventData } from './src/types';
 
 // 积分系统配置Schema
+const configManager = ConfigManager.getInstance();
+
 const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('是否启用积分系统'),
     acReward: Schema.number()
-        .default(DEFAULT_SYSTEM_CONFIG.AC_REWARD_DEFAULT)
-        .min(DEFAULT_SYSTEM_CONFIG.AC_REWARD_MIN)
-        .max(DEFAULT_SYSTEM_CONFIG.AC_REWARD_MAX)
+        .default(configManager.config.score.AC_REWARD_DEFAULT)
+        .min(configManager.config.score.AC_REWARD_MIN)
+        .max(configManager.config.score.AC_REWARD_MAX)
         .description('AC题目奖励积分'),
 });
 
@@ -38,20 +40,17 @@ declare module 'hydrooj' {
 }
 
 // 插件主函数
-export default async function apply(ctx: Context, config: any = {}) {
-    // 设置默认配置
-    const defaultConfig: ScoreConfig = {
-        enabled: true,
-        acReward: 10,
-    };
-
-    const finalConfig = { ...defaultConfig, ...config };
-
+export default async function apply(ctx: Context) {
     console.log('Score Core plugin loading...');
-    const scoreService = new ScoreService(finalConfig, ctx);
 
-    // 注册积分服务到服务注册器
+    // 初始化服务注册器
     const serviceRegistry = ServiceRegistry.getInstance(ctx);
+
+    // 创建并注册配置管理器
+    serviceRegistry.registerConfigManager(configManager);
+
+    // 创建并注册积分服务
+    const scoreService = new ScoreService(ctx);
     serviceRegistry.registerScoreService(scoreService);
 
     // 使用 service 方法初始化数据库索引
@@ -123,6 +122,7 @@ export default async function apply(ctx: Context, config: any = {}) {
 export { Config };
 
 // 导出核心类型和服务，供其他插件使用
-export { getScoreService, ServiceRegistry } from './src/registry/ServiceRegistry';
+// 推荐外部插件使用 OrThrow 方法，确保服务可用性
+export { getConfigManagerOrThrow, getScoreServiceOrThrow, ServiceRegistry } from './src/registry/ServiceRegistry';
 export { ScoreService } from './src/services/ScoreService';
 export * from './src/types';

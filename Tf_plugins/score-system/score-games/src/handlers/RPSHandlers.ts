@@ -1,4 +1,4 @@
-import { getScoreService } from '@tivonfeng/score-core';
+import { getScoreServiceOrThrow } from '@tivonfeng/score-core';
 import {
     Handler,
 } from 'hydrooj';
@@ -21,8 +21,7 @@ export class RPSGameHandler extends Handler {
             return;
         }
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const rpsService = new RPSGameService(this.ctx, scoreService);
 
         // 获取用户积分
@@ -128,8 +127,7 @@ export class RPSPlayHandler extends Handler {
             }
 
             console.log(`[RPSPlayHandler] Creating services for domain ${this.domain._id}`);
-            const scoreService = getScoreService();
-            if (!scoreService) throw new Error('积分核心服务不可用');
+            const scoreService = getScoreServiceOrThrow();
             const rpsService = new RPSGameService(this.ctx, scoreService);
 
             console.log(`[RPSPlayHandler] Calling playRPSGame with choice: ${choice}`);
@@ -190,8 +188,7 @@ export class RPSHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 20;
 
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const rpsService = new RPSGameService(this.ctx, scoreService);
 
         // 获取分页游戏历史
@@ -267,8 +264,7 @@ export class RPSAdminHandler extends Handler {
     }
 
     async get() {
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const scoreService = getScoreServiceOrThrow();
         const rpsService = new RPSGameService(this.ctx, scoreService);
 
         // 获取系统统计

@@ -1,7 +1,7 @@
+import type { IScoreService } from '@tivonfeng/score-core';
 import {
     Context,
 } from 'hydrooj';
-import type { IScoreService } from '@tivonfeng/score-core';
 import type { DailyGameLimitService } from './DailyGameLimitService';
 
 // 掷骰子游戏记录接口
@@ -104,11 +104,11 @@ export class DiceGameService {
             betAmount,
             `掷骰子游戏投注${betAmount}积分`,
         );
-        
-        console.log(`[DiceGame] DeductResult:`, JSON.stringify(deductResult));
-        
+
+        console.log('[DiceGame] DeductResult:', JSON.stringify(deductResult));
+
         if (!deductResult.success) {
-            console.error(`[DiceGame] Deduction failed:`, deductResult);
+            console.error('[DiceGame] Deduction failed:', deductResult);
             throw new Error(`投注失败: ${deductResult.message || '未知错误'}`);
         }
 
@@ -120,7 +120,7 @@ export class DiceGameService {
                 reward,
                 `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
             );
-            
+
             if (!rewardResult.success) {
                 console.error(`[DiceGame] 奖励发放失败: ${rewardResult.message}`);
                 // 这种情况下继续执行，因为游戏已经完成，只是奖励发放有问题

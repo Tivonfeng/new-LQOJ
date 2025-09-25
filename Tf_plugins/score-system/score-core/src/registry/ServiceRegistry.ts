@@ -6,11 +6,21 @@
 import type { Context } from 'hydrooj';
 import type { IScoreService } from '../interfaces/IScoreService';
 
+// 服务常量
+export const SERVICE_NAMES = {
+    SCORE: 'score', // 核心积分系统
+    CONFIG: 'config', // 配置管理器
+    LOTTERY: 'lottery', // 抽奖系统
+    TRANSFER: 'transfer', // 转账系统
+    CHECKIN: 'checkin', // 签到系统
+    GAMES: 'games', // 游戏系统
+} as const;
+
 // 服务注册表
 const services = new Map<string, any>();
 
 export class ServiceRegistry {
-    private static instance: ServiceRegistry;
+    public static instance: ServiceRegistry;
     private ctx: Context;
 
     private constructor(ctx: Context) {
@@ -57,7 +67,21 @@ export class ServiceRegistry {
      * 注册积分服务
      */
     registerScoreService(service: IScoreService): void {
-        this.register('score', service);
+        this.register(SERVICE_NAMES.SCORE, service);
+    }
+
+    /**
+     * 注册配置管理器
+     */
+    registerConfigManager(configManager: any): void {
+        this.register(SERVICE_NAMES.CONFIG, configManager);
+    }
+
+    /**
+     * 获取配置管理器
+     */
+    getConfigManager(): any {
+        return this.get(SERVICE_NAMES.CONFIG);
     }
 
     /**
@@ -68,17 +92,42 @@ export class ServiceRegistry {
     }
 }
 
-// 便捷的全局访问方法
-export function getScoreService(): IScoreService | null {
-    const registry = ServiceRegistry.getInstance();
-    return registry ? registry.getScoreService() : null;
+/**
+ * 获取积分服务实例
+ * 这是推荐的获取积分服务的方式，确保服务可用性
+ * @returns 积分服务实例
+ * @throws 如果服务注册器未初始化或积分服务不可用
+ */
+export function getScoreServiceOrThrow(): IScoreService {
+    const registry = ServiceRegistry.instance;
+    if (!registry) {
+        throw new Error('ServiceRegistry 未初始化，请确保 score-core 插件已正确加载');
+    }
+
+    const scoreService = registry.getScoreService();
+    if (!scoreService) {
+        throw new Error('积分核心服务不可用，请检查服务注册状态');
+    }
+
+    return scoreService;
 }
 
-// 服务常量
-export const SERVICE_NAMES = {
-    SCORE: 'score',
-    LOTTERY: 'lottery',
-    TRANSFER: 'transfer',
-    CHECKIN: 'checkin',
-    GAMES: 'games',
-} as const;
+/**
+ * 获取配置管理器实例
+ * 这是推荐的获取配置管理器的方式，确保服务可用性
+ * @returns 配置管理器实例
+ * @throws 如果服务注册器未初始化或配置管理器不可用
+ */
+export function getConfigManagerOrThrow(): any {
+    const registry = ServiceRegistry.instance;
+    if (!registry) {
+        throw new Error('ServiceRegistry 未初始化，请确保 score-core 插件已正确加载');
+    }
+
+    const configManager = registry.getConfigManager();
+    if (!configManager) {
+        throw new Error('配置管理器不可用，请检查服务注册状态');
+    }
+
+    return configManager;
+}

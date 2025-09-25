@@ -1,4 +1,4 @@
-import { getScoreService, ServiceRegistry } from '@tivonfeng/score-core';
+import { getScoreServiceOrThrow, ServiceRegistry } from '@tivonfeng/score-core';
 import {
     Context,
     Schema,
@@ -75,11 +75,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     console.log('[Score Games] 🎮 游戏系统加载中...');
 
     // 检查积分核心服务是否可用
-    const scoreService = getScoreService();
-    if (!scoreService) {
-        console.error('[Score Games] ❌ 积分核心服务未找到，请确保 ../score-core 插件已加载');
-        return;
-    }
+    const scoreService = getScoreServiceOrThrow();
 
     // 初始化服务
     const gameLimitService = new DailyGameLimitService(ctx);

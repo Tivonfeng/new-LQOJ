@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { getScoreService, ServiceRegistry } from '@tivonfeng/score-core';
+import { getScoreServiceOrThrow, ServiceRegistry } from '@tivonfeng/score-core';
 import {
     Context,
     Schema,
@@ -61,11 +61,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     console.log('[Score Transfer] 💸 转账系统加载中...');
 
     // 检查积分核心服务是否可用
-    const scoreService = getScoreService();
-    if (!scoreService) {
-        console.error('[Score Transfer] ❌ 积分核心服务未找到，请确保 @tivonfeng/score-system/score-core 插件已加载');
-        return;
-    }
+    const scoreService = getScoreServiceOrThrow();
 
     // 初始化转账服务
     const transferService = new TransferService(finalConfig, ctx, scoreService);
