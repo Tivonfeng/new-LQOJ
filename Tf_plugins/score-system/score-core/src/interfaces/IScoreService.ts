@@ -70,5 +70,52 @@ export interface IScoreService {
     /**
      * 格式化积分记录的日期
      */
-    formatScoreRecords(records: ScoreRecord[]): Array<Omit<ScoreRecord, 'createdAt'> & { createdAt: string }>;
+    formatScoreRecords(records: ScoreRecord[], includeYear?: boolean): Array<Omit<ScoreRecord, 'createdAt'> & { createdAt: string }>;
+
+    /**
+     * 格式化用户积分数据的日期
+     */
+    formatUserScores(users: UserScore[], includeYear?: boolean): Array<Omit<UserScore, 'lastUpdated'> & { lastUpdated: string | null }>;
+
+    /**
+     * 分页获取积分排行榜
+     */
+    getScoreRankingWithPagination(domainId: string, page: number, limit: number): Promise<{
+        users: UserScore[];
+        total: number;
+        totalPages: number;
+        currentPage: number;
+    }>;
+
+    /**
+     * 获取总用户数
+     */
+    getTotalUsersCount(domainId: string): Promise<number>;
+
+    /**
+     * 获取重复的积分记录
+     */
+    getDuplicateRecords(domainId: string): Promise<Array<{
+        _id: { uid: number, pid: number, domainId: string },
+        docs: ScoreRecord[],
+        count: number,
+    }>>;
+
+    /**
+     * 删除重复的积分记录
+     */
+    deleteDuplicateRecords(domainId: string): Promise<{
+        duplicateGroups: number;
+        deletedRecords: number;
+    }>;
+
+    /**
+     * 获取系统总积分数
+     */
+    getTotalScoreSum(domainId: string): Promise<number>;
+
+    /**
+     * 初始化数据库索引
+     */
+    initializeIndexes(): Promise<void>;
 }

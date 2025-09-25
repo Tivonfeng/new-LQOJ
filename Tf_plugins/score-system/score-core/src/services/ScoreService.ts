@@ -92,6 +92,43 @@ export class ScoreService implements IScoreService {
     }
 
     /**
+     * 分页获取积分排行榜 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @param page 页码（从1开始）
+     * @param limit 每页数量
+     * @returns 分页的积分排行榜
+     */
+    async getScoreRankingWithPagination(_domainId: string, page: number, limit: number): Promise<{
+        users: UserScore[];
+        total: number;
+        totalPages: number;
+        currentPage: number;
+    }> {
+        const skip = (page - 1) * limit;
+
+        // 获取用户排行榜
+        const users = await this.ctx.db.collection('score.users' as any)
+            .find({})
+            .sort({ totalScore: -1, lastUpdated: 1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
+        // 获取总用户数
+        const total = await this.ctx.db.collection('score.users' as any)
+            .countDocuments({});
+
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            users,
+            total,
+            totalPages,
+            currentPage: page,
+        };
+    }
+
+    /**
      * 获取用户积分记录 (全局)
      * @param _domainId 域ID (保留参数用于向后兼容)
      * @param uid 用户ID
@@ -186,21 +223,185 @@ export class ScoreService implements IScoreService {
     }
 
     /**
+     * 格式化日期的通用方法
+     * @param date 日期对象
+     * @param includeYear 是否包含年份，默认true
+     * @returns 格式化后的日期字符串
+     */
+    private formatDate(date: Date, includeYear: boolean = true): string {
+        const options: Intl.DateTimeFormatOptions = {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        };
+
+        if (includeYear) {
+            options.year = 'numeric';
+        }
+
+        return date.toLocaleString('zh-CN', options);
+    }
+
+    /**
      * 格式化积分记录的日期
      * @param records 原始记录数组
+     * @param includeYear 是否包含年份，默认true
      * @returns 格式化后的记录数组
      */
-    formatScoreRecords(records: ScoreRecord[]): Array<Omit<ScoreRecord, 'createdAt'> & { createdAt: string }> {
+    formatScoreRecords(records: ScoreRecord[], includeYear: boolean = true): Array<Omit<ScoreRecord, 'createdAt'> & { createdAt: string }> {
         return records.map((record) => ({
             ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
+            createdAt: this.formatDate(record.createdAt, includeYear),
         }));
+    }
+
+    /**
+     * 格式化用户积分数据的日期
+     * @param users 原始用户数据数组
+     * @param includeYear 是否包含年份，默认true
+     * @returns 格式化后的用户数据数组
+     */
+    formatUserScores(users: UserScore[], includeYear: boolean = true): Array<Omit<UserScore, 'lastUpdated'> & { lastUpdated: string | null }> {
+        return users.map((user) => ({
+            ...user,
+            lastUpdated: user.lastUpdated ? this.formatDate(user.lastUpdated, includeYear) : null,
+        }));
+    }
+
+    /**
+     * 获取总用户数 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @returns 总用户数
+     */
+    async getTotalUsersCount(_domainId: string): Promise<number> {
+        return await this.ctx.db.collection('score.users' as any).countDocuments({});
+    }
+
+    /**
+     * 获取重复的积分记录
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @returns 重复记录组的信息
+     */
+    async getDuplicateRecords(_domainId: string): Promise<Array<{
+        _id: { uid: number, pid: number, domainId: string };
+        docs: ScoreRecord[];
+        count: number;
+    }>> {
+        const pipeline = [
+            {
+                $group: {
+                    _id: { uid: '$uid', pid: '$pid', domainId: '$domainId' },
+                    docs: { $push: '$$ROOT' },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $match: { count: { $gt: 1 } },
+            },
+        ];
+
+        return await this.ctx.db.collection('score.records' as any).aggregate(pipeline).toArray() as any;
+    }
+
+    /**
+     * 删除重复的积分记录
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @returns 删除操作的结果
+     */
+    async deleteDuplicateRecords(_domainId: string): Promise<{
+        duplicateGroups: number;
+        deletedRecords: number;
+    }> {
+        const duplicates = await this.getDuplicateRecords(_domainId);
+        console.log(`[ScoreService] 发现 ${duplicates.length} 组重复记录`);
+
+        let totalDeleted = 0;
+        const deletePromises: Promise<any>[] = [];
+
+        for (const dup of duplicates) {
+            // 按创建时间排序，保留最早的记录
+            dup.docs.sort((a: any, b: any) => a.createdAt - b.createdAt);
+            const docsToDelete = dup.docs.slice(1); // 删除除第一个外的所有记录
+
+            for (const doc of docsToDelete) {
+                deletePromises.push(
+                    this.ctx.db.collection('score.records' as any).deleteOne({ _id: doc._id }),
+                );
+            }
+            totalDeleted += docsToDelete.length;
+
+            console.log(`[ScoreService] 标记清理 ${docsToDelete.length} 条重复记录 `
+                + `(uid: ${dup._id.uid}, pid: ${dup._id.pid}, domainId: ${dup._id.domainId})`);
+        }
+
+        await Promise.all(deletePromises);
+
+        return {
+            duplicateGroups: duplicates.length,
+            deletedRecords: totalDeleted,
+        };
+    }
+
+    /**
+     * 获取系统总积分数 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @returns 系统总积分数
+     */
+    async getTotalScoreSum(_domainId: string): Promise<number> {
+        const result = await this.ctx.db.collection('score.users' as any).aggregate([
+            { $group: { _id: null, total: { $sum: '$totalScore' } } },
+        ]).toArray();
+        return result[0]?.total || 0;
+    }
+
+    /**
+     * 初始化数据库索引
+     * 创建必要的索引以确保数据完整性和查询性能
+     */
+    async initializeIndexes(): Promise<void> {
+        try {
+            // 为题目相关记录创建部分唯一索引，防止重复AC奖励
+            await this.ctx.db.collection('score.records' as any).createIndex(
+                { uid: 1, pid: 1, domainId: 1 },
+                {
+                    unique: true,
+                    partialFilterExpression: { pid: { $gt: 0 } }, // 只对题目记录生效
+                    background: false,
+                },
+            );
+            console.log('[ScoreService] ✅ 题目记录唯一索引创建成功');
+        } catch (error: any) {
+            if (error.message.includes('already exists')) {
+                console.log('[ScoreService] ✅ 唯一索引已存在');
+            } else if (error.message.includes('E11000') || error.message.includes('duplicate key')) {
+                console.error('[ScoreService] ❌ 数据库中存在重复记录，无法创建唯一索引');
+                console.log('[ScoreService] 🧹 正在清理重复记录...');
+
+                // 使用现有的清理方法
+                const result = await this.deleteDuplicateRecords('system');
+                console.log(`[ScoreService] 📊 清理了 ${result.duplicateGroups} 组重复记录，删除 ${result.deletedRecords} 条记录`);
+
+                // 重新尝试创建索引
+                try {
+                    await this.ctx.db.collection('score.records' as any).createIndex(
+                        { uid: 1, pid: 1, domainId: 1 },
+                        {
+                            unique: true,
+                            background: false,
+                            partialFilterExpression: { pid: { $gt: 0 } },
+                        },
+                    );
+                    console.log('[ScoreService] ✅ 重复记录清理完成，唯一索引创建成功');
+                } catch (retryError: any) {
+                    console.error('[ScoreService] ❌ 清理后仍无法创建索引:', retryError.message);
+                    throw retryError;
+                }
+            } else {
+                console.error('[ScoreService] ❌ 索引创建失败:', error.message);
+                throw error;
+            }
+        }
     }
 
     /**

@@ -4,10 +4,10 @@ import {
     PRIV,
 } from 'hydrooj';
 import { getScoreService } from '../registry/ServiceRegistry';
-import { ScoreService } from '../services/ScoreService';
 import type {
     UserScore,
 } from '../services';
+import { ScoreService } from '../services/ScoreService';
 
 /**
  * 积分大厅处理器
@@ -46,15 +46,8 @@ export class ScoreHallHandler extends Handler {
         // 获取全局最近积分记录（所有用户）
         const { records: rawRecords } = await scoreService.getScoreRecordsWithPagination(this.domain._id, 1, 10);
 
-        recentRecords = rawRecords.map((record) => ({
-            ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
-        }));
+        // 使用 service 方法格式化日期（不包含年份）
+        recentRecords = scoreService.formatScoreRecords(rawRecords, false);
 
         // 获取积分排行榜前10
         const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
@@ -101,17 +94,16 @@ export class ScoreRankingHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = 50;
-        const skip = (page - 1) * limit;
 
-        const users = await this.ctx.db.collection('score.users' as any)
-            .find({}) // 移除域限制，显示全局排行榜
-            .sort({ totalScore: -1, lastUpdated: 1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
+        const scoreService = getScoreService();
+        if (!scoreService) throw new Error('积分核心服务不可用');
 
-        const total = await this.ctx.db.collection('score.users' as any)
-            .countDocuments({}); // 移除域限制，统计全局用户数
+        // 使用 service 方法获取分页排行榜数据
+        const { users, total, totalPages } = await scoreService.getScoreRankingWithPagination(
+            this.domain._id,
+            page,
+            limit,
+        );
 
         // 获取用户信息
         const uids = users.map((u) => u.uid);
@@ -121,17 +113,8 @@ export class ScoreRankingHandler extends Handler {
         // 检查是否有管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
-        // 格式化日期
-        const formattedUsers = users.map((user) => ({
-            ...user,
-            lastUpdated: user.lastUpdated ? user.lastUpdated.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }) : null,
-        }));
+        // 使用 service 方法格式化日期
+        const formattedUsers = scoreService.formatUserScores(users);
 
         this.response.template = 'score_ranking.html';
         this.response.body = {
@@ -139,7 +122,7 @@ export class ScoreRankingHandler extends Handler {
             udocs,
             page,
             total,
-            totalPages: Math.ceil(total / limit),
+            totalPages,
             canManage,
         };
     }
@@ -159,17 +142,8 @@ export class UserScoreHandler extends Handler {
         const userScore = await scoreService.getUserScore(this.domain._id, uid);
         const recentRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 20);
 
-        // 格式化日期
-        const formattedRecords = recentRecords.map((record) => ({
-            ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
-        }));
+        // 使用 service 方法格式化日期
+        const formattedRecords = scoreService.formatScoreRecords(recentRecords);
 
         const userScoreData = userScore || { totalScore: 0, acCount: 0 };
         const averageScore = userScoreData.acCount > 0
@@ -253,10 +227,8 @@ export class ScoreManageHandler extends Handler {
         const { records: recentRecords } = await scoreService.getScoreRecordsWithPagination(this.domain._id, 1, 20);
         const todayStats = await scoreService.getTodayStats(this.domain._id);
         const systemOverview = {
-            totalUsers: await this.ctx.db.collection('score.users' as any).countDocuments(),
-            totalScore: await this.ctx.db.collection('score.users' as any).aggregate([
-                { $group: { _id: null, total: { $sum: '$totalScore' } } },
-            ]).toArray().then((result) => result[0]?.total || 0),
+            totalUsers: await scoreService.getTotalUsersCount(this.domain._id),
+            totalScore: await scoreService.getTotalScoreSum(this.domain._id),
             todayStats,
         };
 
@@ -342,49 +314,16 @@ export class ScoreManageHandler extends Handler {
             try {
                 console.log('[ScoreManage] Starting manual duplicate cleanup...');
 
-                // 清理重复记录的逻辑
-                const pipeline = [
-                    {
-                        $group: {
-                            _id: { uid: '$uid', pid: '$pid', domainId: '$domainId' },
-                            docs: { $push: '$$ROOT' },
-                            count: { $sum: 1 },
-                        },
-                    },
-                    {
-                        $match: { count: { $gt: 1 } },
-                    },
-                ];
+                const scoreService = getScoreService();
+                if (!scoreService) throw new Error('积分核心服务不可用');
 
-                const duplicates = await this.ctx.db.collection('score.records' as any).aggregate(pipeline).toArray();
-                console.log(`[ScoreManage] 发现 ${duplicates.length} 组重复记录`);
-
-                let totalDeleted = 0;
-                const deletePromises: any[] = [];
-                for (const dup of duplicates) {
-                    // 按创建时间排序，保留最早的记录
-                    dup.docs.sort((a: any, b: any) => a.createdAt - b.createdAt);
-                    const docsToDelete = dup.docs.slice(1); // 删除除第一个外的所有记录
-
-                    for (const doc of docsToDelete) {
-                        deletePromises.push(
-                            this.ctx.db.collection('score.records' as any).deleteOne({ _id: doc._id }),
-                        );
-                    }
-                    totalDeleted += docsToDelete.length;
-
-                    console.log(`[ScoreManage] 标记清理 ${docsToDelete.length} 条重复记录 `
-                        + `(uid: ${dup._id.uid}, pid: ${dup._id.pid}, domainId: ${dup._id.domainId})`);
-                }
-                await Promise.all(deletePromises);
+                // 使用 service 方法删除重复记录
+                const result = await scoreService.deleteDuplicateRecords(this.domain._id);
 
                 this.response.body = {
                     success: true,
-                    message: `成功清理了 ${totalDeleted} 条重复记录`,
-                    data: {
-                        duplicateGroups: duplicates.length,
-                        deletedRecords: totalDeleted,
-                    },
+                    message: `成功清理了 ${result.deletedRecords} 条重复记录`,
+                    data: result,
                 };
             } catch (error) {
                 console.error('[ScoreManage] 清理重复记录失败:', error);

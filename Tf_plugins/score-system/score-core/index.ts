@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import {
     Context,
     PRIV,
@@ -48,73 +47,13 @@ export default async function apply(ctx: Context, config: any = {}) {
     const serviceRegistry = ServiceRegistry.getInstance(ctx);
     serviceRegistry.registerScoreService(scoreService);
 
-    // // 🔒 先删除旧的唯一索引（如果存在）
-    // try {
-    //     await ctx.db.collection('score.records' as any).dropIndex('uid_1_pid_1_domainId_1');
-    //     console.log('[Score Core] 🗑️ 删除旧的唯一索引');
-    // } catch (error) {
-    //     // 索引不存在时会报错，这是正常的
-    //     console.log('[Score Core] ℹ️ 旧索引不存在或已删除');
-    // }
-
-    // 🔒 为题目相关记录创建部分唯一索引，防止重复AC奖励
+    // 使用 service 方法初始化数据库索引
     try {
-        await ctx.db.collection('score.records' as any).createIndex(
-            { uid: 1, pid: 1, domainId: 1 },
-            {
-                unique: true,
-                partialFilterExpression: { pid: { $gt: 0 } }, // 只对题目记录生效
-                background: false,
-            },
-        );
-        console.log('[Score Core] ✅ 题目记录唯一索引创建成功');
-    } catch (error) {
-        if (error.message.includes('already exists')) {
-            console.log('[Score Core] ✅ 唯一索引已存在');
-        } else if (error.message.includes('E11000') || error.message.includes('duplicate key')) {
-            console.error('[Score Core] ❌ 数据库中存在重复记录，无法创建唯一索引');
-            console.log('[Score Core] 🧹 正在清理重复记录...');
-
-            // 清理重复记录，保留最早的那条
-            const pipeline = [
-                {
-                    $group: {
-                        _id: { uid: '$uid', pid: '$pid', domainId: '$domainId' },
-                        docs: { $push: '$$ROOT' },
-                        count: { $sum: 1 },
-                    },
-                },
-                {
-                    $match: { count: { $gt: 1 } },
-                },
-            ];
-
-            const duplicates = await ctx.db.collection('score.records' as any).aggregate(pipeline).toArray();
-            console.log(`[Score Core] 📊 发现 ${duplicates.length} 组重复记录`);
-
-            for (const dup of duplicates) {
-                // 保留最早的记录（createdAt最小的），删除其他的
-                const docsToDelete = dup.docs.slice(1); // 除了第一个，其他都删除
-                const deletePromises = docsToDelete.map((doc: any) =>
-                    ctx.db.collection('score.records' as any).deleteOne({ _id: doc._id }),
-                );
-                await Promise.all(deletePromises);
-                console.log(`[Score Core] 🗑️ 清理了 ${docsToDelete.length} 条重复记录 (uid: ${dup._id.uid}, pid: ${dup._id.pid})`);
-            }
-
-            // 重新尝试创建索引
-            try {
-                await ctx.db.collection('score.records' as any).createIndex(
-                    { uid: 1, pid: 1, domainId: 1 },
-                    { unique: true, background: false },
-                );
-                console.log('[Score Core] ✅ 重复记录清理完成，唯一索引创建成功');
-            } catch (retryError) {
-                console.error('[Score Core] ❌ 清理后仍无法创建索引:', retryError.message);
-            }
-        } else {
-            console.error('[Score Core] ❌ 索引创建失败:', error.message);
-        }
+        await scoreService.initializeIndexes();
+        console.log('[Score Core] 🎯 数据库索引初始化完成');
+    } catch (error: any) {
+        console.error('[Score Core] ❌ 数据库索引初始化失败:', error.message);
+        // 不抛出错误，让插件继续加载，但记录错误
     }
 
     // ⭐ 基于积分记录的准确首次AC检测
