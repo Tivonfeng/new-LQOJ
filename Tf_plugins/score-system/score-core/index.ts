@@ -6,6 +6,7 @@ import {
     Schema,
     STATUS,
 } from 'hydrooj';
+import { DEFAULT_SYSTEM_CONFIG } from './src/config/ConfigManager';
 import { SCORE_EVENTS } from './src/events/ScoreEvents';
 import {
     ScoreHallHandler,
@@ -21,7 +22,11 @@ import type { ScoreConfig, ScoreEventData } from './src/types';
 // 积分系统配置Schema
 const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('是否启用积分系统'),
-    acReward: Schema.number().default(10).min(1).max(100).description('AC题目奖励积分'),
+    acReward: Schema.number()
+        .default(DEFAULT_SYSTEM_CONFIG.AC_REWARD_DEFAULT)
+        .min(DEFAULT_SYSTEM_CONFIG.AC_REWARD_MIN)
+        .max(DEFAULT_SYSTEM_CONFIG.AC_REWARD_MAX)
+        .description('AC题目奖励积分'),
 });
 
 // 声明数据库集合类型和事件类型
@@ -63,7 +68,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.on('record/judge', async (rdoc: RecordDoc, _updated: boolean, pdoc?: ProblemDoc) => {
         try {
             // 只处理启用状态且有题目信息的记录
-            if (!finalConfig.enabled || !pdoc) return;
+            if (!scoreService.isEnabled() || !pdoc) return;
             if (rdoc.status !== STATUS.STATUS_ACCEPTED) return;
 
             // 🔒 使用原子性事务处理首次AC奖励，避免并发竞态条件
@@ -72,7 +77,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                 domainId: rdoc.domainId,
                 pid: rdoc.pid,
                 recordId: rdoc._id,
-                score: finalConfig.acReward,
+                score: scoreService.getAcReward(),
                 reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
                 problemTitle: pdoc.title,
             });

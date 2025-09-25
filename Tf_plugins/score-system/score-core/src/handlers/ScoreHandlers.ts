@@ -3,11 +3,19 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
+import { ConfigValidator } from '../config/ConfigManager';
 import { getScoreService } from '../registry/ServiceRegistry';
 import type {
     UserScore,
 } from '../services';
 import { ScoreService } from '../services/ScoreService';
+import {
+    checkManagePermission,
+    fetchUserInfoBatch,
+    getScoreServiceOrThrow,
+    PAGINATION_CONFIG,
+    parsePaginationParams,
+} from '../utils/HandlerUtils';
 
 /**
  * 积分大厅处理器
@@ -55,15 +63,14 @@ export class ScoreHallHandler extends Handler {
         // 获取用户信息（包括排行榜和最近记录的用户）
         const rankingUids = topUsers.map((u) => u.uid);
         const recentRecordUids = recentRecords.map((r) => r.uid);
-        const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        const allUids = [...rankingUids, ...recentRecordUids]; // 合并用户ID
+        const udocs = await fetchUserInfoBatch(this, allUids);
 
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
 
         // 检查是否有管理权限
-        const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
+        const canManage = checkManagePermission(this);
 
         this.response.template = 'score_hall.html';
         this.response.body = {
@@ -92,11 +99,8 @@ export class ScoreHallHandler extends Handler {
  */
 export class ScoreRankingHandler extends Handler {
     async get() {
-        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 50;
-
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const { page, limit } = parsePaginationParams(this.request, PAGINATION_CONFIG.RANKING_PAGE_SIZE);
+        const scoreService = getScoreServiceOrThrow();
 
         // 使用 service 方法获取分页排行榜数据
         const { users, total, totalPages } = await scoreService.getScoreRankingWithPagination(
@@ -107,11 +111,10 @@ export class ScoreRankingHandler extends Handler {
 
         // 获取用户信息
         const uids = users.map((u) => u.uid);
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const udocs = await fetchUserInfoBatch(this, uids);
 
         // 检查是否有管理权限
-        const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
+        const canManage = checkManagePermission(this);
 
         // 使用 service 方法格式化日期
         const formattedUsers = scoreService.formatUserScores(users);
@@ -166,11 +169,8 @@ export class UserScoreHandler extends Handler {
  */
 export class ScoreRecordsHandler extends Handler {
     async get() {
-        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
-
-        const scoreService = getScoreService();
-        if (!scoreService) throw new Error('积分核心服务不可用');
+        const { page, limit } = parsePaginationParams(this.request, PAGINATION_CONFIG.RECORDS_PAGE_SIZE);
+        const scoreService = getScoreServiceOrThrow();
 
         // 使用 service 方法获取分页数据
         const { records, total, totalPages } = await scoreService.getScoreRecordsWithPagination(
@@ -180,9 +180,8 @@ export class ScoreRecordsHandler extends Handler {
         );
 
         // 获取涉及的用户信息
-        const uids = [...new Set(records.map((r) => r.uid))];
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const uids = records.map((r) => r.uid);
+        const udocs = await fetchUserInfoBatch(this, uids);
 
         // 使用 service 方法格式化记录
         const formattedRecords = scoreService.formatScoreRecords(records);
@@ -238,11 +237,8 @@ export class ScoreManageHandler extends Handler {
         // 获取所有涉及的用户ID（包括排行榜和最近记录）
         const rankingUids = topUsers.map((u) => u.uid);
         const recentUids = recentRecords.map((r: any) => r.uid);
-        const allUids = [...new Set([...rankingUids, ...recentUids])]; // 去重
-
-        // 获取用户信息用于显示用户名
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        const allUids = [...rankingUids, ...recentUids]; // 合并用户ID
+        const udocs = await fetchUserInfoBatch(this, allUids);
 
         this.response.template = 'score_manage.html';
         this.response.body = {
@@ -273,13 +269,14 @@ export class ScoreManageHandler extends Handler {
                 }
 
                 const scoreChangeNum = Number.parseInt(scoreChange);
-                if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
-                    this.response.body = { success: false, message: '积分变化值无效（范围：-10000 到 +10000）' };
-                    return;
-                }
 
-                if (!reason || reason.length < 2) {
-                    this.response.body = { success: false, message: '请填写调整原因' };
+                // 使用配置验证器验证参数
+                const validationErrors = ConfigValidator.validateScoreAdjustment(scoreChangeNum, reason);
+                if (validationErrors.length > 0) {
+                    this.response.body = {
+                        success: false,
+                        message: `参数验证失败: ${validationErrors.join(', ')}`,
+                    };
                     return;
                 }
 

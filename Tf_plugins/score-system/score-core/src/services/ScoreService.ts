@@ -29,6 +29,20 @@ export class ScoreService implements IScoreService {
     }
 
     /**
+     * 检查积分系统是否启用
+     */
+    isEnabled(): boolean {
+        return this.config.enabled;
+    }
+
+    /**
+     * 获取AC奖励积分
+     */
+    getAcReward(): number {
+        return this.config.acReward;
+    }
+
+    /**
      * 生成唯一的记录ID
      * 使用时间戳 + 进程ID + 计数器确保唯一性
      */
@@ -188,12 +202,12 @@ export class ScoreService implements IScoreService {
 
     /**
      * 分页获取所有积分记录
-     * @param domainId 域ID
+     * @param _domainId 域ID (保留参数用于向后兼容)
      * @param page 页码（从1开始）
      * @param limit 每页数量
      * @returns 分页的积分记录
      */
-    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number): Promise<{
+    async getScoreRecordsWithPagination(_domainId: string, page: number, limit: number): Promise<{
         records: ScoreRecord[];
         total: number;
         totalPages: number;

@@ -123,4 +123,14 @@ export interface IScoreService {
      * 初始化数据库索引
      */
     initializeIndexes(): Promise<void>;
+
+    /**
+     * 检查积分系统是否启用
+     */
+    isEnabled(): boolean;
+
+    /**
+     * 获取AC奖励积分
+     */
+    getAcReward(): number;
 }
