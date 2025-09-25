@@ -5,6 +5,7 @@
 
 import type {
     DailyStats,
+    DuplicateRecordsGroup,
     PaginatedResult,
     ScoreOperationResult,
     ScoreRecord,
@@ -63,6 +64,14 @@ export interface IScoreService {
     deductUserScore(domainId: string, uid: number, score: number, reason: string): Promise<ScoreOperationResult>;
 
     /**
+     * 原子性处理首次AC奖励
+     */
+    processFirstACReward(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<{
+        isFirstAC: boolean;
+        score: number;
+    }>;
+
+    /**
      * 增加用户积分
      */
     addUserScore(domainId: string, uid: number, score: number, reason: string): Promise<ScoreOperationResult>;
@@ -95,11 +104,7 @@ export interface IScoreService {
     /**
      * 获取重复的积分记录
      */
-    getDuplicateRecords(domainId: string): Promise<Array<{
-        _id: { uid: number, pid: number, domainId: string },
-        docs: ScoreRecord[],
-        count: number,
-    }>>;
+    getDuplicateRecords(domainId: string): Promise<DuplicateRecordsGroup[]>;
 
     /**
      * 删除重复的积分记录

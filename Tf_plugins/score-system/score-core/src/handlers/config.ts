@@ -6,4 +6,5 @@ import type { ScoreConfig } from '../types';
 
 export const DEFAULT_CONFIG: ScoreConfig = {
     enabled: true,
+    acReward: 10,
 };

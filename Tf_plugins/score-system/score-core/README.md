@@ -18,7 +18,8 @@
 
 ```javascript
 {
-  enabled: true  // 是否启用积分系统，默认为true
+  enabled: true,    // 是否启用积分系统，默认为true
+  acReward: 10      // AC题目奖励积分，默认为10分（范围：1-100）
 }
 ```
 
@@ -62,8 +63,10 @@ interface IScoreService {
 插件会发布以下事件：
 
 ```typescript
+import { SCORE_EVENTS } from '@hydrooj/score-core';
+
 // AC奖励事件
-ctx.emit('score/ac-rewarded', {
+ctx.emit(SCORE_EVENTS.AC_REWARDED, {
   uid: number,
   pid: number,
   domainId: string,
@@ -74,7 +77,7 @@ ctx.emit('score/ac-rewarded', {
 });
 
 // 积分变更事件
-ctx.emit('score/change', {
+ctx.emit(SCORE_EVENTS.SCORE_CHANGE, {
   uid: number,
   domainId: string,
   change: number,
@@ -82,7 +85,7 @@ ctx.emit('score/change', {
 });
 
 // 积分不足事件
-ctx.emit('score/insufficient', {
+ctx.emit(SCORE_EVENTS.SCORE_INSUFFICIENT, {
   uid: number,
   domainId: string,
   required: number,
@@ -131,14 +134,16 @@ export default async function apply(ctx: Context) {
 ### 3. 监听积分事件
 
 ```typescript
+import { SCORE_EVENTS } from '@hydrooj/score-core';
+
 export default async function apply(ctx: Context) {
   // 监听积分变更
-  ctx.on('score/change', (data) => {
+  ctx.on(SCORE_EVENTS.SCORE_CHANGE, (data) => {
     console.log(`用户 ${data.uid} 积分变更: ${data.change}, 原因: ${data.reason}`);
   });
   
   // 监听积分不足事件
-  ctx.on('score/insufficient', (data) => {
+  ctx.on(SCORE_EVENTS.SCORE_INSUFFICIENT, (data) => {
     console.log(`用户 ${data.uid} 积分不足: 需要${data.required}, 当前${data.current}`);
   });
 }

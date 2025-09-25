@@ -31,6 +31,7 @@ export interface UserScore {
 // 积分系统配置接口
 export interface ScoreConfig {
     enabled: boolean;
+    acReward: number;
 }
 
 // 积分事件数据类型
@@ -90,4 +91,15 @@ export interface ScoreOperationResult {
     success: boolean;
     message?: string;
     data?: any;
+}
+
+// 重复记录聚合结果接口
+export interface DuplicateRecordsGroup {
+    _id: {
+        uid: number;
+        pid: number;
+        domainId: string;
+    };
+    docs: ScoreRecord[];
+    count: number;
 }

@@ -3,6 +3,7 @@ import {
 } from 'hydrooj';
 import { SCORE_EVENTS } from '../events/ScoreEvents';
 import type {
+    DuplicateRecordsGroup,
     IScoreService,
     ScoreConfig,
     ScoreOperationResult,
@@ -283,11 +284,7 @@ export class ScoreService implements IScoreService {
      * @param _domainId 域ID (保留参数用于向后兼容)
      * @returns 重复记录组的信息
      */
-    async getDuplicateRecords(_domainId: string): Promise<Array<{
-        _id: { uid: number, pid: number, domainId: string };
-        docs: ScoreRecord[];
-        count: number;
-    }>> {
+    async getDuplicateRecords(_domainId: string): Promise<DuplicateRecordsGroup[]> {
         const pipeline = [
             {
                 $group: {
@@ -301,7 +298,7 @@ export class ScoreService implements IScoreService {
             },
         ];
 
-        return await this.ctx.db.collection('score.records' as any).aggregate(pipeline).toArray() as any;
+        return await this.ctx.db.collection('score.records' as any).aggregate(pipeline).toArray() as DuplicateRecordsGroup[];
     }
 
     /**
@@ -371,6 +368,27 @@ export class ScoreService implements IScoreService {
                 },
             );
             console.log('[ScoreService] ✅ 题目记录唯一索引创建成功');
+
+            // 为排行榜查询创建复合索引，提升查询性能
+            await this.ctx.db.collection('score.users' as any).createIndex(
+                { totalScore: -1, lastUpdated: 1 },
+                { background: true },
+            );
+            console.log('[ScoreService] ✅ 排行榜复合索引创建成功');
+
+            // 为用户积分查询创建索引
+            await this.ctx.db.collection('score.users' as any).createIndex(
+                { uid: 1 },
+                { background: true },
+            );
+            console.log('[ScoreService] ✅ 用户积分查询索引创建成功');
+
+            // 为积分记录查询创建索引
+            await this.ctx.db.collection('score.records' as any).createIndex(
+                { uid: 1, createdAt: -1 },
+                { background: true },
+            );
+            console.log('[ScoreService] ✅ 积分记录查询索引创建成功');
         } catch (error: any) {
             if (error.message.includes('already exists')) {
                 console.log('[ScoreService] ✅ 唯一索引已存在');
@@ -461,6 +479,61 @@ export class ScoreService implements IScoreService {
                 success: false,
                 message: '积分扣除失败',
             };
+        }
+    }
+
+    /**
+     * 原子性处理首次AC奖励
+     * 使用数据库事务确保积分记录和用户积分更新的原子性
+     * @param record AC积分记录信息
+     * @returns 处理结果，包含是否首次AC和实际积分
+     */
+    async processFirstACReward(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<{
+        isFirstAC: boolean;
+        score: number;
+    }> {
+        const session = this.ctx.db.client.startSession();
+
+        try {
+            let isFirstAC = false;
+            let score = 0;
+
+            await session.withTransaction(async () => {
+                try {
+                    // 尝试插入积分记录（利用唯一索引检测首次AC）
+                    await this.ctx.db.collection('score.records' as any).insertOne({
+                        ...record,
+                        createdAt: new Date(),
+                    }, { session });
+
+                    // 插入成功，说明是首次AC
+                    isFirstAC = true;
+                    score = record.score;
+
+                    // 更新用户总积分
+                    await this.ctx.db.collection('score.users' as any).updateOne(
+                        { uid: record.uid },
+                        {
+                            $inc: { totalScore: score, acCount: 1 },
+                            $set: { lastUpdated: new Date() },
+                        },
+                        { upsert: true, session },
+                    );
+                } catch (error: any) {
+                    // 插入失败（重复键错误），说明已经存在记录，是重复AC
+                    if (error.code === 11000 || error.message.includes('E11000')) {
+                        isFirstAC = false;
+                        score = 0;
+                        // 重复AC不需要更新积分，事务自动回滚
+                    } else {
+                        throw error; // 其他错误继续抛出
+                    }
+                }
+            });
+
+            return { isFirstAC, score };
+        } finally {
+            await session.endSession();
         }
     }
 

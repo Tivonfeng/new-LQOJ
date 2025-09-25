@@ -21,6 +21,7 @@ import type { ScoreConfig, ScoreEventData } from './src/types';
 // 积分系统配置Schema
 const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('是否启用积分系统'),
+    acReward: Schema.number().default(10).min(1).max(100).description('AC题目奖励积分'),
 });
 
 // 声明数据库集合类型和事件类型
@@ -36,6 +37,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     // 设置默认配置
     const defaultConfig: ScoreConfig = {
         enabled: true,
+        acReward: 10,
     };
 
     const finalConfig = { ...defaultConfig, ...config };
@@ -53,7 +55,8 @@ export default async function apply(ctx: Context, config: any = {}) {
         console.log('[Score Core] 🎯 数据库索引初始化完成');
     } catch (error: any) {
         console.error('[Score Core] ❌ 数据库索引初始化失败:', error.message);
-        // 不抛出错误，让插件继续加载，但记录错误
+        console.error('[Score Core] ❌ 索引创建失败可能导致数据一致性问题，插件启动中止');
+        throw new Error(`Score Core 插件初始化失败：${error.message}`);
     }
 
     // ⭐ 基于积分记录的准确首次AC检测
@@ -63,39 +66,21 @@ export default async function apply(ctx: Context, config: any = {}) {
             if (!finalConfig.enabled || !pdoc) return;
             if (rdoc.status !== STATUS.STATUS_ACCEPTED) return;
 
-            // 🔒 使用原子操作避免并发竞态条件
-            // 尝试插入记录，如果已存在则会失败（利用唯一索引）
-            let isFirstAC = false;
-            let score = 0;
+            // 🔒 使用原子性事务处理首次AC奖励，避免并发竞态条件
+            const { isFirstAC, score } = await scoreService.processFirstACReward({
+                uid: rdoc.uid,
+                domainId: rdoc.domainId,
+                pid: rdoc.pid,
+                recordId: rdoc._id,
+                score: finalConfig.acReward,
+                reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
+                problemTitle: pdoc.title,
+            });
 
-            try {
-                // 先尝试插入积分记录，如果成功说明是首次AC
-                await scoreService.addScoreRecord({
-                    uid: rdoc.uid,
-                    domainId: rdoc.domainId,
-                    pid: rdoc.pid,
-                    recordId: rdoc._id,
-                    score: 10,
-                    reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
-                    problemTitle: pdoc.title,
-                });
-
-                // 插入成功，说明是首次AC
-                isFirstAC = true;
-                score = 10;
-
-                await scoreService.updateUserScore(rdoc.domainId, rdoc.uid, score);
+            if (isFirstAC) {
                 console.log(`[Score Core] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${score} points`);
-            } catch (error) {
-                // 插入失败（重复键错误），说明已经存在记录，是重复AC
-                if (error.code === 11000 || error.message.includes('E11000')) {
-                    isFirstAC = false;
-                    score = 0;
-                    console.log(`[Score Core] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded`);
-                } else {
-                    console.error('[Score Core] ❌ Unexpected error:', error);
-                    throw error;
-                }
+            } else {
+                console.log(`[Score Core] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded`);
             }
 
             // 统一发布事件（无论首次还是重复）
