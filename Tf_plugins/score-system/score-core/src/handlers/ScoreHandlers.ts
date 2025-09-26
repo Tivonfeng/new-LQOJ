@@ -3,14 +3,13 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
+import { ConfigManager } from '../config/ConfigManager';
 import { getScoreServiceOrThrow } from '../registry/ServiceRegistry';
 import type {
     UserScore,
 } from '../services';
 import {
-    checkManagePermission,
     fetchUserInfoBatch,
-    PAGINATION_CONFIG,
     parsePaginationParams,
 } from '../utils/HandlerUtils';
 
@@ -65,8 +64,8 @@ export class ScoreHallHandler extends Handler {
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
 
-        // 检查是否有管理权限
-        const canManage = checkManagePermission(this);
+        // 检查是否有管理权限（使用HydroOJ内置方法）
+        const canManage = this.user?.hasPriv(PRIV.PRIV_EDIT_SYSTEM) || false;
 
         this.response.template = 'score_hall.html';
         this.response.body = {
@@ -95,7 +94,8 @@ export class ScoreHallHandler extends Handler {
  */
 export class ScoreRankingHandler extends Handler {
     async get() {
-        const { page, limit } = parsePaginationParams(this.request, PAGINATION_CONFIG.RANKING_PAGE_SIZE);
+        const rankingPageSize = ConfigManager.getInstance().config.pagination.RANKING_PAGE_SIZE;
+        const { page, limit } = parsePaginationParams(this.request, rankingPageSize);
         const scoreService = getScoreServiceOrThrow();
 
         // 使用 service 方法获取分页排行榜数据
@@ -109,8 +109,8 @@ export class ScoreRankingHandler extends Handler {
         const uids = users.map((u) => u.uid);
         const udocs = await fetchUserInfoBatch(this, uids);
 
-        // 检查是否有管理权限
-        const canManage = checkManagePermission(this);
+        // 检查是否有管理权限（使用HydroOJ内置方法）
+        const canManage = this.user?.hasPriv(PRIV.PRIV_EDIT_SYSTEM) || false;
 
         // 使用 service 方法格式化日期
         const formattedUsers = scoreService.formatUserScores(users);
@@ -164,7 +164,8 @@ export class UserScoreHandler extends Handler {
  */
 export class ScoreRecordsHandler extends Handler {
     async get() {
-        const { page, limit } = parsePaginationParams(this.request, PAGINATION_CONFIG.RECORDS_PAGE_SIZE);
+        const recordsPageSize = ConfigManager.getInstance().config.pagination.RECORDS_PAGE_SIZE;
+        const { page, limit } = parsePaginationParams(this.request, recordsPageSize);
         const scoreService = getScoreServiceOrThrow();
 
         // 使用 service 方法获取分页数据

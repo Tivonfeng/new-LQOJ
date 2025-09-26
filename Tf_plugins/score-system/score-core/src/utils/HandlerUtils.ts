@@ -4,38 +4,33 @@
  */
 
 import type { Handler } from 'hydrooj';
-import { getConfigManagerOrThrow } from '../registry/ServiceRegistry';
-
-/**
- * 获取分页配置常量
- */
-function getPaginationConfig() {
-    const configManager = getConfigManagerOrThrow();
-    return {
-        RANKING_PAGE_SIZE: configManager.config.pagination.RANKING_PAGE_SIZE,
-        RECORDS_PAGE_SIZE: configManager.config.pagination.RECORDS_PAGE_SIZE,
-        MANAGEMENT_PAGE_SIZE: configManager.config.pagination.DEFAULT_PAGE_SIZE,
-        MAX_PAGE_SIZE: configManager.config.pagination.MAX_PAGE_SIZE,
-    };
-}
-
-export const PAGINATION_CONFIG = getPaginationConfig();
+import { ConfigManager } from '../config/ConfigManager';
 
 /**
  * 解析分页参数
+ *
+ * 安全地解析HTTP请求中的分页参数，确保参数在合理范围内
+ *
  * @param request HTTP请求对象
+ * @param request.query 查询参数对象
  * @param defaultLimit 默认每页大小
- * @returns 分页参数
+ * @returns 安全的分页参数
+ *
+ * @example
+ * const { page, limit } = parsePaginationParams(this.request, 20);
  */
-export function parsePaginationParams(request: any, defaultLimit: number = 20): {
-    page: number;
-    limit: number;
-} {
-    const page = Math.max(1, Number.parseInt(request.query.page as string) || 1);
-    const limit = Math.min(
-        Math.max(1, Number.parseInt(request.query.limit as string) || defaultLimit),
-        PAGINATION_CONFIG.MAX_PAGE_SIZE,
-    );
+export function parsePaginationParams(
+    request: { query: Record<string, string | string[]> },
+    defaultLimit: number = 20,
+): { page: number, limit: number } {
+    // 解析页码，确保 >= 1
+    const page = Math.max(1, Number.parseInt(String(request.query.page)) || 1);
+
+    // 解析每页大小，确保在 [1, MAX_PAGE_SIZE] 范围内
+    const requestLimit = Number.parseInt(String(request.query.limit)) || defaultLimit;
+    const maxPageSize = ConfigManager.getInstance().config.pagination.MAX_PAGE_SIZE;
+    const limit = Math.min(Math.max(1, requestLimit), maxPageSize);
+
     return { page, limit };
 }
 
@@ -51,43 +46,4 @@ export async function fetchUserInfoBatch(handler: Handler, uids: number[]) {
     const uniqueUids = [...new Set(uids)]; // 去重
     const UserModel = global.Hydro.model.user;
     return await UserModel.getList(handler.domain._id, uniqueUids);
-}
-
-/**
- * 检查用户管理权限
- * @param handler Handler实例
- * @returns 是否有管理权限
- */
-export function checkManagePermission(handler: Handler): boolean {
-    // 动态获取PRIV常量
-    const { PRIV } = require('hydrooj');
-    return !!(handler.user?.priv && handler.user.priv & PRIV.PRIV_EDIT_SYSTEM);
-}
-
-/**
- * 分页响应辅助函数
- * @param data 数据列表
- * @param total 总数
- * @param page 当前页
- * @param limit 每页大小
- * @returns 分页响应对象
- */
-export function createPaginationResponse<T>(
-    data: T[],
-    total: number,
-    page: number,
-    limit: number,
-) {
-    const totalPages = Math.ceil(total / limit);
-    return {
-        data,
-        pagination: {
-            page,
-            limit,
-            total,
-            totalPages,
-            hasNext: page < totalPages,
-            hasPrev: page > 1,
-        },
-    };
 }
