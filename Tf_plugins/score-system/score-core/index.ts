@@ -46,9 +46,6 @@ export default async function apply(ctx: Context) {
     // 初始化服务注册器
     const serviceRegistry = ServiceRegistry.getInstance(ctx);
 
-    // 创建并注册配置管理器
-    serviceRegistry.registerConfigManager(configManager);
-
     // 创建并注册积分服务
     const scoreService = new ScoreService(ctx);
     serviceRegistry.registerScoreService(scoreService);
@@ -67,7 +64,7 @@ export default async function apply(ctx: Context) {
     ctx.on('record/judge', async (rdoc: RecordDoc, _updated: boolean, pdoc?: ProblemDoc) => {
         try {
             // 只处理启用状态且有题目信息的记录
-            if (!scoreService.isEnabled() || !pdoc) return;
+            if (!configManager.config.score.isEnabled || !pdoc) return;
             if (rdoc.status !== STATUS.STATUS_ACCEPTED) return;
 
             // 🔒 使用原子性事务处理首次AC奖励，避免并发竞态条件
@@ -75,8 +72,7 @@ export default async function apply(ctx: Context) {
                 uid: rdoc.uid,
                 domainId: rdoc.domainId,
                 pid: rdoc.pid,
-                recordId: rdoc._id,
-                score: scoreService.getAcReward(),
+                score: configManager.config.score.acReward,
                 reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
                 problemTitle: pdoc.title,
             });
@@ -123,6 +119,7 @@ export { Config };
 
 // 导出核心类型和服务，供其他插件使用
 // 推荐外部插件使用 OrThrow 方法，确保服务可用性
-export { getConfigManagerOrThrow, getScoreServiceOrThrow, ServiceRegistry } from './src/registry/ServiceRegistry';
+export { ConfigManager } from './src/config/ConfigManager';
+export { getScoreServiceOrThrow, ServiceRegistry } from './src/registry/ServiceRegistry';
 export { ScoreService } from './src/services/ScoreService';
 export * from './src/types';

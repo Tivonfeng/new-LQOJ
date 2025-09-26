@@ -16,7 +16,7 @@ export interface IScoreService {
     /**
      * 添加积分记录
      */
-    addScoreRecord(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<void>;
+    addScoreRecord(record: Omit<ScoreRecord, '_id' | 'createdAt' | 'recordId'>): Promise<void>;
 
     /**
      * 更新用户积分
@@ -66,7 +66,7 @@ export interface IScoreService {
     /**
      * 原子性处理首次AC奖励
      */
-    processFirstACReward(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<{
+    processFirstACReward(record: Omit<ScoreRecord, '_id' | 'createdAt' | 'recordId'>): Promise<{
         isFirstAC: boolean;
         score: number;
     }>;
@@ -124,13 +124,5 @@ export interface IScoreService {
      */
     initializeIndexes(): Promise<void>;
 
-    /**
-     * 检查积分系统是否启用
-     */
-    isEnabled(): boolean;
-
-    /**
-     * 获取AC奖励积分
-     */
-    getAcReward(): number;
+    generateUniqueRecordId();
 }

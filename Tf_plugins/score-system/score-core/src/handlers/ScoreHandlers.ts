@@ -7,7 +7,6 @@ import { getScoreServiceOrThrow } from '../registry/ServiceRegistry';
 import type {
     UserScore,
 } from '../services';
-import { ScoreService } from '../services/ScoreService';
 import {
     checkManagePermission,
     fetchUserInfoBatch,
@@ -275,7 +274,6 @@ export class ScoreManageHandler extends Handler {
                     uid: user._id,
                     domainId: this.domain._id,
                     pid: 0, // 管理员操作使用0
-                    recordId: ScoreService.generateUniqueRecordId(), // 生成唯一标识符
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,
                     problemTitle: '管理员操作',

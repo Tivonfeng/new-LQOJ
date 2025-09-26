@@ -65,14 +65,6 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 注册路由
     ctx.Route('daily_checkin', '/score/checkin', CheckInHandler);
-
-    // 监听积分变更事件（可选，用于统计）
-    ctx.on('score/change', (data) => {
-        if (data.reason.includes('签到')) {
-            console.log(`[Score CheckIn] ✅ 用户 ${data.uid} 签到获得 ${data.change} 积分`);
-        }
-    });
-
     console.log('[Score CheckIn] ✅ 签到系统加载完成！');
     console.log(`[Score CheckIn] 📊 配置: 每日奖励${finalConfig.dailyReward}积分, 连续奖励${finalConfig.consecutiveBonus ? '启用' : '禁用'}`);
 }
