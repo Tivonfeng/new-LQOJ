@@ -1,0 +1,564 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1>{{ _('Typing Speed Admin Panel') }}</h1>
+        <a href="{{ url('typing_hall') }}" class="back-btn">← {{ _('Back to Hall') }}</a>
+    </div>
+
+    <div class="admin-grid">
+        <!-- Single Record Form -->
+        <div class="admin-card">
+            <h2>{{ _('Add Single Record') }}</h2>
+            <form id="addRecordForm">
+                <div class="form-group">
+                    <label>{{ _('Username') }}</label>
+                    <input type="text" name="username" required placeholder="{{ _('Enter username') }}">
+                </div>
+                <div class="form-group">
+                    <label>{{ _('WPM (Words Per Minute)') }}</label>
+                    <input type="number" name="wpm" min="0" max="300" required placeholder="0-300">
+                </div>
+                <div class="form-group">
+                    <label>{{ _('Note (Optional)') }}</label>
+                    <input type="text" name="note" placeholder="{{ _('e.g., Class test') }}">
+                </div>
+                <button type="submit" class="submit-btn">{{ _('Add Record') }}</button>
+                <div id="addRecordMessage" class="message"></div>
+            </form>
+        </div>
+
+        <!-- Batch Import Form -->
+        <div class="admin-card">
+            <h2>{{ _('Batch Import (CSV)') }}</h2>
+            <div class="import-info">
+                <p>{{ _('CSV Format:') }}</p>
+                <code>username,wpm,note<br>student1,45,{{ _('Class test') }}<br>student2,62,<br>student3,38,{{ _('Practice') }}</code>
+                <a href="#" id="downloadTemplate" class="download-link">{{ _('Download Template') }}</a>
+            </div>
+            <form id="importForm">
+                <div class="form-group">
+                    <label>{{ _('CSV Data') }}</label>
+                    <textarea name="csvData" rows="10" placeholder="{{ _('Paste CSV data here...') }}"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">{{ _('Import Records') }}</button>
+                <div id="importMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recent Records -->
+    <div class="recent-records-card">
+        <div class="records-header">
+            <h2>{{ _('Recent Records') }}</h2>
+            <button id="recalculateStatsBtn" class="recalculate-btn">
+                🔄 {{ _('Recalculate Statistics') }}
+            </button>
+        </div>
+        <div class="records-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ _('Time') }}</th>
+                        <th>{{ _('Student') }}</th>
+                        <th>{{ _('WPM') }}</th>
+                        <th>{{ _('Note') }}</th>
+                        <th>{{ _('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recentRecords and recentRecords|length > 0 %}
+                    {% for record in recentRecords %}
+                    <tr>
+                        <td>{{ record.createdAt }}</td>
+                        <td>
+                            {% if udocs[record.uid] %}
+                                {{ udocs[record.uid].uname }}
+                            {% else %}
+                                User {{ record.uid }}
+                            {% endif %}
+                        </td>
+                        <td class="wpm-value">{{ record.wpm }}</td>
+                        <td>{{ record.note or '-' }}</td>
+                        <td>
+                            <button class="delete-btn" data-record-id="{{ record._id }}" data-username="{% if udocs[record.uid] %}{{ udocs[record.uid].uname }}{% else %}User {{ record.uid }}{% endif %}">
+                                🗑️ {{ _('Delete') }}
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-message">{{ _('No records yet') }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary-color: #3b82f6;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --border-color: #e5e7eb;
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.back-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.back-btn:hover {
+    background: var(--border-color);
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.admin-card {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.admin-card h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.submit-btn {
+    width: 100%;
+    background: var(--primary-color);
+    color: white;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.submit-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.message {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: none;
+}
+
+.message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+    display: block;
+}
+
+.message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    display: block;
+}
+
+.import-info {
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.import-info code {
+    display: block;
+    margin: 12px 0;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.download-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.download-link:hover {
+    text-decoration: underline;
+}
+
+.recent-records-card {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.records-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.recent-records-card h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.recalculate-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.recalculate-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.records-table {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background: var(--bg-secondary);
+}
+
+th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+td {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.wpm-value {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.125rem;
+}
+
+.empty-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px 20px;
+}
+
+.delete-btn {
+    background: var(--error-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Record Form
+    const addRecordForm = document.getElementById('addRecordForm');
+    const addRecordMessage = document.getElementById('addRecordMessage');
+
+    addRecordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(addRecordForm);
+        const data = {
+            action: 'add_record',
+            username: formData.get('username'),
+            wpm: formData.get('wpm'),
+            note: formData.get('note') || ''
+        };
+
+        try {
+            const response = await fetch('{{ url("typing_admin") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                addRecordMessage.textContent = result.message;
+                addRecordMessage.className = 'message success';
+                addRecordForm.reset();
+
+                // Reload page after 1.5 seconds
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                addRecordMessage.textContent = result.message;
+                addRecordMessage.className = 'message error';
+            }
+        } catch (error) {
+            addRecordMessage.textContent = '{{ _("Network error") }}';
+            addRecordMessage.className = 'message error';
+        }
+    });
+
+    // Import Form
+    const importForm = document.getElementById('importForm');
+    const importMessage = document.getElementById('importMessage');
+
+    importForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(importForm);
+        const data = {
+            action: 'import_csv',
+            csvData: formData.get('csvData')
+        };
+
+        try {
+            const response = await fetch('{{ url("typing_admin") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                let message = result.message;
+                if (result.data && result.data.errors.length > 0) {
+                    message += '\n\n{{ _("Errors:") }}\n' + result.data.errors.slice(0, 5).join('\n');
+                    if (result.data.errors.length > 5) {
+                        message += '\n...({{ _("and") }} ' + (result.data.errors.length - 5) + ' {{ _("more") }})';
+                    }
+                }
+                importMessage.textContent = message;
+                importMessage.className = 'message success';
+                importForm.reset();
+
+                // Reload page after 2 seconds
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                importMessage.textContent = result.message;
+                importMessage.className = 'message error';
+            }
+        } catch (error) {
+            importMessage.textContent = '{{ _("Network error") }}';
+            importMessage.className = 'message error';
+        }
+    });
+
+    // Download Template
+    document.getElementById('downloadTemplate').addEventListener('click', function(e) {
+        e.preventDefault();
+        const csvContent = 'username,wpm,note\nstudent1,45,Class test\nstudent2,62,\nstudent3,38,Practice';
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'typing_import_template.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+
+    // Delete Record
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    console.log('[Typing Admin] Found delete buttons:', deleteButtons.length);
+
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+
+            const recordId = this.dataset.recordId;
+            const username = this.dataset.username;
+
+            console.log('[Typing Admin] Delete button clicked:', recordId, username);
+
+            if (!confirm(`{{ _('Are you sure you want to delete the record for') }} ${username}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('{{ url("typing_admin") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'delete_record',
+                        recordId: recordId
+                    })
+                });
+
+                const result = await response.json();
+                console.log('[Typing Admin] Delete response:', result);
+
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('{{ _("Error") }}: ' + result.message);
+                }
+            } catch (error) {
+                console.error('[Typing Admin] Delete error:', error);
+                alert('{{ _("Network error") }}: ' + error.message);
+            }
+        });
+    });
+
+    // Recalculate Statistics
+    const recalculateBtn = document.getElementById('recalculateStatsBtn');
+    console.log('[Typing Admin] Found recalculate button:', recalculateBtn);
+
+    if (recalculateBtn) {
+        recalculateBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+
+            console.log('[Typing Admin] Recalculate button clicked');
+
+            if (!confirm('{{ _("This will recalculate all user statistics based on records. Continue?") }}')) {
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = '{{ _("Calculating...") }}';
+
+            try {
+                const response = await fetch('{{ url("typing_admin") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'recalculate_stats'
+                    })
+                });
+
+                const result = await response.json();
+                console.log('[Typing Admin] Recalculate response:', result);
+
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('{{ _("Error") }}: ' + result.message);
+                    this.disabled = false;
+                    this.textContent = '🔄 {{ _("Recalculate Statistics") }}';
+                }
+            } catch (error) {
+                console.error('[Typing Admin] Recalculate error:', error);
+                alert('{{ _("Network error") }}: ' + error.message);
+                this.disabled = false;
+                this.textContent = '🔄 {{ _("Recalculate Statistics") }}';
+            }
+        });
+    } else {
+        console.error('[Typing Admin] Recalculate button not found!');
+    }
+});
+</script>
+
+{% endblock %}

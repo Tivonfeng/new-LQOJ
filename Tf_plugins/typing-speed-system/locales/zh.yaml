@@ -1,0 +1,92 @@
+# 中文翻译
+
+# 导航和页面标题
+Typing Speed Hall: 打字大厅
+Track Your Typing Progress: 追踪你的打字进步
+Typing Speed Admin Panel: 打字速度管理面板
+My Typing Speed Profile: 我的打字速度
+Typing Speed Rankings: 打字速度排行榜
+
+# 通用
+Back to Hall: 返回大厅
+View All: 查看全部
+View Details: 查看详情
+Admin Panel: 管理面板
+Records Today: 今日记录
+Your Best: 你的最佳
+Avg: 平均
+
+# 统计标签
+Max Speed: 最高速度
+Average Speed: 平均速度
+Avg Speed: 平均速度
+Total Records: 总记录数
+Rank: 排名
+records: 条记录
+
+# 排行榜
+Leaderboards: 排行榜
+Max WPM: 最高WPM
+Avg WPM: 平均WPM
+Most Improved: 进步最快
+This week avg: 本周平均
+Improvement: 进步值
+Not enough data to show improvement rankings: 数据不足,无法显示进步排行榜
+
+# 数据可视化
+Speed Distribution: 速度分布
+Weekly Trend: 周趋势
+Progress Curve: 进步曲线
+Recent Records: 最近记录
+No records yet: 暂无记录
+No rankings data available: 暂无排行数据
+
+# 我的统计
+My Typing Stats: 我的打字统计
+
+# 管理面板
+Add Single Record: 添加单条记录
+Batch Import (CSV): 批量导入 (CSV)
+Username: 用户名
+WPM (Words Per Minute): WPM (每分钟字数)
+Note (Optional): 备注 (可选)
+Add Record: 添加记录
+CSV Format: CSV格式
+Download Template: 下载模板
+CSV Data: CSV数据
+Import Records: 导入记录
+Enter username: 输入用户名
+"e.g., Class test": "例如: 课堂测试"
+Paste CSV data here...: 在此粘贴CSV数据...
+Class test: 课堂测试
+Practice: 练习
+
+# 个人中心
+Date & Time: 日期时间
+Recorded By: 录入人
+Note: 备注
+Date: 日期
+Admin: 管理员
+
+# 分页
+Page: 页
+Previous: 上一页
+Next: 下一页
+
+# 消息
+Network error: 网络错误
+Errors: 错误
+and: 和
+more: 更多
+
+# 空状态
+No recent records found: 未找到最近记录
+
+# 操作
+Actions: 操作
+Delete: 删除
+Are you sure you want to delete the record for: 确认要删除该记录吗?用户
+Error: 错误
+Recalculate Statistics: 重新计算统计
+This will recalculate all user statistics based on records. Continue?: 这将根据现有记录重新计算所有用户统计数据。是否继续?
+Calculating...: 计算中...

@@ -1,0 +1,92 @@
+# English Translation
+
+# Navigation and Page Titles
+Typing Speed Hall: Typing Speed Hall
+Track Your Typing Progress: Track Your Typing Progress
+Typing Speed Admin Panel: Typing Speed Admin Panel
+My Typing Speed Profile: My Typing Speed Profile
+Typing Speed Rankings: Typing Speed Rankings
+
+# General
+Back to Hall: Back to Hall
+View All: View All
+View Details: View Details
+Admin Panel: Admin Panel
+Records Today: Records Today
+Your Best: Your Best
+Avg: Avg
+
+# Stats Labels
+Max Speed: Max Speed
+Average Speed: Average Speed
+Avg Speed: Avg Speed
+Total Records: Total Records
+Rank: Rank
+records: records
+
+# Leaderboards
+Leaderboards: Leaderboards
+Max WPM: Max WPM
+Avg WPM: Avg WPM
+Most Improved: Most Improved
+This week avg: This week avg
+Improvement: Improvement
+Not enough data to show improvement rankings: Not enough data to show improvement rankings
+
+# Data Visualization
+Speed Distribution: Speed Distribution
+Weekly Trend: Weekly Trend
+Progress Curve: Progress Curve
+Recent Records: Recent Records
+No records yet: No records yet
+No rankings data available: No rankings data available
+
+# My Stats
+My Typing Stats: My Typing Stats
+
+# Admin Panel
+Add Single Record: Add Single Record
+Batch Import (CSV): Batch Import (CSV)
+Username: Username
+WPM (Words Per Minute): WPM (Words Per Minute)
+Note (Optional): Note (Optional)
+Add Record: Add Record
+CSV Format: CSV Format
+Download Template: Download Template
+CSV Data: CSV Data
+Import Records: Import Records
+Enter username: Enter username
+e.g., Class test: e.g., Class test
+Paste CSV data here...: Paste CSV data here...
+Class test: Class test
+Practice: Practice
+
+# Profile
+Date & Time: Date & Time
+Recorded By: Recorded By
+Note: Note
+Date: Date
+Admin: Admin
+
+# Pagination
+Page: Page
+Previous: Previous
+Next: Next
+
+# Messages
+Network error: Network error
+Errors: Errors
+and: and
+more: more
+
+# Empty States
+No recent records found: No recent records found
+
+# Actions
+Actions: Actions
+Delete: Delete
+Are you sure you want to delete the record for: Are you sure you want to delete the record for
+Error: Error
+Recalculate Statistics: Recalculate Statistics
+This will recalculate all user statistics based on records. Continue?: This will recalculate all user statistics based on records. Continue?
+Calculating...: Calculating...

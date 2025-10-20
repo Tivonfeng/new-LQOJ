@@ -1,0 +1,20 @@
+{
+  "name": "@hydrooj/typing-speed-system",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "打字速度统计与排行榜插件",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  },
+  "peerDependencies": {
+    "mongodb": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
