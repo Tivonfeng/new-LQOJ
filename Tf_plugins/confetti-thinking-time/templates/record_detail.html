@@ -10,7 +10,7 @@
       {% include 'record_detail_status.html' %}
     {% endif %}
     {% if rdoc['code'] or rdoc.files.code %}
-    {# <div class="section">
+    <div class="section">
       <div class="section__header">
         <h1 class="section__title">{{ _('Code') }}</h1>
         <div class="section__tools">
@@ -23,7 +23,7 @@
       <div class="section__body">
         <pre class="line-numbers"><code class="language-{{ model.setting.langs[rdoc.lang].highlight }}">{{ rdoc['code'] }}</code></pre>
       </div>
-    </div> #}
+    </div>
     {% endif %}
   </div>
   <div class="medium-3 columns">
