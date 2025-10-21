@@ -208,24 +208,25 @@ export class TypingAdminHandler extends Handler {
     }
 
     /**
-     * 重新计算所有用户统计
+     * 重新计算所有用户统计（全域）
      */
     private async handleRecalculateStats() {
         try {
             const recordService = new TypingRecordService(this.ctx);
             const statsService = new TypingStatsService(this.ctx, recordService);
 
-            // 获取所有有记录的用户（当前域）
+            // 获取所有有记录的用户（全域）
             const allRecords = await this.ctx.db.collection('typing.records' as any)
-                .find({ domainId: this.domain._id })
+                .find({})
                 .toArray();
 
-            const uniqueUsers = [...new Set(allRecords.map((r) => r.uid))];
+            // 按 uid + domainId 组合提取唯一用户
+            const userDomainPairs = [...new Set(allRecords.map((r) => `${r.uid}:${r.domainId}`))];
 
-            if (uniqueUsers.length === 0) {
-                // 如果没有任何记录，清空统计表和快照表（当前域）
-                await this.ctx.db.collection('typing.stats' as any).deleteMany({ domainId: this.domain._id });
-                await this.ctx.db.collection('typing.weekly_snapshots' as any).deleteMany({ domainId: this.domain._id });
+            if (userDomainPairs.length === 0) {
+                // 如果没有任何记录，清空统计表和快照表（全域）
+                await this.ctx.db.collection('typing.stats' as any).deleteMany({});
+                await this.ctx.db.collection('typing.weekly_snapshots' as any).deleteMany({});
 
                 console.log(`[TypingAdmin] Admin ${this.user._id} cleared all stats (no records found)`);
 
@@ -238,23 +239,26 @@ export class TypingAdminHandler extends Handler {
 
             // 重新计算每个用户的统计
             let updated = 0;
-            for (const uid of uniqueUsers) {
-                await statsService.updateUserStats(uid, this.domain._id);
+            for (const pair of userDomainPairs) {
+                const [uidStr, domainId] = pair.split(':');
+                const uid = Number.parseInt(uidStr);
+                await statsService.updateUserStats(uid, domainId);
                 await statsService.updateWeeklySnapshot(uid);
                 updated++;
             }
 
-            // 删除没有对应记录的统计数据（当前域）
+            // 删除没有对应记录的统计数据（全域）
+            // 获取所有应该存在的 uid 列表
+            const validUids = [...new Set(allRecords.map((r) => r.uid))];
             await this.ctx.db.collection('typing.stats' as any).deleteMany({
-                domainId: this.domain._id,
-                uid: { $nin: uniqueUsers },
+                uid: { $nin: validUids },
             });
 
-            console.log(`[TypingAdmin] Admin ${this.user._id} recalculated stats for ${updated} users`);
+            console.log(`[TypingAdmin] Admin ${this.user._id} recalculated stats for ${updated} users (全域)`);
 
             this.response.body = {
                 success: true,
-                message: `成功重新计算 ${updated} 个用户的统计数据`,
+                message: `成功重新计算 ${updated} 个用户的统计数据（全域）`,
             };
         } catch (error) {
             console.error('[TypingAdmin] Error recalculating stats:', error);

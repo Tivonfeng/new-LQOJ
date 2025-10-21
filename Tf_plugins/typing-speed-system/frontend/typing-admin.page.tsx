@@ -203,6 +203,12 @@ const TypingAdminApp: React.FC = () => {
       return;
     }
 
+    // 前端调试信息
+    const lines = csvData.trim().split('\n');
+    console.log('[Typing Admin] CSV Import - Total lines:', lines.length);
+    console.log('[Typing Admin] CSV Import - First line:', lines[0]);
+    console.log('[Typing Admin] CSV Import - Data preview:', csvData.substring(0, 200));
+
     setIsSubmitting(true);
 
     try {
@@ -218,6 +224,7 @@ const TypingAdminApp: React.FC = () => {
       });
 
       const result = await response.json();
+      console.log('[Typing Admin] CSV Import - Server response:', result);
 
       if (result.success) {
         let message = result.message;
@@ -230,16 +237,19 @@ const TypingAdminApp: React.FC = () => {
         setImportMessage({ type: 'success', text: message });
         setCsvData('');
 
-        // 2秒后刷新页面
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        // 只有在成功导入了至少1条记录时才刷新
+        if (result.data && result.data.success > 0) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
       } else {
         setImportMessage({ type: 'error', text: result.message });
       }
     } catch (error) {
       console.error('[Typing Admin] Import CSV error:', error);
-      setImportMessage({ type: 'error', text: '网络错误' });
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      setImportMessage({ type: 'error', text: `网络错误: ${errorMsg}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -288,9 +298,9 @@ const TypingAdminApp: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleAddRecord}>
+          <form onSubmit={handleAddRecord} noValidate>
             <div className="form-group">
-              <label>用户名</label>
+              <label>用户名 <span className="required-mark">*</span></label>
               <input
                 ref={usernameInputRef}
                 type="text"
@@ -299,13 +309,13 @@ const TypingAdminApp: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="form-input"
                 placeholder="输入用户名"
-                required
+                autoComplete="off"
               />
               <div className="form-hint">开始输入以搜索用户</div>
             </div>
 
             <div className="form-group">
-              <label>WPM (每分钟字数)</label>
+              <label>WPM (每分钟字数) <span className="required-mark">*</span></label>
               <input
                 type="number"
                 name="wpm"
@@ -315,7 +325,6 @@ const TypingAdminApp: React.FC = () => {
                 placeholder="0-300"
                 min="0"
                 max="300"
-                required
               />
             </div>
 
@@ -359,9 +368,9 @@ const TypingAdminApp: React.FC = () => {
             </a>
           </div>
 
-          <form onSubmit={handleImportCSV}>
+          <form onSubmit={handleImportCSV} noValidate>
             <div className="form-group">
-              <label>CSV数据</label>
+              <label>CSV数据 <span className="required-mark">*</span></label>
               <textarea
                 name="csvData"
                 value={csvData}

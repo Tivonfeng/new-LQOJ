@@ -107,26 +107,58 @@ export class TypingRecordService {
             errors: [] as string[],
         };
 
-        // 跳过标题行
-        for (let i = 1; i < lines.length; i++) {
+        console.log(`[TypingRecordService] Importing CSV with ${lines.length} lines`);
+        console.log(`[TypingRecordService] First line: ${lines[0]}`);
+
+        // 检查是否为空
+        if (lines.length < 1) {
+            result.errors.push('CSV数据为空');
+            return result;
+        }
+
+        // 智能检测是否有标题行
+        const firstLine = lines[0].trim().toLowerCase();
+        const hasHeader = firstLine.includes('username') && (firstLine.includes('wpm') || firstLine.includes('speed'));
+        const startLine = hasHeader ? 1 : 0;
+
+        console.log(`[TypingRecordService] Header detected: ${hasHeader}, starting from line ${startLine + 1}`);
+
+        if (hasHeader && lines.length < 2) {
+            result.errors.push('CSV文件只有标题行，没有数据');
+            return result;
+        }
+
+        // 处理数据行
+        for (let i = startLine; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (!line) continue;
+            console.log(`[TypingRecordService] Processing line ${i + 1}: "${line}"`);
+
+            if (!line) {
+                console.log(`[TypingRecordService] Line ${i + 1}: Empty line, skipping`);
+                continue;
+            }
 
             const parts = line.split(',');
+            console.log(`[TypingRecordService] Line ${i + 1}: Split into ${parts.length} parts:`, parts);
+
             if (parts.length < 2) {
                 result.failed++;
-                result.errors.push(`Line ${i + 1}: Invalid format`);
+                result.errors.push(`第${i + 1}行: 格式无效，至少需要用户名和WPM`);
                 continue;
             }
 
             const username = parts[0].trim();
-            const wpm = Number.parseInt(parts[1].trim());
+            const wpmStr = parts[1].trim();
+            const wpm = Number.parseInt(wpmStr);
             const note = parts[2]?.trim() || '';
+
+            console.log(`[TypingRecordService] Line ${i + 1}: username="${username}", wpm="${wpmStr}" (parsed: ${wpm}), note="${note}"`);
 
             // 验证WPM
             if (Number.isNaN(wpm) || wpm < 0 || wpm > 300) {
                 result.failed++;
-                result.errors.push(`Line ${i + 1}: Invalid WPM for ${username}`);
+                result.errors.push(`第${i + 1}行: WPM无效 (${wpmStr})，用户 ${username}`);
+                console.log(`[TypingRecordService] Line ${i + 1}: Invalid WPM`);
                 continue;
             }
 
@@ -137,19 +169,25 @@ export class TypingRecordService {
 
                 if (!user) {
                     result.failed++;
-                    result.errors.push(`Line ${i + 1}: User ${username} not found`);
+                    result.errors.push(`第${i + 1}行: 用户 ${username} 不存在`);
+                    console.log(`[TypingRecordService] Line ${i + 1}: User not found: ${username}`);
                     continue;
                 }
+
+                console.log(`[TypingRecordService] Line ${i + 1}: Found user ${username} (uid: ${user._id})`);
 
                 // 添加记录
                 await this.addRecord(user._id, domainId, wpm, recordedBy, note);
                 result.success++;
+                console.log(`[TypingRecordService] Line ${i + 1}: Record added successfully`);
             } catch (error) {
                 result.failed++;
-                result.errors.push(`Line ${i + 1}: ${error.message}`);
+                result.errors.push(`第${i + 1}行: ${error.message}`);
+                console.error(`[TypingRecordService] Line ${i + 1}: Error:`, error);
             }
         }
 
+        console.log(`[TypingRecordService] Import complete: ${result.success} success, ${result.failed} failed`);
         return result;
     }
 
