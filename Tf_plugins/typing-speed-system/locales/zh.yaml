@@ -35,11 +35,27 @@ Not enough data to show improvement rankings: 数据不足,无法显示进步排
 
 # 数据可视化
 Speed Distribution: 速度分布
+Speed Ladder Distribution: 速度天梯分布
 Weekly Trend: 周趋势
 Progress Curve: 进步曲线
 Recent Records: 最近记录
 No records yet: 暂无记录
 No rankings data available: 暂无排行数据
+Activity Overview: 活动概览
+Total Users: 总用户数
+Top Speed: 最高速度
+Hover to view details: 悬停查看详情
+
+# 天梯等级
+Keyboard God: 键盘之神
+Flying Fingers: 指尖飞舞
+Super Saiyan: 超级赛亚人
+Speed Demon: 速度狂魔
+Lightning Typist: 闪电侠
+Typing Master: 打字高手
+Keyboard Warrior: 键盘侠
+Rising Star: 进阶选手
+Keyboard Newbie: 键盘萌新
 
 # 我的统计
 My Typing Stats: 我的打字统计
@@ -92,3 +108,5 @@ Error: 错误
 Recalculate Statistics: 重新计算统计
 This will recalculate all user statistics based on records. Continue?: 这将根据现有记录重新计算所有用户统计数据。是否继续?
 Calculating...: 计算中...
+
+typing_hall: 打字大厅

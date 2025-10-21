@@ -64,120 +64,162 @@
     </div>
     {% endif %}
 
-    <!-- Rankings Tabs -->
-    <div class="rankings-section">
-        <div class="section-header">
-            <h2>{{ _('Leaderboards') }}</h2>
-            <a href="{{ url('typing_ranking') }}" class="view-all-link">{{ _('View All') }} →</a>
-        </div>
+    <!-- Rankings and Recent Records - Side by Side -->
+    <div class="dual-section-grid">
+        <!-- Rankings Tabs -->
+        <div class="rankings-section">
+            <div class="section-header">
+                <h2>{{ _('Leaderboards') }}</h2>
+                <a href="{{ url('typing_ranking') }}" class="view-all-link">{{ _('View All') }} →</a>
+            </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="max-wpm">{{ _('Max Speed') }}</button>
-            <button class="tab-btn" data-tab="avg-wpm">{{ _('Avg Speed') }}</button>
-            <button class="tab-btn" data-tab="improvement">{{ _('Most Improved') }}</button>
-        </div>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="max-wpm">{{ _('Max Speed') }}</button>
+                <button class="tab-btn" data-tab="avg-wpm">{{ _('Avg Speed') }}</button>
+                <button class="tab-btn" data-tab="improvement">{{ _('Most Improved') }}</button>
+            </div>
 
-        <div class="tab-content active" id="max-wpm">
-            <div class="ranking-list">
-                {% for user in maxWpmRanking %}
-                <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                    <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                        {% if loop.index <= 3 %}
-                            {% set medals = ['🥇', '🥈', '🥉'] %}
-                            {{ medals[loop.index - 1] }}
-                        {% else %}
-                            {{ loop.index }}
-                        {% endif %}
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">
-                            {% if udocs[user.uid] %}
-                                {{ udocs[user.uid].uname }}
+            <div class="tab-content active" id="max-wpm">
+                <div class="ranking-list">
+                    {% for user in maxWpmRanking %}
+                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
+                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index <= 3 %}
+                                {% set medals = ['🥇', '🥈', '🥉'] %}
+                                {{ medals[loop.index - 1] }}
                             {% else %}
-                                User {{ user.uid }}
+                                {{ loop.index }}
                             {% endif %}
                         </div>
-                        <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
+                        <div class="user-info">
+                            <div class="user-name">
+                                {% if udocs[user.uid] %}
+                                    {{ udocs[user.uid].uname }}
+                                {% else %}
+                                    User {{ user.uid }}
+                                {% endif %}
+                            </div>
+                            <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
+                        </div>
+                        <div class="score-value">{{ user.maxWpm }} <span class="unit">WPM</span></div>
                     </div>
-                    <div class="score-value">{{ user.maxWpm }} <span class="unit">WPM</span></div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            </div>
+
+            <div class="tab-content" id="avg-wpm">
+                <div class="ranking-list">
+                    {% for user in avgWpmRanking %}
+                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
+                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index <= 3 %}
+                                {% set medals = ['🥇', '🥈', '🥉'] %}
+                                {{ medals[loop.index - 1] }}
+                            {% else %}
+                                {{ loop.index }}
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">
+                                {% if udocs[user.uid] %}
+                                    {{ udocs[user.uid].uname }}
+                                {% else %}
+                                    User {{ user.uid }}
+                                {% endif %}
+                            </div>
+                            <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
+                        </div>
+                        <div class="score-value">{{ user.avgWpm }} <span class="unit">WPM</span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tab-content" id="improvement">
+                <div class="ranking-list">
+                    {% if improvementRanking and improvementRanking|length > 0 %}
+                    {% for user in improvementRanking %}
+                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
+                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
+                            {% if loop.index <= 3 %}
+                                {% set medals = ['🥇', '🥈', '🥉'] %}
+                                {{ medals[loop.index - 1] }}
+                            {% else %}
+                                {{ loop.index }}
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">
+                                {% if udocs[user.uid] %}
+                                    {{ udocs[user.uid].uname }}
+                                {% else %}
+                                    User {{ user.uid }}
+                                {% endif %}
+                            </div>
+                            <div class="user-meta">{{ _('This week avg') }}: {{ user.avgWpm }} WPM</div>
+                        </div>
+                        <div class="score-value improvement">+{{ user.improvement }} <span class="unit">WPM</span></div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <p>{{ _('Not enough data to show improvement rankings') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <div class="tab-content" id="avg-wpm">
-            <div class="ranking-list">
-                {% for user in avgWpmRanking %}
-                <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                    <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                        {% if loop.index <= 3 %}
-                            {% set medals = ['🥇', '🥈', '🥉'] %}
-                            {{ medals[loop.index - 1] }}
-                        {% else %}
-                            {{ loop.index }}
-                        {% endif %}
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">
-                            {% if udocs[user.uid] %}
-                                {{ udocs[user.uid].uname }}
-                            {% else %}
-                                User {{ user.uid }}
-                            {% endif %}
-                        </div>
-                        <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
-                    </div>
-                    <div class="score-value">{{ user.avgWpm }} <span class="unit">WPM</span></div>
-                </div>
-                {% endfor %}
+        <!-- Recent Records -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h3>{{ _('Recent Records') }}</h3>
             </div>
-        </div>
-
-        <div class="tab-content" id="improvement">
-            <div class="ranking-list">
-                {% if improvementRanking and improvementRanking|length > 0 %}
-                {% for user in improvementRanking %}
-                <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                    <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                        {% if loop.index <= 3 %}
-                            {% set medals = ['🥇', '🥈', '🥉'] %}
-                            {{ medals[loop.index - 1] }}
-                        {% else %}
-                            {{ loop.index }}
-                        {% endif %}
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">
-                            {% if udocs[user.uid] %}
-                                {{ udocs[user.uid].uname }}
+            <div class="records-list">
+                {% if recentRecords and recentRecords|length > 0 %}
+                {% for record in recentRecords %}
+                <div class="record-item {% if isLoggedIn and record.uid == handler.user._id %}current-user{% endif %}">
+                    <div class="record-icon">⌨️</div>
+                    <div class="record-info">
+                        <div class="record-user">
+                            {% if udocs[record.uid] %}
+                                {{ udocs[record.uid].uname }}
                             {% else %}
-                                User {{ user.uid }}
+                                User {{ record.uid }}
                             {% endif %}
                         </div>
-                        <div class="user-meta">{{ _('This week avg') }}: {{ user.avgWpm }} WPM</div>
+                        <div class="record-time">{{ record.createdAt }}</div>
                     </div>
-                    <div class="score-value improvement">+{{ user.improvement }} <span class="unit">WPM</span></div>
+                    <div class="record-wpm">{{ record.wpm }} <span class="unit">WPM</span></div>
                 </div>
                 {% endfor %}
                 {% else %}
                 <div class="empty-state">
-                    <p>{{ _('Not enough data to show improvement rankings') }}</p>
+                    <p>{{ _('No records yet') }}</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Data Visualization Section -->
-    <div class="content-grid">
-        <!-- Speed Distribution -->
-        <div class="chart-section">
-            <h3>{{ _('Speed Distribution') }}</h3>
-            <div class="speed-scatter-chart" id="speedScatterChart">
-                <!-- 散点图将由JavaScript动态生成 -->
+    <!-- Speed Ladder Chart - Full Width -->
+    <div class="ladder-section">
+        <div class="section-header">
+            <h3>{{ _('Speed Ladder Distribution') }}</h3>
+            <div class="ladder-legend">
+                <span class="legend-item">
+                    <span class="legend-icon">🎯</span>
+                    <span>{{ _('Hover to view details') }}</span>
+                </span>
             </div>
         </div>
+        <div class="ladder-chart" id="ladderChart">
+            <!-- 天梯图将由JavaScript动态生成 -->
+        </div>
+    </div>
 
+    <!-- Data Visualization Section -->
+    <div class="content-grid">
         <!-- Weekly Trend -->
         <div class="chart-section">
             <h3>{{ _('Weekly Trend') }}</h3>
@@ -185,36 +227,27 @@
                 <canvas id="trendChart" width="400" height="250"></canvas>
             </div>
         </div>
-    </div>
 
-    <!-- Recent Records -->
-    <div class="recent-section">
-        <div class="section-header">
-            <h3>{{ _('Recent Records') }}</h3>
-        </div>
-        <div class="records-list">
-            {% if recentRecords and recentRecords|length > 0 %}
-            {% for record in recentRecords %}
-            <div class="record-item {% if isLoggedIn and record.uid == handler.user._id %}current-user{% endif %}">
-                <div class="record-icon">⌨️</div>
-                <div class="record-info">
-                    <div class="record-user">
-                        {% if udocs[record.uid] %}
-                            {{ udocs[record.uid].uname }}
-                        {% else %}
-                            User {{ record.uid }}
-                        {% endif %}
-                    </div>
-                    <div class="record-time">{{ record.createdAt }}</div>
+        <!-- Activity Overview -->
+        <div class="chart-section">
+            <h3>{{ _('Activity Overview') }}</h3>
+            <div class="activity-stats">
+                <div class="activity-item">
+                    <div class="activity-icon">👥</div>
+                    <div class="activity-value">{{ globalStats.totalUsers }}</div>
+                    <div class="activity-label">{{ _('Total Users') }}</div>
                 </div>
-                <div class="record-wpm">{{ record.wpm }} <span class="unit">WPM</span></div>
+                <div class="activity-item">
+                    <div class="activity-icon">⚡</div>
+                    <div class="activity-value">{{ globalStats.maxWpm }}</div>
+                    <div class="activity-label">{{ _('Top Speed') }}</div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">📈</div>
+                    <div class="activity-value">{{ globalStats.avgWpm }}</div>
+                    <div class="activity-label">{{ _('Average Speed') }}</div>
+                </div>
             </div>
-            {% endfor %}
-            {% else %}
-            <div class="empty-state">
-                <p>{{ _('No records yet') }}</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -380,13 +413,21 @@
     margin-top: 4px;
 }
 
+/* 左右并排布局容器 */
+.dual-section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
 .rankings-section {
     background: var(--bg-primary);
     border-radius: 16px;
     padding: 24px;
-    margin-bottom: 32px;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
+    height: fit-content;
 }
 
 .section-header {
@@ -533,74 +574,206 @@
     margin-bottom: 20px;
 }
 
-.speed-scatter-chart {
-    position: relative;
-    height: 400px;
-    padding: 20px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    overflow-y: auto;
+/* 天梯图部分 */
+.ladder-section {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
 }
 
-.scatter-row {
+.ladder-legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.legend-item {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
-    min-height: 40px;
-}
-
-.scatter-label {
-    width: 120px;
+    gap: 6px;
     font-size: 0.875rem;
     color: var(--text-secondary);
-    font-weight: 600;
+}
+
+.legend-icon {
+    font-size: 1rem;
+}
+
+.ladder-chart {
+    position: relative;
+    min-height: 810px;
+    margin-top: 20px;
+    background: linear-gradient(to bottom,
+        rgba(168, 85, 247, 0.08) 0%,
+        rgba(168, 85, 247, 0.08) 11.11%,
+        rgba(219, 39, 119, 0.08) 11.11%,
+        rgba(219, 39, 119, 0.08) 22.22%,
+        rgba(236, 72, 153, 0.08) 22.22%,
+        rgba(236, 72, 153, 0.08) 33.33%,
+        rgba(239, 68, 68, 0.08) 33.33%,
+        rgba(239, 68, 68, 0.08) 44.44%,
+        rgba(251, 146, 60, 0.08) 44.44%,
+        rgba(251, 146, 60, 0.08) 55.55%,
+        rgba(250, 204, 21, 0.08) 55.55%,
+        rgba(250, 204, 21, 0.08) 66.66%,
+        rgba(34, 197, 94, 0.08) 66.66%,
+        rgba(34, 197, 94, 0.08) 77.77%,
+        rgba(59, 130, 246, 0.08) 77.77%,
+        rgba(59, 130, 246, 0.08) 88.88%,
+        rgba(156, 163, 175, 0.08) 88.88%
+    );
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.ladder-row {
+    height: 11.11%;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    padding: 0 20px;
+    transition: all 0.3s;
+}
+
+.ladder-row:last-child {
+    border-bottom: none;
+}
+
+.ladder-row:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.ladder-label {
+    width: 150px;
     flex-shrink: 0;
+    padding-right: 20px;
+}
+
+.level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.level-icon {
+    font-size: 1.25rem;
+}
+
+.level-name {
+    font-size: 0.9375rem;
+}
+
+.level-range {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.ladder-track {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 16px 0;
+}
+
+.wpm-scale {
+    position: absolute;
+    bottom: -24px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 0 10px;
+}
+
+.ladder-row:last-child .wpm-scale {
+    display: flex;
+}
+
+.ladder-row:not(:last-child) .wpm-scale {
+    display: none;
 }
 
 .scatter-points {
-    flex: 1;
+    width: 100%;
+    height: 50px;
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
     align-items: center;
 }
 
 .user-avatar-point {
-    position: relative;
+    position: absolute;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pointFadeIn 0.6s ease-out backwards;
+}
+
+@keyframes pointFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .user-avatar-point img {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid var(--primary-color);
-    transition: all 0.3s;
+    border: 2.5px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+}
+
+.user-avatar-point:hover {
+    z-index: 1000 !important;
 }
 
 .user-avatar-point:hover img {
-    transform: scale(1.3);
-    border-color: var(--success-color);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    z-index: 10;
+    transform: scale(1.6) translateY(-8px);
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
 .user-avatar-point .tooltip {
     position: absolute;
-    bottom: 100%;
+    bottom: calc(100% + 16px);
     left: 50%;
-    transform: translateX(-50%) translateY(-8px);
-    background: rgba(0, 0, 0, 0.9);
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(10px);
     color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.8125rem;
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 100;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 1001;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.4;
 }
 
 .user-avatar-point .tooltip::after {
@@ -609,18 +782,81 @@
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
+    border: 6px solid transparent;
+    border-top-color: rgba(17, 24, 39, 0.95);
 }
 
 .user-avatar-point:hover .tooltip {
     opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
 }
 
-.scatter-count {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-left: 8px;
+.tooltip-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.tooltip-wpm {
+    color: #60a5fa;
+    font-weight: 700;
+}
+
+.ladder-count {
+    width: 60px;
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.ladder-count-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+    border-radius: 12px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+/* 活动统计样式 */
+.activity-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 10px;
+}
+
+.activity-item {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.activity-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.activity-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.activity-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.activity-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 .recent-section {
@@ -629,6 +865,7 @@
     padding: 24px;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
+    height: fit-content;
 }
 
 .records-list {
@@ -704,6 +941,36 @@
     .content-grid {
         grid-template-columns: 1fr;
     }
+
+    .dual-section-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .ladder-chart {
+        min-height: 900px;
+    }
+
+    .ladder-label {
+        width: 110px;
+        font-size: 0.75rem;
+    }
+
+    .level-badge {
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 8px;
+    }
+
+    .user-avatar-point img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .activity-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
 }
 </style>
 
@@ -726,70 +993,203 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Speed scatter chart with avatars
+    // Speed Ladder Chart
     const userSpeedPoints = {{ userSpeedPointsJSON | safe }};
     const udocs = {{ udocsJSON | safe }};
-    const scatterChartContainer = document.getElementById('speedScatterChart');
+    const ladderContainer = document.getElementById('ladderChart');
 
-    if (scatterChartContainer && userSpeedPoints && userSpeedPoints.length > 0) {
-        // 定义速度区间
+    if (ladderContainer && userSpeedPoints && userSpeedPoints.length > 0) {
+        // 定义速度区间 (从上到下:键盘之神 → 键盘萌新) - 10个趣味等级
         const ranges = [
-            { label: '卓越 (90+ WPM)', min: 90, max: Infinity },
-            { label: '优秀 (70-90 WPM)', min: 70, max: 90 },
-            { label: '良好 (50-70 WPM)', min: 50, max: 70 },
-            { label: '一般 (30-50 WPM)', min: 30, max: 50 },
-            { label: '慢速 (0-30 WPM)', min: 0, max: 30 },
+            {
+                label: '键盘之神',
+                icon: '👑',
+                range: '200+',
+                min: 200,
+                max: Infinity,
+                color: 'rgba(168, 85, 247, 0.15)',
+                borderColor: 'rgba(168, 85, 247, 0.3)'
+            },
+            {
+                label: '指尖飞舞',
+                icon: '💎',
+                range: '180-200',
+                min: 180,
+                max: 200,
+                color: 'rgba(219, 39, 119, 0.15)',
+                borderColor: 'rgba(219, 39, 119, 0.3)'
+            },
+            {
+                label: '超级赛亚人',
+                icon: '🌟',
+                range: '160-180',
+                min: 160,
+                max: 180,
+                color: 'rgba(236, 72, 153, 0.15)',
+                borderColor: 'rgba(236, 72, 153, 0.3)'
+            },
+            {
+                label: '速度狂魔',
+                icon: '🔥',
+                range: '120-160',
+                min: 120,
+                max: 160,
+                color: 'rgba(239, 68, 68, 0.15)',
+                borderColor: 'rgba(239, 68, 68, 0.3)'
+            },
+            {
+                label: '闪电侠',
+                icon: '⚡',
+                range: '90-120',
+                min: 90,
+                max: 120,
+                color: 'rgba(251, 146, 60, 0.15)',
+                borderColor: 'rgba(251, 146, 60, 0.3)'
+            },
+            {
+                label: '打字高手',
+                icon: '⭐',
+                range: '70-90',
+                min: 70,
+                max: 90,
+                color: 'rgba(250, 204, 21, 0.15)',
+                borderColor: 'rgba(250, 204, 21, 0.3)'
+            },
+            {
+                label: '键盘侠',
+                icon: '✨',
+                range: '50-70',
+                min: 50,
+                max: 70,
+                color: 'rgba(34, 197, 94, 0.15)',
+                borderColor: 'rgba(34, 197, 94, 0.3)'
+            },
+            {
+                label: '进阶选手',
+                icon: '📈',
+                range: '30-50',
+                min: 30,
+                max: 50,
+                color: 'rgba(59, 130, 246, 0.15)',
+                borderColor: 'rgba(59, 130, 246, 0.3)'
+            },
+            {
+                label: '键盘萌新',
+                icon: '🌱',
+                range: '0-30',
+                min: 0,
+                max: 30,
+                color: 'rgba(156, 163, 175, 0.15)',
+                borderColor: 'rgba(156, 163, 175, 0.3)'
+            },
         ];
 
-        // 按区间分组用户
-        ranges.forEach(range => {
+        // 计算每个区间的实际最大值 (用于位置计算)
+        const actualMaxValues = ranges.map(range => {
+            const usersInRange = userSpeedPoints.filter(p => p.avgWpm >= range.min && p.avgWpm < range.max);
+            if (usersInRange.length === 0) return range.max === Infinity ? range.min + 20 : range.max;
+            const maxInRange = Math.max(...usersInRange.map(p => p.avgWpm));
+            return range.max === Infinity ? maxInRange + 10 : range.max;
+        });
+
+        // 渲染天梯图
+        ranges.forEach((range, index) => {
             const usersInRange = userSpeedPoints.filter(p => p.avgWpm >= range.min && p.avgWpm < range.max);
 
-            if (usersInRange.length === 0) return;
-
             const row = document.createElement('div');
-            row.className = 'scatter-row';
+            row.className = 'ladder-row';
+            row.style.animationDelay = `${index * 0.1}s`;
 
+            // 标签部分
             const label = document.createElement('div');
-            label.className = 'scatter-label';
-            label.textContent = range.label;
+            label.className = 'ladder-label';
+            label.innerHTML = `
+                <div class="level-badge">
+                    <span class="level-icon">${range.icon}</span>
+                    <div>
+                        <span class="level-name">${range.label}</span>
+                        <span class="level-range">${range.range} WPM</span>
+                    </div>
+                </div>
+            `;
 
+            // 轨道部分
+            const track = document.createElement('div');
+            track.className = 'ladder-track';
+
+            // 刻度
+            const scale = document.createElement('div');
+            scale.className = 'wpm-scale';
+            const actualMax = actualMaxValues[index];
+            const mid = Math.round((range.min + actualMax) / 2);
+            scale.innerHTML = `
+                <span>${range.min}</span>
+                <span>${mid}</span>
+                <span>${actualMax}${range.max === Infinity ? '+' : ''}</span>
+            `;
+            track.appendChild(scale);
+
+            // 散点容器
             const points = document.createElement('div');
             points.className = 'scatter-points';
 
-            // 为每个用户创建头像点
-            usersInRange.forEach(point => {
+            // 计算位置并渲染用户头像
+            usersInRange.forEach((point, pointIndex) => {
                 const user = udocs[point.uid];
                 if (!user) return;
 
                 const avatarPoint = document.createElement('div');
                 avatarPoint.className = 'user-avatar-point';
+                avatarPoint.style.animationDelay = `${(index * 0.1 + pointIndex * 0.05)}s`;
+
+                // 计算X轴位置 (基于WPM值)
+                const position = calculatePosition(point.avgWpm, range.min, actualMax);
+                avatarPoint.style.left = `${position}%`;
+
+                // 添加随机Y轴偏移 (避免重叠)
+                const yOffset = (Math.random() - 0.5) * 30;
+                avatarPoint.style.transform = `translateY(${yOffset}px)`;
 
                 const img = document.createElement('img');
-                // 使用Handler中已生成的avatarUrl
                 img.src = user.avatarUrl;
                 img.alt = user.uname || user.displayName || 'User';
 
                 const tooltip = document.createElement('div');
                 tooltip.className = 'tooltip';
-                tooltip.textContent = `${user.uname || user.displayName}: ${point.avgWpm} WPM`;
+                tooltip.innerHTML = `
+                    <div class="tooltip-name">${user.uname || user.displayName}</div>
+                    <div class="tooltip-wpm">${point.avgWpm} WPM</div>
+                `;
 
                 avatarPoint.appendChild(img);
                 avatarPoint.appendChild(tooltip);
                 points.appendChild(avatarPoint);
             });
 
-            const count = document.createElement('span');
-            count.className = 'scatter-count';
-            count.textContent = `(${usersInRange.length})`;
-            points.appendChild(count);
+            track.appendChild(points);
+
+            // 计数部分
+            const count = document.createElement('div');
+            count.className = 'ladder-count';
+            if (usersInRange.length > 0) {
+                count.innerHTML = `<span class="ladder-count-badge">${usersInRange.length}</span>`;
+            }
 
             row.appendChild(label);
-            row.appendChild(points);
-            scatterChartContainer.appendChild(row);
+            row.appendChild(track);
+            row.appendChild(count);
+            ladderContainer.appendChild(row);
         });
-    } else if (scatterChartContainer) {
-        scatterChartContainer.innerHTML = '<div class="empty-state"><p>{{ _("No records yet") }}</p></div>';
+    } else if (ladderContainer) {
+        ladderContainer.innerHTML = '<div class="empty-state"><p>{{ _("No records yet") }}</p></div>';
+    }
+
+    // 计算散点位置的辅助函数
+    function calculatePosition(wpm, min, max) {
+        if (max === min) return 50;
+        const percentage = ((wpm - min) / (max - min)) * 100;
+        // 限制在 5% - 95% 之间,避免头像贴边
+        return Math.max(5, Math.min(95, percentage));
     }
 
     // Weekly trend chart

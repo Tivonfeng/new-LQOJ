@@ -140,7 +140,7 @@ const TypingAdminApp: React.FC = () => {
     }
 
     const wpmNum = Number.parseInt(wpm);
-    if (isNaN(wpmNum) || wpmNum < 0 || wpmNum > 300) {
+    if (Number.isNaN(wpmNum) || wpmNum < 0 || wpmNum > 300) {
       setAddRecordMessage({ type: 'error', text: 'WPM必须在0-300之间' });
       return;
     }
