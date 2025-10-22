@@ -34,237 +34,28 @@
 
 <!-- Main Container -->
 <div class="main-container">
-    <!-- Speed Ladder Chart - Full Width -->
-    <div class="ladder-section">
-        <div class="section-header">
-            <h3>{{ _('Speed Ladder Distribution') }}</h3>
-            <div class="ladder-controls">
-                <div class="ladder-tabs">
-                    <button class="ladder-tab-btn" data-speed-type="avg">
-                        <span class="tab-icon">📊</span>
-                        <span>{{ _('Avg Speed') }}</span>
-                    </button>
-                    <button class="ladder-tab-btn active" data-speed-type="max">
-                        <span class="tab-icon">🏆</span>
-                        <span>{{ _('Max Speed') }}</span>
-                    </button>
-                </div>
-                <div class="ladder-legend">
-                    <span class="legend-item">
-                        <span class="legend-icon">🎯</span>
-                        <span>{{ _('Hover to view details') }}</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div class="ladder-chart" id="ladderChart">
-            <!-- 天梯图将由JavaScript动态生成 -->
-        </div>
-    </div>
+    <!-- React App 挂载点 -->
+    <div id="typing-hall-react-app"></div>
 
-    <!-- Rankings and Stats/Recent Records - Side by Side -->
-    <div class="dual-section-grid">
-        <!-- Rankings Tabs -->
-        <div class="rankings-section">
-            <div class="section-header">
-                <h2>{{ _('Leaderboards') }}</h2>
-                <a href="{{ url('typing_ranking') }}" class="view-all-link">{{ _('View All') }} →</a>
-            </div>
-
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="max-wpm">{{ _('Max Speed') }}</button>
-                <button class="tab-btn" data-tab="avg-wpm">{{ _('Avg Speed') }}</button>
-                <button class="tab-btn" data-tab="improvement">{{ _('Most Improved') }}</button>
-            </div>
-
-            <div class="tab-content active" id="max-wpm">
-                <div class="ranking-list">
-                    {% for user in maxWpmRanking %}
-                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                            {% if loop.index <= 3 %}
-                                {% set medals = ['🥇', '🥈', '🥉'] %}
-                                {{ medals[loop.index - 1] }}
-                            {% else %}
-                                {{ loop.index }}
-                            {% endif %}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">
-                                {% if udocs[user.uid] %}
-                                    {{ udocs[user.uid].uname }}
-                                {% else %}
-                                    User {{ user.uid }}
-                                {% endif %}
-                            </div>
-                            <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
-                        </div>
-                        <div class="score-value">{{ user.maxWpm }} <span class="unit">WPM</span></div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="tab-content" id="avg-wpm">
-                <div class="ranking-list">
-                    {% for user in avgWpmRanking %}
-                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                            {% if loop.index <= 3 %}
-                                {% set medals = ['🥇', '🥈', '🥉'] %}
-                                {{ medals[loop.index - 1] }}
-                            {% else %}
-                                {{ loop.index }}
-                            {% endif %}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">
-                                {% if udocs[user.uid] %}
-                                    {{ udocs[user.uid].uname }}
-                                {% else %}
-                                    User {{ user.uid }}
-                                {% endif %}
-                            </div>
-                            <div class="user-meta">{{ user.totalRecords }} {{ _('records') }}</div>
-                        </div>
-                        <div class="score-value">{{ user.avgWpm }} <span class="unit">WPM</span></div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="tab-content" id="improvement">
-                <div class="ranking-list">
-                    {% if improvementRanking and improvementRanking|length > 0 %}
-                    {% for user in improvementRanking %}
-                    <div class="ranking-item {% if isLoggedIn and user.uid == handler.user._id %}current-user{% endif %}">
-                        <div class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">
-                            {% if loop.index <= 3 %}
-                                {% set medals = ['🥇', '🥈', '🥉'] %}
-                                {{ medals[loop.index - 1] }}
-                            {% else %}
-                                {{ loop.index }}
-                            {% endif %}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">
-                                {% if udocs[user.uid] %}
-                                    {{ udocs[user.uid].uname }}
-                                {% else %}
-                                    User {{ user.uid }}
-                                {% endif %}
-                            </div>
-                            <div class="user-meta">{{ _('This week avg') }}: {{ user.avgWpm }} WPM</div>
-                        </div>
-                        <div class="score-value improvement">+{{ user.improvement }} <span class="unit">WPM</span></div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <p>{{ _('Not enough data to show improvement rankings') }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: User Stats + Recent Records -->
-        <div class="right-column">
-            {% if isLoggedIn %}
-            <!-- User Overview Card -->
-            <div class="user-overview-card-compact">
-                <div class="overview-header">
-                    <h2>{{ _('My Typing Stats') }}</h2>
-                    <a href="{{ url('typing_profile') }}" class="view-details-link">{{ _('View Details') }} →</a>
-                </div>
-                <div class="overview-stats-compact">
-                    <div class="stat-item">
-                        <div class="stat-label">{{ _('Max Speed') }}</div>
-                        <div class="stat-value">{{ userStats.maxWpm }} <span class="unit">WPM</span></div>
-                        {% if userMaxRank %}
-                        <div class="stat-rank">{{ _('Rank') }} #{{ userMaxRank }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">{{ _('Avg Speed') }}</div>
-                        <div class="stat-value">{{ userStats.avgWpm }} <span class="unit">WPM</span></div>
-                        {% if userAvgRank %}
-                        <div class="stat-rank">{{ _('Rank') }} #{{ userAvgRank }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">{{ _('Total Records') }}</div>
-                        <div class="stat-value">{{ userStats.totalRecords }}</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Recent Records -->
-            <div class="recent-section">
-                <div class="section-header">
-                    <h3>{{ _('Recent Records') }}</h3>
-                </div>
-                <div class="records-list">
-                    {% if recentRecords and recentRecords|length > 0 %}
-                    {% for record in recentRecords %}
-                    <div class="record-item {% if isLoggedIn and record.uid == handler.user._id %}current-user{% endif %}">
-                        <div class="record-icon">⌨️</div>
-                        <div class="record-info">
-                            <div class="record-user">
-                                {% if udocs[record.uid] %}
-                                    {{ udocs[record.uid].uname }}
-                                {% else %}
-                                    User {{ record.uid }}
-                                {% endif %}
-                            </div>
-                            <div class="record-time">{{ record.createdAt }}</div>
-                        </div>
-                        <div class="record-wpm">{{ record.wpm }} <span class="unit">WPM</span></div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <p>{{ _('No records yet') }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Data Visualization Section -->
-    <div class="content-grid">
-        <!-- Weekly Trend -->
-        <div class="chart-section">
-            <h3>{{ _('Weekly Trend') }}</h3>
-            <div class="trend-chart">
-                <canvas id="trendChart" width="400" height="250"></canvas>
-            </div>
-        </div>
-
-        <!-- Activity Overview -->
-        <div class="chart-section">
-            <h3>{{ _('Activity Overview') }}</h3>
-            <div class="activity-stats">
-                <div class="activity-item">
-                    <div class="activity-icon">👥</div>
-                    <div class="activity-value">{{ globalStats.totalUsers }}</div>
-                    <div class="activity-label">{{ _('Total Users') }}</div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon">⚡</div>
-                    <div class="activity-value">{{ globalStats.maxWpm }}</div>
-                    <div class="activity-label">{{ _('Top Speed') }}</div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon">📈</div>
-                    <div class="activity-value">{{ globalStats.avgWpm }}</div>
-                    <div class="activity-label">{{ _('Average Speed') }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 数据传递给 React -->
+    <script id="typing-hall-data" type="application/json">
+    {
+        "globalStats": {{ globalStatsJSON | safe }},
+        "userStats": {{ userStatsJSON | safe }},
+        "userMaxRank": {{ userMaxRank if userMaxRank else 'null' }},
+        "userAvgRank": {{ userAvgRank if userAvgRank else 'null' }},
+        "maxWpmRanking": {{ maxWpmRankingJSON | safe }},
+        "avgWpmRanking": {{ avgWpmRankingJSON | safe }},
+        "improvementRanking": {{ improvementRankingJSON | safe }},
+        "recentRecords": {{ recentRecordsJSON | safe }},
+        "userSpeedPoints": {{ userSpeedPointsJSON | safe }},
+        "weeklyTrend": {{ weeklyTrendJSON | safe }},
+        "udocs": {{ udocsJSON | safe }},
+        "canManage": {{ 'true' if canManage else 'false' }},
+        "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
+        "currentUserId": {{ handler.user._id if isLoggedIn else 'null' }}
+    }
+    </script>
 </div>
 
 <style>
@@ -360,15 +151,6 @@
     padding: 0 24px;
 }
 
-.user-overview-card {
-    background: var(--bg-primary);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 32px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-}
-
 .user-overview-card-compact {
     background: var(--bg-primary);
     border-radius: 16px;
@@ -399,12 +181,6 @@
 
 .view-details-link:hover, .view-all-link:hover {
     color: var(--primary-dark);
-}
-
-.overview-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
 }
 
 .overview-stats-compact {
@@ -498,10 +274,6 @@
 }
 
 .tab-content {
-    display: none;
-}
-
-.tab-content.active {
     display: block;
 }
 
@@ -1051,10 +823,6 @@
         justify-content: center;
     }
 
-    .overview-stats {
-        grid-template-columns: 1fr;
-    }
-
     .overview-stats-compact {
         grid-template-columns: 1fr;
     }
@@ -1094,309 +862,5 @@
     }
 }
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetTab = btn.dataset.tab;
-
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            btn.classList.add('active');
-            document.getElementById(targetTab).classList.add('active');
-        });
-    });
-
-    // Speed Ladder Chart
-    const userSpeedPoints = {{ userSpeedPointsJSON | safe }};
-    const udocs = {{ udocsJSON | safe }};
-    const ladderContainer = document.getElementById('ladderChart');
-    let currentSpeedType = 'max'; // 默认显示最高速度
-
-    // 定义速度区间 (从上到下:键盘之神 → 键盘萌新) - 9个趣味等级
-    const ranges = [
-            {
-                label: '键盘之神',
-                icon: '👑',
-                range: '200+',
-                min: 200,
-                max: Infinity,
-                color: 'rgba(168, 85, 247, 0.15)',
-                borderColor: 'rgba(168, 85, 247, 0.3)'
-            },
-            {
-                label: '指尖飞舞',
-                icon: '💎',
-                range: '180-200',
-                min: 180,
-                max: 200,
-                color: 'rgba(219, 39, 119, 0.15)',
-                borderColor: 'rgba(219, 39, 119, 0.3)'
-            },
-            {
-                label: '超级赛亚人',
-                icon: '🌟',
-                range: '160-180',
-                min: 160,
-                max: 180,
-                color: 'rgba(236, 72, 153, 0.15)',
-                borderColor: 'rgba(236, 72, 153, 0.3)'
-            },
-            {
-                label: '速度狂魔',
-                icon: '🔥',
-                range: '120-160',
-                min: 120,
-                max: 160,
-                color: 'rgba(239, 68, 68, 0.15)',
-                borderColor: 'rgba(239, 68, 68, 0.3)'
-            },
-            {
-                label: '闪电侠',
-                icon: '⚡',
-                range: '90-120',
-                min: 90,
-                max: 120,
-                color: 'rgba(251, 146, 60, 0.15)',
-                borderColor: 'rgba(251, 146, 60, 0.3)'
-            },
-            {
-                label: '打字高手',
-                icon: '⭐',
-                range: '70-90',
-                min: 70,
-                max: 90,
-                color: 'rgba(250, 204, 21, 0.15)',
-                borderColor: 'rgba(250, 204, 21, 0.3)'
-            },
-            {
-                label: '键盘侠',
-                icon: '✨',
-                range: '50-70',
-                min: 50,
-                max: 70,
-                color: 'rgba(34, 197, 94, 0.15)',
-                borderColor: 'rgba(34, 197, 94, 0.3)'
-            },
-            {
-                label: '进阶选手',
-                icon: '📈',
-                range: '30-50',
-                min: 30,
-                max: 50,
-                color: 'rgba(59, 130, 246, 0.15)',
-                borderColor: 'rgba(59, 130, 246, 0.3)'
-            },
-            {
-                label: '键盘萌新',
-                icon: '🌱',
-                range: '0-30',
-                min: 0,
-                max: 30,
-                color: 'rgba(156, 163, 175, 0.15)',
-                borderColor: 'rgba(156, 163, 175, 0.3)'
-            },
-        ];
-
-    // 渲染天梯图函数
-    function renderLadder(speedType) {
-        ladderContainer.innerHTML = '';
-
-        // 计算每个区间的实际最大值 (用于位置计算)
-        const actualMaxValues = ranges.map(range => {
-            const usersInRange = userSpeedPoints.filter(p => {
-                const wpm = speedType === 'avg' ? p.avgWpm : p.maxWpm;
-                return wpm >= range.min && wpm < range.max;
-            });
-            if (usersInRange.length === 0) return range.max === Infinity ? range.min + 20 : range.max;
-            const maxInRange = Math.max(...usersInRange.map(p => speedType === 'avg' ? p.avgWpm : p.maxWpm));
-            return range.max === Infinity ? maxInRange + 10 : range.max;
-        });
-
-        // 渲染天梯图
-        ranges.forEach((range, index) => {
-            const usersInRange = userSpeedPoints.filter(p => {
-                const wpm = speedType === 'avg' ? p.avgWpm : p.maxWpm;
-                return wpm >= range.min && wpm < range.max;
-            });
-
-            const row = document.createElement('div');
-            row.className = 'ladder-row';
-            row.style.animationDelay = `${index * 0.1}s`;
-
-            // 标签部分
-            const label = document.createElement('div');
-            label.className = 'ladder-label';
-            label.innerHTML = `
-                <div class="level-badge">
-                    <span class="level-icon">${range.icon}</span>
-                    <div class="level-text">
-                        <div class="level-name">${range.label}</div>
-                        <div class="level-range">${range.range} WPM</div>
-                    </div>
-                </div>
-            `;
-
-            // 轨道部分
-            const track = document.createElement('div');
-            track.className = 'ladder-track';
-
-            // 刻度
-            const scale = document.createElement('div');
-            scale.className = 'wpm-scale';
-            const actualMax = actualMaxValues[index];
-            const mid = Math.round((range.min + actualMax) / 2);
-            scale.innerHTML = `
-                <span>${range.min}</span>
-                <span>${mid}</span>
-                <span>${actualMax}${range.max === Infinity ? '+' : ''}</span>
-            `;
-            track.appendChild(scale);
-
-            // 散点容器
-            const points = document.createElement('div');
-            points.className = 'scatter-points';
-
-            // 计算位置并渲染用户头像
-            usersInRange.forEach((point, pointIndex) => {
-                const user = udocs[point.uid];
-                if (!user) return;
-
-                const avatarPoint = document.createElement('div');
-                avatarPoint.className = 'user-avatar-point';
-
-                // 标记当前用户
-                {% if isLoggedIn %}
-                if (point.uid === {{ handler.user._id }}) {
-                    avatarPoint.classList.add('current-user-point');
-                }
-                {% endif %}
-
-                avatarPoint.style.animationDelay = `${(index * 0.1 + pointIndex * 0.05)}s`;
-
-                // 计算X轴位置 (基于WPM值)
-                const wpm = speedType === 'avg' ? point.avgWpm : point.maxWpm;
-                const position = calculatePosition(wpm, range.min, actualMax);
-                avatarPoint.style.left = `${position}%`;
-
-                // 添加随机Y轴偏移 (避免重叠)
-                const yOffset = (Math.random() - 0.5) * 30;
-                avatarPoint.style.transform = `translateY(${yOffset}px)`;
-
-                const img = document.createElement('img');
-                img.src = user.avatarUrl;
-                img.alt = user.uname || user.displayName || 'User';
-
-                const tooltip = document.createElement('div');
-                tooltip.className = 'tooltip';
-                {% if isLoggedIn %}
-                const isCurrentUser = point.uid === {{ handler.user._id }};
-                const userLabel = isCurrentUser ? `${user.uname || user.displayName} <span style="color: #60a5fa; font-weight: 700;">(You)</span>` : (user.uname || user.displayName);
-                tooltip.innerHTML = `
-                    <div class="tooltip-name">${userLabel}</div>
-                    <div class="tooltip-wpm">${wpm} WPM</div>
-                `;
-                {% else %}
-                tooltip.innerHTML = `
-                    <div class="tooltip-name">${user.uname || user.displayName}</div>
-                    <div class="tooltip-wpm">${wpm} WPM</div>
-                `;
-                {% endif %}
-
-                avatarPoint.appendChild(img);
-                avatarPoint.appendChild(tooltip);
-                points.appendChild(avatarPoint);
-            });
-
-            track.appendChild(points);
-
-            // 计数部分
-            const count = document.createElement('div');
-            count.className = 'ladder-count';
-            if (usersInRange.length > 0) {
-                count.innerHTML = `<span class="ladder-count-badge">${usersInRange.length}</span>`;
-            }
-
-            row.appendChild(label);
-            row.appendChild(track);
-            row.appendChild(count);
-            ladderContainer.appendChild(row);
-        });
-    }
-
-    // 计算散点位置的辅助函数
-    function calculatePosition(wpm, min, max) {
-        if (max === min) return 50;
-        const percentage = ((wpm - min) / (max - min)) * 100;
-        // 限制在 5% - 95% 之间,避免头像贴边
-        return Math.max(5, Math.min(95, percentage));
-    }
-
-    // 初始渲染天梯图
-    if (ladderContainer && userSpeedPoints && userSpeedPoints.length > 0) {
-        renderLadder(currentSpeedType);
-    } else if (ladderContainer) {
-        ladderContainer.innerHTML = '<div class="empty-state"><p>{{ _("No records yet") }}</p></div>';
-    }
-
-    // 天梯图速度类型切换
-    const ladderTabBtns = document.querySelectorAll('.ladder-tab-btn');
-    ladderTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const speedType = btn.dataset.speedType;
-            currentSpeedType = speedType;
-
-            // 更新按钮状态
-            ladderTabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            // 重新渲染天梯图
-            renderLadder(speedType);
-        });
-    });
-
-    // Weekly trend chart
-    const trendData = {{ weeklyTrendJSON | safe }};
-    const ctx = document.getElementById('trendChart');
-
-    if (ctx && trendData) {
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: trendData.map(d => d.week),
-                datasets: [{
-                    label: 'Average WPM',
-                    data: trendData.map(d => d.avgWpm),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-});
-</script>
 
 {% endblock %}

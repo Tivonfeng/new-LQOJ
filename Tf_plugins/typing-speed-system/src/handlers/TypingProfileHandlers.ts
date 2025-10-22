@@ -17,15 +17,15 @@ export class TypingProfileHandler extends Handler {
         const statsService = new TypingStatsService(this.ctx, recordService);
         const analyticsService = new TypingAnalyticsService(this.ctx, recordService, statsService);
 
-        // 获取用户统计
-        const userStats = await statsService.getUserStats(uid, this.domain._id);
+        // 获取用户统计（暂不使用 domainId 过滤）
+        const userStats = await statsService.getUserStats(uid);
 
-        // 获取用户排名
-        let maxRank = null;
-        let avgRank = null;
+        // 获取用户排名（暂不使用 domainId 过滤）
+        let maxRank: number | null = null;
+        let avgRank: number | null = null;
         if (userStats) {
-            maxRank = await statsService.getUserRank(uid, 'max', this.domain._id);
-            avgRank = await statsService.getUserRank(uid, 'avg', this.domain._id);
+            maxRank = await statsService.getUserRank(uid, 'max');
+            avgRank = await statsService.getUserRank(uid, 'avg');
         }
 
         // 获取用户历史记录

@@ -9,6 +9,7 @@
     "cli": false
   },
   "dependencies": {
+    "chart.js": "^4.4.0",
     "hydrooj": "workspace:^"
   },
   "peerDependencies": {

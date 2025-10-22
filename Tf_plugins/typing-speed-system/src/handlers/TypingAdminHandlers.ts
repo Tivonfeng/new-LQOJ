@@ -19,7 +19,6 @@ export class TypingAdminHandler extends Handler {
 
     async get() {
         const recordService = new TypingRecordService(this.ctx);
-        const statsService = new TypingStatsService(this.ctx, recordService);
 
         // 获取最近录入的记录
         const recentRecords = await recordService.getRecentRecords(20);

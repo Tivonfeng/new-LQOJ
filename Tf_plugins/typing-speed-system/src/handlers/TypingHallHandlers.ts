@@ -21,22 +21,22 @@ export class TypingHallHandler extends Handler {
         // 获取全局统计
         const globalStats = await analyticsService.getGlobalStats();
 
-        // 获取用户个人数据
-        let userStats = null;
-        let userMaxRank = null;
-        let userAvgRank = null;
+        // 获取用户个人数据（暂不使用 domainId 过滤，与其他查询保持一致）
+        let userStats: import('../services/TypingStatsService').TypingUserStats | null = null;
+        let userMaxRank: number | null = null;
+        let userAvgRank: number | null = null;
         if (uid) {
-            userStats = await statsService.getUserStats(uid, this.domain._id);
+            userStats = await statsService.getUserStats(uid);
             if (userStats) {
-                userMaxRank = await statsService.getUserRank(uid, 'max', this.domain._id);
-                userAvgRank = await statsService.getUserRank(uid, 'avg', this.domain._id);
+                userMaxRank = await statsService.getUserRank(uid, 'max');
+                userAvgRank = await statsService.getUserRank(uid, 'avg');
             }
         }
 
-        // 获取排行榜 Top 10
-        const maxWpmRanking = await statsService.getMaxWpmRanking(10, this.domain._id);
-        const avgWpmRanking = await statsService.getAvgWpmRanking(10, this.domain._id);
-        const improvementRanking = await statsService.getImprovementRanking(10, this.domain._id);
+        // 获取排行榜 Top 10（暂不使用 domainId 过滤，与其他查询保持一致）
+        const maxWpmRanking = await statsService.getMaxWpmRanking(10);
+        const avgWpmRanking = await statsService.getAvgWpmRanking(10);
+        const improvementRanking = await statsService.getImprovementRanking(10);
 
         // 获取最近记录
         const recentRecords = await recordService.getRecentRecords(10);
@@ -72,26 +72,32 @@ export class TypingHallHandler extends Handler {
 
         // 将udocs转换为简化的JSON格式，包含头像URL
         const udocsSimplified = {};
-        for (const uid in udocs) {
-            udocsSimplified[uid] = {
-                uname: udocs[uid].uname,
-                displayName: udocs[uid].displayName,
-                mail: udocs[uid].mail,
-                avatar: udocs[uid].avatar,
-                avatarUrl: avatar(udocs[uid].avatar, 32), // 生成32px的头像URL
+        for (const userId in udocs) {
+            udocsSimplified[userId] = {
+                uname: udocs[userId].uname,
+                displayName: udocs[userId].displayName,
+                mail: udocs[userId].mail,
+                avatar: udocs[userId].avatar,
+                avatarUrl: avatar(udocs[userId].avatar, 32), // 生成32px的头像URL
             };
         }
 
         this.response.template = 'typing_hall.html';
         this.response.body = {
             globalStats,
+            globalStatsJSON: JSON.stringify(globalStats),
             userStats: userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 },
+            userStatsJSON: JSON.stringify(userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 }),
             userMaxRank,
             userAvgRank,
             maxWpmRanking,
+            maxWpmRankingJSON: JSON.stringify(maxWpmRanking),
             avgWpmRanking,
+            avgWpmRankingJSON: JSON.stringify(avgWpmRanking),
             improvementRanking,
+            improvementRankingJSON: JSON.stringify(improvementRanking),
             recentRecords: formattedRecentRecords,
+            recentRecordsJSON: JSON.stringify(formattedRecentRecords),
             speedDistribution,
             userSpeedPoints,
             userSpeedPointsJSON: JSON.stringify(userSpeedPoints),
@@ -120,26 +126,26 @@ export class TypingRankingHandler extends Handler {
         const recordService = new TypingRecordService(this.ctx);
         const statsService = new TypingStatsService(this.ctx, recordService);
 
-        let users = [];
+        let users: any[] = [];
         let total = 0;
 
         if (type === 'improvement') {
-            // 进步排行榜
-            const allImprovements = await statsService.getImprovementRanking(1000, this.domain._id);
+            // 进步排行榜（暂不使用 domainId 过滤）
+            const allImprovements = await statsService.getImprovementRanking(1000);
             total = allImprovements.length;
             users = allImprovements.slice(skip, skip + limit);
         } else {
-            // 最高速度或平均速度排行榜
+            // 最高速度或平均速度排行榜（暂不使用 domainId 过滤）
             const sortField = type === 'max' ? 'maxWpm' : 'avgWpm';
             users = await this.ctx.db.collection('typing.stats' as any)
-                .find({ domainId: this.domain._id })
+                .find({})
                 .sort({ [sortField]: -1, lastUpdated: 1 })
                 .skip(skip)
                 .limit(limit)
                 .toArray();
 
             total = await this.ctx.db.collection('typing.stats' as any)
-                .countDocuments({ domainId: this.domain._id });
+                .countDocuments({});
         }
 
         // 获取用户信息
