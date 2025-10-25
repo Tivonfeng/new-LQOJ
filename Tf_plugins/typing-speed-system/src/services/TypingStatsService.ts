@@ -1,4 +1,4 @@
-import { Context } from 'hydrooj';
+import { Context, ObjectId } from 'hydrooj';
 import { TypingRecordService } from './TypingRecordService';
 
 // 用户统计接口
@@ -32,17 +32,19 @@ export interface RankingItem {
 
 /**
  * 打字统计服务
- * 负责：用户统计更新、排行榜查询、周快照管理
+ * 负责：用户统计更新、排行榜查询、周快照管理、奖励集成
  */
 export class TypingStatsService {
     private ctx: Context;
+    private recordService: TypingRecordService;
 
-    constructor(ctx: Context, _recordService: TypingRecordService) {
+    constructor(ctx: Context, recordService: TypingRecordService) {
         this.ctx = ctx;
+        this.recordService = recordService;
     }
 
     /**
-     * 更新用户统计数据
+     * 更新用户统计数据（不包含奖励）
      */
     async updateUserStats(uid: number, domainId: string): Promise<void> {
         // 获取用户所有记录（全域统一，获取该用户在任何域的所有记录）
@@ -73,6 +75,79 @@ export class TypingStatsService {
             },
             { upsert: true },
         );
+    }
+
+    /**
+     * 更新用户统计数据并处理奖励（内部方法）
+     * 用于在添加新记录时调用
+     */
+    async updateUserStatsWithBonuses(
+        uid: number,
+        domainId: string,
+        recordId: ObjectId,
+        newWpm: number,
+        bonusCallback?: (recordId: ObjectId, newWpm: number, previousMaxWpm: number) => Promise<{
+            totalBonus: number;
+            bonuses: Array<{
+                type: 'progress' | 'level' | 'surpass';
+                bonus: number;
+                reason: string;
+            }>;
+        }>,
+    ): Promise<{
+        totalBonus: number;
+        bonuses: Array<{
+            type: 'progress' | 'level' | 'surpass';
+            bonus: number;
+            reason: string;
+        }>;
+    }> {
+        // 获取用户所有记录
+        const records = await this.ctx.db.collection('typing.records' as any)
+            .find({ uid })
+            .toArray();
+
+        if (records.length === 0) {
+            return { totalBonus: 0, bonuses: [] };
+        }
+
+        // 计算新的统计数据
+        const maxWpm = Math.max(...records.map((r) => r.wpm));
+        const avgWpm = Math.round(records.reduce((sum, r) => sum + r.wpm, 0) / records.length);
+        const lastRecordAt = new Date(Math.max(...records.map((r) => r.createdAt.getTime())));
+
+        // 获取之前的最高速度
+        const previousStats = await this.ctx.db.collection('typing.stats' as any).findOne({ uid });
+        const previousMaxWpm = previousStats?.maxWpm || 0;
+
+        // 更新统计记录
+        await this.ctx.db.collection('typing.stats' as any).updateOne(
+            { uid },
+            {
+                $set: {
+                    uid,
+                    domainId,
+                    maxWpm,
+                    avgWpm,
+                    totalRecords: records.length,
+                    lastRecordAt,
+                    lastUpdated: new Date(),
+                },
+            },
+            { upsert: true },
+        );
+
+        // 更新周快照
+        await this.updateWeeklySnapshot(uid);
+
+        // 处理奖励（如果有回调函数）
+        let bonusInfo = { totalBonus: 0, bonuses: [] as any[] };
+        if (bonusCallback) {
+            // 调用外部的奖励处理逻辑，传递必要的参数
+            bonusInfo = await bonusCallback(recordId, newWpm, previousMaxWpm);
+        }
+
+        return bonusInfo;
     }
 
     /**

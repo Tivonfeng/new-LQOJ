@@ -163,7 +163,8 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
 }
 
 .stat-badge {
@@ -181,6 +182,8 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     animation: fadeInUp 0.6s ease-out backwards;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .stat-badge:nth-child(1) { animation-delay: 0.2s; }
@@ -219,6 +222,8 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .admin-btn:hover {
@@ -265,6 +270,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: nowrap;
+    gap: 16px;
 }
 
 .overview-header h2 {
@@ -277,6 +284,8 @@ body {
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .view-details-link:hover, .view-all-link:hover {
@@ -392,11 +401,15 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: nowrap;
+    gap: 16px;
 }
 
 .section-header h2, .section-header h3 {
     font-size: 1.5rem;
     font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .tabs {
@@ -604,6 +617,8 @@ body {
     display: flex;
     gap: 20px;
     align-items: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .ladder-tabs {
@@ -663,26 +678,24 @@ body {
 
 .ladder-chart {
     position: relative;
-    min-height: 810px;
+    min-height: 720px;
     margin-top: 20px;
     background: linear-gradient(to bottom,
         rgba(168, 85, 247, 0.08) 0%,
-        rgba(168, 85, 247, 0.08) 11.11%,
-        rgba(219, 39, 119, 0.08) 11.11%,
-        rgba(219, 39, 119, 0.08) 22.22%,
-        rgba(236, 72, 153, 0.08) 22.22%,
-        rgba(236, 72, 153, 0.08) 33.33%,
-        rgba(239, 68, 68, 0.08) 33.33%,
-        rgba(239, 68, 68, 0.08) 44.44%,
-        rgba(251, 146, 60, 0.08) 44.44%,
-        rgba(251, 146, 60, 0.08) 55.56%,
-        rgba(250, 204, 21, 0.08) 55.56%,
-        rgba(250, 204, 21, 0.08) 66.67%,
-        rgba(34, 197, 94, 0.08) 66.67%,
-        rgba(34, 197, 94, 0.08) 77.78%,
-        rgba(59, 130, 246, 0.08) 77.78%,
-        rgba(59, 130, 246, 0.08) 88.89%,
-        rgba(156, 163, 175, 0.08) 88.89%,
+        rgba(168, 85, 247, 0.08) 12.5%,
+        rgba(219, 39, 119, 0.08) 12.5%,
+        rgba(219, 39, 119, 0.08) 25%,
+        rgba(236, 72, 153, 0.08) 25%,
+        rgba(236, 72, 153, 0.08) 37.5%,
+        rgba(239, 68, 68, 0.08) 37.5%,
+        rgba(239, 68, 68, 0.08) 50%,
+        rgba(251, 146, 60, 0.08) 50%,
+        rgba(251, 146, 60, 0.08) 62.5%,
+        rgba(250, 204, 21, 0.08) 62.5%,
+        rgba(250, 204, 21, 0.08) 75%,
+        rgba(34, 197, 94, 0.08) 75%,
+        rgba(34, 197, 94, 0.08) 87.5%,
+        rgba(156, 163, 175, 0.08) 87.5%,
         rgba(156, 163, 175, 0.08) 100%
     );
     border-radius: 12px;
@@ -691,7 +704,7 @@ body {
 }
 
 .ladder-row {
-    height: 11.11%;
+    height: 12.5%;
     display: flex;
     align-items: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -1111,8 +1124,10 @@ body {
     }
 
     .hero-stats {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
+        overflow-x: auto;
+        padding-bottom: 8px;
     }
 
     .dual-section-grid,
@@ -1155,6 +1170,7 @@ body {
     .admin-btn {
         font-size: 0.875rem;
         padding: 12px 14px;
+        flex-shrink: 0;
     }
 
     .overview-stats-compact {
@@ -1167,7 +1183,7 @@ body {
     }
 
     .ladder-chart {
-        min-height: 900px;
+        min-height: 800px;
     }
 
     .ladder-label {

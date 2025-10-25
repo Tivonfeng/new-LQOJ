@@ -2,6 +2,7 @@ import { Handler, PERM, PRIV } from 'hydrooj';
 import {
     TypingRecordService,
     TypingStatsService,
+    TypingBonusService,
 } from '../services';
 
 /**
@@ -77,28 +78,73 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            // 添加记录
+            // 获取用户当前统计（用于计算进步和超越）
             const recordService = new TypingRecordService(this.ctx);
-            await recordService.addRecord(
-                user._id,
-                this.domain._id,
-                wpmNum,
-                this.user._id,
-                note || '',
-            );
+            const statsService = new TypingStatsService(this.ctx, recordService);
+            const currentStats = await statsService.getUserStats(user._id);
+            const previousMaxWpm = currentStats?.maxWpm || 0;
+
+            // 获取更新前的排行榜（用于超越检查）
+            const oldRanking = await this.ctx.db.collection('typing.stats' as any)
+                .find({})
+                .sort({ maxWpm: -1, lastUpdated: 1 })
+                .toArray();
+
+            // 添加记录
+            const insertResult = await this.ctx.db.collection('typing.records' as any).insertOne({
+                uid: user._id,
+                domainId: this.domain._id,
+                wpm: wpmNum,
+                createdAt: new Date(),
+                recordedBy: this.user._id,
+                note: note || '',
+            });
+
+            const recordId = insertResult.insertedId;
 
             // 更新用户统计
-            const statsService = new TypingStatsService(this.ctx, recordService);
             await statsService.updateUserStats(user._id, this.domain._id);
 
             // 更新周快照
             await statsService.updateWeeklySnapshot(user._id);
 
-            console.log(`[TypingAdmin] Admin ${this.user._id} added record for user ${user._id}: ${wpmNum} WPM`);
+            // 处理奖励（传递旧排行榜用于超越检查）
+            const bonusService = new TypingBonusService(this.ctx);
+            const bonusInfo = await bonusService.processBonuses(user._id, recordId, wpmNum, previousMaxWpm, oldRanking);
+
+            let bonusMessage = '';
+            if (bonusInfo.totalBonus > 0) {
+                // 为每个奖励添加积分记录
+                for (const bonus of bonusInfo.bonuses) {
+                    await this.ctx.db.collection('score.records' as any).insertOne({
+                        uid: user._id,
+                        domainId: this.domain._id,
+                        pid: 0,
+                        recordId: null,
+                        score: bonus.bonus,
+                        reason: bonus.reason,
+                        createdAt: new Date(),
+                    });
+
+                    // 更新用户积分
+                    await this.ctx.db.collection('score.users' as any).updateOne(
+                        { uid: user._id },
+                        {
+                            $inc: { totalScore: bonus.bonus },
+                            $set: { lastUpdated: new Date() },
+                        },
+                        { upsert: true },
+                    );
+                }
+                bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
+            }
+
+            console.log(`[TypingAdmin] Admin ${this.user._id} added record for user ${user._id}: ${wpmNum} WPM, bonus: +${bonusInfo.totalBonus}`);
 
             this.response.body = {
                 success: true,
-                message: `成功为 ${username} 录入打字速度: ${wpmNum} WPM`,
+                message: `成功为 ${username} 录入打字速度: ${wpmNum} WPM${bonusMessage}`,
+                bonusInfo,
             };
         } catch (error) {
             console.error('[TypingAdmin] Error adding record:', error);
@@ -120,6 +166,7 @@ export class TypingAdminHandler extends Handler {
 
             const recordService = new TypingRecordService(this.ctx);
             const statsService = new TypingStatsService(this.ctx, recordService);
+            const bonusService = new TypingBonusService(this.ctx);
 
             // 导入记录
             const result = await recordService.importRecordsFromCSV(
@@ -128,34 +175,94 @@ export class TypingAdminHandler extends Handler {
                 this.domain._id,
             );
 
-            // 更新所有涉及用户的统计（异步执行）
+            let totalBonus = 0;
+            const bonusDetails: Array<{ username: string; wpm: number; bonus: number }> = [];
+
+            // 更新所有涉及用户的统计和处理奖励
             const lines = csvData.trim().split('\n');
-            for (let i = 1; i < lines.length; i++) {
+            const hasHeader = lines[0].trim().toLowerCase().includes('username') &&
+                             (lines[0].trim().toLowerCase().includes('wpm') ||
+                              lines[0].trim().toLowerCase().includes('speed'));
+            const startLine = hasHeader ? 1 : 0;
+
+            for (let i = startLine; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
 
                 const parts = line.split(',');
                 const username = parts[0].trim();
+                const wpm = Number.parseInt(parts[1].trim());
 
                 try {
                     const UserModel = global.Hydro.model.user;
                     const user = await UserModel.getByUname(this.domain._id, username);
-                    if (user) {
-                        await statsService.updateUserStats(user._id, this.domain._id);
-                        await statsService.updateWeeklySnapshot(user._id);
+                    if (!user) continue;
+
+                    // 获取该用户的前一条最高速度
+                    const currentStats = await statsService.getUserStats(user._id);
+                    const previousMaxWpm = currentStats?.maxWpm || 0;
+
+                    // 获取该用户最新的记录ID
+                    const latestRecord = await this.ctx.db.collection('typing.records' as any)
+                        .findOne({ uid: user._id }, { sort: { createdAt: -1 } });
+
+                    if (latestRecord && latestRecord.wpm === wpm) {
+                        // 处理奖励
+                        const bonusInfo = await bonusService.processBonuses(
+                            user._id,
+                            latestRecord._id,
+                            wpm,
+                            previousMaxWpm,
+                        );
+
+                        if (bonusInfo.totalBonus > 0) {
+                            // 添加积分记录
+                            for (const bonus of bonusInfo.bonuses) {
+                                await this.ctx.db.collection('score.records' as any).insertOne({
+                                    uid: user._id,
+                                    domainId: this.domain._id,
+                                    pid: 0,
+                                    recordId: null,
+                                    score: bonus.bonus,
+                                    reason: bonus.reason,
+                                    createdAt: new Date(),
+                                });
+
+                                await this.ctx.db.collection('score.users' as any).updateOne(
+                                    { uid: user._id },
+                                    {
+                                        $inc: { totalScore: bonus.bonus },
+                                        $set: { lastUpdated: new Date() },
+                                    },
+                                    { upsert: true },
+                                );
+                            }
+
+                            totalBonus += bonusInfo.totalBonus;
+                            bonusDetails.push({
+                                username,
+                                wpm,
+                                bonus: bonusInfo.totalBonus,
+                            });
+                        }
                     }
+
+                    // 更新统计
+                    await statsService.updateUserStats(user._id, this.domain._id);
+                    await statsService.updateWeeklySnapshot(user._id);
                 } catch (error) {
-                    // 忽略统计更新错误
-                    console.error(`[TypingAdmin] Error updating stats for ${username}:`, error);
+                    console.error(`[TypingAdmin] Error processing bonus for ${username}:`, error);
                 }
             }
 
-            console.log(`[TypingAdmin] Admin ${this.user._id} imported ${result.success} records`);
+            console.log(`[TypingAdmin] Admin ${this.user._id} imported ${result.success} records, total bonus: +${totalBonus}`);
 
             this.response.body = {
                 success: true,
-                message: `成功导入 ${result.success} 条记录，失败 ${result.failed} 条`,
+                message: `成功导入 ${result.success} 条记录，失败 ${result.failed} 条，总奖励: +${totalBonus}分`,
                 data: result,
+                bonusDetails,
+                totalBonus,
             };
         } catch (error) {
             console.error('[TypingAdmin] Error importing CSV:', error);
