@@ -1,0 +1,17 @@
+avatar.settings_title: Avatar Settings
+avatar.settings_subtitle: Choose your avatar from different sources
+avatar.type_label: Avatar Source
+avatar.upload: Upload
+avatar.saving: Saving...
+avatar.change_avatar: Change Avatar
+avatar.upload_success: Avatar uploaded successfully!
+avatar.update_success: Avatar updated successfully!
+avatar.update_failed: Failed to update avatar
+avatar.system_presets: System Presets
+avatar.choose_preset_avatar: Choose Preset Avatar
+avatar.please_select_preset: Please select a preset avatar
+avatar.preset_selected_success: Preset avatar selected successfully!
+avatar.select_image: Select Image
+avatar.invalid_file_type: Invalid file type. Only JPG and PNG are allowed.
+avatar.file_too_large: File size must not exceed 5MB.
+avatar.no_file_selected: Please select a file

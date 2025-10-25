@@ -1,0 +1,30 @@
+/* Avatar Settings Plugin - Inline Styles
+ *
+ * This plugin primarily uses inline React styles and Hydro's existing CSS classes
+ * for consistency with the rest of the UI.
+ *
+ * Hydro CSS Classes Used:
+ * - .select: Standard select element styling
+ * - .textbox: Standard text input styling
+ * - .button: Standard button styling
+ * - .rounded: Rounded corners
+ * - .primary: Primary button style
+ *
+ * Only custom styles are included below if needed.
+ */
+
+/* Optional: Add subtle animations if desired */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Alert messages animation */
+div[style*='backgroundColor'][style*='#f0f9ff'],
+div[style*='backgroundColor'][style*='#fdf6f6'] {
+  animation: fadeIn 0.3s ease-in-out;
+}

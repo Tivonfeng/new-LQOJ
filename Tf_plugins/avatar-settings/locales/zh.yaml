@@ -1,0 +1,17 @@
+avatar.settings_title: 头像设置
+avatar.settings_subtitle: 从不同来源选择您的头像
+avatar.type_label: 头像来源
+avatar.upload: 上传
+avatar.saving: 保存中...
+avatar.change_avatar: 修改头像
+avatar.upload_success: 头像上传成功！
+avatar.update_success: 头像更新成功！
+avatar.update_failed: 头像更新失败
+avatar.system_presets: 系统预设
+avatar.choose_preset_avatar: 选择预设头像
+avatar.please_select_preset: 请选择一个预设头像
+avatar.preset_selected_success: 预设头像已选择！
+avatar.select_image: 选择图片
+avatar.invalid_file_type: 无效的文件类型。仅支持JPG和PNG。
+avatar.file_too_large: 文件大小不能超过5MB。
+avatar.no_file_selected: 请选择一个文件
