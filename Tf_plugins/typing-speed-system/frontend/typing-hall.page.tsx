@@ -353,6 +353,108 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
   );
 };
 
+// 奖励说明组件
+const BonusExplanation: React.FC = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const bonuses = [
+    {
+      title: '打字进步分',
+      icon: '📈',
+      description: '每次打字速度超过个人历史最高速度时，奖励',
+      points: '+20分',
+      pointsColor: '#3b82f6',
+      example: '当你的最高速度从50 WPM突破到51 WPM时获得',
+    },
+    {
+      title: '打字目标分',
+      icon: '🎯',
+      description: '达到新等级时，根据等级奖励对应积分',
+      details: [
+        { level: '打字小匠 (20-50 WPM)', points: '+100分' },
+        { level: '键速高手 (50-80 WPM)', points: '+200分' },
+        { level: '打字宗师 (80-110 WPM)', points: '+300分' },
+        { level: '键速侠客 (110-140 WPM)', points: '+400分' },
+        { level: '打字战神 (140-170 WPM)', points: '+500分' },
+        { level: '键速狂魔 (170-200 WPM)', points: '+600分' },
+        { level: '终极之神 (200+ WPM)', points: '+700分' },
+      ],
+      example: '首次达到80 WPM时获得该等级的积分奖励',
+    },
+    {
+      title: '超越对手奖',
+      icon: '⚔️',
+      description: '超越排行榜中你前一名的对手时获得',
+      points: '+20分',
+      pointsColor: '#ef4444',
+      example: '你的最高速度从85 WPM提升到95 WPM，正好超过前一名的对手时获得',
+    },
+  ];
+
+  return (
+    <>
+      <div className={`bonus-system-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
+        <div className={`bonus-section ${isCollapsed ? 'collapsed' : ''}`}>
+          <div className="section-header">
+            <h2>🎁 奖励系统说明</h2>
+            <button
+              className={`bonus-collapse-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              aria-label={isCollapsed ? '展开奖励说明' : '折叠奖励说明'}
+            >
+              <span className="collapse-icon">{isCollapsed ? '▼' : '▲'}</span>
+            </button>
+          </div>
+
+          <div className={`bonus-grid ${isCollapsed ? 'hidden' : ''}`}>
+            {bonuses.map((bonus, index) => (
+              <div key={index} className="bonus-card">
+                <div className="bonus-header">
+                  <div className="bonus-icon">{bonus.icon}</div>
+                  <div className="bonus-header-content">
+                    <div className="bonus-title">{bonus.title}</div>
+                    <div className="bonus-description">{bonus.description}</div>
+                  </div>
+                </div>
+
+                {bonus.details ? (
+                  <div className="bonus-details">
+                    {bonus.details.map((detail, idx) => (
+                      <div key={idx} className="detail-item">
+                        <span className="detail-level">{detail.level}</span>
+                        <span className="detail-points">{detail.points}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bonus-points" style={{ color: bonus.pointsColor }}>
+                    {bonus.points}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 练习提示部分 - 在奖励系统外面，同行显示 */}
+        <div className="bonus-practice-section">
+          <div className="practice-content">
+            <div className="practice-icon">🎮</div>
+            <div className="practice-text">
+              <h3>开始练习</h3>
+              <p>在打字练习网站上坚持训练，当有进步成绩时，请汇报给老师录入数据</p>
+            </div>
+            <a href="https://dazi.91xjr.com/" target="_blank" rel="noopener noreferrer" className="practice-btn">
+              前往练习网站
+              <span className="btn-icon">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
 // 周趋势图表组件
 interface WeeklyTrendChartProps {
   weeklyTrend: TrendData[];
@@ -498,6 +600,9 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
 }) => {
   return (
     <div className="typing-hall-react-app">
+      {/* 奖励系统说明 */}
+      <BonusExplanation />
+
       {/* 天梯图 */}
       <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
 

@@ -168,6 +168,12 @@ export class TypingAdminHandler extends Handler {
             const statsService = new TypingStatsService(this.ctx, recordService);
             const bonusService = new TypingBonusService(this.ctx);
 
+            // 获取更新前的排行榜（用于超越检查）
+            const oldRanking = await this.ctx.db.collection('typing.stats' as any)
+                .find({})
+                .sort({ maxWpm: -1, lastUpdated: 1 })
+                .toArray();
+
             // 导入记录
             const result = await recordService.importRecordsFromCSV(
                 csvData,
@@ -207,12 +213,13 @@ export class TypingAdminHandler extends Handler {
                         .findOne({ uid: user._id }, { sort: { createdAt: -1 } });
 
                     if (latestRecord && latestRecord.wpm === wpm) {
-                        // 处理奖励
+                        // 处理奖励（传递旧排行榜用于超越检查）
                         const bonusInfo = await bonusService.processBonuses(
                             user._id,
                             latestRecord._id,
                             wpm,
                             previousMaxWpm,
+                            oldRanking,
                         );
 
                         if (bonusInfo.totalBonus > 0) {
