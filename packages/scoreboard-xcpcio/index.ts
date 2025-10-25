@@ -1,6 +1,6 @@
 import path from 'path';
 import {
-    ContestModel, Context, fs, ObjectId, PERM, Schema, STATUS, Types, UserModel,
+    avatar, ContestModel, Context, fs, getAlphabeticId, ObjectId, PERM, Schema, STATUS, Types, UserModel,
 } from 'hydrooj';
 
 const file = fs.readFileSync(path.join(__dirname, 'public/assets/board.html'), 'utf8');
@@ -47,8 +47,9 @@ export async function apply(ctx: Context) {
                             team_id: `${udoc._id}`,
                             name: udoc.uname,
                             organization: udoc.school,
-                            members: [],
-                            coach: '',
+                            members: udoc.members?.split(',').filter((t) => t) || [],
+                            coach: udoc.coach,
+                            badge: { url: avatar(udoc.avatar) },
                             group: [
                                 ...(udoc.group || []),
                                 i.unrank ? 'unofficial' : 'official',
@@ -64,7 +65,7 @@ export async function apply(ctx: Context) {
                             frozen_time: tdoc.lockAt ? Math.floor((tdoc.endAt.getTime() - tdoc.lockAt.getTime()) / 1000) : 0,
                             penalty: 1200,
                             problem_quantity: tdoc.pids.length,
-                            problem_id: tdoc.pids.map((i, idx) => String.fromCharCode(65 + idx)),
+                            problem_id: tdoc.pids.map((i, idx) => getAlphabeticId(idx)),
                             group: {
                                 official: '正式队伍',
                                 unofficial: '打星队伍',

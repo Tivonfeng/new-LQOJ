@@ -5,7 +5,7 @@ import Schema from 'schemastery';
 import type { Context } from '../context';
 import {
     CannotDeleteSystemDomainError, DomainJoinAlreadyMemberError, DomainJoinForbiddenError, ForbiddenError,
-    InvalidJoinInvitationCodeError, OnlyOwnerCanDeleteDomainError, PermissionError, RoleAlreadyExistError, ValidationError,
+    InvalidJoinInvitationCodeError, NotFoundError, OnlyOwnerCanDeleteDomainError, PermissionError, RoleAlreadyExistError, ValidationError,
 } from '../error';
 import type { DomainDoc } from '../interface';
 import avatar from '../lib/avatar';
@@ -143,7 +143,7 @@ class DomainUserHandler extends ManageHandler {
                         user: 1,
                         role: 1,
                         join: 1,
-                        ...(this.user.hasPerm(PERM.PERM_VIEW_DISPLAYNAME) ? { displayName: 1 } : {}),
+                        ...(this.user.hasPerm(PERM.PERM_VIEW_USER_PRIVATE_INFO) ? { displayName: 1 } : {}),
                     },
                 },
             ]).toArray(),
@@ -344,6 +344,7 @@ class DomainJoinHandler extends Handler {
             domain.get(target),
             domain.collUser.findOne({ domainId: target, uid: this.user._id }),
         ]);
+        if (!ddoc) throw new NotFoundError(target);
         const assignedRole = this.user.hasPriv(PRIV.PRIV_MANAGE_ALL_DOMAIN)
             ? 'root'
             : dudoc?.role || 'default';
@@ -430,6 +431,25 @@ export const DomainApi = {
             const udoc = await user.getById(ddoc._id, ctx.user._id);
             if (!udoc.hasPerm(PERM.PERM_VIEW) && !udoc.hasPriv(PRIV.PRIV_VIEW_ALL_DOMAIN)) return null;
             return ddoc;
+        },
+    ),
+    groups: Query(
+        Schema.object({
+            search: Schema.string(),
+            names: Schema.array(Schema.string()),
+            domainId: Schema.string().required(),
+        }),
+        async (ctx, args) => {
+            if (!ctx.user.hasPerm(PERM.PERM_VIEW) && !ctx.user.hasPriv(PRIV.PRIV_VIEW_ALL_DOMAIN)) throw new PermissionError(PERM.PERM_VIEW);
+            const groups = await user.listGroup(args.domainId);
+            if (args.names?.length) {
+                return groups.filter((g) => args.names.includes(g.name));
+            }
+            if (args.search) {
+                const searchLower = args.search.toLowerCase();
+                return groups.filter((g) => g.name.toLowerCase().includes(searchLower));
+            }
+            return groups;
         },
     ),
     'domain.group': Mutation(
