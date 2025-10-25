@@ -603,55 +603,84 @@ body {
     border-radius: 24px;
     padding: 32px;
     margin-bottom: 40px;
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-color);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: fadeInScale 0.6s ease-out 0.2s backwards;
 }
 
 .ladder-section:hover {
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+}
+
+.ladder-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--text-primary);
+    position: relative;
+    padding-left: 16px;
+}
+
+.ladder-section h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+    border-radius: 2px;
 }
 
 .ladder-controls {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     align-items: center;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .ladder-tabs {
     display: flex;
     gap: 8px;
-    background: var(--bg-secondary);
-    padding: 4px;
-    border-radius: 10px;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    flex-wrap: wrap;
 }
 
 .ladder-tab-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: transparent;
-    border: none;
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
     padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ladder-tab-btn.active {
-    background: var(--bg-primary);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
     color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 }
 
 .ladder-tab-btn:hover:not(.active) {
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
 }
 
 .tab-icon {
@@ -662,55 +691,63 @@ body {
     display: flex;
     gap: 16px;
     align-items: center;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-left: auto;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.875rem;
+    gap: 8px;
+    font-size: 0.85rem;
     color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .legend-icon {
-    font-size: 1rem;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
 .ladder-chart {
     position: relative;
-    min-height: 720px;
-    margin-top: 20px;
+    min-height: 600px;
+    margin-top: 24px;
     background: linear-gradient(to bottom,
-        rgba(168, 85, 247, 0.08) 0%,
-        rgba(168, 85, 247, 0.08) 12.5%,
-        rgba(219, 39, 119, 0.08) 12.5%,
-        rgba(219, 39, 119, 0.08) 25%,
-        rgba(236, 72, 153, 0.08) 25%,
-        rgba(236, 72, 153, 0.08) 37.5%,
-        rgba(239, 68, 68, 0.08) 37.5%,
-        rgba(239, 68, 68, 0.08) 50%,
-        rgba(251, 146, 60, 0.08) 50%,
-        rgba(251, 146, 60, 0.08) 62.5%,
-        rgba(250, 204, 21, 0.08) 62.5%,
-        rgba(250, 204, 21, 0.08) 75%,
-        rgba(34, 197, 94, 0.08) 75%,
-        rgba(34, 197, 94, 0.08) 87.5%,
-        rgba(156, 163, 175, 0.08) 87.5%,
-        rgba(156, 163, 175, 0.08) 100%
+        rgba(168, 85, 247, 0.03) 0%,
+        rgba(168, 85, 247, 0.03) 12.5%,
+        rgba(219, 39, 119, 0.03) 12.5%,
+        rgba(219, 39, 119, 0.03) 25%,
+        rgba(236, 72, 153, 0.03) 25%,
+        rgba(236, 72, 153, 0.03) 37.5%,
+        rgba(239, 68, 68, 0.03) 37.5%,
+        rgba(239, 68, 68, 0.03) 50%,
+        rgba(251, 146, 60, 0.03) 50%,
+        rgba(251, 146, 60, 0.03) 62.5%,
+        rgba(250, 204, 21, 0.03) 62.5%,
+        rgba(250, 204, 21, 0.03) 75%,
+        rgba(34, 197, 94, 0.03) 75%,
+        rgba(34, 197, 94, 0.03) 87.5%,
+        rgba(156, 163, 175, 0.03) 87.5%,
+        rgba(156, 163, 175, 0.03) 100%
     );
-    border-radius: 12px;
+    border-radius: 16px;
     border: 1px solid var(--border-color);
     overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .ladder-row {
     height: 12.5%;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
     position: relative;
-    padding: 0 20px;
-    transition: all 0.3s;
+    padding: 12px 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ladder-row:last-child {
@@ -718,45 +755,53 @@ body {
 }
 
 .ladder-row:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(59, 130, 246, 0.04);
 }
 
 .ladder-label {
-    width: 150px;
+    width: 130px;
     flex-shrink: 0;
-    padding-right: 20px;
+    padding-right: 12px;
 }
 
 .level-badge {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    min-height: 60px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    border: 1px solid transparent;
+    min-height: 50px;
     width: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.level-badge:hover {
+    background: var(--bg-tertiary);
+    border-color: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .level-icon {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     flex-shrink: 0;
-    width: 32px;
+    width: 28px;
     text-align: center;
 }
 
 .level-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    line-height: 1.2;
+    gap: 1px;
+    line-height: 1.15;
     flex: 1;
 }
 
 .level-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-primary);
     white-space: nowrap;
@@ -765,8 +810,8 @@ body {
 }
 
 .level-range {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 500;
     color: var(--text-muted);
     white-space: nowrap;
 }
@@ -777,7 +822,8 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 16px 0;
+    padding: 8px 0;
+    margin: 0 12px;
 }
 
 .wpm-scale {
@@ -789,7 +835,8 @@ body {
     justify-content: space-between;
     font-size: 0.7rem;
     color: var(--text-muted);
-    padding: 0 10px;
+    padding: 0 8px;
+    font-weight: 500;
 }
 
 .ladder-row:last-child .wpm-scale {
@@ -802,7 +849,7 @@ body {
 
 .scatter-points {
     width: 100%;
-    height: 50px;
+    height: 44px;
     position: relative;
     display: flex;
     align-items: center;
@@ -818,7 +865,7 @@ body {
 @keyframes pointFadeIn {
     from {
         opacity: 0;
-        transform: translateY(-20px) scale(0.8);
+        transform: translateY(-15px) scale(0.8);
     }
     to {
         opacity: 1;
@@ -831,24 +878,24 @@ body {
     height: 32px;
     border-radius: 50%;
     border: 2.5px solid white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: white;
 }
 
 /* 当前用户特殊标记 */
 .user-avatar-point.current-user-point img {
-    border: 3px solid var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.3);
-    animation: currentUserPulse 2s ease-in-out infinite;
+    border: 2.5px solid var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(59, 130, 246, 0.2);
+    animation: currentUserPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes currentUserPulse {
     0%, 100% {
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(59, 130, 246, 0.2);
     }
     50% {
-        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3), 0 4px 16px rgba(59, 130, 246, 0.5);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 }
 
@@ -857,33 +904,34 @@ body {
 }
 
 .user-avatar-point:hover img {
-    transform: scale(1.6) translateY(-8px);
+    transform: scale(1.4) translateY(-6px);
     border-color: var(--primary-color);
-    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
 .user-avatar-point.current-user-point:hover img {
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 8px 24px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .user-avatar-point .tooltip {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 12px);
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(17, 24, 39, 0.95);
+    background: rgba(17, 24, 39, 0.98);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: white;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.8125rem;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s, transform 0.3s;
     z-index: 1001;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    line-height: 1.4;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    line-height: 1.5;
 }
 
 .user-avatar-point .tooltip::after {
@@ -893,7 +941,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-bottom-color: rgba(17, 24, 39, 0.95);
+    border-bottom-color: rgba(17, 24, 39, 0.98);
 }
 
 .user-avatar-point:hover .tooltip {
@@ -914,20 +962,24 @@ body {
 .ladder-count {
     width: 60px;
     text-align: right;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
     flex-shrink: 0;
 }
 
 .ladder-count-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 4px 10px;
-    background: rgba(59, 130, 246, 0.1);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
     color: var(--primary-color);
     border-radius: 12px;
-    font-size: 0.8125rem;
+    font-size: 0.8rem;
     font-weight: 700;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05);
 }
 
 /* 活动统计样式 - 优化视觉效果 */
@@ -1586,19 +1638,58 @@ body {
         font-size: 1.75rem;
     }
 
+    .ladder-section {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .ladder-section h2 {
+        font-size: 1.25rem;
+        margin-bottom: 16px;
+    }
+
+    .ladder-controls {
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .ladder-tabs {
+        width: 100%;
+        gap: 6px;
+    }
+
+    .ladder-tab-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        flex: 1;
+    }
+
+    .ladder-legend {
+        width: 100%;
+        margin-left: 0;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .legend-item {
+        font-size: 0.75rem;
+        gap: 4px;
+    }
+
     .ladder-chart {
         min-height: 800px;
     }
 
     .ladder-label {
-        width: 100px;
+        width: 90px;
         font-size: 0.7rem;
     }
 
     .level-badge {
-        flex-direction: column;
-        gap: 4px;
-        padding: 8px;
+        gap: 8px;
+        padding: 8px 10px;
         min-height: 50px;
     }
 
@@ -1607,12 +1698,24 @@ body {
     }
 
     .level-name {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
+    }
+
+    .level-range {
+        font-size: 0.65rem;
     }
 
     .user-avatar-point img {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .scatter-points {
+        height: 40px;
+    }
+
+    .ladder-count {
+        width: 50px;
     }
 
     .activity-stats {
