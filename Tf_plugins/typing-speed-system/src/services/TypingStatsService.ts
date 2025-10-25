@@ -36,18 +36,16 @@ export interface RankingItem {
  */
 export class TypingStatsService {
     private ctx: Context;
-    private recordService: TypingRecordService;
 
-    constructor(ctx: Context, recordService: TypingRecordService) {
+    constructor(ctx: Context, _recordService: TypingRecordService) {
         this.ctx = ctx;
-        this.recordService = recordService;
     }
 
     /**
      * 更新用户统计数据
      */
     async updateUserStats(uid: number, domainId: string): Promise<void> {
-        // 获取用户所有记录
+        // 获取用户所有记录（全域统一，获取该用户在任何域的所有记录）
         const records = await this.ctx.db.collection('typing.records' as any)
             .find({ uid })
             .toArray();
@@ -59,11 +57,13 @@ export class TypingStatsService {
         const avgWpm = Math.round(records.reduce((sum, r) => sum + r.wpm, 0) / records.length);
         const lastRecordAt = new Date(Math.max(...records.map((r) => r.createdAt.getTime())));
 
-        // 更新或插入统计记录（uid + domainId 组合作为查询条件）
+        // 更新或插入统计记录（uid 作为唯一键，全域统一数据）
         await this.ctx.db.collection('typing.stats' as any).updateOne(
-            { uid, domainId },
+            { uid },
             {
                 $set: {
+                    uid,
+                    domainId,
                     maxWpm,
                     avgWpm,
                     totalRecords: records.length,
@@ -78,18 +78,18 @@ export class TypingStatsService {
     /**
      * 获取用户统计数据
      */
-    async getUserStats(uid: number, domainId?: string): Promise<TypingUserStats | null> {
-        const query = domainId ? { uid, domainId } : { uid };
-        return await this.ctx.db.collection('typing.stats' as any).findOne(query);
+    async getUserStats(uid: number, _domainId?: string): Promise<TypingUserStats | null> {
+        // 全域统一数据，只需按 uid 查询
+        return await this.ctx.db.collection('typing.stats' as any).findOne({ uid });
     }
 
     /**
      * 获取最高速度排行榜
      */
-    async getMaxWpmRanking(limit: number = 50, domainId?: string): Promise<TypingUserStats[]> {
-        const query = domainId ? { domainId } : {};
+    async getMaxWpmRanking(limit: number = 50, _domainId?: string): Promise<TypingUserStats[]> {
+        // 全域统一数据，不需要过滤 domainId
         return await this.ctx.db.collection('typing.stats' as any)
-            .find(query)
+            .find({})
             .sort({ maxWpm: -1, lastUpdated: 1 })
             .limit(limit)
             .toArray();
@@ -98,10 +98,10 @@ export class TypingStatsService {
     /**
      * 获取平均速度排行榜
      */
-    async getAvgWpmRanking(limit: number = 50, domainId?: string): Promise<TypingUserStats[]> {
-        const query = domainId ? { domainId } : {};
+    async getAvgWpmRanking(limit: number = 50, _domainId?: string): Promise<TypingUserStats[]> {
+        // 全域统一数据，不需要过滤 domainId
         return await this.ctx.db.collection('typing.stats' as any)
-            .find(query)
+            .find({})
             .sort({ avgWpm: -1, lastUpdated: 1 })
             .limit(limit)
             .toArray();
@@ -110,25 +110,32 @@ export class TypingStatsService {
     /**
      * 获取进步最快排行榜（本周 vs 上周）
      */
-    async getImprovementRanking(limit: number = 50, domainId?: string): Promise<Array<TypingUserStats & { improvement: number }>> {
+    async getImprovementRanking(limit: number = 50, _domainId?: string): Promise<Array<TypingUserStats & { improvement: number }>> {
         const thisWeek = this.getWeekString(new Date());
         const lastWeek = this.getWeekString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
-        // 获取所有用户统计
-        const query = domainId ? { domainId } : {};
+        // 获取所有用户统计（全域统一数据）
         const allStats = await this.ctx.db.collection('typing.stats' as any)
-            .find(query)
+            .find({})
             .toArray();
 
-        const improvements = [];
+        const improvements: Array<TypingUserStats & { improvement: number }> = [];
 
-        for (const stats of allStats) {
-            // 获取本周和上周的快照
-            const thisWeekSnapshot = await this.ctx.db.collection('typing.weekly_snapshots' as any)
-                .findOne({ uid: stats.uid, week: thisWeek });
-            const lastWeekSnapshot = await this.ctx.db.collection('typing.weekly_snapshots' as any)
-                .findOne({ uid: stats.uid, week: lastWeek });
+        // 并行获取所有用户的快照数据
+        const snapshotsPromises = allStats.map((stats) =>
+            Promise.all([
+                this.ctx.db.collection('typing.weekly_snapshots' as any).findOne({ uid: stats.uid, week: thisWeek }),
+                this.ctx.db.collection('typing.weekly_snapshots' as any).findOne({ uid: stats.uid, week: lastWeek }),
+            ]).then(([thisWeekSnapshot, lastWeekSnapshot]) => ({
+                stats,
+                thisWeekSnapshot,
+                lastWeekSnapshot,
+            })),
+        );
 
+        const snapshots = await Promise.all(snapshotsPromises);
+
+        for (const { stats, thisWeekSnapshot, lastWeekSnapshot } of snapshots) {
             if (thisWeekSnapshot && lastWeekSnapshot) {
                 const improvement = thisWeekSnapshot.avgWpm - lastWeekSnapshot.avgWpm;
                 improvements.push({
@@ -180,22 +187,16 @@ export class TypingStatsService {
     /**
      * 获取用户排名
      */
-    async getUserRank(uid: number, type: 'max' | 'avg' = 'max', domainId?: string): Promise<number | null> {
-        const userStats = await this.getUserStats(uid, domainId);
+    async getUserRank(uid: number, type: 'max' | 'avg' = 'max', _domainId?: string): Promise<number | null> {
+        const userStats = await this.getUserStats(uid);
         if (!userStats) return null;
 
         const field = type === 'max' ? 'maxWpm' : 'avgWpm';
         const value = type === 'max' ? userStats.maxWpm : userStats.avgWpm;
 
-        const query: any = {
-            [field]: { $gt: value },
-        };
-        if (domainId) {
-            query.domainId = domainId;
-        }
-
+        // 全域统一数据，只需查询比该用户更高的记录数
         const higherRankCount = await this.ctx.db.collection('typing.stats' as any)
-            .countDocuments(query);
+            .countDocuments({ [field]: { $gt: value } });
 
         return higherRankCount + 1;
     }

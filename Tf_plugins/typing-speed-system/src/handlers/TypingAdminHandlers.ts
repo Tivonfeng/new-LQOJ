@@ -219,10 +219,10 @@ export class TypingAdminHandler extends Handler {
                 .find({})
                 .toArray();
 
-            // 按 uid + domainId 组合提取唯一用户
-            const userDomainPairs = [...new Set(allRecords.map((r) => `${r.uid}:${r.domainId}`))];
+            // 按 uid 提取唯一用户（全域统一数据）
+            const validUids = [...new Set(allRecords.map((r) => r.uid))];
 
-            if (userDomainPairs.length === 0) {
+            if (validUids.length === 0) {
                 // 如果没有任何记录，清空统计表和快照表（全域）
                 await this.ctx.db.collection('typing.stats' as any).deleteMany({});
                 await this.ctx.db.collection('typing.weekly_snapshots' as any).deleteMany({});
@@ -236,19 +236,15 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            // 重新计算每个用户的统计
+            // 重新计算每个用户的统计（全域统一）
             let updated = 0;
-            for (const pair of userDomainPairs) {
-                const [uidStr, domainId] = pair.split(':');
-                const uid = Number.parseInt(uidStr);
-                await statsService.updateUserStats(uid, domainId);
+            for (const uid of validUids) {
+                await statsService.updateUserStats(uid, this.domain._id);
                 await statsService.updateWeeklySnapshot(uid);
                 updated++;
             }
 
             // 删除没有对应记录的统计数据（全域）
-            // 获取所有应该存在的 uid 列表
-            const validUids = [...new Set(allRecords.map((r) => r.uid))];
             await this.ctx.db.collection('typing.stats' as any).deleteMany({
                 uid: { $nin: validUids },
             });

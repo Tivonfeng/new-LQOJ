@@ -43,19 +43,17 @@ export interface ProgressData {
 export class TypingAnalyticsService {
     private ctx: Context;
     private recordService: TypingRecordService;
-    private statsService: TypingStatsService;
 
-    constructor(ctx: Context, recordService: TypingRecordService, statsService: TypingStatsService) {
+    constructor(ctx: Context, recordService: TypingRecordService, _statsService: TypingStatsService) {
         this.ctx = ctx;
         this.recordService = recordService;
-        this.statsService = statsService;
     }
 
     /**
      * 获取全局统计数据
      */
     async getGlobalStats(): Promise<GlobalStats> {
-        // 今日记录数
+        // 今日记录数（全域统一）
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -64,7 +62,7 @@ export class TypingAnalyticsService {
                 createdAt: { $gte: today },
             });
 
-        // 获取所有统计数据
+        // 获取所有统计数据（全域统一）
         const allStats = await this.ctx.db.collection('typing.stats' as any)
             .find({})
             .toArray();
@@ -134,7 +132,17 @@ export class TypingAnalyticsService {
             .find({})
             .toArray();
 
-        return allStats.map((s) => ({
+        // 按 uid 去重，保留最新的记录
+        const uniqueStatsMap: { [uid: number]: any } = {};
+        allStats.forEach((stat: any) => {
+            const uid = stat.uid as number;
+            const existing = uniqueStatsMap[uid];
+            if (!existing || (stat.lastUpdated && existing.lastUpdated && stat.lastUpdated > existing.lastUpdated)) {
+                uniqueStatsMap[uid] = stat;
+            }
+        });
+
+        return Object.values(uniqueStatsMap).map((s: any) => ({
             uid: s.uid,
             avgWpm: s.avgWpm,
             maxWpm: s.maxWpm,

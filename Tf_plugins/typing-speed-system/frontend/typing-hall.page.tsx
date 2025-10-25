@@ -225,23 +225,24 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
                   </span>
                 </div>
                 <div className="scatter-points">
-                  {users.map((point, pointIndex) => {
+                  {users.map((point) => {
                     const user = udocs[point.uid];
                     if (!user) return null;
 
                     const wpm = speedType === 'avg' ? point.avgWpm : point.maxWpm;
                     const position = calculatePosition(wpm, range.min, actualMax);
-                    const yOffset = (Math.random() - 0.5) * 30;
+                    // 基于 uid 生成伪随机的 yOffset，确保同一用户在重新渲染时始终显示在同一位置
+                    const yOffset = ((point.uid * 7919) % 61 - 30.5) * (30 / 30.5);
                     const isCurrentUser = currentUserId === point.uid;
 
                     return (
                       <div
-                        key={`${point.uid}-${pointIndex}`}
+                        key={point.uid}
                         className={`user-avatar-point ${isCurrentUser ? 'current-user-point' : ''}`}
                         style={{
                           left: `${position}%`,
                           transform: `translateY(${yOffset}px)`,
-                          animationDelay: `${index * 0.1 + pointIndex * 0.05}s`,
+                          animationDelay: `${index * 0.1}s`,
                         }}
                       >
                         <img src={user.avatarUrl} alt={user.uname || user.displayName} />

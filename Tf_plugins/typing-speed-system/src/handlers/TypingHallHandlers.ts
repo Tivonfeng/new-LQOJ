@@ -130,12 +130,12 @@ export class TypingRankingHandler extends Handler {
         let total = 0;
 
         if (type === 'improvement') {
-            // 进步排行榜（暂不使用 domainId 过滤）
+            // 进步排行榜（全域统一数据）
             const allImprovements = await statsService.getImprovementRanking(1000);
             total = allImprovements.length;
             users = allImprovements.slice(skip, skip + limit);
         } else {
-            // 最高速度或平均速度排行榜（暂不使用 domainId 过滤）
+            // 最高速度或平均速度排行榜（全域统一数据）
             const sortField = type === 'max' ? 'maxWpm' : 'avgWpm';
             users = await this.ctx.db.collection('typing.stats' as any)
                 .find({})

@@ -65,12 +65,12 @@ export default async function apply(ctx: Context, config: any = {}) {
             { key: { domainId: 1, createdAt: -1 }, name: 'domainId_createdAt' },
         );
 
-        // 为统计创建索引 (uid + domainId 组合唯一)
+        // 为统计创建索引 (uid 唯一，全域统一数据)
         await ctx.db.ensureIndexes(
             ctx.db.collection('typing.stats' as any),
-            { key: { uid: 1, domainId: 1 }, name: 'uid_domainId', unique: true },
-            { key: { domainId: 1, maxWpm: -1 }, name: 'domainId_maxWpm' },
-            { key: { domainId: 1, avgWpm: -1 }, name: 'domainId_avgWpm' },
+            { key: { uid: 1 }, name: 'uid', unique: true },
+            { key: { maxWpm: -1 }, name: 'maxWpm' },
+            { key: { avgWpm: -1 }, name: 'avgWpm' },
         );
 
         // 为周快照创建索引
