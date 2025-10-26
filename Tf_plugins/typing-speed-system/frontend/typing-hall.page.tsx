@@ -373,9 +373,9 @@ const BonusExplanation: React.FC = () => {
       details: [
         { level: '打字小匠 (20-50 WPM)', points: '+100分' },
         { level: '键速高手 (50-80 WPM)', points: '+200分' },
-        { level: '打字宗师 (80-110 WPM)', points: '+300分' },
-        { level: '键速侠客 (110-140 WPM)', points: '+400分' },
-        { level: '打字战神 (140-170 WPM)', points: '+500分' },
+        { level: '键速闪电 (80-110 WPM)', points: '+300分' },
+        { level: '键速狂人 (110-140 WPM)', points: '+400分' },
+        { level: '键速王者 (140-170 WPM)', points: '+500分' },
         { level: '键速狂魔 (170-200 WPM)', points: '+600分' },
         { level: '终极之神 (200+ WPM)', points: '+700分' },
       ],

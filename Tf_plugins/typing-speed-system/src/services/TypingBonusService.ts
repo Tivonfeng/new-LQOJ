@@ -86,7 +86,7 @@ export class TypingBonusService {
         },
         {
             level: 4,
-            name: '打字宗师',
+            name: '键速闪电',
             range: '80-110',
             min: 80,
             max: 110,
@@ -94,7 +94,7 @@ export class TypingBonusService {
         },
         {
             level: 5,
-            name: '键速侠客',
+            name: '键速狂人',
             range: '110-140',
             min: 110,
             max: 140,
@@ -102,7 +102,7 @@ export class TypingBonusService {
         },
         {
             level: 6,
-            name: '打字战神',
+            name: '键速王者',
             range: '140-170',
             min: 140,
             max: 170,
