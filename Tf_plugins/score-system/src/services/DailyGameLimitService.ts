@@ -7,7 +7,7 @@ export interface DailyGameLimit {
     _id?: any;
     uid: number;
     domainId: string;
-    gameType: 'lottery' | 'dice' | 'rps';
+    gameType: 'lottery' | 'dice' | 'rps' | 'goldminer';
     date: string; // YYYY-MM-DD格式
     playCount: number;
     lastPlayTime: Date;
@@ -39,7 +39,7 @@ export class DailyGameLimitService {
      * @param gameType 游戏类型
      * @returns 是否可以游戏以及剩余次数
      */
-    async checkCanPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps'): Promise<{
+    async checkCanPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps' | 'goldminer'): Promise<{
         canPlay: boolean;
         remainingPlays: number;
         totalPlays: number;
@@ -76,7 +76,7 @@ export class DailyGameLimitService {
      * @param gameType 游戏类型
      * @returns 是否记录成功
      */
-    async recordPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps'): Promise<boolean> {
+    async recordPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps' | 'goldminer'): Promise<boolean> {
         const today = this.getTodayString();
         const now = new Date();
 

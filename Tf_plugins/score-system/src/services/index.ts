@@ -68,3 +68,10 @@ export {
 export {
     WeightCalculationService,
 } from './WeightCalculationService';
+
+// 黄金矿工游戏服务
+export {
+    type GoldMinerRecord,
+    GoldMinerService,
+    type UserGoldMinerStats,
+} from './GoldMinerService';

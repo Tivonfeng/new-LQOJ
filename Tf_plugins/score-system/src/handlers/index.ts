@@ -13,6 +13,15 @@ export {
     DicePlayHandler,
 } from './DiceGameHandlers';
 
+// 黄金矿工游戏相关处理器
+export {
+    GoldMinerAdminHandler,
+    GoldMinerGameHandler,
+    GoldMinerHistoryHandler,
+    GoldMinerStartHandler,
+    GoldMinerSubmitHandler,
+} from './GoldMinerHandlers';
+
 // 抽奖相关处理器
 export {
     LotteryAdminHandler,
