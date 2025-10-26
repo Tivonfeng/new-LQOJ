@@ -89,13 +89,13 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_11',
     name: 'Avatar 11',
-    imageUrl: '/avatar_preset_11.jpeg',
+    imageUrl: '/avatar_preset_11.jpg',
     description: 'Preset avatar 11',
   },
   {
     id: 'avatar_12',
     name: 'Avatar 12',
-    imageUrl: '/avatar_preset_12.jpeg',
+    imageUrl: '/avatar_preset_12.jpg',
     description: 'Preset avatar 12',
   },
   {
@@ -107,7 +107,7 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_14',
     name: 'Avatar 14',
-    imageUrl: '/avatar_preset_14.jpeg',
+    imageUrl: '/avatar_preset_14.jpg',
     description: 'Preset avatar 14',
   },
   {
@@ -119,31 +119,31 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_16',
     name: 'Avatar 16',
-    imageUrl: '/avatar_preset_16.jpeg',
+    imageUrl: '/avatar_preset_16.jpg',
     description: 'Preset avatar 16',
   },
   {
     id: 'avatar_17',
     name: 'Avatar 17',
-    imageUrl: '/avatar_preset_17.jpeg',
+    imageUrl: '/avatar_preset_17.jpg',
     description: 'Preset avatar 17',
   },
   {
     id: 'avatar_18',
     name: 'Avatar 18',
-    imageUrl: '/avatar_preset_18.jpeg',
+    imageUrl: '/avatar_preset_18.jpg',
     description: 'Preset avatar 18',
   },
   {
     id: 'avatar_19',
     name: 'Avatar 19',
-    imageUrl: '/avatar_preset_19.jpeg',
+    imageUrl: '/avatar_preset_19.jpg',
     description: 'Preset avatar 19',
   },
   {
     id: 'avatar_20',
     name: 'Avatar 20',
-    imageUrl: '/avatar_preset_20.jpeg',
+    imageUrl: '/avatar_preset_20.jpg',
     description: 'Preset avatar 20',
   },
 
@@ -151,19 +151,19 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_21',
     name: 'Avatar 21',
-    imageUrl: '/avatar_preset_21.jpeg',
+    imageUrl: '/avatar_preset_21.jpg',
     description: 'Preset avatar 21',
   },
   {
     id: 'avatar_22',
     name: 'Avatar 22',
-    imageUrl: '/avatar_preset_22.jpeg',
+    imageUrl: '/avatar_preset_22.jpg',
     description: 'Preset avatar 22',
   },
   {
     id: 'avatar_23',
     name: 'Avatar 23',
-    imageUrl: '/avatar_preset_23.jpeg',
+    imageUrl: '/avatar_preset_23.jpg',
     description: 'Preset avatar 23',
   },
   {
@@ -175,7 +175,7 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_25',
     name: 'Avatar 25',
-    imageUrl: '/avatar_preset_25.jpeg',
+    imageUrl: '/avatar_preset_25.jpg',
     description: 'Preset avatar 25',
   },
   {
@@ -187,7 +187,7 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_27',
     name: 'Avatar 27',
-    imageUrl: '/avatar_preset_27.jpeg',
+    imageUrl: '/avatar_preset_27.jpg',
     description: 'Preset avatar 27',
   },
   {
@@ -199,7 +199,7 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'avatar_29',
     name: 'Avatar 29',
-    imageUrl: '/avatar_preset_29.jpeg',
+    imageUrl: '/avatar_preset_29.jpg',
     description: 'Preset avatar 29',
   },
   {
@@ -207,6 +207,30 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     name: 'Avatar 30',
     imageUrl: '/avatar_preset_30.jpeg',
     description: 'Preset avatar 30',
+  },
+  {
+    id: 'avatar_31',
+    name: 'Avatar 31',
+    imageUrl: '/avatar_preset_31.jpg',
+    description: 'Preset avatar 31',
+  },
+  {
+    id: 'avatar_32',
+    name: 'Avatar 32',
+    imageUrl: '/avatar_preset_32.jpeg',
+    description: 'Preset avatar 32',
+  },
+  {
+    id: 'avatar_33',
+    name: 'Avatar 33',
+    imageUrl: '/avatar_preset_33.jpeg',
+    description: 'Preset avatar 33',
+  },
+  {
+    id: 'avatar_34',
+    name: 'Avatar 34',
+    imageUrl: '/avatar_preset_34.jpg',
+    description: 'Preset avatar 34',
   },
 ];
 
