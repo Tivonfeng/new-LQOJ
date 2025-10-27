@@ -11,7 +11,7 @@ export interface GoldMinerRecord {
     entryFee: number; // 入场费 (100积分)
     duration: number; // 游戏时长 (30s or 60s)
     score: number; // 游戏得分 (抓取的积分总和)
-    items: Array<{ type: string; value: number; catchTime: number }>; // 抓取的物品
+    items: Array<{ type: string, value: number, catchTime: number }>; // 抓取的物品
     netProfit: number; // 净收益 (score - entryFee)
     gameTime: Date;
 }
@@ -51,8 +51,8 @@ export class GoldMinerService {
 
     // 游戏配置常量
     private static readonly ENTRY_FEES = {
-        '30': 100,  // 30秒模式入场费
-        '60': 200,  // 60秒模式入场费
+        30: 100, // 30秒模式入场费
+        60: 200, // 60秒模式入场费
     };
 
     private static readonly DURATIONS = [30, 60]; // 可选时长
@@ -130,7 +130,7 @@ export class GoldMinerService {
         domainId: string,
         uid: number,
         duration: number,
-        items: Array<{ type: string; catchTime: number }>,
+        items: Array<{ type: string, catchTime: number }>,
     ): Promise<{
         success: boolean;
         message?: string;
@@ -145,7 +145,7 @@ export class GoldMinerService {
 
         // 计算总得分
         let totalScore = 0;
-        const processedItems: Array<{ type: string; value: number; catchTime: number }> = [];
+        const processedItems: Array<{ type: string, value: number, catchTime: number }> = [];
 
         for (const item of items) {
             const itemConfig = GoldMinerService.MINE_ITEMS.find((i) => i.type === item.type);

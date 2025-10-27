@@ -214,6 +214,52 @@
                 </div>
             </div>
         </div>
+
+        <!-- Row 3: Gold Miner -->
+        <div class="games-row">
+            <!-- Gold Miner Spotlight -->
+            <div class="game-card goldminer-spotlight">
+                <div class="spotlight-header">
+                    <div class="spotlight-title">
+                        <span class="title-icon">⛏️</span>
+                        <h2>{{ _('Gold Miner') }}</h2>
+                        <span class="subtitle">{{ _('Dig for Treasures') }}</span>
+                    </div>
+                </div>
+
+                <div class="game-content">
+                    <div class="game-info">
+                        <div class="game-icon">💎</div>
+                        <div class="game-text">
+                            <h3>{{ _('Mine for Gold') }}</h3>
+                            <p>{{ _('Collect treasures in 30/60 seconds') }}</p>
+                        </div>
+                        <div class="game-reward">
+                            <span class="reward-amount">100</span>
+                            <span class="reward-unit">🏴</span>
+                        </div>
+                    </div>
+                    <div class="game-features">
+                        <span class="feature-tag goldminer">{{ _('Time Challenge') }}</span>
+                        <span class="feature-tag">{{ _('Instant Rewards') }}</span>
+                        {% if isLoggedIn %}
+                        <span class="plays-remaining">{{ _('Remaining:') }} {{ gameRemainingPlays.goldminer }}/{{ maxDailyPlays }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="game-cta">
+                    <a href="{{ url('gold_miner') }}" class="cta-button goldminer-style">
+                        <span class="cta-icon">⛏️</span>
+                        <span class="cta-text">{{ _('Start Mining') }}</span>
+                        <span class="cta-arrow">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Placeholder for balanced grid -->
+            <div></div>
+        </div>
     </div>
 
     <!-- Content Grid -->
@@ -1184,6 +1230,39 @@
 .cta-button.rps-style:hover {
     background: linear-gradient(135deg, #9333ea, #7c3aed);
     box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+}
+
+/* Gold Miner Spotlight */
+.goldminer-spotlight {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+}
+
+.goldminer-spotlight::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">⛏️</text></svg>') no-repeat;
+    background-size: contain;
+    opacity: 0.3;
+}
+
+.feature-tag.goldminer {
+    background: rgba(251, 146, 60, 0.2);
+    color: #ea580c;
+    border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+.cta-button.goldminer-style {
+    background: linear-gradient(135deg, #c2410c 0%, #d97706 100%);
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+}
+
+.cta-button.goldminer-style:hover {
+    background: linear-gradient(135deg, #a16207, #b45309);
+    box-shadow: 0 6px 20px rgba(217, 119, 6, 0.5);
 }
 
 /* Quick Check-in Styles */

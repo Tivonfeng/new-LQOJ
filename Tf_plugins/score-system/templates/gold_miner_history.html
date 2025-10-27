@@ -1,0 +1,500 @@
+{% set page_name = "gold_miner_history" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">📋 {{ _('Game History') }}</h1>
+            <p class="hero-subtitle">{{ _('Your mining records') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('gold_miner') }}" class="nav-button">{{ _('Back to Game') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Stats Summary -->
+    <div class="stats-summary">
+        <div class="summary-card">
+            <div class="summary-icon">⛏️</div>
+            <div class="summary-info">
+                <div class="summary-label">{{ _('Total Games') }}</div>
+                <div class="summary-value">{{ userStats.totalGames }}</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">💰</div>
+            <div class="summary-info">
+                <div class="summary-label">{{ _('Total Score') }}</div>
+                <div class="summary-value">{{ userStats.totalScore }}</div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">📈</div>
+            <div class="summary-info">
+                <div class="summary-label">{{ _('Total Profit') }}</div>
+                <div class="summary-value {{ 'positive' if userStats.totalProfit >= 0 else 'negative' }}">
+                    {{ userStats.totalProfit > 0 and '+' or '' }}{{ userStats.totalProfit }}
+                </div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon">🏆</div>
+            <div class="summary-info">
+                <div class="summary-label">{{ _('Profit Rate') }}</div>
+                <div class="summary-value">{{ profitRate }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Records Table -->
+    <div class="records-section">
+        <div class="section-header">
+            <h2>{{ _('Game Records') }}</h2>
+            <div class="record-count">{{ total }} {{ _('total records') }}</div>
+        </div>
+
+        {% if records %}
+        <div class="table-container">
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('Duration') }}</th>
+                        <th>{{ _('Score') }}</th>
+                        <th>{{ _('Items') }}</th>
+                        <th>{{ _('Profit') }}</th>
+                        <th>{{ _('Game Time') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr class="{{ 'profit' if record.netProfit > 0 else 'loss' }}">
+                        <td class="duration-col">
+                            <span class="duration-badge">{{ record.durationText }}</span>
+                        </td>
+                        <td class="score-col">
+                            <span class="score-value">{{ record.score }}</span>
+                        </td>
+                        <td class="items-col">
+                            <span class="item-count">{{ record.itemsCount }}</span>
+                            {% for item in record.items %}
+                            <span class="item-tag">{{ item.type }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="profit-col">
+                            <span class="profit-badge {{ 'positive' if record.netProfit > 0 else 'negative' }}">
+                                {{ record.profitText }}
+                            </span>
+                        </td>
+                        <td class="time-col">{{ record.gameTime }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if totalPages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url('gold_miner_history', {'page': 1}) }}" class="page-btn">{{ _('First') }}</a>
+            <a href="{{ url('gold_miner_history', {'page': page - 1}) }}" class="page-btn">{{ _('Previous') }}</a>
+            {% endif %}
+
+            {% for p in range(max(1, page - 2), min(totalPages + 1, page + 3)) %}
+            <a href="{{ url('gold_miner_history', {'page': p}) }}"
+               class="page-btn {{ 'active' if p == page else '' }}">{{ p }}</a>
+            {% endfor %}
+
+            {% if page < totalPages %}
+            <a href="{{ url('gold_miner_history', {'page': page + 1}) }}" class="page-btn">{{ _('Next') }}</a>
+            <a href="{{ url('gold_miner_history', {'page': totalPages}) }}" class="page-btn">{{ _('Last') }}</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>{{ _('No game records yet') }}</p>
+            <a href="{{ url('gold_miner') }}" class="start-btn">{{ _('Start Playing') }}</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+:root {
+    --primary: #6366f1;
+    --success: #10b981;
+    --error: #ef4444;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --border: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+    color: white;
+    padding: 40px 0 32px;
+    margin-bottom: 32px;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s;
+}
+
+.summary-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.summary-icon {
+    font-size: 2rem;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.summary-value.positive {
+    color: var(--success);
+}
+
+.summary-value.negative {
+    color: var(--error);
+}
+
+.records-section {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.record-count {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.records-table thead {
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border);
+}
+
+.records-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.records-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s;
+}
+
+.records-table tbody tr:hover {
+    background: var(--bg-secondary);
+}
+
+.records-table tbody tr.profit {
+    border-left: 4px solid var(--success);
+}
+
+.records-table tbody tr.loss {
+    border-left: 4px solid var(--error);
+}
+
+.records-table td {
+    padding: 12px 16px;
+}
+
+.duration-col {
+    width: 100px;
+}
+
+.duration-badge {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+    color: var(--primary);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.score-col {
+    width: 80px;
+}
+
+.score-value {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1.125rem;
+}
+
+.items-col {
+    width: 200px;
+}
+
+.item-count {
+    display: inline-block;
+    background: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-weight: 600;
+}
+
+.item-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    background: #f0f9ff;
+    color: #0369a1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+}
+
+.profit-col {
+    width: 100px;
+}
+
+.profit-badge {
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.profit-badge.positive {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    color: var(--success);
+}
+
+.profit-badge.negative {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    color: var(--error);
+}
+
+.time-col {
+    width: 140px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.page-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.page-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary);
+}
+
+.page-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.start-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), #4f46e5);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .records-table {
+        font-size: 0.85rem;
+    }
+
+    .records-table th,
+    .records-table td {
+        padding: 8px 12px;
+    }
+
+    .item-tag {
+        font-size: 0.65rem;
+    }
+
+    .main-container {
+        padding: 0 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .records-section {
+        padding: 16px;
+    }
+
+    .duration-col,
+    .score-col,
+    .profit-col,
+    .time-col {
+        width: auto;
+    }
+}
+</style>
+
+{% endblock %}

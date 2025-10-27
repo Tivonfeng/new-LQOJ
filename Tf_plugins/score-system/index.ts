@@ -13,6 +13,11 @@ import {
     DiceGameHandler,
     DiceHistoryHandler,
     DicePlayHandler,
+    GoldMinerAdminHandler,
+    GoldMinerGameHandler,
+    GoldMinerHistoryHandler,
+    GoldMinerStartHandler,
+    GoldMinerSubmitHandler,
     LotteryAdminHandler,
     LotteryClaimHandler,
     LotteryDrawHandler,
@@ -35,6 +40,7 @@ import {
 import {
     type DailyCheckInRecord,
     type DiceGameRecord,
+    type GoldMinerRecord,
     type LotteryPrize,
     type LotteryRecord,
     type RPSGameRecord,
@@ -44,6 +50,7 @@ import {
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
+    type UserGoldMinerStats,
     type UserLotteryStats,
     type UserRPSStats,
     type UserScore,
@@ -80,6 +87,8 @@ declare module 'hydrooj' {
         'transfer.records': TransferRecord;
         'checkin.records': DailyCheckInRecord;
         'checkin.stats': UserCheckInStats;
+        'goldminer.records': GoldMinerRecord;
+        'goldminer.stats': UserGoldMinerStats;
     }
 
     interface EventMap {
@@ -249,6 +258,13 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 签到系统路由
     ctx.Route('daily_checkin', '/score/checkin', CheckInHandler);
+
+    // 黄金矿工游戏路由
+    ctx.Route('gold_miner', '/score/goldminer', GoldMinerGameHandler);
+    ctx.Route('gold_miner_start', '/score/goldminer/start', GoldMinerStartHandler);
+    ctx.Route('gold_miner_submit', '/score/goldminer/submit', GoldMinerSubmitHandler);
+    ctx.Route('gold_miner_history', '/score/goldminer/history', GoldMinerHistoryHandler);
+    ctx.Route('gold_miner_admin', '/score/goldminer/admin', GoldMinerAdminHandler);
 
     // 注入导航栏 - 添加权限检查，只有内部用户可见
     ctx.injectUI('Nav', 'score_hall', {

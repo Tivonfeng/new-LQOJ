@@ -1,0 +1,385 @@
+{% set page_name = "gold_miner_admin" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">⚙️ {{ _('Gold Miner Admin Panel') }}</h1>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- System Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🎮</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.totalGames }}</div>
+                <div class="stat-label">{{ _('Total Games') }}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.totalPlayers }}</div>
+                <div class="stat-label">{{ _('Total Players') }}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.total30sGames }}</div>
+                <div class="stat-label">{{ _('30s Games') }}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏱️⏱️</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.total60sGames }}</div>
+                <div class="stat-label">{{ _('60s Games') }}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.totalScoreEarned }}</div>
+                <div class="stat-label">{{ _('Score Earned') }}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🪙</div>
+            <div class="stat-info">
+                <div class="stat-value">{{ systemStats.totalEntryFeesCollected }}</div>
+                <div class="stat-label">{{ _('Entry Fees') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Games Section -->
+    <div class="section">
+        <div class="section-header">
+            <h2>{{ _('Recent Games') }}</h2>
+            <span class="count">{{ recentGames|length }} {{ _('games') }}</span>
+        </div>
+
+        {% if recentGames %}
+        <div class="table-container">
+            <table class="games-table">
+                <thead>
+                    <tr>
+                        <th>{{ _('User ID') }}</th>
+                        <th>{{ _('Username') }}</th>
+                        <th>{{ _('Duration') }}</th>
+                        <th>{{ _('Score') }}</th>
+                        <th>{{ _('Items') }}</th>
+                        <th>{{ _('Profit') }}</th>
+                        <th>{{ _('Game Time') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in recentGames %}
+                    <tr>
+                        <td class="uid-col">
+                            {% set user = udocs|selectattr('_id', '==', game.uid)|first %}
+                            {{ game.uid }}
+                        </td>
+                        <td class="username-col">
+                            {% set user = udocs|selectattr('_id', '==', game.uid)|first %}
+                            {% if user %}
+                                {{ user.uname }}
+                            {% else %}
+                                <span class="unknown">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td class="duration-col">
+                            <span class="badge">{{ game.durationText }}</span>
+                        </td>
+                        <td class="score-col">
+                            <span class="score">{{ game.score }}</span>
+                        </td>
+                        <td class="items-col">
+                            <span class="item-count">{{ game.itemsCount }}</span>
+                        </td>
+                        <td class="profit-col">
+                            <span class="profit {{ 'positive' if game.netProfit > 0 else 'negative' }}">
+                                {{ game.netProfit > 0 and '+' or '' }}{{ game.netProfit }}
+                            </span>
+                        </td>
+                        <td class="time-col">{{ game.gameTime }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <p>{{ _('No games yet') }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+:root {
+    --primary: #6366f1;
+    --success: #10b981;
+    --error: #ef4444;
+    --bg: #f9fafb;
+    --border: #e5e7eb;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    color: white;
+    padding: 40px 0 32px;
+    margin-bottom: 32px;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    font-size: 2rem;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.section {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.count {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.games-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.games-table thead {
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+}
+
+.games-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #111827;
+}
+
+.games-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+
+.games-table tbody tr:hover {
+    background: var(--bg);
+}
+
+.games-table td {
+    padding: 12px 16px;
+}
+
+.uid-col {
+    width: 80px;
+    font-weight: 600;
+}
+
+.username-col {
+    width: 120px;
+}
+
+.unknown {
+    color: #9ca3af;
+}
+
+.duration-col {
+    width: 100px;
+}
+
+.badge {
+    display: inline-block;
+    background: #f0f9ff;
+    color: #0369a1;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.score-col {
+    width: 80px;
+}
+
+.score {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.items-col {
+    width: 80px;
+}
+
+.item-count {
+    display: inline-block;
+    background: var(--bg);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.profit-col {
+    width: 100px;
+}
+
+.profit {
+    font-weight: 700;
+}
+
+.profit.positive {
+    color: var(--success);
+}
+
+.profit.negative {
+    color: var(--error);
+}
+
+.time-col {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 0 16px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .section {
+        padding: 16px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .games-table {
+        font-size: 0.85rem;
+    }
+
+    .games-table th,
+    .games-table td {
+        padding: 8px 12px;
+    }
+
+    .uid-col,
+    .username-col,
+    .duration-col,
+    .score-col,
+    .items-col,
+    .profit-col {
+        width: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+    }
+}
+</style>
+
+{% endblock %}

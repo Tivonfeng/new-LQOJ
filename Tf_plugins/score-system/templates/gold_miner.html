@@ -1,0 +1,1249 @@
+{% set page_name = "gold_miner" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">⛏️ {{ _('Gold Miner') }}</h1>
+            <p class="hero-subtitle">{{ _('Dig for gold and treasures!') }}</p>
+        </div>
+        <div class="hero-nav">
+            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Back to Score Hall') }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- User Stats -->
+    <div class="stats-spotlight">
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">{{ currentCoins or 0 }}</div>
+                <div class="stat-label">{{ _('Current Coins') }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⛏️</div>
+                <div class="stat-value">{{ userStats.totalGames or 0 }}</div>
+                <div class="stat-label">{{ _('Total Games') }}</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">{{ userStats.bestScore or 0 }}</div>
+                <div class="stat-label">{{ _('Best Score') }}</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value">{{ profitRate or 0 }}%</div>
+                <div class="stat-label">{{ _('Profit Rate') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Section -->
+    <div class="game-spotlight">
+        <div class="spotlight-header">
+            <div class="spotlight-title">
+                <span class="title-icon">⛏️</span>
+                <h2>{{ _('Mine for Gold') }}</h2>
+                <span class="subtitle">{{ _('Choose your game mode') }}</span>
+            </div>
+        </div>
+
+        <div class="game-content">
+            <!-- Game Rules Card -->
+            <div class="rules-overview">
+                <div class="rule-item">
+                    <span class="rule-icon">⏱️</span>
+                    <span class="rule-text">{{ _('Game Duration') }}: 30s / 60s</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-icon">💵</span>
+                    <span class="rule-text">{{ _('Entry Fee') }}: 100 / 200 🏴</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-icon">💎</span>
+                    <span class="rule-text">{{ _('Collect treasures to earn') }}</span>
+                </div>
+                <div class="rule-item daily-limit">
+                    <span class="rule-icon">📅</span>
+                    <span class="rule-text">{{ _('Daily Plays:') }} {{ dailyLimit.remainingPlays }}/{{ dailyLimit.maxPlays }}</span>
+                </div>
+            </div>
+
+            <!-- Game Modes -->
+            <div class="game-modes">
+                {% if canPlay30s %}
+                <div class="mode-card mode-30s">
+                    <div class="mode-icon">⏱️</div>
+                    <div class="mode-info">
+                        <h3>{{ _('30 Second Mode') }}</h3>
+                        <p class="mode-desc">{{ _('Quick and exciting!') }}</p>
+                        <div class="mode-stats">
+                            <span class="stat">💰 100 🏴</span>
+                            <span class="stat">🎯 {{ userStats.total30sGames or 0 }} played</span>
+                        </div>
+                    </div>
+                    <button class="start-game-btn" onclick="startGame(30)">
+                        <span class="btn-icon">▶️</span>
+                        {{ _('Start Game') }}
+                    </button>
+                </div>
+                {% else %}
+                <div class="mode-card mode-disabled">
+                    <div class="mode-icon">⏱️</div>
+                    <h3>{{ _('30 Second Mode') }}</h3>
+                    <p class="insufficient">{{ _('Need 100') }} 🏴</p>
+                </div>
+                {% endif %}
+
+                {% if canPlay60s %}
+                <div class="mode-card mode-60s">
+                    <div class="mode-icon">⏱️⏱️</div>
+                    <div class="mode-info">
+                        <h3>{{ _('60 Second Mode') }}</h3>
+                        <p class="mode-desc">{{ _('More time, more rewards!') }}</p>
+                        <div class="mode-stats">
+                            <span class="stat">💰 200 🏴</span>
+                            <span class="stat">🎯 {{ userStats.total60sGames or 0 }} played</span>
+                        </div>
+                    </div>
+                    <button class="start-game-btn" onclick="startGame(60)">
+                        <span class="btn-icon">▶️</span>
+                        {{ _('Start Game') }}
+                    </button>
+                </div>
+                {% else %}
+                <div class="mode-card mode-disabled">
+                    <div class="mode-icon">⏱️⏱️</div>
+                    <h3>{{ _('60 Second Mode') }}</h3>
+                    <p class="insufficient">{{ _('Need 200') }} 🏴</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Game Status -->
+            <div id="gameStatus"></div>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Personal Stats -->
+        <div class="stats-section">
+            <div class="section-header">
+                <h3>{{ _('Your Statistics') }}</h3>
+                <a href="{{ url('gold_miner_history') }}" class="view-all-link">{{ _('View History') }} →</a>
+            </div>
+
+            <div class="stats-list">
+                <div class="stat-item">
+                    <span class="stat-label">{{ _('Total Games') }}</span>
+                    <span class="stat-value">{{ userStats.totalGames or 0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">{{ _('Total Score') }}</span>
+                    <span class="stat-value">{{ userStats.totalScore or 0 }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">{{ _('Total Profit') }}</span>
+                    <span class="stat-value {{ 'positive' if userStats.totalProfit >= 0 else 'negative' }}">
+                        {{ userStats.totalProfit > 0 and '+' or '' }}{{ userStats.totalProfit or 0 }}
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">{{ _('Best Profit') }}</span>
+                    <span class="stat-value positive">{{ userStats.bestProfit or 0 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Games -->
+        {% if recentGames %}
+        <div class="recent-section">
+            <div class="section-header">
+                <h3>{{ _('Recent Games') }}</h3>
+                <span class="games-count">{{ recentGames|length }} {{ _('games') }}</span>
+            </div>
+
+            <div class="recent-list">
+                {% for game in recentGames %}
+                <div class="recent-item {{ 'profit' if game.netProfit > 0 else 'loss' }}">
+                    <div class="game-icon">{{ game.duration == 30 and '⏱️' or '⏱️⏱️' }}</div>
+                    <div class="game-info">
+                        <div class="game-header">
+                            <span class="duration">{{ game.duration }}s</span>
+                            <span class="items">{{ game.items.length }} items</span>
+                        </div>
+                        <div class="game-time">{{ game.gameTime }}</div>
+                    </div>
+                    <div class="game-profit {{ 'positive' if game.netProfit > 0 else 'negative' }}">
+                        {{ game.netProfit > 0 and '+' or '' }}{{ game.netProfit }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Navigation -->
+        <div class="navigation-section">
+            <div class="nav-card">
+                <h4>{{ _('Quick Navigation') }}</h4>
+                <div class="nav-buttons">
+                    <a href="{{ url('score_hall') }}" class="nav-btn">
+                        <span class="btn-icon">🏠</span>
+                        <span class="btn-text">{{ _('Score Hall') }}</span>
+                    </a>
+                    <a href="{{ url('gold_miner_history') }}" class="nav-btn">
+                        <span class="btn-icon">📋</span>
+                        <span class="btn-text">{{ _('Game History') }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game JavaScript -->
+<script>
+let gameInProgress = false;
+
+// 游戏配置
+const GameConfig = {
+    // 时间设置
+    duration: 30,
+
+    // 爪子设置
+    armLength: 80,
+    clawRadius: 25,
+    maxSwingAngle: 45,
+    swingSpeed: 1.5,
+
+    // 下降/上升速度
+    dropSpeed: 200,
+    liftSpeed: 200,
+    maxDepth: 300,
+
+    // 碰撞检测
+    collisionRadius: 45,
+
+    // 钻石设置
+    diamondCount: 12,
+    diamondRadius: 20
+};
+
+// 游戏状态
+const GameState = {
+    IDLE: 'idle',
+    SWINGING: 'swinging',
+    DROPPING: 'dropping',
+    LIFTING: 'lifting',
+    GAME_OVER: 'gameover'
+};
+
+class ClawGame {
+    constructor(canvasId, duration) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.duration = duration;
+        this.gameConfig = { ...GameConfig, duration };
+
+        // 游戏状态
+        this.gameState = GameState.SWINGING;
+        this.caughtItems = [];
+        this.startTime = Date.now();
+        this.endTime = this.startTime + (duration * 1000);
+
+        // 爪子状态
+        this.clawAngle = 0;
+        this.clawDepth = 0;
+        this.swingDirection = 1; // 1: 右, -1: 左
+        this.clawGripped = false;
+        this.grippedItem = null;
+
+        // 钻石列表
+        this.diamonds = [];
+        this.generateDiamonds();
+
+        // 初始化事件监听
+        this.setupEventListeners();
+    }
+
+    generateDiamonds() {
+        const treasures = [
+            { type: 'diamond', emoji: '💎', value: 300, color: '#3b82f6' },
+            { type: 'gold_large', emoji: '🏅', value: 150, color: '#fbbf24' },
+            { type: 'gold_medium', emoji: '🪙', value: 80, color: '#f59e0b' },
+            { type: 'gold_small', emoji: '💛', value: 30, color: '#fcd34d' },
+            { type: 'stone', emoji: '🪨', value: 5, color: '#9ca3af' }
+        ];
+
+        for (let i = 0; i < this.gameConfig.diamondCount; i++) {
+            const treasure = treasures[Math.floor(Math.random() * treasures.length)];
+            this.diamonds.push({
+                x: Math.random() * (this.canvas.width - 100) + 50,
+                y: Math.random() * (this.canvas.height - 150) + 100,
+                caught: false,
+                ...treasure
+            });
+        }
+    }
+
+    setupEventListeners() {
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                this.triggerClaw();
+            }
+        });
+    }
+
+    triggerClaw() {
+        if (this.gameState !== GameState.SWINGING) return;
+
+        this.gameState = GameState.DROPPING;
+        this.clawGripped = false;
+        this.grippedItem = null;
+    }
+
+    update() {
+        const elapsed = (Date.now() - this.startTime) / 1000;
+
+        // 检查游戏是否结束
+        if (elapsed >= this.duration) {
+            this.gameState = GameState.GAME_OVER;
+            return;
+        }
+
+        switch (this.gameState) {
+            case GameState.SWINGING:
+                this.updateSwinging(elapsed);
+                break;
+            case GameState.DROPPING:
+                this.updateDropping();
+                break;
+            case GameState.LIFTING:
+                this.updateLifting();
+                break;
+        }
+    }
+
+    updateSwinging(elapsed) {
+        // 简谐运动
+        this.clawAngle = Math.sin(elapsed * this.gameConfig.swingSpeed * Math.PI)
+                         * this.gameConfig.maxSwingAngle;
+        this.clawDepth = 0;
+    }
+
+    updateDropping() {
+        this.clawDepth += this.gameConfig.dropSpeed / 60; // 假设60fps
+
+        // 检测碰撞
+        if (!this.clawGripped) {
+            const clawPos = this.getClawPosition();
+            for (let diamond of this.diamonds) {
+                if (!diamond.caught && this.checkCollision(clawPos, diamond)) {
+                    this.clawGripped = true;
+                    this.grippedItem = diamond;
+                    diamond.caught = true;
+                    break;
+                }
+            }
+        }
+
+        // 到达底部
+        if (this.clawDepth >= this.gameConfig.maxDepth) {
+            this.gameState = GameState.LIFTING;
+        }
+    }
+
+    updateLifting() {
+        this.clawDepth -= this.gameConfig.liftSpeed / 60;
+
+        // 回到顶部
+        if (this.clawDepth <= 0) {
+            this.clawDepth = 0;
+            if (this.grippedItem) {
+                this.caughtItems.push({
+                    type: this.grippedItem.type,
+                    value: this.grippedItem.value,
+                    catchTime: (Date.now() - this.startTime) / 1000
+                });
+            }
+            this.gameState = GameState.SWINGING;
+            this.clawGripped = false;
+            this.grippedItem = null;
+        }
+    }
+
+    checkCollision(clawPos, diamond) {
+        const dist = Math.hypot(clawPos.x - diamond.x, clawPos.y - diamond.y);
+        return dist < (this.gameConfig.clawRadius + this.gameConfig.diamondRadius);
+    }
+
+    getClawPosition() {
+        const centerX = this.canvas.width / 2;
+        const centerY = 40;
+        const armLength = this.gameConfig.armLength;
+
+        // 角度转弧度
+        const angle = this.clawAngle * Math.PI / 180;
+
+        // 计算臂的末端（爪子上升/下降的参考点）
+        const armEndX = centerX + Math.sin(angle) * armLength;
+        const armEndY = centerY + Math.cos(angle) * armLength;
+
+        // 爪子在下降时直接向下，加上深度偏移
+        const clawX = armEndX;
+        const clawY = armEndY + this.clawDepth;
+
+        return { x: clawX, y: clawY };
+    }
+
+    draw() {
+        // 清空画布
+        this.ctx.fillStyle = '#f0fdf4';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 绘制边框
+        this.ctx.strokeStyle = '#10b981';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(20, 80, this.canvas.width - 40, this.canvas.height - 100);
+
+        // 绘制钻石
+        this.drawDiamonds();
+
+        // 绘制爪子机械结构
+        this.drawClawMachine();
+
+        // 绘制已抓取的物品数量
+        this.drawStats();
+    }
+
+    drawDiamonds() {
+        for (let diamond of this.diamonds) {
+            if (!diamond.caught) {
+                const x = diamond.x;
+                const y = diamond.y;
+
+                // 绘制光晕
+                this.ctx.fillStyle = diamond.color + '33';
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, this.gameConfig.diamondRadius + 10, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // 绘制钻石
+                this.ctx.fillStyle = diamond.color;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, this.gameConfig.diamondRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // 绘制闪光
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                this.ctx.beginPath();
+                this.ctx.arc(x - 5, y - 5, 5, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // 绘制emoji
+                this.ctx.font = '20px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(diamond.emoji, x, y);
+            }
+        }
+    }
+
+    drawClawMachine() {
+        const centerX = this.canvas.width / 2;
+        const centerY = 40;
+
+        // 绘制支架（顶部固定点）
+        this.ctx.fillStyle = '#1f2937';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 12, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 绘制支架边框
+        this.ctx.strokeStyle = '#111827';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // 绘制弧形臂（从支架出发）
+        const armLength = this.gameConfig.armLength;
+        const angle = this.clawAngle * Math.PI / 180; // 转换为弧度
+
+        // 计算臂的终点（爪子的顶部）
+        const armEndX = centerX + Math.sin(angle) * armLength;
+        const armEndY = centerY + Math.cos(angle) * armLength;
+
+        // 绘制机械臂（圆弧线条）
+        this.ctx.strokeStyle = '#374151';
+        this.ctx.lineWidth = 8;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY);
+        this.ctx.lineTo(armEndX, armEndY);
+        this.ctx.stroke();
+
+        // 绘制臂上的齿轮位置（装饰）
+        this.ctx.fillStyle = '#4b5563';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX + Math.sin(angle) * 20, centerY + Math.cos(angle) * 20, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 计算爪子位置（在臂的末端，加上下降距离）
+        const clawPos = this.getClawPosition();
+
+        // 绘制从臂末端到爪子的连接线
+        this.ctx.strokeStyle = '#4b5563';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(armEndX, armEndY);
+        this.ctx.lineTo(clawPos.x, clawPos.y);
+        this.ctx.stroke();
+
+        // 绘制爪子
+        this.drawClaw(clawPos);
+    }
+
+    drawClaw(pos) {
+        const { x, y } = pos;
+        const clawSize = this.gameConfig.clawRadius;
+
+        // 爪子颜色（如果抓住了东西变深）
+        const clawColor = this.clawGripped ? '#dc2626' : '#ef4444';
+
+        // 绘制爪子主体
+        this.ctx.fillStyle = clawColor;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, clawSize, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 绘制爪子外边框
+        this.ctx.strokeStyle = '#991b1b';
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
+
+        // 绘制爪子的三个手指（从爪子周围延伸）
+        const fingerLength = clawSize + 12;
+        const fingerRadius = 6;
+        const fingerColor = '#fca5a5';
+
+        for (let i = 0; i < 3; i++) {
+            // 均匀分布三个手指
+            const fingerAngle = (i * (Math.PI * 2 / 3)) - Math.PI / 6;
+            const fx = x + Math.cos(fingerAngle) * fingerLength;
+            const fy = y + Math.sin(fingerAngle) * fingerLength;
+
+            // 绘制手指
+            this.ctx.fillStyle = fingerColor;
+            this.ctx.beginPath();
+            this.ctx.arc(fx, fy, fingerRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // 手指边框
+            this.ctx.strokeStyle = '#dc2626';
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
+
+            // 绘制从爪子中心到手指的连接线
+            this.ctx.strokeStyle = '#fda4af';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, y);
+            this.ctx.lineTo(fx, fy);
+            this.ctx.stroke();
+        }
+
+        // 如果已抓住物品，显示在爪子中
+        if (this.clawGripped && this.grippedItem) {
+            this.ctx.font = 'bold 18px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.grippedItem.emoji, x, y);
+        }
+
+        // 绘制爪子的闪光效果
+        if (this.gameState === GameState.SWINGING) {
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            this.ctx.beginPath();
+            this.ctx.arc(x - clawSize * 0.4, y - clawSize * 0.4, clawSize * 0.3, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+
+    drawStats() {
+        const elapsed = (Date.now() - this.startTime) / 1000;
+        const remaining = Math.max(0, this.duration - elapsed);
+        const totalScore = this.caughtItems.reduce((sum, item) => sum + item.value, 0);
+
+        // 绘制计时器
+        this.ctx.fillStyle = '#1f2937';
+        this.ctx.font = 'bold 24px Arial';
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText(`⏱️ ${remaining.toFixed(1)}s`, this.canvas.width - 20, 30);
+
+        // 绘制已抓取数量和积分
+        this.ctx.font = '18px Arial';
+        this.ctx.fillText(`🎯 ${this.caughtItems.length} items`, this.canvas.width - 20, 60);
+        this.ctx.fillText(`💰 ${totalScore} pts`, this.canvas.width - 20, 85);
+
+        // 绘制提示文本
+        if (this.gameState === GameState.SWINGING) {
+            this.ctx.fillStyle = '#059669';
+            this.ctx.font = '14px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('按 SPACE 触发爪子', this.canvas.width / 2, this.canvas.height - 20);
+        }
+    }
+
+    run() {
+        const gameLoop = () => {
+            this.update();
+            this.draw();
+
+            if (this.gameState !== GameState.GAME_OVER) {
+                requestAnimationFrame(gameLoop);
+            } else {
+                this.onGameOver();
+            }
+        };
+
+        gameLoop();
+    }
+
+    onGameOver() {
+        const gameStatus = document.getElementById('gameStatus');
+        const totalScore = this.caughtItems.reduce((sum, item) => sum + item.value, 0);
+
+        gameStatus.innerHTML = `
+            <div class="game-result">
+                <div class="result-card success">
+                    <div class="result-header">
+                        <span class="result-icon">🎉</span>
+                        <h3>游戏结束！</h3>
+                    </div>
+                    <div class="result-details">
+                        <div class="result-item">
+                            <span class="detail-label">抓取物品数:</span>
+                            <span class="detail-value">${this.caughtItems.length}</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="detail-label">总得分:</span>
+                            <span class="detail-value">${totalScore}</span>
+                        </div>
+                    </div>
+                    <div class="result-footer">
+                        <button class="submit-btn" onclick="submitGameResult(${this.duration}, '${JSON.stringify(this.caughtItems).replace(/"/g, '&quot;')}')">
+                            提交结果
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getResults() {
+        return this.caughtItems.map(item => ({
+            type: item.type,
+            catchTime: item.catchTime
+        }));
+    }
+}
+
+async function startGame(duration) {
+    if (gameInProgress) return;
+    gameInProgress = true;
+
+    try {
+        const response = await fetch('{{ url("gold_miner_start") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showGameUI(duration, result.entryFee);
+        } else {
+            showError(result.message);
+            gameInProgress = false;
+        }
+    } catch (error) {
+        showError('Network error');
+        gameInProgress = false;
+    }
+}
+
+function showGameUI(duration, entryFee) {
+    const gameStatus = document.getElementById('gameStatus');
+    gameStatus.innerHTML = `
+        <div class="game-ui">
+            <canvas id="gameCanvas" width="500" height="450" style="display: block; margin: 0 auto; border: 2px solid #ddd; border-radius: 12px;"></canvas>
+        </div>
+    `;
+
+    // 启动游戏
+    const game = new ClawGame('gameCanvas', duration);
+    game.run();
+}
+
+function showError(message) {
+    const gameStatus = document.getElementById('gameStatus');
+    gameStatus.innerHTML = `
+        <div class="error-message">
+            <span class="error-icon">❌</span>
+            <p>${message}</p>
+        </div>
+    `;
+    setTimeout(() => {
+        gameStatus.innerHTML = '';
+        gameInProgress = false;
+    }, 2000);
+}
+
+async function submitGameResult(duration, itemsJson) {
+    try {
+        const items = JSON.parse(itemsJson);
+        const response = await fetch('{{ url("gold_miner_submit") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration, items })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('游戏结果已提交！获得 ' + (result.result?.score || 0) + ' 积分');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('提交失败');
+    }
+}
+</script>
+
+<style>
+:root {
+    --primary: #6366f1;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+    color: white;
+    padding: 40px 0 32px;
+    margin-bottom: 32px;
+    border-radius: 0 0 16px 16px;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+}
+
+.hero-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+}
+
+.nav-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.nav-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.stats-spotlight {
+    margin-bottom: 32px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+.stat-card.primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+    border: 1px solid var(--primary);
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border: 1px solid var(--success);
+}
+
+.stat-card.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border: 1px solid var(--warning);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.game-spotlight {
+    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 20px 25px rgba(0,0,0,0.1);
+}
+
+.spotlight-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.title-icon {
+    font-size: 2rem;
+}
+
+.spotlight-title h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.subtitle {
+    background: var(--warning);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.rules-overview {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 24px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    flex-wrap: wrap;
+}
+
+.rule-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.rule-item.daily-limit {
+    background: rgba(34, 197, 94, 0.1);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.rule-icon {
+    font-size: 1.25rem;
+}
+
+.game-modes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.mode-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.mode-card:not(.mode-disabled):hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+}
+
+.mode-card.mode-disabled {
+    opacity: 0.6;
+    background: #f3f4f6;
+}
+
+.mode-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.mode-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+}
+
+.mode-desc {
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+.mode-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 0.875rem;
+}
+
+.start-game-btn {
+    background: linear-gradient(135deg, var(--primary), #4f46e5);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.start-game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.insufficient {
+    color: var(--error);
+    font-weight: 600;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.stats-section, .recent-section, .navigation-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.view-all-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.view-all-link:hover {
+    text-decoration: underline;
+}
+
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 12px;
+}
+
+.stat-item .stat-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stat-item .stat-value {
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.stat-value.positive {
+    color: var(--success);
+}
+
+.stat-value.negative {
+    color: var(--error);
+}
+
+.recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.recent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s;
+}
+
+.recent-item.profit {
+    border-left: 4px solid var(--success);
+}
+
+.recent-item.loss {
+    border-left: 4px solid var(--error);
+}
+
+.recent-item:hover {
+    background: #f9fafb;
+}
+
+.game-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+}
+
+.game-info {
+    flex: 1;
+}
+
+.game-header {
+    display: flex;
+    gap: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.game-time {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.game-profit {
+    font-weight: 700;
+    min-width: 50px;
+    text-align: right;
+}
+
+.game-profit.positive {
+    color: var(--success);
+}
+
+.game-profit.negative {
+    color: var(--error);
+}
+
+.nav-card h4 {
+    margin: 0 0 16px 0;
+    font-size: 1.125rem;
+}
+
+.nav-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #111827;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    background: #f3f4f6;
+    border-color: var(--primary);
+    color: #111827;
+}
+
+.game-ui {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 24px;
+    text-align: center;
+}
+
+.game-ui canvas {
+    max-width: 100%;
+    height: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+.error-message {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), white);
+    border: 2px solid var(--error);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 24px;
+}
+
+.error-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.games-count {
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .game-modes {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-content {
+        flex-direction: column;
+        gap: 24px;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .rules-overview {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .main-container {
+        padding: 0 16px;
+    }
+
+    .game-area {
+        height: 200px;
+    }
+}
+</style>
+
+{% endblock %}
