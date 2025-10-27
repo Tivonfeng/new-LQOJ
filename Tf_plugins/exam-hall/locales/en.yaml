@@ -1,0 +1,22 @@
+__langname: English
+exam_hall: Exam Hall
+exam_hall_subtitle: Certificate Statistics, Leaderboard & Trend Analysis
+exam_total_certificates: Total Certificates
+exam_active_users: Active Users
+exam_avg_certificates: Average Certificates per User
+exam_categories: Total Categories
+exam_my_certificates: My Certificates
+exam_my_total: My Total Certificates
+exam_certificates: Certificates
+exam_my_rank: My Rank
+exam_no_rank_yet: No Rank Yet
+exam_leaderboard: Certificate Leaderboard
+exam_rank: Rank
+exam_user: User
+exam_certificates_count: Certificates
+exam_popular_categories: Popular Categories
+exam_no_data_yet: No Data Yet
+exam_admin: Administrator
+exam_upload_certificate: Upload Certificate
+exam_batch_import: Batch Import
+exam_manage_certificates: Manage Certificates

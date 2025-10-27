@@ -1,0 +1,26 @@
+{% extends "layout/basic.html" %}
+
+{% block title %}{{ _('exam_hall') }} - {{ this.config.server.name }}{% endblock %}
+
+{% block head %}
+<!-- React 应用样式已在前端 CSS 中定义 -->
+{% endblock %}
+
+{% block content %}
+<!-- React应用挂载点 -->
+<div id="exam-hall-react-app"></div>
+
+<script>
+  window.examHallData = {
+    domainStats: {{ (domainStats | json) | safe }},
+    userStats: {{ ((userStats | json) or 'null') | safe }},
+    userRank: {{ ((userRank | json) or 'null') | safe }},
+    leaderboard: {{ (leaderboard | json) | safe }},
+    popularCategories: {{ (popularCategories | json) | safe }},
+    growthTrend: {{ (growthTrend | json) | safe }},
+    newUsersStats: {{ (newUsersStats | json) | safe }},
+    isLoggedIn: {{ isLoggedIn | json }},
+    canManage: {{ canManage | json }},
+  };
+</script>
+{% endblock %}
