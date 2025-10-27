@@ -15,14 +15,12 @@
             </div>
             <div class="stat-badge">
                 <span class="stat-icon">⚡</span>
-                <span class="stat-text">{{ _('Avg') }}: {{ globalStats.avgWpm }} WPM</span>
+                <span class="stat-text">{{ _('Global Avg') }}: {{ globalStats.avgWpm }} WPM</span>
             </div>
-            {% if isLoggedIn and userStats.totalRecords > 0 %}
             <div class="stat-badge highlight">
                 <span class="stat-icon">🏆</span>
-                <span class="stat-text">{{ _('Your Best') }}: {{ userStats.maxWpm }} WPM</span>
+                <span class="stat-text">{{ _('Global Best') }}: {{ globalStats.maxWpm }} WPM</span>
             </div>
-            {% endif %}
             {% if canManage %}
             <div class="action-buttons">
                 <a href="{{ url('typing_admin') }}" class="admin-btn">⚙️ {{ _('Admin Panel') }}</a>
