@@ -15,14 +15,12 @@
             </div>
             <div class="stat-badge">
                 <span class="stat-icon">⚡</span>
-                <span class="stat-text">{{ _('Avg') }}: {{ globalStats.avgWpm }} WPM</span>
+                <span class="stat-text">{{ _('Global Avg') }}: {{ globalStats.avgWpm }} WPM</span>
             </div>
-            {% if isLoggedIn and userStats.totalRecords > 0 %}
             <div class="stat-badge highlight">
                 <span class="stat-icon">🏆</span>
-                <span class="stat-text">{{ _('Your Best') }}: {{ userStats.maxWpm }} WPM</span>
+                <span class="stat-text">{{ _('Global Best') }}: {{ globalStats.maxWpm }} WPM</span>
             </div>
-            {% endif %}
             {% if canManage %}
             <div class="action-buttons">
                 <a href="{{ url('typing_admin') }}" class="admin-btn">⚙️ {{ _('Admin Panel') }}</a>
@@ -756,6 +754,7 @@ body {
     position: relative;
     padding: 12px 16px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 不设置z-index，避免创建新的堆叠上下文 */
 }
 
 .ladder-row:last-child {
@@ -866,7 +865,7 @@ body {
     padding: 8px 0;
     margin: 0 12px;
     overflow: visible;
-    z-index: 1;
+    /* 移除z-index: 1，不在这里创建堆叠上下文 */
 }
 
 .ladder-track::before {
@@ -915,7 +914,8 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    z-index: 10;
+    z-index: auto;
+    /* 移除z-index，让tooltip能够自由浮动 */
 }
 
 .user-avatar-point {
@@ -923,6 +923,7 @@ body {
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: pointFadeIn 0.6s ease-out backwards;
+    z-index: auto;
 }
 
 @keyframes pointFadeIn {
@@ -934,6 +935,11 @@ body {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+}
+
+/* Hover时提升z-index，只在同一行内有效 */
+.user-avatar-point:hover {
+    z-index: 10 !important;
 }
 
 .user-avatar-point img {
@@ -972,10 +978,6 @@ body {
     }
 }
 
-.user-avatar-point:hover {
-    z-index: 1000 !important;
-}
-
 .user-avatar-point:hover img {
     transform: scale(1.4) translateY(-6px);
     border-color: var(--primary-color);
@@ -1002,7 +1004,7 @@ body {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s, transform 0.3s;
-    z-index: 1001;
+    z-index: 9999;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
     line-height: 1.5;
 }
