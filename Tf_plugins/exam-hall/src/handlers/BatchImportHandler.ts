@@ -132,7 +132,7 @@ export class BatchImportHandler extends Handler {
                         const importResult = await importService.importFromFile(filePath, sheetName);
 
                         // 保存导入历史记录
-                        const historyCollection = this.ctx.db.collection('exam.import_history');
+                        const historyCollection = this.ctx.db.collection('exam.import_history' as any);
                         await historyCollection.insertOne({
                             domainId: this.ctx.domain!._id,
                             importedBy: this.user._id,
@@ -200,7 +200,7 @@ export class ImportHistoryHandler extends Handler {
         const limit = (this.request.query?.limit as string) || '20';
 
         try {
-            const collection = this.ctx.db.collection('exam.import_history');
+            const collection = this.ctx.db.collection('exam.import_history' as any);
 
             const history = await collection
                 .find({})

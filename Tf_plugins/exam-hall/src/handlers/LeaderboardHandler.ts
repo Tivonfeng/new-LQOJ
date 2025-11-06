@@ -1,6 +1,25 @@
 import { Handler } from 'hydrooj';
 import CertificateLeaderboardService from '../services/CertificateLeaderboardService';
 
+// ============================================================================
+// 常量定义
+// ============================================================================
+const CONSTANTS = {
+    // 排行榜限制
+    MAX_LEADERBOARD_LIMIT: 500,
+    DEFAULT_LEADERBOARD_LIMIT: 50,
+    MAX_SKIP_OFFSET: 1000000,
+
+    // 趋势统计
+    MAX_TREND_DAYS: 365,
+    DEFAULT_TREND_DAYS: 30,
+    MIN_TREND_DAYS: 1,
+
+    // 热门分类
+    MAX_CATEGORIES_LIMIT: 100,
+    DEFAULT_CATEGORIES_LIMIT: 5,
+};
+
 /**
  * 排行榜处理器
  */
@@ -14,13 +33,13 @@ export class LeaderboardHandler extends Handler {
         const category = this.request.query?.category as string;
 
         // 参数验证和边界检查
-        let limit = Math.min(Math.max(1, Number.parseInt((this.request.query?.limit as string) || '50')), 500);
-        let skip = Math.max(0, Number.parseInt((this.request.query?.skip as string) || '0'));
+        let limit = Number.parseInt((this.request.query?.limit as string) || String(CONSTANTS.DEFAULT_LEADERBOARD_LIMIT));
+        if (Number.isNaN(limit) || limit < 1) limit = CONSTANTS.DEFAULT_LEADERBOARD_LIMIT;
+        limit = Math.min(limit, CONSTANTS.MAX_LEADERBOARD_LIMIT);
 
-        // 防止过大的 skip 值导致内存溢出
-        if (skip > 1000000) {
-            skip = 1000000;
-        }
+        let skip = Number.parseInt((this.request.query?.skip as string) || '0');
+        if (Number.isNaN(skip) || skip < 0) skip = 0;
+        if (skip > CONSTANTS.MAX_SKIP_OFFSET) skip = CONSTANTS.MAX_SKIP_OFFSET;
 
         try {
             const leaderboardService = new CertificateLeaderboardService(this.ctx);
@@ -78,6 +97,18 @@ export class UserRankHandler extends Handler {
             return;
         }
 
+        // 验证 UID 是有效的数字
+        const parsedUid = Number.parseInt(uid);
+        if (Number.isNaN(parsedUid) || parsedUid < 0) {
+            this.response.type = 'application/json';
+            this.response.status = 400;
+            this.response.body = {
+                success: false,
+                error: '无效的 uid 参数：必须是正整数',
+            };
+            return;
+        }
+
         try {
             const leaderboardService = new CertificateLeaderboardService(this.ctx);
 
@@ -85,11 +116,11 @@ export class UserRankHandler extends Handler {
 
             if (category) {
                 rankInfo = await leaderboardService.getCategoryRank(
-                    Number.parseInt(uid),
+                    parsedUid,
                     category as string,
                 );
             } else {
-                rankInfo = await leaderboardService.getUserRank(Number.parseInt(uid));
+                rankInfo = await leaderboardService.getUserRank(parsedUid);
             }
 
             if (!rankInfo) {
@@ -105,7 +136,7 @@ export class UserRankHandler extends Handler {
             this.response.type = 'application/json';
             this.response.body = {
                 success: true,
-                uid: Number.parseInt(uid),
+                uid: parsedUid,
                 rank: rankInfo.rank,
                 total: rankInfo.total,
                 category: category || null,
@@ -162,7 +193,9 @@ export class GrowthTrendHandler extends Handler {
         const type = (this.request.query?.type as string) || 'certificates';
 
         // 参数验证和边界检查：days 必须在 1 到 365 天之间
-        const days = Math.min(Math.max(1, Number.parseInt((this.request.query?.days as string) || '30')), 365);
+        let days = Number.parseInt((this.request.query?.days as string) || String(CONSTANTS.DEFAULT_TREND_DAYS));
+        if (Number.isNaN(days) || days < CONSTANTS.MIN_TREND_DAYS) days = CONSTANTS.DEFAULT_TREND_DAYS;
+        days = Math.min(days, CONSTANTS.MAX_TREND_DAYS);
 
         try {
             const leaderboardService = new CertificateLeaderboardService(this.ctx);
@@ -204,7 +237,9 @@ export class PopularCategoriesHandler extends Handler {
      */
     async get() {
         // 参数验证和边界检查：limit 必须在 1 到 100 之间
-        const limit = Math.min(Math.max(1, Number.parseInt((this.request.query?.limit as string) || '5')), 100);
+        let limit = Number.parseInt((this.request.query?.limit as string) || String(CONSTANTS.DEFAULT_CATEGORIES_LIMIT));
+        if (Number.isNaN(limit) || limit < 1) limit = CONSTANTS.DEFAULT_CATEGORIES_LIMIT;
+        limit = Math.min(limit, CONSTANTS.MAX_CATEGORIES_LIMIT);
 
         try {
             const leaderboardService = new CertificateLeaderboardService(this.ctx);

@@ -1,5 +1,3 @@
-import './exam-hall.page.css';
-
 import {
   BarElement,
   CategoryScale,
@@ -15,7 +13,14 @@ import {
 import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { createRoot } from 'react-dom/client';
+import type {
+  ExamHallData,
+  GrowthChartData,
+} from './types';
 
+// ============================================================================
+// 📊 Chart.js 注册
+// ============================================================================
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -27,69 +32,6 @@ ChartJS.register(
   Legend,
   Filler,
 );
-
-interface DomainStats {
-  totalCertificates: number;
-  totalUsers: number;
-  averageCertificatesPerUser: number;
-  categoryCount: number;
-}
-
-interface UserStats {
-  uid: number;
-  domainId: string;
-  totalCertificates: number;
-  topCategories: string[];
-  lastCertificateDate?: Date;
-}
-
-interface UserRank {
-  uid: number;
-  rank: number;
-  total: number;
-  category?: string;
-}
-
-interface LeaderboardEntry {
-  uid: number;
-  rank: number;
-  certificateCount: number;
-  topCategories: string[];
-}
-
-interface PopularCategory {
-  category: string;
-  count: number;
-}
-
-interface GrowthTrendPoint {
-  date: string;
-  count: number;
-}
-
-interface ExamHallData {
-  domainStats: DomainStats;
-  userStats: UserStats | null;
-  userRank: UserRank | null;
-  leaderboard: LeaderboardEntry[];
-  popularCategories: PopularCategory[];
-  growthTrend: GrowthTrendPoint[];
-  newUsersStats: { trend: GrowthTrendPoint[], count: number } | null;
-  isLoggedIn: boolean;
-  canManage: boolean;
-}
-
-interface GrowthChartData {
-  labels: string[];
-  datasets: Array<{
-    label: string;
-    data: number[];
-    borderColor?: string;
-    backgroundColor?: string;
-    fill?: boolean;
-    tension?: number;
-  }>;
-}
 
 const ExamHallApp: React.FC = () => {
   const [data, setData] = useState<ExamHallData | null>(null);
@@ -154,25 +96,32 @@ const ExamHallApp: React.FC = () => {
 
   return (
     <div className="exam-hall-react">
-      <div className="exam-hall-tabs">
-        <button
-          className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          📊 总览
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'leaderboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('leaderboard')}
-        >
-          🏆 排行榜详情
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'trend' ? 'active' : ''}`}
-          onClick={() => setActiveTab('trend')}
-        >
-          📈 趋势分析
-        </button>
+      <div className="exam-hall-header">
+        <div className="exam-hall-tabs">
+          <button
+            className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            📊 总览
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'leaderboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('leaderboard')}
+          >
+            🏆 排行榜详情
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'trend' ? 'active' : ''}`}
+            onClick={() => setActiveTab('trend')}
+          >
+            📈 趋势分析
+          </button>
+        </div>
+        {data.canManage && data.managementUrl && (
+          <a href={data.managementUrl} className="manage-button">
+            ⚙️ 证书管理
+          </a>
+        )}
       </div>
 
       {activeTab === 'overview' && (

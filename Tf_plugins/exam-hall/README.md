@@ -140,8 +140,7 @@ uid,certificateName,certifyingBody,category,level,score,issueDate,expiryDate,not
 - `issueDate`: 颁发日期（YYYY-MM-DD）
 
 **可选字段**:
-- `level`: 级别
-- `score`: 分数
+- `leve
 - `expiryDate`: 过期日期（YYYY-MM-DD）
 - `notes`: 备注
 

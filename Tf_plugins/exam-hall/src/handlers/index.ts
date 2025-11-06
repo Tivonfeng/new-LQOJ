@@ -16,6 +16,21 @@ export {
     CertificateUploadHandler,
 } from './CertificateHandler';
 
+// 证书管理后台处理器导出
+export {
+    CertificateManagementListHandler,
+    CertificateManagementPageHandler,
+} from './CertificateManagementHandler';
+
+// 预设管理处理器导出
+export {
+    PresetBatchDeleteHandler,
+    PresetCreateHandler,
+    PresetDetailHandler,
+    PresetListHandler,
+    PresetToggleHandler,
+} from './PresetHandler';
+
 // 赛考大厅主入口处理器
 export { ExamHallHandler } from './ExamHallHandler';
 

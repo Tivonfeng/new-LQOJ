@@ -5,13 +5,7 @@ import * as qiniu from 'qiniu';
 import { v4 as uuidv4 } from 'uuid';
 import { Logger } from 'hydrooj';
 
-export interface QiniuConfig {
-    accessKey: string;
-    secretKey: string;
-    bucket: string;
-    domain: string;
-    zone: string;
-}
+const logger = new Logger('exam-hall-qiniu');
 
 export interface UploadResult {
     success: boolean;
@@ -32,34 +26,41 @@ export interface DeleteResult {
  */
 export class QiniuStorageService {
     private mac: qiniu.auth.digest.Mac;
-    private config: any; // 七牛云 SDK 的 ConfigOptions 类型定义不完整
+    private config: any;
     private bucket: string;
     private domain: string;
     private bucketManager: qiniu.rs.BucketManager;
     private isInitialized: boolean = false;
 
-    constructor(qiniuConfig: QiniuConfig) {
+    // 七牛云配置 - 硬编码凭证
+    private readonly QINIU_ACCESS_KEY = 'KLk2UkLXhUIzuoollr8iJmAn_Hc6AeELiAEDfZCZ';
+    private readonly QINIU_SECRET_KEY = 'SLeJSaHzxbfkgfwdemojwo9AH8mOxCFonDgZCxP0';
+    private readonly QINIU_BUCKET = 'lq-exam-certificates';
+    private readonly QINIU_DOMAIN = 't4uiflb6g.hd-bkt.clouddn.com';
+    private readonly QINIU_ZONE = 'Zone_z0';
+
+    constructor() {
         try {
-            this.bucket = qiniuConfig.bucket;
-            this.domain = this.normalizeDomain(qiniuConfig.domain);
+            this.bucket = this.QINIU_BUCKET;
+            this.domain = this.normalizeDomain(this.QINIU_DOMAIN);
 
             // 初始化鉴权对象
             this.mac = new qiniu.auth.digest.Mac(
-                qiniuConfig.accessKey,
-                qiniuConfig.secretKey,
+                this.QINIU_ACCESS_KEY,
+                this.QINIU_SECRET_KEY,
             );
 
-            // 配置七牛云区域
-            this.config = new (qiniu.conf as any).ConfigOptions();
-            this.setZone(qiniuConfig.zone);
+            // 配置七牛云区域 - 正确使用 Config 而不是 ConfigOptions
+            this.config = new qiniu.conf.Config();
+            this.setZone(this.QINIU_ZONE);
 
             // 初始化 BucketManager
             this.bucketManager = new qiniu.rs.BucketManager(this.mac, this.config);
 
             this.isInitialized = true;
-            Logger.info('[ExamHall] 七牛云存储服务初始化成功');
+            logger.info('[ExamHall] 七牛云存储服务初始化成功');
         } catch (error: any) {
-            Logger.error(`[ExamHall] 七牛云初始化失败: ${error.message}`);
+            logger.error(`[ExamHall] 七牛云初始化失败: ${error.message}`);
             this.isInitialized = false;
         }
     }
@@ -77,26 +78,24 @@ export class QiniuStorageService {
     /**
      * 设置存储区域
      * 官方支持的区域常量：
-     * - Zone_cn_east_2: 华东（浙江）- 推荐默认
-     * - Zone_cn_south_1: 华南（广东）
-     * - Zone_cn_north_1: 华北（北京）
-     * - Zone_cn_northeast_1: 东北（吉林）
-     * - Zone_hk_main: 香港
-     * - Zone_us_east_1: 美国东部
-     * - Zone_us_west_1: 美国西部
      */
     private setZone(zone: string) {
         const zoneConfig = {
-            Zone_CN_East: (qiniu.zone as any).Zone_cn_east_2,
-            Zone_CN_South: (qiniu.zone as any).Zone_cn_south_1,
-            Zone_CN_North: (qiniu.zone as any).Zone_cn_north_1,
-            Zone_CN_Northeast: (qiniu.zone as any).Zone_cn_northeast_1,
-            Zone_HK: (qiniu.zone as any).Zone_hk_main,
-            Zone_US_East: (qiniu.zone as any).Zone_us_east_1,
-            Zone_US_West: (qiniu.zone as any).Zone_us_west_1,
+            Zone_z0: (qiniu.zone as any).Zone_z0,
+            Zone_z1: (qiniu.zone as any).Zone_z1,
+            Zone_z2: (qiniu.zone as any).Zone_z2,
+            Zone_as0: (qiniu.zone as any).Zone_as0,
+            Zone_na0: (qiniu.zone as any).Zone_na0,
+            Zone_cn_east_2: (qiniu.zone as any).Zone_cn_east_2,
+            Zone_cn_south_1: (qiniu.zone as any).Zone_cn_south_1,
+            Zone_cn_north_1: (qiniu.zone as any).Zone_cn_north_1,
+            Zone_cn_northeast_1: (qiniu.zone as any).Zone_cn_northeast_1,
+            Zone_hk_main: (qiniu.zone as any).Zone_hk_main,
+            Zone_us_east_1: (qiniu.zone as any).Zone_us_east_1,
+            Zone_us_west_1: (qiniu.zone as any).Zone_us_west_1,
         } as Record<string, any>;
 
-        this.config.zone = zoneConfig[zone] || zoneConfig.Zone_CN_East;
+        this.config.zone = zoneConfig[zone] || (qiniu.zone as any).Zone_z0;
     }
 
     /**
@@ -155,6 +154,10 @@ export class QiniuStorageService {
 
             // 执行上传
             return new Promise((resolve) => {
+                logger.info(`[ExamHall] 开始上传文件: key=${key}, filePath=${filePath}, fileSize=${fileSize}B`);
+                logger.debug(`[ExamHall] 上传token: ${uploadToken.substring(0, 20)}...`);
+                logger.debug(`[ExamHall] 存储桶: ${this.bucket}, 域名: ${this.domain}`);
+
                 formUploader.putFile(
                     uploadToken,
                     key,
@@ -162,15 +165,16 @@ export class QiniuStorageService {
                     putExtra,
                     (err: any, _body: any, info: any) => {
                         if (err) {
-                            Logger.error(`[ExamHall] 七牛云上传失败: ${err.message}`);
+                            logger.error(`[ExamHall] 七牛云上传失败: ${err.message}, 错误代码: ${err.code}, 请求ID: ${err.reqId}`);
+                            logger.error(`[ExamHall] 错误堆栈: ${err.stack}`);
                             resolve({
                                 success: false,
                                 error: `上传失败: ${err.message}`,
                             });
-                        } else if (info.statusCode === 200) {
+                        } else if (info && info.statusCode === 200) {
                             const url = this.getFileUrl(key);
-                            Logger.info(
-                                `[ExamHall] 文件上传成功: key=${key}, size=${fileSize}`,
+                            logger.info(
+                                `[ExamHall] 文件上传成功: key=${key}, size=${fileSize}, url=${url}`,
                             );
                             resolve({
                                 success: true,
@@ -179,16 +183,17 @@ export class QiniuStorageService {
                                 size: fileSize,
                             });
                         } else {
+                            logger.error(`[ExamHall] 七牛云返回错误: statusCode=${info?.statusCode}, 响应: ${JSON.stringify(info)}`);
                             resolve({
                                 success: false,
-                                error: `上传失败: HTTP ${info.statusCode}`,
+                                error: `上传失败: HTTP ${info?.statusCode || 'Unknown'}, 响应: ${JSON.stringify(info)}`,
                             });
                         }
                     },
                 );
             });
         } catch (error: any) {
-            Logger.error(`[ExamHall] 上传异常: ${error.message}`);
+            logger.error(`[ExamHall] 上传异常: ${error.message}`);
             return {
                 success: false,
                 error: `上传异常: ${error.message}`,
@@ -286,13 +291,13 @@ export class QiniuStorageService {
             return new Promise((resolve) => {
                 this.bucketManager.delete(this.bucket, key, (err: any, _respBody: any, respInfo: any) => {
                     if (err) {
-                        Logger.warn(`[ExamHall] 删除失败: ${err.message}`);
+                        logger.warn(`[ExamHall] 删除失败: ${err.message}`);
                         resolve({
                             success: false,
                             error: `删除失败: ${err.message}`,
                         });
                     } else if (respInfo && respInfo.statusCode === 200) {
-                        Logger.info(`[ExamHall] 文件删除成功: key=${key}`);
+                        logger.info(`[ExamHall] 文件删除成功: key=${key}`);
                         resolve({
                             success: true,
                         });
@@ -338,7 +343,7 @@ export class QiniuStorageService {
                             error: `批量删除失败: ${err.message}`,
                         });
                     } else if (respInfo && respInfo.statusCode === 200) {
-                        Logger.info(`[ExamHall] 批量删除成功: 删除${keys.length}个文件`);
+                        logger.info(`[ExamHall] 批量删除成功: 删除${keys.length}个文件`);
                         resolve({
                             success: true,
                         });

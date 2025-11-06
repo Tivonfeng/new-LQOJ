@@ -60,7 +60,7 @@ export class CertificateBatchImportService {
 
             result.total = records.length;
 
-            const collection = this.ctx.db.collection('exam.certificates');
+            const collection = this.ctx.db.collection('exam.certificates' as any);
 
             for (let i = 0; i < records.length; i++) {
                 try {
@@ -155,7 +155,7 @@ export class CertificateBatchImportService {
 
             result.total = records.length;
 
-            const collection = this.ctx.db.collection('exam.certificates');
+            const collection = this.ctx.db.collection('exam.certificates' as any);
 
             for (let i = 0; i < records.length; i++) {
                 try {

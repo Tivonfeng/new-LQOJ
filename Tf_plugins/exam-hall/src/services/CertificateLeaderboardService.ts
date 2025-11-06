@@ -40,7 +40,7 @@ export class CertificateLeaderboardService {
     skip = 0,
     ): Promise<UserLeaderboardEntry[]> {
         try {
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
 
             const leaderboard = await statsCollection
                 .aggregate([
@@ -92,19 +92,33 @@ export class CertificateLeaderboardService {
     limit = 100,
     ): Promise<UserLeaderboardEntry[]> {
         try {
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            // 验证分类输入
+            if (!category || typeof category !== 'string' || category.length > 200) {
+                console.warn('[ExamHall] 无效的分类参数');
+                return [];
+            }
+
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
+
+            // 使用计算字段避免动态属性注入
+            const categoryField = `categoryStats.${category}`;
 
             const leaderboard = await statsCollection
                 .aggregate([
                     {
                         $match: {
                             domainId: this.ctx.domain!._id,
-                            [`categoryStats.${category}`]: { $gt: 0 },
+                            [categoryField]: { $gt: 0 },
                         },
                     },
                     {
                         $addFields: {
-                            categoryCount: `$categoryStats.${category}`,
+                            categoryCount: {
+                                $getField: {
+                                    field: category,
+                                    input: '$categoryStats',
+                                },
+                            },
                         },
                     },
                     // 使用稳定的排序：先按分类数量降序，再按 uid 升序
@@ -144,8 +158,8 @@ export class CertificateLeaderboardService {
      */
     async getDomainStats(): Promise<DomainStats> {
         try {
-            const certCollection = this.ctx.db.collection('exam.certificates');
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            const certCollection = this.ctx.db.collection('exam.certificates' as any);
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
 
             // 总证书数
             const totalCertificates = await certCollection.countDocuments({
@@ -212,7 +226,7 @@ export class CertificateLeaderboardService {
      */
     async getUserRank(uid: number): Promise<{ rank: number, totalUsers: number } | null> {
         try {
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
 
             const userStats = await statsCollection.findOne({
                 domainId: this.ctx.domain!._id,
@@ -250,7 +264,7 @@ export class CertificateLeaderboardService {
         category: string,
     ): Promise<{ rank: number, total: number } | null> {
         try {
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
 
             const userStats = await statsCollection.findOne({
                 domainId: this.ctx.domain!._id,
@@ -287,7 +301,7 @@ export class CertificateLeaderboardService {
      */
     async getGrowthTrend(days = 30): Promise<Array<{ date: string, count: number }>> {
         try {
-            const certCollection = this.ctx.db.collection('exam.certificates');
+            const certCollection = this.ctx.db.collection('exam.certificates' as any);
             const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
             const trend = await certCollection
@@ -332,7 +346,7 @@ export class CertificateLeaderboardService {
      */
     async getPopularCategories(limit = 5): Promise<CategoryStats[]> {
         try {
-            const certCollection = this.ctx.db.collection('exam.certificates');
+            const certCollection = this.ctx.db.collection('exam.certificates' as any);
 
             const categories = (await certCollection
                 .aggregate([
@@ -374,7 +388,7 @@ export class CertificateLeaderboardService {
      */
     async getNewUsersStats(days = 30): Promise<{ count: number, trend: Array<{ date: string, count: number }> }> {
         try {
-            const statsCollection = this.ctx.db.collection('exam.user_stats');
+            const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
             const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
             // 新增用户总数
