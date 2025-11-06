@@ -21,6 +21,7 @@ const AdminPasswordChangeApp: React.FC = () => {
     confirmPassword: '',
   });
   const [result, setResult] = useState<PasswordChangeResult | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
 
   const userInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
@@ -32,32 +33,39 @@ const AdminPasswordChangeApp: React.FC = () => {
         const $input = $(userInputRef.current);
         userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
           multi: false,
-          freeSolo: true,
-          freeSoloConverter: (input: string) => input,
-          onChange: (value: any) => {
-            if (value && typeof value === 'object' && (value.uid || value._id)) {
-              const uid = value.uid || value._id;
-              setSelectedUser(value.uname || '');
-              setFormData((prev) => ({ ...prev, uid: uid.toString() }));
-            } else if (typeof value === 'string') {
-              setSelectedUser(value);
-              // 当输入自由文本时，清空uid
-              setFormData((prev) => ({ ...prev, uid: '' }));
-            } else if (value === null || value === undefined) {
-              setSelectedUser('');
-              setFormData((prev) => ({ ...prev, uid: '' }));
-            }
-          },
+          freeSolo: false,
         });
-      } catch (error) {
-        console.error('Failed to initialize UserSelectAutoComplete:', error);
+
+        // 监听值的变化 - 用于更新按钮状态
+        userSelectComponentRef.current.onChange(() => {
+          const selectedValue = userSelectComponentRef.current.value?.();
+          if (selectedValue && typeof selectedValue === 'object' && (selectedValue.uid || selectedValue._id)) {
+            const uid = selectedValue.uid || selectedValue._id;
+            const username = selectedValue.uname || selectedValue.username || '';
+            setSelectedUser(username);
+            setFormData((prev) => ({ ...prev, uid: uid.toString() }));
+            setInitError(null);
+          } else if (selectedValue === null || selectedValue === undefined || selectedValue === '') {
+            setSelectedUser('');
+            setFormData((prev) => ({ ...prev, uid: '' }));
+          }
+        });
+
+        setInitError(null);
+      } catch (error: any) {
+        const errorMsg = `用户选择组件初始化失败: ${error.message}`;
+        setInitError(errorMsg);
       }
     }
 
     // 清理函数
     return () => {
       if (userSelectComponentRef.current) {
-        userSelectComponentRef.current.detach();
+        try {
+          userSelectComponentRef.current.detach?.();
+        } catch (e) {
+          // ignore error
+        }
       }
     };
   }, []);
@@ -73,14 +81,22 @@ const AdminPasswordChangeApp: React.FC = () => {
 
     // 获取最终的用户ID
     let finalUid = formData.uid;
-    if (userSelectComponentRef.current && userSelectComponentRef.current.value) {
+    if (userSelectComponentRef.current) {
       try {
-        const selectedUserObj = userSelectComponentRef.current.value();
+        // 尝试从组件获取选中的用户对象
+        const selectedUserObj = userSelectComponentRef.current.value?.();
         if (selectedUserObj && typeof selectedUserObj === 'object' && (selectedUserObj.uid || selectedUserObj._id)) {
           finalUid = (selectedUserObj.uid || selectedUserObj._id).toString();
+        } else if (!finalUid && selectedUser) {
+          // 如果组件没有返回对象但selectedUser有值，尝试作为用户名处理
+          setResult({
+            success: false,
+            message: '请从下拉列表中选择一个有效的用户',
+          });
+          return;
         }
       } catch (error) {
-        console.warn('获取用户选择失败，使用表单值:', error);
+        // ignore error
       }
     }
 
@@ -167,6 +183,13 @@ const AdminPasswordChangeApp: React.FC = () => {
         </div>
 
         <div className="eui-card-body">
+          {initError && (
+            <div className="eui-alert eui-alert-warning mb-3">
+              ⚠️ <strong>{initError}</strong>
+              <p className="mt-2">请刷新页面重试，或联系管理员</p>
+            </div>
+          )}
+
           {result && (
             <div className={`eui-alert ${result.success ? 'eui-alert-success' : 'eui-alert-danger'} mb-3`}>
               {result.success ? '✅ ' : '❌ '}
@@ -187,8 +210,9 @@ const AdminPasswordChangeApp: React.FC = () => {
                 name="userSelect"
                 className="eui-form-control"
                 value={selectedUser}
+                onChange={() => {}}
                 placeholder="搜索用户名..."
-                required={!formData.uid}
+                required
               />
               <div className="form-hint">输入用户名进行搜索，或直接选择</div>
             </div>
@@ -206,6 +230,7 @@ const AdminPasswordChangeApp: React.FC = () => {
                 value={formData.newPassword}
                 onChange={handleInputChange}
                 placeholder="请输入新密码"
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -223,6 +248,7 @@ const AdminPasswordChangeApp: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 placeholder="请再次输入新密码"
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -231,7 +257,12 @@ const AdminPasswordChangeApp: React.FC = () => {
               <button
                 type="submit"
                 className="eui-btn eui-btn-success eui-btn-lg"
-                disabled={isLoading || !selectedUser || !formData.newPassword || !formData.confirmPassword}
+                disabled={
+                  isLoading
+                  || (!selectedUser && !userSelectComponentRef.current?.value?.())
+                  || !formData.newPassword
+                  || !formData.confirmPassword
+                }
               >
                 {isLoading ? (
                   <>
@@ -253,14 +284,9 @@ const AdminPasswordChangeApp: React.FC = () => {
 };
 
 addPage(new NamedPage(['user_password_change'], () => {
-  console.log('Admin Password Change React page loaded');
-
   const mountPoint = document.getElementById('admin-password-change-app-mount-point');
   if (mountPoint) {
     const root = createRoot(mountPoint);
     root.render(<AdminPasswordChangeApp />);
-    console.log('Admin Password Change React app mounted successfully');
-  } else {
-    console.error('Mount point not found: admin-password-change-app-mount-point');
   }
 }));
