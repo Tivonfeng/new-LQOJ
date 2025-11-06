@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { addPage, NamedPage } from '@hydrooj/ui-default';
-import React, { useState } from 'react';
+import { addPage, NamedPage, UserSelectAutoComplete } from '@hydrooj/ui-default';
+import $ from 'jquery';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 interface PasswordChangeResult {
@@ -13,12 +14,53 @@ interface PasswordChangeResult {
 // 管理员密码修改React组件
 const AdminPasswordChangeApp: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState('');
   const [formData, setFormData] = useState({
     uid: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [result, setResult] = useState<PasswordChangeResult | null>(null);
+
+  const userInputRef = useRef<HTMLInputElement>(null);
+  const userSelectComponentRef = useRef<any>(null);
+
+  // 初始化UserSelectAutoComplete组件
+  useEffect(() => {
+    if (userInputRef.current) {
+      try {
+        const $input = $(userInputRef.current);
+        userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
+          multi: false,
+          freeSolo: true,
+          freeSoloConverter: (input: string) => input,
+          onChange: (value: any) => {
+            if (value && typeof value === 'object' && (value.uid || value._id)) {
+              const uid = value.uid || value._id;
+              setSelectedUser(value.uname || '');
+              setFormData((prev) => ({ ...prev, uid: uid.toString() }));
+            } else if (typeof value === 'string') {
+              setSelectedUser(value);
+              // 当输入自由文本时，清空uid
+              setFormData((prev) => ({ ...prev, uid: '' }));
+            } else if (value === null || value === undefined) {
+              setSelectedUser('');
+              setFormData((prev) => ({ ...prev, uid: '' }));
+            }
+          },
+        });
+      } catch (error) {
+        console.error('Failed to initialize UserSelectAutoComplete:', error);
+      }
+    }
+
+    // 清理函数
+    return () => {
+      if (userSelectComponentRef.current) {
+        userSelectComponentRef.current.detach();
+      }
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,6 +70,27 @@ const AdminPasswordChangeApp: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 获取最终的用户ID
+    let finalUid = formData.uid;
+    if (userSelectComponentRef.current && userSelectComponentRef.current.value) {
+      try {
+        const selectedUserObj = userSelectComponentRef.current.value();
+        if (selectedUserObj && typeof selectedUserObj === 'object' && (selectedUserObj.uid || selectedUserObj._id)) {
+          finalUid = (selectedUserObj.uid || selectedUserObj._id).toString();
+        }
+      } catch (error) {
+        console.warn('获取用户选择失败，使用表单值:', error);
+      }
+    }
+
+    if (!finalUid) {
+      setResult({
+        success: false,
+        message: '请选择要修改密码的用户',
+      });
+      return;
+    }
 
     if (formData.newPassword !== formData.confirmPassword) {
       setResult({
@@ -52,14 +115,18 @@ const AdminPasswordChangeApp: React.FC = () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(formData),
+        body: new URLSearchParams({
+          uid: finalUid,
+          newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword,
+        }),
       });
 
       const responseData = await response.json();
       setResult({
         success: responseData.success,
         message: responseData.message || (responseData.success ? '密码修改成功' : '密码修改失败'),
-        uid: Number.parseInt(formData.uid),
+        uid: Number.parseInt(finalUid),
       });
 
       if (responseData.success) {
@@ -68,6 +135,11 @@ const AdminPasswordChangeApp: React.FC = () => {
           newPassword: '',
           confirmPassword: '',
         });
+        setSelectedUser('');
+        // 清理UserSelectAutoComplete
+        if (userSelectComponentRef.current) {
+          userSelectComponentRef.current.clear();
+        }
       }
     } catch (error: any) {
       setResult({
@@ -104,20 +176,21 @@ const AdminPasswordChangeApp: React.FC = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="eui-form-group">
-              <label htmlFor="uid">
-                <strong>用户ID</strong>
-                <small className="text-muted ml-2">(要修改密码的用户ID)</small>
+              <label htmlFor="userSelect">
+                <strong>选择用户</strong>
+                <small className="text-muted ml-2">(搜索并选择要修改密码的用户)</small>
               </label>
               <input
-                type="number"
-                id="uid"
-                name="uid"
+                ref={userInputRef}
+                type="text"
+                id="userSelect"
+                name="userSelect"
                 className="eui-form-control"
-                value={formData.uid}
-                onChange={handleInputChange}
-                placeholder="请输入用户ID"
-                required
+                value={selectedUser}
+                placeholder="搜索用户名..."
+                required={!formData.uid}
               />
+              <div className="form-hint">输入用户名进行搜索，或直接选择</div>
             </div>
 
             <div className="eui-form-group">
@@ -158,7 +231,7 @@ const AdminPasswordChangeApp: React.FC = () => {
               <button
                 type="submit"
                 className="eui-btn eui-btn-success eui-btn-lg"
-                disabled={isLoading || !formData.uid || !formData.newPassword || !formData.confirmPassword}
+                disabled={isLoading || !selectedUser || !formData.newPassword || !formData.confirmPassword}
               >
                 {isLoading ? (
                   <>
