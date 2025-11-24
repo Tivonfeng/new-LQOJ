@@ -96,6 +96,14 @@ export interface CertificateInfo {
   level?: string;
   /** 证书分数（可选） */
   score?: number;
+  /** 赛考类型 */
+  examType?: 'competition' | 'certification';
+  /** 竞赛名称（仅竞赛类型） */
+  competitionName?: string;
+  /** 考级系列（仅考级类型） */
+  certificationSeries?: string;
+  /** 权重值 */
+  weight?: number;
   /** 颁发日期 */
   issueDate: string | Date;
   /** 过期日期（可选） */
@@ -108,8 +116,6 @@ export interface CertificateInfo {
   notes?: string;
   /** 证书状态（active, expired, revoked 等） */
   status?: string;
-  /** 证书代码（可选） */
-  certificateCode?: string;
   /** 证书记录时间（可选） */
   recordedAt?: string | Date;
   /** 证书创建时间（可选） */

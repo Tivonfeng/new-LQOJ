@@ -10,17 +10,15 @@ export interface Certificate {
     domainId: ObjectId;
     /** 用户ID */
     uid: number;
-    /** 证书编码（唯一标识，自动生成，格式：CERT-YYYYMMDD-XXXXX） */
-    certificateCode: string;
     /** 证书名称（如：Python 等级考试、全国信息学竞赛） */
     certificateName: string;
     /** 认证/颁发机构（如：全国青少年信息学竞赛组委会） */
     certifyingBody: string;
     /** 所属预设ID（关联到证书预设，用于快速查询和管理） */
     presetId?: string | ObjectId;
-    /** 证书分类（用于统计和筛选，如：竞赛、考级、其他） */
+    /** 赛项名称（实际存储的是赛项/事件名称，如："初赛"、"复赛"、"笔试"、"上机"等，用于展示和筛选） */
     category: string;
-    /** 证书等级（如：初级、中级、高级、专家，可选） */
+    /** 证书等级描述（仅用于前端展示，如："一等奖"、"二等奖"、"通过"等，可选） */
     level?: string;
     /** 证书颁发日期 */
     issueDate: Date;
@@ -28,10 +26,6 @@ export interface Certificate {
     certificateImageUrl?: string;
     /** 证书图片在七牛云的存储key（用于删除和管理） */
     certificateImageKey?: string;
-    /** 证书图片文件大小（单位：字节） */
-    certificateImageSize?: number;
-    /** 证书图片上传时间 */
-    certificateImageUploadedAt?: Date;
     /** 证书状态（active: 有效，expired: 已过期，revoked: 已撤销） */
     status: 'active' | 'expired' | 'revoked';
     /** 证书录入者的用户ID */
@@ -52,14 +46,12 @@ export interface Certificate {
     competitionName?: string;
     /** 考级系列（仅考级类型使用，如"Python"、"C++"、"Scratch"） */
     certificationSeries?: string;
-    /** 考级等级数字（1-8，仅考级类型使用，用于记录具体的等级） */
-    levelNumber?: number;
     /** 权重值（用于排行榜计算，默认为1，值越大在排行榜中权重越高） */
     weight?: number;
 }
 
 export interface CertificateFilter {
-    /** 按分类过滤（如：竞赛、考级、其他） */
+    /** 按赛项过滤（赛项名称，如："初赛"、"笔试"等） */
     category?: string;
     /** 按状态过滤（active: 有效，expired: 已过期，revoked: 已撤销） */
     status?: string;
@@ -83,6 +75,20 @@ export class CertificateService {
     }
 
     /**
+     * 将外部传入的 presetId 统一转换为 ObjectId，避免库内类型不一致
+     */
+    private normalizePresetId(presetId?: string | ObjectId | null): ObjectId | undefined {
+        if (!presetId) return undefined;
+        if (presetId instanceof ObjectId) return presetId;
+        if (ObjectId.isValid(presetId)) {
+            return new ObjectId(presetId);
+        }
+
+        console.warn(`[ExamHall] 无效的 presetId: ${presetId}`);
+        return undefined;
+    }
+
+    /**
      * 创建证书 (支持图片上传)
      */
     async createCertificate(
@@ -93,20 +99,12 @@ export class CertificateService {
     ): Promise<Certificate> {
         const collection = this.ctx.db.collection('exam.certificates' as any);
 
-        const generateCertCode = (): string => {
-            if (data.certificateCode && typeof data.certificateCode === 'string') {
-                return data.certificateCode;
-            }
-            return this.generateCertificateCode();
-        };
-
         const cert: Certificate = {
             domainId: this.ctx.domain!._id as any as ObjectId,
             uid,
-            certificateCode: generateCertCode(),
             certificateName: data.certificateName!,
             certifyingBody: data.certifyingBody!,
-            presetId: data.presetId, // 保存预设ID
+            presetId: this.normalizePresetId(data.presetId), // 保存预设ID
             category: data.category!,
             level: data.level,
             issueDate: new Date(data.issueDate!),
@@ -120,15 +118,12 @@ export class CertificateService {
             // 证书图片信息
             certificateImageUrl: data.certificateImageUrl,
             certificateImageKey: data.certificateImageKey,
-            certificateImageSize: data.certificateImageSize,
-            certificateImageUploadedAt: data.certificateImageUploadedAt,
 
             // 新字段
             examType: data.examType,
             competitionName: data.competitionName,
             certificationSeries: data.certificationSeries,
-            levelNumber: data.levelNumber,
-            weight: data.weight || 1, // 默认权重为 1
+            weight: data.weight ?? 1, // 默认权重为 1
         };
 
         // 如果有图片文件，上传到七牛云
@@ -138,8 +133,7 @@ export class CertificateService {
                 if (uploadResult.success) {
                     cert.certificateImageUrl = uploadResult.url;
                     cert.certificateImageKey = uploadResult.key;
-                    cert.certificateImageSize = uploadResult.size;
-                    cert.certificateImageUploadedAt = new Date();
+                    // 已移除：certificateImageSize 和 certificateImageUploadedAt（无用字段）
                 }
             } catch (err: any) {
                 console.error(`[ExamHall] 证书图片上传失败: ${err.message}`);
@@ -153,7 +147,7 @@ export class CertificateService {
         await this.updateUserStats(uid);
 
         console.log(
-            `[ExamHall] 创建证书成功: uid=${uid}, code=${cert.certificateCode}`,
+            `[ExamHall] 创建证书成功: uid=${uid}, id=${cert._id}`,
         );
 
         return cert;
@@ -232,6 +226,15 @@ export class CertificateService {
             updatedAt: new Date(),
         };
 
+        if (data.presetId !== undefined) {
+            const normalizedPresetId = this.normalizePresetId(data.presetId);
+            if (normalizedPresetId) {
+                updateData.presetId = normalizedPresetId;
+            } else {
+                delete updateData.presetId;
+            }
+        }
+
         // 如果有新图片，上传并删除旧图片
         if (imageFile && this.qiniuService?.isReady()) {
             const oldCert = await collection.findOne({ _id: id }) as Certificate;
@@ -247,8 +250,7 @@ export class CertificateService {
                 if (uploadResult.success) {
                     updateData.certificateImageUrl = uploadResult.url;
                     updateData.certificateImageKey = uploadResult.key;
-                    updateData.certificateImageSize = uploadResult.size;
-                    updateData.certificateImageUploadedAt = new Date();
+                    // 已移除：certificateImageSize 和 certificateImageUploadedAt（无用字段）
                 }
             }
         }
@@ -373,6 +375,8 @@ export class CertificateService {
 
     /**
      * 获取用户证书列表
+     * @param uid 用户ID
+     * @param filters 过滤条件（filters.category 按赛项名称筛选，category 字段存储的是赛项名称）
      */
     async getUserCertificates(
         uid: number,
@@ -385,6 +389,7 @@ export class CertificateService {
             uid,
         };
 
+        // category 字段用于按赛项名称筛选
         if (filters?.category) {
             query.category = filters.category;
         }
@@ -411,6 +416,8 @@ export class CertificateService {
 
     /**
      * 获取用户证书总数 (支持过滤)
+     * @param uid 用户ID
+     * @param filters 过滤条件（filters.category 按赛项名称筛选，category 字段存储的是赛项名称）
      */
     async getUserCertificatesCount(
         uid: number,
@@ -423,6 +430,7 @@ export class CertificateService {
             uid,
         };
 
+        // category 字段用于按赛项名称筛选
         if (filters?.category) {
             query.category = filters.category;
         }
@@ -462,24 +470,44 @@ export class CertificateService {
     /**
      * 更新用户证书统计
      * 支持竞赛/考级的多维度统计
+     * 优化：使用投影只查询需要的字段，减少数据传输
      */
     async updateUserStats(uid: number): Promise<void> {
         const collection = this.ctx.db.collection('exam.certificates' as any);
         const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
 
-        // 统计所有证书信息
+        // 统计所有证书信息 - 使用投影只查询需要的字段，提升性能
         const certs = (await collection
             .find({
                 domainId: this.ctx.domain!._id,
                 uid,
                 status: 'active',
             })
-            .toArray()) as Certificate[];
+            .project({
+                // 只查询统计所需的字段，减少数据传输
+                examType: 1,
+                competitionName: 1,
+                certificationSeries: 1,
+                weight: 1,
+                category: 1,
+                issueDate: 1,
+            })
+            .toArray()) as Partial<Certificate>[];
 
         // ===== 基础统计 =====
+        // 优化：使用 examType 进行分类统计，而不是 category（category 存储的是赛项名称）
         const categoryStats = {} as Record<string, number>;
         for (const cert of certs) {
-            categoryStats[cert.category] = (categoryStats[cert.category] || 0) + 1;
+            // 根据 examType 进行分类统计
+            if (cert.examType === 'competition') {
+                categoryStats['竞赛'] = (categoryStats['竞赛'] || 0) + 1;
+            } else if (cert.examType === 'certification') {
+                categoryStats['考级'] = (categoryStats['考级'] || 0) + 1;
+            } else {
+                // 如果没有 examType，尝试从 category 推断（向后兼容）
+                // 注意：这不应该发生，因为新证书都应该有 examType
+                categoryStats['其他'] = (categoryStats['其他'] || 0) + 1;
+            }
         }
 
         // ===== 竞赛统计 =====
@@ -492,8 +520,7 @@ export class CertificateService {
         // ===== 考级统计 =====
         const certificationStats = {
             total: 0,
-            series: {} as Record<string, { levels: Set<number>, count: number }>, // 按系列统计
-            highestLevels: {} as Record<string, number>, // 按系列的最高等级
+            series: {} as Record<string, { count: number }>, // 按系列统计仅保留数量
             weight: 0, // 权重总和
         };
 
@@ -508,31 +535,23 @@ export class CertificateService {
             } else if (cert.examType === 'certification') {
                 certificationStats.total++;
                 const series = cert.certificationSeries || '其他';
-                const level = cert.levelNumber || 0;
 
                 certificationStats.series[series] ||= {
-                    levels: new Set(),
                     count: 0,
                 };
 
-                certificationStats.series[series].levels.add(level);
                 certificationStats.series[series].count++;
-
-                // 记录最高等级
-                const currentHighest = certificationStats.highestLevels[series] || 0;
-                certificationStats.highestLevels[series] = Math.max(currentHighest, level);
 
                 certificationStats.weight += cert.weight || 1;
             }
         }
 
         // 转换 Set 为数组（因为 Set 无法序列化到 MongoDB）
-        const certificationSeriesForStorage = {} as Record<string, any>;
+        // 优化：存储时直接排序，查询时无需处理
+        const certificationSeriesForStorage = {} as Record<string, { count: number }>;
         for (const [series, data] of Object.entries(certificationStats.series)) {
             certificationSeriesForStorage[series] = {
-                levels: Array.from(data.levels).sort((a, b) => a - b),
                 count: data.count,
-                highest: certificationStats.highestLevels[series],
             };
         }
 
@@ -542,13 +561,15 @@ export class CertificateService {
             uid,
         });
 
+        // 优化：categoryStats 基于 examType 分类统计（"竞赛"、"考级"）
+        // 注意：category 字段存储的是赛项名称，不用于分类统计
         const stats = {
             domainId: this.ctx.domain!._id,
             uid,
 
             // 基础统计
             totalCertificates: certs.length,
-            categoryStats,
+            categoryStats, // 基于 examType 计算的分类统计（向后兼容，但建议使用动态计算的版本）
             lastCertificateDate: certs.length > 0 ? certs[0].issueDate : undefined,
 
             // 竞赛统计
@@ -562,7 +583,6 @@ export class CertificateService {
             certificationStats: {
                 total: certificationStats.total,
                 series: certificationSeriesForStorage,
-                highestLevels: certificationStats.highestLevels,
                 weight: certificationStats.weight,
             },
 
@@ -585,35 +605,58 @@ export class CertificateService {
     }
 
     /**
-     * 生成证书编码
+     * 动态计算 categoryStats（从竞赛和考级统计中提取）
+     * 优化：基于 examType 分类，而不是 category 字段（category 存储的是赛项名称）
+     * 返回格式：{ "竞赛": 2, "考级": 3 }
      */
-    private generateCertificateCode(): string {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const random = Math.random().toString(36).substring(2, 7).toUpperCase();
+    private calculateCategoryStats(stats: any): Record<string, number> {
+        if (!stats) return {};
 
-        return `CERT-${year}${month}${day}-${random}`;
+        // 如果已有 categoryStats，直接返回（向后兼容）
+        if (stats.categoryStats) {
+            return stats.categoryStats;
+        }
+
+        // 从竞赛和考级统计动态计算（基于 examType）
+        const categoryStats: Record<string, number> = {};
+        if (stats.competitionStats?.total) {
+            categoryStats['竞赛'] = stats.competitionStats.total;
+        }
+        if (stats.certificationStats?.total) {
+            categoryStats['考级'] = stats.certificationStats.total;
+        }
+
+        return categoryStats;
     }
 
     /**
      * 获取用户统计信息
+     * 优化：自动填充动态计算的冗余字段，保持向后兼容
      */
     async getUserStats(uid: number): Promise<any> {
         const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-        return await statsCollection.findOne({
+        const stats = await statsCollection.findOne({
             domainId: this.ctx.domain!._id,
             uid,
         });
+
+        if (!stats) return null;
+
+        // 动态计算并填充冗余字段，保持向后兼容
+        return {
+            ...stats,
+            // 动态计算 categoryStats（如果不存在）
+            categoryStats: this.calculateCategoryStats(stats),
+        };
     }
 
     /**
      * 获取用户按分类的统计
+     * 优化：使用动态计算的 categoryStats
      */
     async getCategoryStats(uid: number): Promise<Record<string, number>> {
         const stats = await this.getUserStats(uid);
-        return stats?.categoryStats || {};
+        return this.calculateCategoryStats(stats);
     }
 }
 

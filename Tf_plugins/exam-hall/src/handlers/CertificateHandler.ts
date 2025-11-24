@@ -157,6 +157,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             this.checkManagePermission();
 
             const {
+                uid,
                 username,
                 presetId,
                 certificateName,
@@ -170,36 +171,66 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 examType,
                 competitionName,
                 certificationSeries,
-                levelNumber,
                 weight,
             } = this.request.body;
 
             // 验证必填字段
-            if (!username || !issueDate) {
-                this.sendError('缺少必填字段（用户和颁发日期）', 400);
+            if (!issueDate) {
+                this.sendError('缺少必填字段（颁发日期）', 400);
+                return;
+            }
+
+            if (!presetId) {
+                this.sendError('证书必须关联赛考预设', 400);
                 return;
             }
 
             // 获取用户模型并通过用户名查找用户
             const UserModel = (global as any).Hydro.model.user;
-            const targetUser = await UserModel.getByUname('system', username.trim());
+            let targetUid: number | undefined;
 
-            if (!targetUser) {
-                this.sendError(`用户 ${username} 不存在`, 404);
+            if (uid !== undefined && uid !== null && uid !== '') {
+                const numericUid = Number(uid);
+                if (Number.isNaN(numericUid)) {
+                    this.sendError('无效的用户ID', 400);
+                    return;
+                }
+                const userById = await UserModel.getById('system', numericUid);
+                if (!userById) {
+                    this.sendError(`用户 #${numericUid} 不存在`, 404);
+                    return;
+                }
+                targetUid = numericUid;
+            } else if (username) {
+                const userByName = await UserModel.getByUname('system', username.trim());
+                if (!userByName) {
+                    this.sendError(`用户 ${username} 不存在`, 404);
+                    return;
+                }
+                targetUid = userByName._id;
+            } else {
+                this.sendError('缺少用户信息', 400);
                 return;
             }
-
-            const targetUid = targetUser._id;
 
             // 如果使用预设，从预设中获取信息
             let finalCertName = certificateName;
             let finalCertifyingBody = certifyingBody;
-            let finalCategory = category; // category 应该来自 event（赛项）
-            let finalExamType = examType;
-            const finalCompetitionName = competitionName;
-            const finalCertificationSeries = certificationSeries;
-            const finalLevelNumber = levelNumber;
-            let finalWeight = weight || 1;
+            // category 字段实际存储的是赛项名称（如："初赛"、"复赛"、"笔试"、"上机"等）
+            // 前端通过 event 字段传递，后端存储在 category 字段中
+            let finalCategory = typeof category === 'string' ? category.trim() : undefined; // category = 赛项名称（event）
+            let finalExamType = examType as 'competition' | 'certification' | undefined; // examType = 分类（competition/certification）
+            let finalCompetitionName = typeof competitionName === 'string' ? competitionName.trim() : undefined;
+            let finalCertificationSeries = typeof certificationSeries === 'string' ? certificationSeries.trim() : undefined;
+            let finalWeight: number | undefined;
+            if (weight !== undefined && weight !== null && weight !== '') {
+                const numericWeight = Number(weight);
+                if (Number.isNaN(numericWeight)) {
+                    this.sendError('权重必须是数字', 400);
+                    return;
+                }
+                finalWeight = numericWeight;
+            }
 
             if (presetId) {
                 try {
@@ -214,14 +245,38 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     // 从预设获取值
                     finalCertName = preset.name;
                     finalCertifyingBody = preset.certifyingBody;
-                    // category 应该使用前端传来的 category（即赛项），而不是预设名称
-                    finalCategory ||= category; // 如果没有 category 则使用赛项名称
+                    // category 存储的是赛项名称，应该使用前端传来的 category（即 event）
+                    finalCategory ||= (typeof category === 'string' ? category.trim() : undefined);
+                    if (!finalCategory && preset.events?.length) {
+                        finalCategory = preset.events[0].name;
+                    }
+                    // examType 从预设获取（真正的分类）
                     finalExamType = preset.type;
-                    finalWeight = preset.weight || 1;
+                    if (preset.type === 'competition') {
+                        finalCompetitionName ||= preset.name;
+                        finalCertificationSeries = undefined;
+                    } else if (preset.type === 'certification') {
+                        finalCertificationSeries ||= preset.name;
+                        finalCompetitionName = undefined;
+                    }
+                    if (finalWeight === undefined) {
+                        finalWeight = preset.weight || 1;
+                    }
                 } catch (err: any) {
                     console.warn(`[ExamHall] 获取预设失败: ${err.message}`);
                     // 如果预设获取失败，继续使用提交的值
                 }
+            }
+
+            if (finalWeight === undefined) {
+                finalWeight = 1;
+            }
+
+            if (finalExamType !== 'certification') {
+                finalCertificationSeries = undefined;
+            }
+            if (finalExamType !== 'competition') {
+                finalCompetitionName = undefined;
             }
 
             // 验证必需的证书字段
@@ -230,10 +285,15 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 return;
             }
 
-            // 如果还是没有分类，使用赛项（category 字段来自前端的 event 字段）
+            // 验证赛项（category 字段存储的是赛项名称）
             if (!finalCategory) {
-                // 这个应该不会发生，因为前端会验证赛项是必填的
+                // 前端会验证赛项是必填的，这里作为二次验证
                 this.sendError('缺少赛项信息', 400);
+                return;
+            }
+
+            if (typeof targetUid !== 'number') {
+                this.sendError('用户信息无效', 400);
                 return;
             }
 
@@ -254,7 +314,6 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     examType: finalExamType,
                     competitionName: finalCompetitionName,
                     certificationSeries: finalCertificationSeries,
-                    levelNumber: finalLevelNumber,
                     weight: finalWeight,
                 },
                 undefined,
@@ -265,7 +324,6 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 success: true,
                 certificate: {
                     _id: certificate._id,
-                    certificateCode: certificate.certificateCode,
                     certificateName: certificate.certificateName,
                     category: certificate.category,
                     issueDate: certificate.issueDate,
@@ -485,9 +543,20 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 category,
                 level,
                 issueDate,
-                status,
                 notes,
+                competitionName,
+                certificationSeries,
+                weight,
             } = this.request.body;
+
+            let parsedWeight: number | undefined;
+            if (weight !== undefined && weight !== null && weight !== '') {
+                parsedWeight = Number(weight);
+                if (Number.isNaN(parsedWeight)) {
+                    this.sendError('权重必须是数字', 400);
+                    return;
+                }
+            }
 
             // 更新证书 - 只更新允许的字段，保留 examType、competitionName 等用于统计的字段
             const certService = new CertificateService(this.ctx);
@@ -498,8 +567,10 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 category,
                 level,
                 issueDate: issueDate ? new Date(issueDate) : undefined,
-                status,
                 notes,
+                competitionName: typeof competitionName === 'string' ? competitionName.trim() : undefined,
+                certificationSeries: typeof certificationSeries === 'string' ? certificationSeries.trim() : undefined,
+                weight: parsedWeight,
             };
 
             // 如果提供了预设ID，从预设中获取examType

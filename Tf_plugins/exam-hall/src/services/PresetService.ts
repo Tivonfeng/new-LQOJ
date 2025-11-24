@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { Collection, Filter, ObjectId } from 'mongodb';
 import { Context } from 'hydrooj';
 
 /**
@@ -46,26 +46,39 @@ export class PresetService {
         this.ctx = ctx;
     }
 
+    private get domainId(): ObjectId {
+        return this.ctx.domain!._id as any as ObjectId;
+    }
+
+    private get presets(): Collection<CertificatePreset> {
+        return this.ctx.db.collection('exam.presets' as any) as Collection<CertificatePreset>;
+    }
+
+    private buildDomainQuery(filter: Filter<CertificatePreset> = {}): Filter<CertificatePreset> {
+        return {
+            domainId: this.domainId,
+            ...filter,
+        };
+    }
+
     /**
      * 创建新预设
      */
     async createPreset(data: Omit<CertificatePreset, '_id' | 'domainId' | 'createdAt' | 'updatedAt' | 'enabled'>): Promise<CertificatePreset> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
         const preset: CertificatePreset = {
-            domainId: this.ctx.domain!._id as any as ObjectId,
+            domainId: this.domainId,
             type: data.type,
             name: data.name,
             certifyingBody: data.certifyingBody,
-            weight: data.weight || 1,
+            weight: data.weight ?? 1,
             description: data.description,
-            events: data.events || [],
+            events: data.events ?? [],
             enabled: true,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
 
-        const result = await collection.insertOne(preset);
+        const result = await this.presets.insertOne(preset);
         preset._id = result.insertedId;
 
         console.log(`[ExamHall] 创建预设成功: type=${data.type}, name=${data.name}`);
@@ -76,8 +89,6 @@ export class PresetService {
      * 更新预设
      */
     async updatePreset(id: ObjectId, data: Partial<CertificatePreset>): Promise<CertificatePreset> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
         const updateData: any = {
             ...data,
             updatedAt: new Date(),
@@ -89,28 +100,26 @@ export class PresetService {
         delete updateData.createdAt;
 
         // 使用 findOneAndUpdate 进行原子操作，会自动返回 null 如果找不到文档
-        const result = await collection.findOneAndUpdate(
-            { _id: id, domainId: this.ctx.domain!._id },
+        const updatedPreset = await this.presets.findOneAndUpdate(
+            { _id: id, domainId: this.domainId },
             { $set: updateData },
             { returnDocument: 'after' },
         );
 
-        if (!result.value) {
+        if (!updatedPreset) {
             console.error(`[ExamHall] 更新失败: 权限不足 id=${id}, domainId=${this.ctx.domain!._id}`);
             throw new Error('预设不存在或无权限修改');
         }
 
         console.log(`[ExamHall] 更新预设成功: id=${id}`);
-        return result.value as CertificatePreset;
+        return updatedPreset as CertificatePreset;
     }
 
     /**
      * 删除预设
      */
     async deletePreset(id: ObjectId): Promise<boolean> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
-        const result = await collection.deleteOne({ _id: id, domainId: this.ctx.domain!._id });
+        const result = await this.presets.deleteOne({ _id: id, domainId: this.domainId });
 
         if (result.deletedCount > 0) {
             console.log(`[ExamHall] 删除预设成功: id=${id}`);
@@ -124,79 +133,65 @@ export class PresetService {
      * 获取预设详情
      */
     async getPresetById(id: ObjectId): Promise<CertificatePreset | null> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-        return (await collection.findOne({ _id: id, domainId: this.ctx.domain!._id })) as CertificatePreset | null;
+        return this.presets.findOne({ _id: id, domainId: this.domainId });
     }
 
     /**
      * 获取指定类型的所有预设
      */
     async getPresetsByType(type: 'competition' | 'certification', enabledOnly = true): Promise<CertificatePreset[]> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
-        const query: any = {
-            domainId: this.ctx.domain!._id,
-            type,
-        };
+        const query = this.buildDomainQuery({ type });
 
         if (enabledOnly) {
             query.enabled = true;
         }
 
-        return (await collection
+        return this.presets
             .find(query)
             .sort({ createdAt: -1 })
-            .toArray()) as CertificatePreset[];
+            .toArray();
     }
 
     /**
      * 获取所有预设
      */
     async getAllPresets(enabledOnly = false): Promise<CertificatePreset[]> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
-        const query: any = {
-            domainId: this.ctx.domain!._id,
-        };
+        const query = this.buildDomainQuery();
 
         if (enabledOnly) {
             query.enabled = true;
         }
 
-        return (await collection
+        return this.presets
             .find(query)
             .sort({ type: 1, createdAt: -1 })
-            .toArray()) as CertificatePreset[];
+            .toArray();
     }
 
     /**
      * 切换预设的启用状态
      */
     async togglePreset(id: ObjectId, enabled: boolean): Promise<CertificatePreset> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
-        const result = await collection.findOneAndUpdate(
-            { _id: id, domainId: this.ctx.domain!._id },
+        const updatedPreset = await this.presets.findOneAndUpdate(
+            { _id: id, domainId: this.domainId },
             { $set: { enabled, updatedAt: new Date() } },
             { returnDocument: 'after' },
         );
 
-        if (!result.value) {
+        if (!updatedPreset) {
             throw new Error('预设不存在');
         }
 
-        return result.value as CertificatePreset;
+        return updatedPreset as CertificatePreset;
     }
 
     /**
      * 批量删除预设
      */
     async deletePresets(ids: ObjectId[]): Promise<number> {
-        const collection = this.ctx.db.collection('exam.presets' as any);
-
-        const result = await collection.deleteMany({
+        const result = await this.presets.deleteMany({
             _id: { $in: ids },
-            domainId: this.ctx.domain!._id,
+            domainId: this.domainId,
         });
 
         console.log(`[ExamHall] 批量删除预设: 删除${result.deletedCount}个`);

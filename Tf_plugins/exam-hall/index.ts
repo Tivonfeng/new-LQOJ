@@ -23,8 +23,6 @@ declare module 'hydrooj' {
     interface Collections {
         'exam.certificates': Certificate;
         'exam.presets': CertificatePreset;
-        'exam.user_stats': any;
-        'exam.import_history': any;
     }
 }
 
@@ -40,36 +38,37 @@ export default async function apply(ctx: Context, _config: any = {}) {
     try {
         const db = ctx.db;
 
-        // 创建证书集合索引 - Create certificate collection indexes
+        // 并行创建所有索引以加快启动速度 - Parallelize index creation for faster startup
         const certCollection = db.collection('exam.certificates' as any);
-        await certCollection.createIndex({ domainId: 1, uid: 1 });
-        await certCollection.createIndex({ domainId: 1, status: 1 });
-        await certCollection.createIndex({ domainId: 1, category: 1 });
-        // 复合索引用于用户证书过滤查询
-        await certCollection.createIndex({ domainId: 1, uid: 1, status: 1 });
-        await certCollection.createIndex({ issueDate: -1 });
-        await certCollection.createIndex({ createdAt: -1 });
-        // 用于排序和分页查询
-        await certCollection.createIndex({ domainId: 1, createdAt: -1 });
-
-        // 创建用户统计集合索引 - Create user stats collection indexes
-        const statsCollection = db.collection('exam.user_stats' as any);
-        await statsCollection.createIndex({ domainId: 1, uid: 1 }, { unique: true });
-        await statsCollection.createIndex({ domainId: 1, totalCertificates: -1 });
-        // 用于统计聚合查询
-        await statsCollection.createIndex({ domainId: 1, createdAt: -1 });
-
-        // 创建导入历史集合索引 - Create import history collection indexes
-        const historyCollection = db.collection('exam.import_history' as any);
-        await historyCollection.createIndex({ domainId: 1, createdAt: -1 });
-        // 用于用户操作审计
-        await historyCollection.createIndex({ domainId: 1, importedBy: 1 });
-
-        // 创建预设集合索引 - Create presets collection indexes
         const presetCollection = db.collection('exam.presets' as any);
-        await presetCollection.createIndex({ domainId: 1, type: 1 });
-        await presetCollection.createIndex({ domainId: 1, enabled: 1 });
-        await presetCollection.createIndex({ domainId: 1, createdAt: -1 });
+        const statsCollection = db.collection('exam.user_stats' as any);
+
+        await Promise.all([
+            // 证书集合索引 - Certificate collection indexes
+            certCollection.createIndex({ domainId: 1, uid: 1 }),
+            certCollection.createIndex({ domainId: 1, status: 1 }),
+            certCollection.createIndex({ domainId: 1, category: 1 }),
+            certCollection.createIndex({ domainId: 1, uid: 1, status: 1 }),
+            certCollection.createIndex({ issueDate: -1 }),
+            certCollection.createIndex({ createdAt: -1 }),
+            certCollection.createIndex({ domainId: 1, createdAt: -1 }),
+
+            // 新增优化索引 - New optimization indexes
+            certCollection.createIndex({ domainId: 1, presetId: 1 }),
+            certCollection.createIndex({ domainId: 1, examType: 1 }),
+            certCollection.createIndex({ domainId: 1, competitionName: 1 }),
+            certCollection.createIndex({ domainId: 1, certificationSeries: 1 }),
+            certCollection.createIndex({ domainId: 1, examType: 1, issueDate: -1 }),
+
+            // 预设集合索引 - Preset collection indexes
+            presetCollection.createIndex({ domainId: 1, type: 1 }),
+            presetCollection.createIndex({ domainId: 1, enabled: 1 }),
+            presetCollection.createIndex({ domainId: 1, createdAt: -1 }),
+
+            // 用户统计集合索引 - User stats collection indexes
+            statsCollection.createIndex({ domainId: 1, uid: 1 }, { unique: true }),
+            statsCollection.createIndex({ domainId: 1, totalCertificates: -1 }),
+        ]);
 
         console.log('[ExamHall] ✅ 数据库集合和索引初始化完成 (Database initialized successfully)');
     } catch (error: any) {
@@ -108,10 +107,8 @@ export default async function apply(ctx: Context, _config: any = {}) {
 
     // 预设 API - Preset APIs
     ctx.Route('exam_list_presets', '/exam/admin/presets', PresetListHandler);
-    // ctx.Route('exam_create_preset', '/exam/admin/presets', PresetCreateHandler); // Merged into PresetListHandler
-    // ctx.Route('exam_batch_delete_presets', '/exam/admin/presets', PresetBatchDeleteHandler); // Not used in frontend
     ctx.Route('exam_detail_preset', '/exam/admin/presets/:id', PresetDetailHandler);
     ctx.Route('exam_toggle_preset', '/exam/admin/presets/:id/toggle', PresetToggleHandler);
 
-    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 10 个路由 (Plugin loaded, 10 routes registered)');
+    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 13 个路由 (Plugin loaded, 13 routes registered)');
 }
