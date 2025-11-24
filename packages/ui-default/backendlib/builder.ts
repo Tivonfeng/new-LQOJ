@@ -29,7 +29,9 @@ const federationPlugin: esbuild.Plugin = {
   name: 'federation',
   setup(b) {
     const packages = {
+      'react/jsx-runtime': 'jsxRuntime',
       react: 'React',
+      'react-dom/client': 'ReactDOM',
       'react-dom': 'ReactDOM',
       jquery: '$',
     };
@@ -38,7 +40,7 @@ const federationPlugin: esbuild.Plugin = {
       namespace: 'ui-default',
     }));
     for (const key in packages) {
-      b.onResolve({ filter: new RegExp(`^${key}($|\\/)`) }, () => ({
+      b.onResolve({ filter: new RegExp(`^${key}$`) }, () => ({
         path: packages[key],
         namespace: 'ui-default',
       }));

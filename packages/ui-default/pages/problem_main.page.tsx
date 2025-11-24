@@ -85,9 +85,12 @@ function updateSelection() {
 
 function loadQuery() {
   const q = $('[name="q"]').val().toString();
+  const sort = $('[name="sort"]').val().toString();
   const url = new URL(window.location.href);
   if (!q) url.searchParams.delete('q');
   else url.searchParams.set('q', q);
+  if (sort && sort !== 'default') url.searchParams.set('sort', sort);
+  else url.searchParams.delete('sort');
   url.searchParams.delete('page');
   pjax.request({ url: url.toString() });
 }
@@ -370,7 +373,7 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
   }, [pids]);
 
   return (<>
-    <a href="javascript:;" className="menu__link display-mode-hide" onClick={() => setDialogOpen(true)}>
+    <a className="menu__link display-mode-hide" onClick={() => setDialogOpen(true)}>
       <span className="icon icon-stack"></span>
       {' '}{i18n('{0} problem(s) selected', pids.length)}
     </a>
@@ -379,7 +382,7 @@ function ProblemSelectionDisplay(props) { // eslint-disable-line
         <div className="dialog__body" style={{ height: 'calc(100% - 45px)' }}>
           <div className="row">
             <div className="columns">
-              <h1>Select Problems</h1>
+              <h1>{i18n('Select Problems')}</h1>
             </div>
           </div>
           <div className="row">
@@ -443,6 +446,7 @@ const page = new NamedPage(['problem_main'], () => {
   });
   $('#searchForm').on('submit', inputChanged);
   $('#searchForm').find('input').on('input', _.debounce(inputChanged, 500));
+  $('#searchForm').find('select[name="sort"]').on('change', inputChanged);
   $('.dialog-button').on('click', (ev) => {
     categoryDialog.clear().open();
     ev.preventDefault();

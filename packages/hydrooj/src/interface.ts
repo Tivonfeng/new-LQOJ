@@ -311,7 +311,7 @@ export interface DomainDoc extends Record<string, any> {
 // Message
 export interface MessageDoc {
     from: number;
-    to: number;
+    to: number | number[];
     content: string;
     flag: number;
 }
@@ -588,7 +588,7 @@ export interface Model {
     record: typeof import('./model/record').default;
     setting: typeof import('./model/setting');
     solution: typeof import('./model/solution').default;
-    system: typeof import('./model/system');
+    system: typeof import('./model/system').default;
     task: typeof import('./model/task').default;
     schedule: typeof import('./model/schedule').default;
     oplog: typeof import('./model/oplog');
