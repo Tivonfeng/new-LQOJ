@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import * as fs from 'fs';
 import { ObjectId } from 'mongodb';
 import { Context } from 'hydrooj';
@@ -17,6 +16,8 @@ export interface Certificate {
     certificateName: string;
     /** 认证/颁发机构（如：全国青少年信息学竞赛组委会） */
     certifyingBody: string;
+    /** 所属预设ID（关联到证书预设，用于快速查询和管理） */
+    presetId?: string | ObjectId;
     /** 证书分类（用于统计和筛选，如：竞赛、考级、其他） */
     category: string;
     /** 证书等级（如：初级、中级、高级、专家，可选） */
@@ -105,6 +106,7 @@ export class CertificateService {
             certificateCode: generateCertCode(),
             certificateName: data.certificateName!,
             certifyingBody: data.certifyingBody!,
+            presetId: data.presetId, // 保存预设ID
             category: data.category!,
             level: data.level,
             issueDate: new Date(data.issueDate!),
@@ -322,7 +324,7 @@ export class CertificateService {
         }
 
         // 删除数据库记录
-        let deleteResult;
+        let deleteResult: any;
         try {
             deleteResult = await collection.deleteMany({ _id: { $in: ids } });
         } catch (err: any) {
@@ -330,27 +332,31 @@ export class CertificateService {
             throw new Error(`批量删除证书失败: ${err.message}`);
         }
 
-        // 更新用户统计（有重试机制）
+        // 批量更新用户统计信息
+        // 优化：使用批量操作替代循环，减少数据库往返
         const uniqueUIDs = new Set(certs.map((c) => c.uid));
         const statsUpdateErrors: Array<{ uid: number, error: string }> = [];
 
-        for (const uid of uniqueUIDs) {
-            try {
-                await this.updateUserStats(uid);
-            } catch (err: any) {
-                statsUpdateErrors.push({
-                    uid,
-                    error: err.message,
-                });
-                // 重试一次
+        // 收集所有更新操作
+        const updatePromises = Array.from(uniqueUIDs).map((uid) =>
+            this.updateUserStats(uid).catch((err: any) => ({
+                uid,
+                error: err.message,
+            })),
+        );
 
-                try {
-                    await this.updateUserStats(uid);
-                    // 重试成功，移除错误记录
-                    statsUpdateErrors.pop();
-                } catch (retryErr: any) {
-                    console.error(`[ExamHall] 用户 ${uid} 统计更新失败（包括重试）: ${retryErr.message}`);
+        // 并发执行所有更新，避免顺序等待
+        const results = await Promise.allSettled(updatePromises);
+
+        // 收集失败的更新
+        for (const result of results) {
+            if (result.status === 'rejected') {
+                const error = result.reason;
+                if (error && typeof error === 'object' && 'uid' in error) {
+                    statsUpdateErrors.push(error);
                 }
+            } else if (result.value && typeof result.value === 'object' && 'uid' in result.value) {
+                statsUpdateErrors.push(result.value);
             }
         }
 
@@ -608,297 +614,6 @@ export class CertificateService {
     async getCategoryStats(uid: number): Promise<Record<string, number>> {
         const stats = await this.getUserStats(uid);
         return stats?.categoryStats || {};
-    }
-
-    /**
-     * ===== 新增排行榜方法 =====
-     */
-
-    /**
-     * 获取综合排行榜 (基于总权重)
-     * @param limit 返回数量
-     * @returns 排行榜数据，包含排名和权重信息
-     */
-    async getComprehensiveLeaderboard(limit: number = 100): Promise<any[]> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        const results = await statsCollection
-            .find({ domainId: this.ctx.domain!._id })
-            .sort({ totalWeight: -1 })
-            .limit(limit)
-            .toArray();
-
-        return results.map((item: any, index: number) => ({
-            rank: index + 1,
-            uid: item.uid,
-            totalWeight: item.totalWeight || 0,
-            totalCertificates: item.totalCertificates || 0,
-            competitionCount: item.competitionStats?.total || 0,
-            certificationCount: item.certificationStats?.total || 0,
-            competitionWeight: item.competitionStats?.weight || 0,
-            certificationWeight: item.certificationStats?.weight || 0,
-        }));
-    }
-
-    /**
-     * 获取竞赛排行榜 (仅竞赛证书)
-     * @param limit 返回数量
-     * @returns 排行榜数据
-     */
-    async getCompetitionLeaderboard(limit: number = 100): Promise<any[]> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        const results = await statsCollection
-            .find({
-                domainId: this.ctx.domain!._id,
-                'competitionStats.weight': { $gt: 0 },
-            })
-            .sort({ 'competitionStats.weight': -1 })
-            .limit(limit)
-            .toArray();
-
-        return results.map((item: any, index: number) => ({
-            rank: index + 1,
-            uid: item.uid,
-            competitionCount: item.competitionStats?.total || 0,
-            competitionWeight: item.competitionStats?.weight || 0,
-            competitions: item.competitionStats?.competitions || {},
-        }));
-    }
-
-    /**
-     * 获取考级排行榜 (仅考级证书)
-     * @param limit 返回数量
-     * @returns 排行榜数据
-     */
-    async getCertificationLeaderboard(limit: number = 100): Promise<any[]> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        const results = await statsCollection
-            .find({
-                domainId: this.ctx.domain!._id,
-                'certificationStats.weight': { $gt: 0 },
-            })
-            .sort({ 'certificationStats.weight': -1 })
-            .limit(limit)
-            .toArray();
-
-        return results.map((item: any, index: number) => ({
-            rank: index + 1,
-            uid: item.uid,
-            certificationCount: item.certificationStats?.total || 0,
-            certificationWeight: item.certificationStats?.weight || 0,
-            series: item.certificationStats?.series || {},
-            highestLevels: item.certificationStats?.highestLevels || {},
-        }));
-    }
-
-    /**
-     * 获取用户在综合排行榜中的排名
-     * @param uid 用户ID
-     * @returns 排名信息
-     */
-    async getUserComprehensiveRank(uid: number): Promise<any> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        // 获取用户的权重
-        const userStats = await statsCollection.findOne({
-            domainId: this.ctx.domain!._id,
-            uid,
-        });
-
-        if (!userStats) {
-            return null;
-        }
-
-        // 计算排名（权重大于用户权重的数量 + 1）
-        const rank = await statsCollection.countDocuments({
-            domainId: this.ctx.domain!._id,
-            totalWeight: { $gt: userStats.totalWeight || 0 },
-        });
-
-        // 获取总用户数
-        const total = await statsCollection.countDocuments({
-            domainId: this.ctx.domain!._id,
-        });
-
-        return {
-            uid,
-            rank: rank + 1,
-            total,
-            totalWeight: userStats.totalWeight || 0,
-            totalCertificates: userStats.totalCertificates || 0,
-            competitionStats: userStats.competitionStats || {},
-            certificationStats: userStats.certificationStats || {},
-        };
-    }
-
-    /**
-     * 获取用户在竞赛排行榜中的排名
-     * @param uid 用户ID
-     * @returns 排名信息
-     */
-    async getUserCompetitionRank(uid: number): Promise<any> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        const userStats = await statsCollection.findOne({
-            domainId: this.ctx.domain!._id,
-            uid,
-        });
-
-        if (!userStats || !userStats.competitionStats?.weight) {
-            return null;
-        }
-
-        const rank = await statsCollection.countDocuments({
-            domainId: this.ctx.domain!._id,
-            'competitionStats.weight': { $gt: userStats.competitionStats.weight },
-        });
-
-        return {
-            uid,
-            rank: rank + 1,
-            competitionWeight: userStats.competitionStats?.weight || 0,
-            competitionCount: userStats.competitionStats?.total || 0,
-            competitions: userStats.competitionStats?.competitions || {},
-        };
-    }
-
-    /**
-     * 获取用户在考级排行榜中的排名
-     * @param uid 用户ID
-     * @returns 排名信息
-     */
-    async getUserCertificationRank(uid: number): Promise<any> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        const userStats = await statsCollection.findOne({
-            domainId: this.ctx.domain!._id,
-            uid,
-        });
-
-        if (!userStats || !userStats.certificationStats?.weight) {
-            return null;
-        }
-
-        const rank = await statsCollection.countDocuments({
-            domainId: this.ctx.domain!._id,
-            'certificationStats.weight': { $gt: userStats.certificationStats.weight },
-        });
-
-        return {
-            uid,
-            rank: rank + 1,
-            certificationWeight: userStats.certificationStats?.weight || 0,
-            certificationCount: userStats.certificationStats?.total || 0,
-            series: userStats.certificationStats?.series || {},
-            highestLevels: userStats.certificationStats?.highestLevels || {},
-        };
-    }
-
-    /**
-     * 获取竞赛统计信息
-     * @returns 全域竞赛统计
-     */
-    async getCompetitionStats(): Promise<any> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        // 聚合查询：统计所有竞赛
-        const results = await statsCollection
-            .aggregate([
-                {
-                    $match: { domainId: this.ctx.domain!._id },
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalCompetitionCount: { $sum: '$competitionStats.total' },
-                        totalCompetitionWeight: { $sum: '$competitionStats.weight' },
-                        usersWithCompetitions: {
-                            $sum: { $cond: ['$competitionStats.weight', 1, 0] },
-                        },
-                    },
-                },
-            ])
-            .toArray();
-
-        return results[0] || { totalCompetitionCount: 0, totalCompetitionWeight: 0, usersWithCompetitions: 0 };
-    }
-
-    /**
-     * 获取考级统计信息
-     * @returns 全域考级统计
-     */
-    async getCertificationStats(): Promise<any> {
-        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
-
-        // 聚合查询：统计所有考级
-        const results = await statsCollection
-            .aggregate([
-                {
-                    $match: { domainId: this.ctx.domain!._id },
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalCertificationCount: { $sum: '$certificationStats.total' },
-                        totalCertificationWeight: { $sum: '$certificationStats.weight' },
-                        usersWithCertifications: {
-                            $sum: { $cond: ['$certificationStats.weight', 1, 0] },
-                        },
-                    },
-                },
-            ])
-            .toArray();
-
-        return results[0] || {
-            totalCertificationCount: 0,
-            totalCertificationWeight: 0,
-            usersWithCertifications: 0,
-        };
-    }
-
-    /**
-     * 获取所有考级系列的统计
-     * @returns 按系列统计的考级数据
-     */
-    async getCertificationSeriesStats(): Promise<Record<string, any>> {
-        const collection = this.ctx.db.collection('exam.certificates' as any);
-
-        const results = await collection
-            .aggregate([
-                {
-                    $match: {
-                        domainId: this.ctx.domain!._id,
-                        examType: 'certification',
-                        status: 'active',
-                    },
-                },
-                {
-                    $group: {
-                        _id: '$certificationSeries',
-                        count: { $sum: 1 },
-                        levels: { $addToSet: '$levelNumber' },
-                        avgLevel: { $avg: '$levelNumber' },
-                    },
-                },
-                {
-                    $sort: { count: -1 },
-                },
-            ])
-            .toArray();
-
-        const seriesStats = {} as Record<string, any>;
-        for (const item of results) {
-            seriesStats[item._id || '其他'] = {
-                count: item.count,
-                levels: (item.levels || []).sort((a: number, b: number) => a - b),
-                avgLevel: (item.avgLevel || 0).toFixed(2),
-                maxLevel: Math.max(...(item.levels || [0])),
-            };
-        }
-
-        return seriesStats;
     }
 }
 

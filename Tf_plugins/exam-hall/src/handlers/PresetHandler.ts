@@ -199,8 +199,6 @@ export class PresetDetailHandler extends PresetHandlerBase {
             if (enabled !== undefined) updateData.enabled = enabled;
             if (events !== undefined) updateData.events = events;
 
-            console.log(`[ExamHall] 更新预设请求: id=${id}, domainId=${this.ctx.domain!._id}, updateData=${JSON.stringify(updateData)}`);
-
             const presetService = new PresetService(this.ctx);
             const preset = await presetService.updatePreset(new ObjectId(id), updateData);
 
@@ -238,46 +236,6 @@ export class PresetDetailHandler extends PresetHandlerBase {
             this.sendSuccess({
                 success: true,
                 message: '预设删除成功',
-            });
-        } catch (err: any) {
-            if (err.message === 'PERMISSION_DENIED') return;
-            this.sendError(err.message, 500);
-        }
-    }
-}
-
-/**
- * 预设批量删除处理器
- * 注：实际上不需要注册在 /exam/admin/presets 上，使用 DELETE 方法时会与 POST 冲突
- * 改为继承 PresetListHandler 或单独使用不同路由
- * 路由: DELETE /exam/admin/presets/:ids 或作为 PostHandler 的功能
- */
-export class PresetBatchDeleteHandler extends PresetHandlerBase {
-    async delete() {
-        try {
-            this.checkManagePermission();
-
-            const { ids } = this.request.body;
-
-            if (!Array.isArray(ids) || ids.length === 0) {
-                this.sendError('ids 必须是非空数组', 400);
-                return;
-            }
-
-            const validIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-
-            if (validIds.length === 0) {
-                this.sendError('没有有效的预设ID', 400);
-                return;
-            }
-
-            const presetService = new PresetService(this.ctx);
-            const deletedCount = await presetService.deletePresets(validIds);
-
-            this.sendSuccess({
-                success: true,
-                deletedCount,
-                message: `成功删除 ${deletedCount} 个预设`,
             });
         } catch (err: any) {
             if (err.message === 'PERMISSION_DENIED') return;

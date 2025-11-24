@@ -566,21 +566,6 @@ const CertificateManagement: React.FC = () => {
   useEffect(() => {
     if (showAddCertificateModal) {
       fetchPresets();
-      // 清除表单数据（但保留已选用户）
-      if (!editingId) {
-        setFormData((prev) => ({
-          ...prev,
-          presetId: '',
-          presetName: '',
-          certifyingBody: '',
-          event: '',
-          level: '',
-          issueDate: '',
-          certificateImageUrl: '',
-          certificateImageKey: '',
-          notes: '',
-        }));
-      }
     }
   }, [showAddCertificateModal]);
 
@@ -781,23 +766,52 @@ const CertificateManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (cert: CertificateInfo) => {
-    // 将日期转换为字符串格式
-    const formatDate = (date: string | Date | undefined): string => {
-      if (!date) return '';
-      if (typeof date === 'string') return date;
-      return date instanceof Date ? date.toISOString().split('T')[0] : '';
-    };
+  /**
+   * 格式化日期为 YYYY-MM-DD 字符串格式
+   */
+  const formatDateToString = (date: string | Date | undefined): string => {
+    if (!date) return '';
+    if (typeof date === 'string') return date;
+    return date instanceof Date ? date.toISOString().split('T')[0] : '';
+  };
 
+  /**
+   * 重置表单并清除用户选择组件
+   */
+  const resetFormAndUser = () => {
+    setFormData({
+      username: '',
+      uid: '',
+      presetId: '',
+      presetName: '',
+      certifyingBody: '',
+      event: '',
+      level: '',
+      issueDate: '',
+      certificateImageUrl: '',
+      certificateImageKey: '',
+      notes: '',
+    });
+    // 清理UserSelectAutoComplete
+    if (userSelectComponentRef.current) {
+      try {
+        userSelectComponentRef.current.clear();
+      } catch (error) {
+        console.warn('Failed to clear UserSelectAutoComplete:', error);
+      }
+    }
+  };
+
+  const handleEdit = (cert: CertificateInfo) => {
     setFormData({
       username: cert.username || '',
       uid: cert.uid,
-      presetId: '',
+      presetId: cert.presetId || '',
       presetName: cert.certificateName,
       certifyingBody: cert.certifyingBody,
-      event: '',
+      event: cert.category || '', // 从 category 加载赛项
       level: cert.level || '',
-      issueDate: formatDate(cert.issueDate),
+      issueDate: formatDateToString(cert.issueDate),
       certificateImageUrl: cert.certificateImageUrl || '',
       certificateImageKey: cert.certificateImageKey || '',
       notes: cert.notes || '',
@@ -856,28 +870,8 @@ const CertificateManagement: React.FC = () => {
           <button
             className="btn btn-primary"
             onClick={() => {
+              resetFormAndUser();
               setEditingId(null);
-              setFormData({
-                username: '',
-                uid: '',
-                presetId: '',
-                presetName: '',
-                certifyingBody: '',
-                event: '',
-                level: '',
-                issueDate: '',
-                certificateImageUrl: '',
-                certificateImageKey: '',
-                notes: '',
-              });
-              // 清理UserSelectAutoComplete
-              if (userSelectComponentRef.current) {
-                try {
-                  userSelectComponentRef.current.clear();
-                } catch (error) {
-                  console.warn('Failed to clear UserSelectAutoComplete:', error);
-                }
-              }
               setShowAddCertificateModal(true);
             }}
           >
@@ -1176,27 +1170,7 @@ const CertificateManagement: React.FC = () => {
                       className="btn btn-secondary"
                       onClick={() => {
                         setEditingId(null);
-                        setFormData({
-                          username: '',
-                          uid: '',
-                          presetId: '',
-                          presetName: '',
-                          certifyingBody: '',
-                          event: '',
-                          level: '',
-                          issueDate: '',
-                          certificateImageUrl: '',
-                          certificateImageKey: '',
-                          notes: '',
-                        });
-                        // 清理UserSelectAutoComplete
-                        if (userSelectComponentRef.current) {
-                          try {
-                            userSelectComponentRef.current.clear();
-                          } catch (error) {
-                            console.warn('Failed to clear UserSelectAutoComplete:', error);
-                          }
-                        }
+                        resetFormAndUser();
                       }}
                       disabled={isSubmitting}
                     >

@@ -88,17 +88,7 @@ export class PresetService {
         delete updateData.domainId;
         delete updateData.createdAt;
 
-        console.log(`[ExamHall] 执行更新: 查询条件 id=${id}, domainId=${this.ctx.domain!._id}`);
-
-        // 首先检查预设是否存在
-        const existingPreset = await collection.findOne({ _id: id });
-        if (!existingPreset) {
-            console.error(`[ExamHall] 预设完全不存在: id=${id}`);
-            throw new Error('预设不存在');
-        }
-
-        console.log(`[ExamHall] 找到预设, domainId=${existingPreset.domainId}, ctx.domain=${this.ctx.domain!._id}`);
-
+        // 使用 findOneAndUpdate 进行原子操作，会自动返回 null 如果找不到文档
         const result = await collection.findOneAndUpdate(
             { _id: id, domainId: this.ctx.domain!._id },
             { $set: updateData },

@@ -21,6 +21,43 @@ export class CertificateManagementPageHandler extends Handler {
 }
 
 export class CertificateManagementListHandler extends Handler {
+    /**
+     * 解析用户搜索参数为 uid
+     * @param searchParam 可以是数字 uid 或用户名
+     * @returns 用户 uid，如果用户不存在返回 undefined
+     */
+    private async resolveUserIdFromParam(searchParam: string): Promise<number | undefined> {
+        const UserModel = (global as any).Hydro.model.user;
+
+        // 先尝试数字 uid
+        if (/^\d+$/.test(searchParam)) {
+            return Number.parseInt(searchParam);
+        }
+
+        // 尝试按用户名搜索
+        try {
+            const user = await UserModel.getByUname('system', searchParam.trim());
+            return user?._id;
+        } catch (err) {
+            // 搜索用户失败，返回 undefined
+            return undefined;
+        }
+    }
+
+    /**
+     * 返回空结果响应
+     */
+    private returnEmptyResult(skip: number, limit: number) {
+        this.response.type = 'application/json';
+        this.response.body = {
+            success: true,
+            data: [],
+            total: 0,
+            skip,
+            limit,
+        };
+    }
+
     async get() {
         // 权限检查 - 只有管理员可以访问
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
@@ -40,44 +77,14 @@ export class CertificateManagementListHandler extends Handler {
 
             // 如果有搜索参数，解析为 uid
             if (searchParam) {
-                // 先尝试数字 uid
-                if (/^\d+$/.test(searchParam)) {
-                    targetUid = Number.parseInt(searchParam);
-                } else {
-                    // 尝试按用户名搜索
-                    try {
-                        const user = await UserModel.getByUname('system', searchParam.trim());
-                        if (user) {
-                            targetUid = user._id;
-                        } else {
-                            // 用户不存在，返回空结果
-                            this.response.type = 'application/json';
-                            this.response.body = {
-                                success: true,
-                                data: [],
-                                total: 0,
-                                skip,
-                                limit,
-                            };
-                            return;
-                        }
-                    } catch (err) {
-                        // 搜索用户失败，返回空结果
-                        this.response.type = 'application/json';
-                        this.response.body = {
-                            success: true,
-                            data: [],
-                            total: 0,
-                            skip,
-                            limit,
-                        };
-                        return;
-                    }
+                targetUid = await this.resolveUserIdFromParam(searchParam);
+                if (targetUid === undefined) {
+                    // 用户不存在，返回空结果
+                    this.returnEmptyResult(skip, limit);
+                    return;
                 }
 
-                if (targetUid !== undefined) {
-                    queryCondition.uid = targetUid;
-                }
+                queryCondition.uid = targetUid;
             }
 
             // 并行获取证书列表和总数

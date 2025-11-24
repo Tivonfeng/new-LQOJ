@@ -9,15 +9,10 @@ import {
     CertificateManagementPageHandler,
     CertificateStatsHandler,
     CertificateUploadHandler,
-    DomainStatsHandler,
     ExamHallHandler,
-    GrowthTrendHandler,
-    LeaderboardHandler,
-    PopularCategoriesHandler,
     PresetDetailHandler,
     PresetListHandler,
     PresetToggleHandler,
-    UserRankHandler,
 } from './src/handlers';
 // 导入服务层 - 仅导入类型定义用于数据库集合声明
 import type { Certificate } from './src/services';
@@ -35,8 +30,8 @@ declare module 'hydrooj' {
 
 /**
  * 赛考大厅插件主入口
- * 处理线下赛考证书管理、七牛云存储和排行榜统计
- * Exam Hall Plugin - Manage offline exam certificates, cloud storage, and leaderboard statistics
+ * 处理线下赛考证书管理和七牛云存储
+ * Exam Hall Plugin - Manage offline exam certificates and cloud storage
  */
 export default async function apply(ctx: Context, _config: any = {}) {
     console.log('[ExamHall] 🚀 赛考大厅插件正在加载... (Exam Hall Plugin Loading...)');
@@ -107,13 +102,6 @@ export default async function apply(ctx: Context, _config: any = {}) {
     ctx.Route('exam_get_certificate', '/exam/certificates/:id', CertificateDetailHandler);
     ctx.Route('exam_user_stats', '/exam/stats/certificates', CertificateStatsHandler);
 
-    // 排行榜和统计 - Leaderboard and statistics
-    ctx.Route('exam_leaderboard', '/exam/leaderboard', LeaderboardHandler);
-    ctx.Route('exam_user_rank', '/exam/rank/:uid', UserRankHandler);
-    ctx.Route('exam_domain_stats', '/exam/stats/domain', DomainStatsHandler);
-    ctx.Route('exam_growth_trend', '/exam/stats/trend', GrowthTrendHandler);
-    ctx.Route('exam_popular_categories', '/exam/stats/popular-categories', PopularCategoriesHandler);
-
     // 证书管理后台 - Certificate management admin
     ctx.Route('exam_certificate_management', '/exam/admin/manage', CertificateManagementPageHandler);
     ctx.Route('exam_certificate_management_list', '/exam/admin/certificates-list', CertificateManagementListHandler);
@@ -125,5 +113,5 @@ export default async function apply(ctx: Context, _config: any = {}) {
     ctx.Route('exam_detail_preset', '/exam/admin/presets/:id', PresetDetailHandler);
     ctx.Route('exam_toggle_preset', '/exam/admin/presets/:id/toggle', PresetToggleHandler);
 
-    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 18 个路由 (Plugin loaded, 18 routes registered)');
+    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 10 个路由 (Plugin loaded, 10 routes registered)');
 }

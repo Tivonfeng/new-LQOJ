@@ -1,10 +1,3 @@
-export { default as CertificateLeaderboardService } from './CertificateLeaderboardService';
-export type {
-    CategoryStats,
-    DomainStats,
-    UserLeaderboardEntry,
-} from './CertificateLeaderboardService';
-
 // 服务层导出
 export { default as CertificateService } from './CertificateService';
 // 类型导出

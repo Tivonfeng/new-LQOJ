@@ -84,8 +84,9 @@ export class CertificateUploadHandler extends CertificateHandlerBase {
                 max_file_size: '10MB',
                 allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
             });
-        } catch (err) {
-            // 权限检查已自动返回错误
+        } catch (err: any) {
+            if (err.message === 'PERMISSION_DENIED') return;
+            this.sendError(`获取上传配置失败: ${err.message}`, 500);
         }
     }
 
@@ -214,10 +215,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     finalCertName = preset.name;
                     finalCertifyingBody = preset.certifyingBody;
                     // category 应该使用前端传来的 category（即赛项），而不是预设名称
-                    // 如果没有 category 则使用赛项名称
-                    if (!finalCategory) {
-                        finalCategory = category; // 使用前端传来的赛项或分类
-                    }
+                    finalCategory ||= category; // 如果没有 category 则使用赛项名称
                     finalExamType = preset.type;
                     finalWeight = preset.weight || 1;
                 } catch (err: any) {
@@ -246,6 +244,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 {
                     certificateName: finalCertName,
                     certifyingBody: finalCertifyingBody,
+                    presetId, // 保存预设ID
                     category: finalCategory,
                     level,
                     issueDate: new Date(issueDate),
@@ -482,6 +481,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             const {
                 certificateName,
                 certifyingBody,
+                presetId,
                 category,
                 level,
                 issueDate,
@@ -489,17 +489,43 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 notes,
             } = this.request.body;
 
-            // 更新证书
+            // 更新证书 - 只更新允许的字段，保留 examType、competitionName 等用于统计的字段
             const certService = new CertificateService(this.ctx);
-            const certificate = await certService.updateCertificate(new ObjectId(id), {
+            const updateData: any = {
                 certificateName,
                 certifyingBody,
+                presetId,
                 category,
                 level,
                 issueDate: issueDate ? new Date(issueDate) : undefined,
                 status,
                 notes,
-            });
+            };
+
+            // 如果提供了预设ID，从预设中获取examType
+            if (presetId) {
+                try {
+                    const presetService = new PresetService(this.ctx);
+                    const preset = await presetService.getPresetById(new ObjectId(presetId));
+
+                    if (preset) {
+                        // 从预设更新examType，用于统计
+                        updateData.examType = preset.type;
+                    }
+                } catch (err: any) {
+                    console.warn(`[ExamHall] 获取预设失败: ${err.message}`);
+                    // 如果预设获取失败，继续执行更新
+                }
+            }
+
+            // 删除 undefined 的字段，避免覆盖原有的统计字段
+            for (const key of Object.keys(updateData)) {
+                if (updateData[key] === undefined) {
+                    delete updateData[key];
+                }
+            }
+
+            const certificate = await certService.updateCertificate(new ObjectId(id), updateData);
 
             this.sendSuccess({
                 success: true,
