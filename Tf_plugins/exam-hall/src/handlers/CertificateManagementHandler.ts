@@ -27,26 +27,57 @@ export class CertificateManagementListHandler extends Handler {
 
         try {
             // 获取查询参数
-            const uid = this.request.query?.uid ? Number(this.request.query.uid as string) : null;
+            const searchParam = (this.request.query?.uid as string) || undefined;
             const skip = this.request.query?.skip ? Math.max(0, Number(this.request.query.skip as string)) : 0;
             const limit = this.request.query?.limit ? Math.min(1000, Math.max(1, Number(this.request.query.limit as string))) : 100;
 
-            // 验证 UID 参数
-            if (uid !== null && (Number.isNaN(uid) || uid < 0)) {
-                this.response.status = 400;
-                this.response.body = {
-                    success: false,
-                    error: '无效的 uid 参数',
-                };
-                return;
-            }
-
             const certCollection = this.ctx.db.collection('exam.certificates' as any);
+            const UserModel = (global as any).Hydro.model.user;
 
             // 构建查询条件
             const queryCondition: any = { domainId: this.ctx.domain!._id };
-            if (uid !== null) {
-                queryCondition.uid = uid;
+            let targetUid: number | undefined;
+
+            // 如果有搜索参数，解析为 uid
+            if (searchParam) {
+                // 先尝试数字 uid
+                if (/^\d+$/.test(searchParam)) {
+                    targetUid = Number.parseInt(searchParam);
+                } else {
+                    // 尝试按用户名搜索
+                    try {
+                        const user = await UserModel.getByUname('system', searchParam.trim());
+                        if (user) {
+                            targetUid = user._id;
+                        } else {
+                            // 用户不存在，返回空结果
+                            this.response.type = 'application/json';
+                            this.response.body = {
+                                success: true,
+                                data: [],
+                                total: 0,
+                                skip,
+                                limit,
+                            };
+                            return;
+                        }
+                    } catch (err) {
+                        // 搜索用户失败，返回空结果
+                        this.response.type = 'application/json';
+                        this.response.body = {
+                            success: true,
+                            data: [],
+                            total: 0,
+                            skip,
+                            limit,
+                        };
+                        return;
+                    }
+                }
+
+                if (targetUid !== undefined) {
+                    queryCondition.uid = targetUid;
+                }
             }
 
             // 并行获取证书列表和总数
@@ -59,9 +90,6 @@ export class CertificateManagementListHandler extends Handler {
                     .toArray(),
                 certCollection.countDocuments(queryCondition),
             ]);
-
-            // 获取用户模型以查询用户名
-            const UserModel = (global as any).Hydro.model.user;
 
             // 为每个证书添加用户名
             const certificatesWithUsernames = await Promise.all(

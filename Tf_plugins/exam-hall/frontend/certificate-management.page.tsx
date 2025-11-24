@@ -9,13 +9,11 @@ interface CertificateFormData {
   username: string;
   uid: number | '';
   presetId: string;
-  certificateName: string;
+  presetName: string;
   certifyingBody: string;
-  category: string;
+  event: string;
   level: string;
-  score: number | '';
   issueDate: string;
-  expiryDate: string;
   certificateImageUrl: string;
   certificateImageKey: string;
   notes: string;
@@ -214,36 +212,41 @@ const CertificateUploader: React.FC<{
   );
 };
 
+/** 赛项数据类型 */
+interface ExamEventData {
+  name: string;
+  description?: string;
+}
+
 /** 预设表单数据类型 */
 interface PresetFormData {
   type: 'competition' | 'certification';
   name: string;
-  certificateName: string;
   certifyingBody: string;
-  category: string;
-  competitionName: string;
-  certificationSeries: string;
   weight: number | '';
   description: string;
+  events: ExamEventData[];
 }
 
 const CertificateManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'add' | 'list' | 'presets'>('add');
   const [formData, setFormData] = useState<CertificateFormData>({
     username: '',
     uid: '',
     presetId: '',
-    certificateName: '',
+    presetName: '',
     certifyingBody: '',
-    category: '',
+    event: '',
     level: '',
-    score: '',
     issueDate: '',
-    expiryDate: '',
     certificateImageUrl: '',
     certificateImageKey: '',
     notes: '',
   });
+
+  // Modal 状态管理
+  const [showAddCertificateModal, setShowAddCertificateModal] = useState(false);
+  const [showExamSettingsModal, setShowExamSettingsModal] = useState(false);
+  const [showAddExamForm, setShowAddExamForm] = useState(false);
 
   const [certificates, setCertificates] = useState<CertificateInfo[]>([]);
   const [presets, setPresets] = useState<CertificatePreset[]>([]);
@@ -261,16 +264,13 @@ const CertificateManagement: React.FC = () => {
   const [presetFormData, setPresetFormData] = useState<PresetFormData>({
     type: 'competition',
     name: '',
-    certificateName: '',
     certifyingBody: '',
-    category: '',
-    competitionName: '',
-    certificationSeries: '',
     weight: 1,
     description: '',
+    events: [],
   });
-  const [presetActiveTab, setPresetActiveTab] = useState<'add' | 'list'>('add');
   const [isPresetSubmitting, setIsPresetSubmitting] = useState(false);
+  const [previewingCertId, setPreviewingCertId] = useState<string | null>(null);
 
   // 用户选择组件的引用
   const userInputRef = useRef<HTMLInputElement>(null);
@@ -283,23 +283,21 @@ const CertificateManagement: React.FC = () => {
         const $input = $(userInputRef.current);
         userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
           multi: false,
-          freeSolo: true,
-          freeSoloConverter: (input: string) => input,
+          freeSolo: false,
           onChange: (value: any) => {
-            if (value && typeof value === 'object' && value.uname) {
+            if (value && typeof value === 'object' && (value.uid || value._id)) {
+              const uid = value.uid || value._id;
+              const username = value.uname || value.username || '';
               setFormData((prev) => ({
                 ...prev,
-                username: value.uname,
+                username,
+                uid: uid.toString(),
               }));
-            } else if (typeof value === 'string') {
-              setFormData((prev) => ({
-                ...prev,
-                username: value,
-              }));
-            } else if (value === null || value === undefined) {
+            } else if (value === null || value === undefined || value === '') {
               setFormData((prev) => ({
                 ...prev,
                 username: '',
+                uid: '',
               }));
             }
           },
@@ -313,7 +311,7 @@ const CertificateManagement: React.FC = () => {
     return () => {
       if (userSelectComponentRef.current) {
         try {
-          userSelectComponentRef.current.detach();
+          userSelectComponentRef.current.detach?.();
         } catch (error) {
           console.warn('Failed to detach UserSelectAutoComplete:', error);
         }
@@ -380,31 +378,23 @@ const CertificateManagement: React.FC = () => {
 
   const validatePresetForm = (): boolean => {
     if (!presetFormData.type) {
-      setMessage({ type: 'error', text: '请选择预设类型' });
+      setMessage({ type: 'error', text: '请选择赛考类型' });
       return false;
     }
     if (!presetFormData.name.trim()) {
-      setMessage({ type: 'error', text: '请输入预设名称' });
-      return false;
-    }
-    if (!presetFormData.certificateName.trim()) {
-      setMessage({ type: 'error', text: '请输入证书名称' });
+      setMessage({ type: 'error', text: '请输入赛考名称' });
       return false;
     }
     if (!presetFormData.certifyingBody.trim()) {
       setMessage({ type: 'error', text: '请输入认证机构' });
       return false;
     }
-    if (!presetFormData.category.trim()) {
-      setMessage({ type: 'error', text: '请输入证书分类' });
+    if (!presetFormData.events || presetFormData.events.length === 0) {
+      setMessage({ type: 'error', text: '请添加至少一个赛项' });
       return false;
     }
-    if (presetFormData.type === 'competition' && !presetFormData.competitionName.trim()) {
-      setMessage({ type: 'error', text: '竞赛预设需要输入竞赛名称' });
-      return false;
-    }
-    if (presetFormData.type === 'certification' && !presetFormData.certificationSeries.trim()) {
-      setMessage({ type: 'error', text: '考级预设需要输入考级系列' });
+    if (presetFormData.events.some((event) => !event.name.trim())) {
+      setMessage({ type: 'error', text: '赛项名称不能为空' });
       return false;
     }
 
@@ -433,22 +423,25 @@ const CertificateManagement: React.FC = () => {
       const endpoint = editingPresetId ? `/exam/admin/presets/${editingPresetId}` : '/exam/admin/presets';
       const method = editingPresetId ? 'PUT' : 'POST';
 
+      const requestBody = {
+        name: presetFormData.name,
+        certifyingBody: presetFormData.certifyingBody,
+        weight: presetFormData.weight ? Number(presetFormData.weight) : 1,
+        description: presetFormData.description || undefined,
+        events: presetFormData.events,
+      };
+
+      // Only include type for POST requests (creating new presets)
+      if (!editingPresetId) {
+        (requestBody as any).type = presetFormData.type;
+      }
+
       const response = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type: presetFormData.type,
-          name: presetFormData.name,
-          certificateName: presetFormData.certificateName,
-          certifyingBody: presetFormData.certifyingBody,
-          category: presetFormData.category,
-          competitionName: presetFormData.type === 'competition' ? presetFormData.competitionName : undefined,
-          certificationSeries: presetFormData.type === 'certification' ? presetFormData.certificationSeries : undefined,
-          weight: presetFormData.weight ? Number(presetFormData.weight) : 1,
-          description: presetFormData.description || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -461,19 +454,13 @@ const CertificateManagement: React.FC = () => {
         setPresetFormData({
           type: 'competition',
           name: '',
-          certificateName: '',
           certifyingBody: '',
-          category: '',
-          competitionName: '',
-          certificationSeries: '',
           weight: 1,
           description: '',
+          events: [],
         });
         setEditingPresetId(null);
         await fetchAllPresets(presetType !== 'all' ? presetType : undefined);
-        setTimeout(() => {
-          setPresetActiveTab('list');
-        }, 1000);
       } else {
         setMessage({
           type: 'error',
@@ -527,16 +514,13 @@ const CertificateManagement: React.FC = () => {
     setPresetFormData({
       type: preset.type,
       name: preset.name,
-      certificateName: preset.certificateName,
       certifyingBody: preset.certifyingBody,
-      category: preset.category,
-      competitionName: preset.competitionName || '',
-      certificationSeries: preset.certificationSeries || '',
       weight: preset.weight || 1,
       description: preset.description || '',
+      events: preset.events?.map((e) => ({ name: e.name, description: e.description })) || [],
     });
     setEditingPresetId(preset._id || null);
-    setPresetActiveTab('add');
+    setShowAddExamForm(true);
   };
 
   const handlePresetToggle = async (id: string, currentEnabled: boolean) => {
@@ -571,21 +555,40 @@ const CertificateManagement: React.FC = () => {
     }
   };
 
+  // 初始化加载
   useEffect(() => {
-    if (activeTab === 'list') {
-      fetchCertificates();
-    } else if (activeTab === 'add') {
+    fetchCertificates();
+    fetchPresets();
+    fetchAllPresets();
+  }, []);
+
+  // 当打开Modal时加载数据
+  useEffect(() => {
+    if (showAddCertificateModal) {
       fetchPresets();
-    } else if (activeTab === 'presets') {
-      fetchAllPresets(presetType !== 'all' ? presetType : undefined);
+      // 清除表单数据（但保留已选用户）
+      if (!editingId) {
+        setFormData((prev) => ({
+          ...prev,
+          presetId: '',
+          presetName: '',
+          certifyingBody: '',
+          event: '',
+          level: '',
+          issueDate: '',
+          certificateImageUrl: '',
+          certificateImageKey: '',
+          notes: '',
+        }));
+      }
     }
-  }, [activeTab]);
+  }, [showAddCertificateModal]);
 
   useEffect(() => {
-    if (activeTab === 'presets') {
+    if (showExamSettingsModal) {
       fetchAllPresets(presetType !== 'all' ? presetType : undefined);
     }
-  }, [presetType]);
+  }, [showExamSettingsModal, presetType]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -593,7 +596,7 @@ const CertificateManagement: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'score' ? (value ? Number(value) : '') : value,
+      [name]: value,
     }));
   };
 
@@ -601,14 +604,12 @@ const CertificateManagement: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       presetId: preset._id || '',
-      certificateName: preset.certificateName,
+      presetName: preset.name,
       certifyingBody: preset.certifyingBody,
-      category: preset.category,
+      event: '',
+      // 根据预设类型清空等级选择
+      level: preset.type === 'certification' ? '通过' : '',
     }));
-    setMessage({
-      type: 'info',
-      text: `已应用预设：${preset.name}`,
-    });
   };
 
   const handleUploadSuccess = (result: {
@@ -639,16 +640,16 @@ const CertificateManagement: React.FC = () => {
       setMessage({ type: 'error', text: '请选择用户' });
       return false;
     }
-    if (!formData.certificateName.trim()) {
-      setMessage({ type: 'error', text: '请输入证书名称' });
+    if (!formData.presetId) {
+      setMessage({ type: 'error', text: '请选择赛考' });
       return false;
     }
-    if (!formData.certifyingBody.trim()) {
-      setMessage({ type: 'error', text: '请输入认证机构' });
+    if (!formData.event.trim()) {
+      setMessage({ type: 'error', text: '请选择赛项' });
       return false;
     }
-    if (!formData.category.trim()) {
-      setMessage({ type: 'error', text: '请输入证书分类' });
+    if (!formData.level.trim()) {
+      setMessage({ type: 'error', text: '请选择证书等级' });
       return false;
     }
     if (!formData.issueDate) {
@@ -660,14 +661,6 @@ const CertificateManagement: React.FC = () => {
     if (issueDate > new Date()) {
       setMessage({ type: 'error', text: '颁发日期不能是未来日期' });
       return false;
-    }
-
-    if (formData.expiryDate) {
-      const expiryDate = new Date(formData.expiryDate);
-      if (expiryDate <= issueDate) {
-        setMessage({ type: 'error', text: '过期日期必须晚于颁发日期' });
-        return false;
-      }
     }
 
     return true;
@@ -685,25 +678,25 @@ const CertificateManagement: React.FC = () => {
       const endpoint = editingId ? `/exam/admin/certificates/${editingId}` : '/exam/admin/certificates';
       const method = editingId ? 'PUT' : 'POST';
 
+      const requestBody = {
+        username: formData.username.trim(),
+        presetId: formData.presetId || undefined,
+        certificateName: formData.presetName,
+        certifyingBody: formData.certifyingBody,
+        category: formData.event || undefined, // 将 event（赛项）作为 category 发送给后端
+        level: formData.level || undefined,
+        issueDate: formData.issueDate,
+        certificateImageUrl: formData.certificateImageUrl || undefined,
+        certificateImageKey: formData.certificateImageKey || undefined,
+        notes: formData.notes || undefined,
+      };
+
       const response = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: formData.username.trim(),
-          presetId: formData.presetId || undefined,
-          certificateName: formData.certificateName,
-          certifyingBody: formData.certifyingBody,
-          category: formData.category,
-          level: formData.level || undefined,
-          score: formData.score ? Number(formData.score) : undefined,
-          issueDate: formData.issueDate,
-          expiryDate: formData.expiryDate || undefined,
-          certificateImageUrl: formData.certificateImageUrl || undefined,
-          certificateImageKey: formData.certificateImageKey || undefined,
-          notes: formData.notes || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -717,13 +710,11 @@ const CertificateManagement: React.FC = () => {
           username: '',
           uid: '',
           presetId: '',
-          certificateName: '',
+          presetName: '',
           certifyingBody: '',
-          category: '',
+          event: '',
           level: '',
-          score: '',
           issueDate: '',
-          expiryDate: '',
           certificateImageUrl: '',
           certificateImageKey: '',
           notes: '',
@@ -739,7 +730,7 @@ const CertificateManagement: React.FC = () => {
         setEditingId(null);
         await fetchCertificates();
         setTimeout(() => {
-          setActiveTab('list');
+          setShowAddCertificateModal(false);
         }, 1000);
       } else {
         setMessage({
@@ -802,13 +793,11 @@ const CertificateManagement: React.FC = () => {
       username: cert.username || '',
       uid: cert.uid,
       presetId: '',
-      certificateName: cert.certificateName,
+      presetName: cert.certificateName,
       certifyingBody: cert.certifyingBody,
-      category: cert.category,
+      event: '',
       level: cert.level || '',
-      score: cert.score || '',
       issueDate: formatDate(cert.issueDate),
-      expiryDate: formatDate(cert.expiryDate),
       certificateImageUrl: cert.certificateImageUrl || '',
       certificateImageKey: cert.certificateImageKey || '',
       notes: cert.notes || '',
@@ -827,7 +816,7 @@ const CertificateManagement: React.FC = () => {
     }
 
     setEditingId(cert._id || null);
-    setActiveTab('add');
+    setShowAddCertificateModal(true);
   };
 
   const handleSearch = async () => {
@@ -858,521 +847,566 @@ const CertificateManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="management-tabs">
-        <button
-          className={`tab-button ${activeTab === 'add' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('add');
-            setEditingId(null);
-            setFormData({
-              username: '',
-              uid: '',
-              presetId: '',
-              certificateName: '',
-              certifyingBody: '',
-              category: '',
-              level: '',
-              score: '',
-              issueDate: '',
-              expiryDate: '',
-              certificateImageUrl: '',
-              certificateImageKey: '',
-              notes: '',
-            });
-            // 清理UserSelectAutoComplete
-            if (userSelectComponentRef.current) {
-              try {
-                userSelectComponentRef.current.clear();
-              } catch (error) {
-                console.warn('Failed to clear UserSelectAutoComplete:', error);
+      {/* 主界面头部 - 操作按钮栏 */}
+      <div className="header-actions">
+        <div className="header-left">
+          <h2>证书列表</h2>
+        </div>
+        <div className="header-right">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingId(null);
+              setFormData({
+                username: '',
+                uid: '',
+                presetId: '',
+                presetName: '',
+                certifyingBody: '',
+                event: '',
+                level: '',
+                issueDate: '',
+                certificateImageUrl: '',
+                certificateImageKey: '',
+                notes: '',
+              });
+              // 清理UserSelectAutoComplete
+              if (userSelectComponentRef.current) {
+                try {
+                  userSelectComponentRef.current.clear();
+                } catch (error) {
+                  console.warn('Failed to clear UserSelectAutoComplete:', error);
+                }
               }
-            }
-          }}
-        >
-          {editingId ? '✏️ 编辑证书' : '➕ 新增证书'}
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list')}
-        >
-          📋 证书列表
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'presets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('presets')}
-        >
-          ⚙️ 预设管理
-        </button>
+              setShowAddCertificateModal(true);
+            }}
+          >
+            ➕ 添加证书
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowExamSettingsModal(true)}
+          >
+            ⚙️ 赛考设置
+          </button>
+        </div>
       </div>
 
-      {activeTab === 'add' && (
-        <div className="form-section">
-          {/* 预设选择区域 */}
-          {presets.length > 0 && (
-            <div className="presets-quick-select">
-              <div className="presets-header">
-                <h3>💡 快速应用预设</h3>
-                <p>选择一个预设快速填充证书信息</p>
-              </div>
-              <div className="presets-grid">
-                {presets.map((preset) => (
-                  <button
-                    key={preset._id}
-                    type="button"
-                    className={`preset-item ${formData.presetId === preset._id ? 'active' : ''}`}
-                    onClick={() => handlePresetSelect(preset)}
-                    aria-label={preset.description || preset.name}
-                  >
-                    <div className="preset-type">
-                      {preset.type === 'competition' ? '🏆' : '📚'}
-                    </div>
-                    <div className="preset-name">{preset.name}</div>
-                    <div className="preset-cert">{preset.certificateName}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="certificate-form">
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="username">选择用户 *</label>
-                <input
-                  ref={userInputRef}
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={(e) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      username: e.target.value,
-                    }));
-                  }}
-                  placeholder="搜索并选择用户..."
-                  required
-                  disabled={isSubmitting}
-                />
-                <div className="form-hint">输入用户名进行搜索</div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="certificateName">证书名称 *</label>
-                <input
-                  type="text"
-                  id="certificateName"
-                  name="certificateName"
-                  value={formData.certificateName}
-                  onChange={handleInputChange}
-                  placeholder="例如：Python编程证书"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="certifyingBody">认证机构 *</label>
-                <input
-                  type="text"
-                  id="certifyingBody"
-                  name="certifyingBody"
-                  value={formData.certifyingBody}
-                  onChange={handleInputChange}
-                  placeholder="例如：中国计算机学会"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="category">证书分类 *</label>
-                <input
-                  type="text"
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  placeholder="例如：编程、数据科学"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="level">证书等级</label>
-                <select
-                  id="level"
-                  name="level"
-                  value={formData.level}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                >
-                  <option value="">选择等级（可选）</option>
-                  <option value="初级">初级</option>
-                  <option value="中级">中级</option>
-                  <option value="高级">高级</option>
-                  <option value="专家">专家</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="score">分数</label>
-                <input
-                  type="number"
-                  id="score"
-                  name="score"
-                  value={formData.score}
-                  onChange={handleInputChange}
-                  placeholder="例如：95"
-                  min="0"
-                  max="100"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="issueDate">颁发日期 *</label>
-                <input
-                  type="date"
-                  id="issueDate"
-                  name="issueDate"
-                  value={formData.issueDate}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="expiryDate">过期日期</label>
-                <input
-                  type="date"
-                  id="expiryDate"
-                  name="expiryDate"
-                  value={formData.expiryDate}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            <div className="form-section-title">证书图片上传</div>
-            <CertificateUploader
-              onUploadSuccess={handleUploadSuccess}
-              onUploadError={handleUploadError}
-              disabled={isSubmitting}
-            />
-
-            {formData.certificateImageUrl && (
-              <div className="image-preview">
-                <p>✅ 已上传图片：</p>
-                <img src={formData.certificateImageUrl} alt="证书预览" />
-              </div>
-            )}
-
-            <div className="form-group full-width">
-              <label htmlFor="notes">备注</label>
-              <textarea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                placeholder="输入备注信息（可选）"
-                rows={4}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? '提交中...' : editingId ? '更新证书' : '创建证书'}
-              </button>
-              {editingId && (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setEditingId(null);
-                    setFormData({
-                      username: '',
-                      uid: '',
-                      presetId: '',
-                      certificateName: '',
-                      certifyingBody: '',
-                      category: '',
-                      level: '',
-                      score: '',
-                      issueDate: '',
-                      expiryDate: '',
-                      certificateImageUrl: '',
-                      certificateImageKey: '',
-                      notes: '',
-                    });
-                    // 清理UserSelectAutoComplete
-                    if (userSelectComponentRef.current) {
-                      try {
-                        userSelectComponentRef.current.clear();
-                      } catch (error) {
-                        console.warn('Failed to clear UserSelectAutoComplete:', error);
-                      }
-                    }
-                  }}
-                  disabled={isSubmitting}
-                >
-                  取消编辑
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      )}
-
-      {activeTab === 'list' && (
-        <div className="list-section">
-          <div className="list-header">
-            <div className="search-bar">
-              <input
-                type="text"
-                placeholder="按用户 ID 搜索..."
-                value={searchUid}
-                onChange={(e) => setSearchUid(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-              />
-              <button onClick={handleSearch} disabled={loading}>
-                🔍 搜索
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="loading">加载中...</div>
-          ) : certificates.length === 0 ? (
-            <div className="empty-state">
-              <p>📭 暂无证书数据</p>
-            </div>
-          ) : (
-            <div className="certificates-table">
-              <div className="table-header">
-                <div className="col-uid">用户ID</div>
-                <div className="col-name">证书名称</div>
-                <div className="col-category">分类</div>
-                <div className="col-date">颁发日期</div>
-                <div className="col-status">状态</div>
-                <div className="col-actions">操作</div>
-              </div>
-
-              {certificates.map((cert) => (
-                <div key={cert._id} className="table-row">
-                  <div className="col-uid">{cert.uid}</div>
-                  <div className="col-name">
-                    <div className="name-text">{cert.certificateName}</div>
-                    <div className="body-text">{cert.certifyingBody}</div>
-                  </div>
-                  <div className="col-category">
-                    <span className="category-badge">{cert.category}</span>
-                  </div>
-                  <div className="col-date">
-                    {new Date(cert.issueDate).toLocaleDateString('zh-CN')}
-                  </div>
-                  <div className="col-status">
-                    <span
-                      className={`status-badge status-${
-                        cert.status || 'active'
-                      }`}
-                    >
-                      {cert.status === 'expired'
-                        ? '已过期'
-                        : cert.status === 'revoked'
-                          ? '已撤销'
-                          : '有效'}
-                    </span>
-                  </div>
-                  <div className="col-actions">
-                    <button
-                      className="action-btn edit"
-                      onClick={() => handleEdit(cert)}
-                      aria-label="编辑"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      className="action-btn delete"
-                      onClick={() => handleDelete(cert._id || '')}
-                      aria-label="删除"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'presets' && (
-        <div>
-          <div className="management-tabs">
-            <button
-              className={`tab-button ${presetActiveTab === 'add' ? 'active' : ''}`}
-              onClick={() => {
-                setPresetActiveTab('add');
-                setEditingPresetId(null);
-                setPresetFormData({
-                  type: 'competition',
-                  name: '',
-                  certificateName: '',
-                  certifyingBody: '',
-                  category: '',
-                  competitionName: '',
-                  certificationSeries: '',
-                  weight: 1,
-                  description: '',
-                });
+      {/* 主证书列表 */}
+      <div className="list-section">
+        <div className="list-header">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="搜索用户 ID 或用户名..."
+              value={searchUid}
+              onChange={(e) => setSearchUid(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
               }}
-            >
-              {editingPresetId ? '✏️ 编辑预设' : '➕ 新增预设'}
-            </button>
-            <button
-              className={`tab-button ${presetActiveTab === 'list' ? 'active' : ''}`}
-              onClick={() => setPresetActiveTab('list')}
-            >
-              📋 预设列表
+            />
+            <button onClick={handleSearch} disabled={loading}>
+              🔍 搜索
             </button>
           </div>
+        </div>
 
-          {presetActiveTab === 'add' && (
-            <div className="form-section">
-              <form onSubmit={handlePresetSubmit} className="preset-form">
+        {loading ? (
+          <div className="loading">加载中...</div>
+        ) : certificates.length === 0 ? (
+          <div className="empty-state">
+            <p>📭 暂无证书数据</p>
+          </div>
+        ) : (
+          <div className="certificates-table">
+            <div className="table-header">
+              <div className="col-index">序号</div>
+              <div className="col-username">用户名</div>
+              <div className="col-cert-name">赛考名称</div>
+              <div className="col-event">赛项</div>
+              <div className="col-body">主办单位</div>
+              <div className="col-date">时间</div>
+              <div className="col-image">证书图片</div>
+              <div className="col-actions">操作</div>
+            </div>
+            {certificates.map((cert, index) => (
+              <div key={cert._id} className="table-row">
+                <div className="col-index">{index + 1}</div>
+                <div className="col-username">{cert.username || `#${cert.uid}`}</div>
+                <div className="col-cert-name">{cert.certificateName}</div>
+                <div className="col-event">{cert.category || '-'}</div>
+                <div className="col-body">{cert.certifyingBody}</div>
+                <div className="col-date">{new Date(cert.issueDate).toLocaleDateString('zh-CN')}</div>
+                <div className="col-image">
+                  {cert.certificateImageUrl ? (
+                    <img
+                      src={cert.certificateImageUrl}
+                      alt={cert.certificateName}
+                      className="certificate-thumbnail"
+                      onClick={() => setPreviewingCertId(cert._id || '')}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setPreviewingCertId(cert._id || '');
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span className="no-image">暂无</span>
+                  )}
+                </div>
+                <div className="col-actions">
+                  <button
+                    className="action-btn edit"
+                    onClick={() => handleEdit(cert)}
+                    aria-label="编辑"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="action-btn delete"
+                    onClick={() => handleDelete(cert._id || '')}
+                    aria-label="删除"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 添加证书Modal */}
+      {showAddCertificateModal && (
+        <div className="modal-overlay" onClick={() => setShowAddCertificateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingId ? '✏️ 编辑证书' : '➕ 添加证书'}</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowAddCertificateModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <form onSubmit={handleSubmit} className="certificate-form" noValidate>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="preset-type">预设类型 *</label>
+                    <label htmlFor="presetSelect">选择赛考 *</label>
                     <select
-                      id="preset-type"
-                      name="type"
-                      value={presetFormData.type}
-                      onChange={handlePresetInputChange}
-                      disabled={isPresetSubmitting || editingPresetId !== null}
+                      id="presetSelect"
+                      value={formData.presetId}
+                      onChange={(e) => {
+                        const selectedPreset = presets.find((p) => p._id === e.target.value);
+                        if (selectedPreset) {
+                          handlePresetSelect(selectedPreset);
+                        } else {
+                          // 清除预设选择
+                          setFormData((prev) => ({
+                            ...prev,
+                            presetId: '',
+                            presetName: '',
+                            certifyingBody: '',
+                            event: '',
+                          }));
+                        }
+                      }}
+                      disabled={isSubmitting}
                     >
+                      <option value="">-- 选择赛考预设 --</option>
+                      {presets.map((preset) => (
+                        <option key={preset._id} value={preset._id}>
+                          {preset.type === 'competition' ? '🏆 ' : '📚 '}{preset.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="form-hint">选择一个赛考预设快速填充证书信息</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="username">选择用户 *</label>
+                    <input
+                      ref={userInputRef}
+                      type="text"
+                      id="username"
+                      name="username"
+                      className="eui-form-control"
+                      placeholder="搜索用户名..."
+                      value={formData.username}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          username: e.target.value,
+                        }));
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <div className="form-hint">搜索并选择要添加证书的用户</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="certifyingBody">认证机构 *</label>
+                    <input
+                      type="text"
+                      id="certifyingBody"
+                      name="certifyingBody"
+                      value={formData.certifyingBody}
+                      onChange={handleInputChange}
+                      placeholder="例如：中国计算机学会"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="event">赛项 *</label>
+                    <select
+                      id="event"
+                      name="event"
+                      value={formData.event}
+                      onChange={handleInputChange}
+                      disabled={isSubmitting || !formData.presetId}
+                      required
+                    >
+                      <option value="">-- 选择赛项 --</option>
+                      {(() => {
+                        const selectedPreset = presets.find(
+                          (p) => p._id === formData.presetId,
+                        );
+                        return selectedPreset?.events?.map((e) => (
+                          <option key={e.name} value={e.name}>
+                            {e.name}
+                          </option>
+                        ));
+                      })()}
+                    </select>
+                    <div className="form-hint">选择赛项</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="level">证书等级 *</label>
+                    <select
+                      id="level"
+                      name="level"
+                      value={formData.level}
+                      onChange={handleInputChange}
+                      disabled={isSubmitting}
+                      required
+                    >
+                      <option value="">-- 选择等级 --</option>
+                      {(() => {
+                        const selectedPreset = presets.find((p) => p._id === formData.presetId);
+                        if (selectedPreset?.type === 'competition') {
+                          return (
+                            <>
+                              <option value="一等奖">🥇 一等奖</option>
+                              <option value="二等奖">🥈 二等奖</option>
+                              <option value="三等奖">🥉 三等奖</option>
+                            </>
+                          );
+                        } if (selectedPreset?.type === 'certification') {
+                          return (
+                            <option value="通过">✅ 通过</option>
+                          );
+                        }
+                        return (
+                          <>
+                            <option value="初级">初级</option>
+                            <option value="中级">中级</option>
+                            <option value="高级">高级</option>
+                            <option value="专家">专家</option>
+                          </>
+                        );
+                      })()}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="issueDate">颁发日期 *</label>
+                    <input
+                      type="date"
+                      id="issueDate"
+                      name="issueDate"
+                      value={formData.issueDate}
+                      onChange={handleInputChange}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-section-title">证书图片上传</div>
+                <CertificateUploader
+                  onUploadSuccess={handleUploadSuccess}
+                  onUploadError={handleUploadError}
+                  disabled={isSubmitting}
+                />
+
+                {formData.certificateImageUrl && (
+                  <div className="image-preview">
+                    <p>✅ 已上传图片：</p>
+                    <img src={formData.certificateImageUrl} alt="证书预览" />
+                  </div>
+                )}
+
+                <div className="form-group full-width">
+                  <label htmlFor="notes">备注</label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    placeholder="输入备注信息（可选）"
+                    rows={4}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? '提交中...' : editingId ? '更新证书' : '创建证书'}
+                  </button>
+                  {editingId && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setEditingId(null);
+                        setFormData({
+                          username: '',
+                          uid: '',
+                          presetId: '',
+                          presetName: '',
+                          certifyingBody: '',
+                          event: '',
+                          level: '',
+                          issueDate: '',
+                          certificateImageUrl: '',
+                          certificateImageKey: '',
+                          notes: '',
+                        });
+                        // 清理UserSelectAutoComplete
+                        if (userSelectComponentRef.current) {
+                          try {
+                            userSelectComponentRef.current.clear();
+                          } catch (error) {
+                            console.warn('Failed to clear UserSelectAutoComplete:', error);
+                          }
+                        }
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      取消编辑
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 赛考设置Modal */}
+      {showExamSettingsModal && (
+        <div className="modal-overlay" onClick={() => setShowExamSettingsModal(false)}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>⚙️ 赛考设置</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowExamSettingsModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="exam-settings-container">
+                {/* 左侧：赛考列表 */}
+                <div className="exam-list-panel">
+                  <div className="panel-header">
+                    <h3>赛考列表</h3>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setEditingPresetId(null);
+                        setPresetFormData({
+                          type: 'competition',
+                          name: '',
+                          certifyingBody: '',
+                          weight: 1,
+                          description: '',
+                          events: [],
+                        });
+                        setShowAddExamForm(true);
+                      }}
+                    >
+                      ➕ 添加赛考
+                    </button>
+                  </div>
+
+                  <div className="filter-bar">
+                    <label htmlFor="preset-filter-type">筛选类型：</label>
+                    <select
+                      id="preset-filter-type"
+                      value={presetType}
+                      onChange={(e) => setPresetType(e.target.value as any)}
+                    >
+                      <option value="all">全部</option>
                       <option value="competition">竞赛</option>
                       <option value="certification">考级</option>
                     </select>
-                    <div className="form-hint">
-                      {presetFormData.type === 'competition' ? '用于管理各类竞赛预设' : '用于管理各类考级预设'}
+                  </div>
+
+                  {loading ? (
+                    <div className="loading">加载中...</div>
+                  ) : allPresets.length === 0 ? (
+                    <div className="empty-state">
+                      <p>📭 暂无赛考数据</p>
                     </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="preset-name">预设名称 *</label>
-                    <input
-                      type="text"
-                      id="preset-name"
-                      name="name"
-                      value={presetFormData.name}
-                      onChange={handlePresetInputChange}
-                      placeholder={presetFormData.type === 'competition' ? '例如：全国信息学竞赛' : '例如：Python等级考试'}
-                      required
-                      disabled={isPresetSubmitting}
-                    />
-                    <div className="form-hint">比赛或考级的名称</div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="preset-certificateName">证书名称 *</label>
-                    <input
-                      type="text"
-                      id="preset-certificateName"
-                      name="certificateName"
-                      value={presetFormData.certificateName}
-                      onChange={handlePresetInputChange}
-                      placeholder="例如：全国信息学竞赛获奖证书"
-                      required
-                      disabled={isPresetSubmitting}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="preset-certifyingBody">认证机构 *</label>
-                    <input
-                      type="text"
-                      id="preset-certifyingBody"
-                      name="certifyingBody"
-                      value={presetFormData.certifyingBody}
-                      onChange={handlePresetInputChange}
-                      placeholder="例如：全国青少年信息学奥林匹克竞赛委员会"
-                      required
-                      disabled={isPresetSubmitting}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="preset-category">证书分类 *</label>
-                    <input
-                      type="text"
-                      id="preset-category"
-                      name="category"
-                      value={presetFormData.category}
-                      onChange={handlePresetInputChange}
-                      placeholder="例如：编程、数据科学"
-                      required
-                      disabled={isPresetSubmitting}
-                    />
-                  </div>
-
-                  {presetFormData.type === 'competition' && (
-                    <div className="form-group">
-                      <label htmlFor="preset-competitionName">竞赛名称 *</label>
-                      <input
-                        type="text"
-                        id="preset-competitionName"
-                        name="competitionName"
-                        value={presetFormData.competitionName}
-                        onChange={handlePresetInputChange}
-                        placeholder="例如：信息学竞赛"
-                        required={presetFormData.type === 'competition'}
-                        disabled={isPresetSubmitting}
-                      />
-                      <div className="form-hint">用于统计竞赛类证书</div>
+                  ) : (
+                    <div className="presets-table">
+                      <div className="table-header">
+                        <div className="col-type">类型</div>
+                        <div className="col-name">赛考名称</div>
+                        <div className="col-cert-name">认证机构</div>
+                        <div className="col-weight">权重</div>
+                        <div className="col-status">状态</div>
+                        <div className="col-actions">操作</div>
+                      </div>
+                      {allPresets.map((preset) => (
+                        <div key={preset._id} className="table-row">
+                          <div className="col-type">
+                            <span
+                              className="type-badge"
+                              style={{
+                                backgroundColor: preset.type === 'competition' ? '#f6ad55' : '#667eea',
+                              }}
+                            >
+                              {preset.type === 'competition' ? '竞赛' : '考级'}
+                            </span>
+                          </div>
+                          <div className="col-name">{preset.name}</div>
+                          <div className="col-cert-name">
+                            <span>{preset.certifyingBody}</span>
+                          </div>
+                          <div className="col-weight">{preset.weight || 1}</div>
+                          <div className="col-status">
+                            <button
+                              className={`status-toggle ${preset.enabled ? 'enabled' : 'disabled'}`}
+                              onClick={() => handlePresetToggle(preset._id || '', preset.enabled)}
+                              aria-label={preset.enabled ? '点击禁用' : '点击启用'}
+                            >
+                              {preset.enabled ? '✅ 启用' : '⛔ 禁用'}
+                            </button>
+                          </div>
+                          <div className="col-actions">
+                            <button
+                              className="action-btn edit"
+                              onClick={() => handlePresetEdit(preset)}
+                              aria-label="编辑"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              className="action-btn delete"
+                              onClick={() => handlePresetDelete(preset._id || '')}
+                              aria-label="删除"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-                  {presetFormData.type === 'certification' && (
-                    <div className="form-group">
-                      <label htmlFor="preset-certificationSeries">考级系列 *</label>
-                      <input
-                        type="text"
-                        id="preset-certificationSeries"
-                        name="certificationSeries"
-                        value={presetFormData.certificationSeries}
-                        onChange={handlePresetInputChange}
-                        placeholder="例如：Python、C++、Java"
-                        required={presetFormData.type === 'certification'}
-                        disabled={isPresetSubmitting}
-                      />
-                      <div className="form-hint">用于统计考级类证书，如 Python、C++、Scratch 等</div>
-                    </div>
-                  )}
+      {/* 添加/编辑赛考Modal */}
+      {showAddExamForm && (
+        <div className="modal-overlay" onClick={() => setShowAddExamForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingPresetId ? '✏️ 编辑赛考' : '➕ 添加赛考'}</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowAddExamForm(false)}
+              >
+                ✕
+              </button>
+            </div>
 
-                  <div className="form-group">
-                    <label htmlFor="preset-weight">权重值</label>
-                    <input
-                      type="number"
-                      id="preset-weight"
-                      name="weight"
-                      value={presetFormData.weight}
-                      onChange={handlePresetInputChange}
-                      placeholder="默认为 1"
-                      min="1"
-                      max="100"
-                      disabled={isPresetSubmitting}
-                    />
-                    <div className="form-hint">用于排行榜计算，值越大权重越高</div>
+            <div className="modal-body">
+              <form onSubmit={handlePresetSubmit} className="preset-form">
+                <div className="form-group">
+                  <label htmlFor="preset-type">赛考类型 *</label>
+                  <select
+                    id="preset-type"
+                    name="type"
+                    value={presetFormData.type}
+                    onChange={handlePresetInputChange}
+                    disabled={isPresetSubmitting || editingPresetId !== null}
+                  >
+                    <option value="competition">竞赛</option>
+                    <option value="certification">考级</option>
+                  </select>
+                  <div className="form-hint">
+                    {presetFormData.type === 'competition' ? '用于管理各类竞赛赛考' : '用于管理各类考级赛考'}
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="preset-name">赛考名称 *</label>
+                  <input
+                    type="text"
+                    id="preset-name"
+                    name="name"
+                    value={presetFormData.name}
+                    onChange={handlePresetInputChange}
+                    placeholder={presetFormData.type === 'competition' ? '例如：全国信息学竞赛' : '例如：Python等级考试'}
+                    required
+                    disabled={isPresetSubmitting}
+                  />
+                  <div className="form-hint">赛考的名称</div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="preset-certifyingBody">认证机构 *</label>
+                  <input
+                    type="text"
+                    id="preset-certifyingBody"
+                    name="certifyingBody"
+                    value={presetFormData.certifyingBody}
+                    onChange={handlePresetInputChange}
+                    placeholder="例如：全国青少年信息学奥林匹克竞赛委员会"
+                    required
+                    disabled={isPresetSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="preset-weight">权重值</label>
+                  <input
+                    type="number"
+                    id="preset-weight"
+                    name="weight"
+                    value={presetFormData.weight}
+                    onChange={handlePresetInputChange}
+                    placeholder="默认为 1"
+                    min="1"
+                    max="100"
+                    disabled={isPresetSubmitting}
+                  />
+                  <div className="form-hint">用于排行榜计算，值越大权重越高</div>
                 </div>
 
                 <div className="form-group full-width">
@@ -1382,15 +1416,112 @@ const CertificateManagement: React.FC = () => {
                     name="description"
                     value={presetFormData.description}
                     onChange={handlePresetInputChange}
-                    placeholder="输入预设的描述信息（可选）"
+                    placeholder="输入赛考的描述信息（可选）"
                     rows={3}
                     disabled={isPresetSubmitting}
                   />
                 </div>
 
+                <div className="form-group full-width">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label>赛项 *</label>
+                    <button
+                      type="button"
+                      className="btn btn-text"
+                      onClick={() => {
+                        setPresetFormData((prev) => ({
+                          ...prev,
+                          events: [...(prev.events || []), { name: '', description: '' }],
+                        }));
+                      }}
+                      disabled={isPresetSubmitting}
+                      style={{ fontSize: '12px', padding: '4px 8px' }}
+                    >
+                      ➕ 添加赛项
+                    </button>
+                  </div>
+
+                  {presetFormData.events && presetFormData.events.length > 0 ? (
+                    <div style={{ border: '1px solid #e0e0e0', borderRadius: '4px', padding: '10px' }}>
+                      {presetFormData.events.map((event, index) => {
+                        const isLastEvent = index === presetFormData.events!.length - 1;
+                        return (
+                          <div
+                            key={index}
+                            style={{
+                              marginBottom: '10px',
+                              paddingBottom: '10px',
+                              borderBottom: isLastEvent ? 'none' : '1px solid #f0f0f0',
+                            }}
+                          >
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                              <input
+                                type="text"
+                                placeholder="赛项名称"
+                                value={event.name}
+                                onChange={(e) => {
+                                  const newEvents = [...presetFormData.events!];
+                                  newEvents[index].name = e.target.value;
+                                  setPresetFormData((prev) => ({
+                                    ...prev,
+                                    events: newEvents,
+                                  }));
+                                }}
+                                disabled={isPresetSubmitting}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '3px',
+                                  fontSize: '14px',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newEvents = presetFormData.events!.filter(
+                                    (_, i) => i !== index,
+                                  );
+                                  setPresetFormData((prev) => ({
+                                    ...prev,
+                                    events: newEvents,
+                                  }));
+                                }}
+                                disabled={isPresetSubmitting}
+                                className="btn btn-text"
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '12px',
+                                  color: '#ff4444',
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        color: '#ff4444',
+                        fontSize: '12px',
+                        padding: '10px',
+                        textAlign: 'center',
+                        backgroundColor: '#fff5f5',
+                        borderRadius: '4px',
+                        border: '1px solid #ffcccc',
+                      }}
+                    >
+                      请点击"添加赛项"按钮添加至少一个赛项
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-actions">
                   <button type="submit" className="btn btn-primary" disabled={isPresetSubmitting}>
-                    {isPresetSubmitting ? '提交中...' : editingPresetId ? '更新预设' : '创建预设'}
+                    {isPresetSubmitting ? '提交中...' : editingPresetId ? '更新赛考' : '创建赛考'}
                   </button>
                   {editingPresetId && (
                     <button
@@ -1401,13 +1532,10 @@ const CertificateManagement: React.FC = () => {
                         setPresetFormData({
                           type: 'competition',
                           name: '',
-                          certificateName: '',
                           certifyingBody: '',
-                          category: '',
-                          competitionName: '',
-                          certificationSeries: '',
                           weight: 1,
                           description: '',
+                          events: [],
                         });
                       }}
                       disabled={isPresetSubmitting}
@@ -1418,105 +1546,91 @@ const CertificateManagement: React.FC = () => {
                 </div>
               </form>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {presetActiveTab === 'list' && (
-            <div className="list-section">
-              <div className="list-header">
-                <div className="filter-bar">
-                  <label htmlFor="preset-filter-type">筛选类型：</label>
-                  <select
-                    id="preset-filter-type"
-                    value={presetType}
-                    onChange={(e) => setPresetType(e.target.value as any)}
-                  >
-                    <option value="all">全部</option>
-                    <option value="competition">竞赛</option>
-                    <option value="certification">考级</option>
-                  </select>
-                </div>
-              </div>
+      {/* 证书图片预览Modal */}
+      {previewingCertId && (
+        <div className="modal-overlay" onClick={() => setPreviewingCertId(null)}>
+          <div className="modal-content modal-preview" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📷 证书图片预览</h2>
+              <button
+                className="modal-close"
+                onClick={() => setPreviewingCertId(null)}
+              >
+                ✕
+              </button>
+            </div>
 
-              {loading ? (
-                <div className="loading">加载中...</div>
-              ) : allPresets.length === 0 ? (
-                <div className="empty-state">
-                  <p>📭 暂无预设数据</p>
-                </div>
-              ) : (
-                <div className="presets-table">
-                  <div className="table-header">
-                    <div className="col-type">类型</div>
-                    <div className="col-name">预设名称</div>
-                    <div className="col-cert-name">证书名称</div>
-                    <div className="col-category">分类</div>
-                    <div className="col-weight">权重</div>
-                    <div className="col-status">状态</div>
-                    <div className="col-actions">操作</div>
-                  </div>
-
-                  {allPresets.map((preset) => (
-                    <div key={preset._id} className="table-row">
-                      <div className="col-type">
-                        <span
-                          className="type-badge"
-                          style={{
-                            backgroundColor: preset.type === 'competition' ? '#f6ad55' : '#667eea',
-                          }}
-                        >
-                          {preset.type === 'competition' ? '竞赛' : '考级'}
+            <div className="modal-body">
+              {(() => {
+                const cert = certificates.find((c) => c._id === previewingCertId);
+                if (!cert) return null;
+                return (
+                  <div className="certificate-preview-container">
+                    <div className="preview-image-wrapper">
+                      <img
+                        src={cert.certificateImageUrl}
+                        alt={cert.certificateName}
+                        className="preview-certificate-image"
+                      />
+                    </div>
+                    <div className="preview-details">
+                      <div className="detail-item">
+                        <span className="detail-label">证书名称：</span>
+                        <span className="detail-value">{cert.certificateName}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">认证机构：</span>
+                        <span className="detail-value">{cert.certifyingBody}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">分类：</span>
+                        <span className="detail-value">{cert.category}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">等级：</span>
+                        <span className="detail-value">{cert.level || '-'}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">颁发日期：</span>
+                        <span className="detail-value">
+                          {new Date(cert.issueDate).toLocaleDateString('zh-CN')}
                         </span>
                       </div>
-                      <div className="col-name">{preset.name}</div>
-                      <div className="col-cert-name">
-                        <div className="cert-name-text">{preset.certificateName}</div>
-                        <div className="cert-body-text">{preset.certifyingBody}</div>
+                      <div className="detail-item">
+                        <span className="detail-label">状态：</span>
+                        <span className={`detail-value status-${cert.status || 'active'}`}>
+                          {cert.status === 'expired'
+                            ? '已过期'
+                            : cert.status === 'revoked'
+                              ? '已撤销'
+                              : '有效'}
+                        </span>
                       </div>
-                      <div className="col-category">
-                        <span className="category-badge">{preset.category}</span>
-                      </div>
-                      <div className="col-weight">{preset.weight || 1}</div>
-                      <div className="col-status">
-                        <button
-                          className={`status-toggle ${preset.enabled ? 'enabled' : 'disabled'}`}
-                          onClick={() => handlePresetToggle(preset._id || '', preset.enabled)}
-                          aria-label={preset.enabled ? '点击禁用' : '点击启用'}
-                        >
-                          {preset.enabled ? '✅ 启用' : '⛔ 禁用'}
-                        </button>
-                      </div>
-                      <div className="col-actions">
-                        <button
-                          className="action-btn edit"
-                          onClick={() => handlePresetEdit(preset)}
-                          aria-label="编辑"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="action-btn delete"
-                          onClick={() => handlePresetDelete(preset._id || '')}
-                          aria-label="删除"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                      {cert.notes && (
+                        <div className="detail-item">
+                          <span className="detail-label">备注：</span>
+                          <span className="detail-value">{cert.notes}</span>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// React App 挂载
-const container = document.getElementById('certificate-management-root');
-if (container) {
-  const root = createRoot(container);
+// 初始化React组件到DOM
+if (document.getElementById('certificate-management-root')) {
+  const root = createRoot(document.getElementById('certificate-management-root')!);
   root.render(<CertificateManagement />);
 }
 

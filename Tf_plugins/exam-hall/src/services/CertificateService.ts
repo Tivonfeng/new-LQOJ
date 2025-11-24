@@ -1,48 +1,70 @@
+/* eslint-disable no-await-in-loop */
 import * as fs from 'fs';
 import { ObjectId } from 'mongodb';
 import { Context } from 'hydrooj';
 import QiniuStorageService from './QiniuStorageService';
 
 export interface Certificate {
+    /** 证书ID（MongoDB ObjectId） */
     _id?: ObjectId;
+    /** 所属域ID */
     domainId: ObjectId;
+    /** 用户ID */
     uid: number;
+    /** 证书编码（唯一标识，自动生成，格式：CERT-YYYYMMDD-XXXXX） */
     certificateCode: string;
+    /** 证书名称（如：Python 等级考试、全国信息学竞赛） */
     certificateName: string;
+    /** 认证/颁发机构（如：全国青少年信息学竞赛组委会） */
     certifyingBody: string;
+    /** 证书分类（用于统计和筛选，如：竞赛、考级、其他） */
     category: string;
+    /** 证书等级（如：初级、中级、高级、专家，可选） */
     level?: string;
-    score?: number;
+    /** 证书颁发日期 */
     issueDate: Date;
-    expiryDate?: Date;
+    /** 证书图片URL（从七牛云存储获取） */
     certificateImageUrl?: string;
+    /** 证书图片在七牛云的存储key（用于删除和管理） */
     certificateImageKey?: string;
+    /** 证书图片文件大小（单位：字节） */
     certificateImageSize?: number;
+    /** 证书图片上传时间 */
     certificateImageUploadedAt?: Date;
+    /** 证书状态（active: 有效，expired: 已过期，revoked: 已撤销） */
     status: 'active' | 'expired' | 'revoked';
+    /** 证书录入者的用户ID */
     recordedBy: number;
+    /** 证书录入时间 */
     recordedAt: Date;
+    /** 备注信息（可选） */
     notes?: string;
+    /** 证书创建时间 */
     createdAt: Date;
+    /** 证书最后更新时间 */
     updatedAt: Date;
 
-    // ========== 新增字段 ==========
-    // 赛考类型：竞赛(competition) 或 考级(certification)
+    // ========== 赛考相关扩展字段 ==========
+    /** 赛考类型：竞赛(competition) 或 考级(certification)，用于多维度统计 */
     examType?: 'competition' | 'certification';
-    // 竞赛名称 (仅竞赛类型使用，如"信息学竞赛")
+    /** 竞赛名称（仅竞赛类型使用，如"全国信息学竞赛"、"素养大赛"） */
     competitionName?: string;
-    // 考级系列 (仅考级类型使用，如"Python", "Scratch", "C++")
+    /** 考级系列（仅考级类型使用，如"Python"、"C++"、"Scratch"） */
     certificationSeries?: string;
-    // 考级等级数字 (1-8, 仅考级类型使用)
+    /** 考级等级数字（1-8，仅考级类型使用，用于记录具体的等级） */
     levelNumber?: number;
-    // 权重值 (用于排行榜计算，默认1)
+    /** 权重值（用于排行榜计算，默认为1，值越大在排行榜中权重越高） */
     weight?: number;
 }
 
 export interface CertificateFilter {
+    /** 按分类过滤（如：竞赛、考级、其他） */
     category?: string;
+    /** 按状态过滤（active: 有效，expired: 已过期，revoked: 已撤销） */
     status?: string;
+    /** 分页：跳过的记录数 */
     skip?: number;
+    /** 分页：返回的记录数 */
     limit?: number;
 }
 
@@ -85,15 +107,19 @@ export class CertificateService {
             certifyingBody: data.certifyingBody!,
             category: data.category!,
             level: data.level,
-            score: data.score,
             issueDate: new Date(data.issueDate!),
-            expiryDate: data.expiryDate ? new Date(data.expiryDate) : undefined,
             status: 'active',
             recordedBy: recordedBy || 0,
             recordedAt: new Date(),
             notes: data.notes,
             createdAt: new Date(),
             updatedAt: new Date(),
+
+            // 证书图片信息
+            certificateImageUrl: data.certificateImageUrl,
+            certificateImageKey: data.certificateImageKey,
+            certificateImageSize: data.certificateImageSize,
+            certificateImageUploadedAt: data.certificateImageUploadedAt,
 
             // 新字段
             examType: data.examType,
@@ -478,12 +504,10 @@ export class CertificateService {
                 const series = cert.certificationSeries || '其他';
                 const level = cert.levelNumber || 0;
 
-                if (!certificationStats.series[series]) {
-                    certificationStats.series[series] = {
-                        levels: new Set(),
-                        count: 0,
-                    };
-                }
+                certificationStats.series[series] ||= {
+                    levels: new Set(),
+                    count: 0,
+                };
 
                 certificationStats.series[series].levels.add(level);
                 certificationStats.series[series].count++;
@@ -538,8 +562,8 @@ export class CertificateService {
 
             // 综合权重（用于综合排行榜）
             totalWeight:
-                competitionStats.weight +
-                certificationStats.weight,
+                competitionStats.weight
+                + certificationStats.weight,
 
             updatedAt: new Date(),
             // 只在第一次创建时设置 createdAt，之后保持不变

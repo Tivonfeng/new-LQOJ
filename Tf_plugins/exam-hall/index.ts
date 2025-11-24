@@ -1,7 +1,6 @@
 import { Context, PRIV } from 'hydrooj';
 // 导入处理器
 import {
-    BatchImportHandler,
     CertificateBatchDeleteHandler,
     CertificateCreateHandler,
     CertificateDetailHandler,
@@ -13,11 +12,8 @@ import {
     DomainStatsHandler,
     ExamHallHandler,
     GrowthTrendHandler,
-    ImportHistoryHandler,
     LeaderboardHandler,
     PopularCategoriesHandler,
-    PresetBatchDeleteHandler,
-    PresetCreateHandler,
     PresetDetailHandler,
     PresetListHandler,
     PresetToggleHandler,
@@ -111,10 +107,6 @@ export default async function apply(ctx: Context, _config: any = {}) {
     ctx.Route('exam_get_certificate', '/exam/certificates/:id', CertificateDetailHandler);
     ctx.Route('exam_user_stats', '/exam/stats/certificates', CertificateStatsHandler);
 
-    // 批量导入 - Batch import
-    ctx.Route('exam_batch_import', '/exam/admin/batch-import', BatchImportHandler);
-    ctx.Route('exam_import_history', '/exam/admin/import-history', ImportHistoryHandler);
-
     // 排行榜和统计 - Leaderboard and statistics
     ctx.Route('exam_leaderboard', '/exam/leaderboard', LeaderboardHandler);
     ctx.Route('exam_user_rank', '/exam/rank/:uid', UserRankHandler);
@@ -133,5 +125,5 @@ export default async function apply(ctx: Context, _config: any = {}) {
     ctx.Route('exam_detail_preset', '/exam/admin/presets/:id', PresetDetailHandler);
     ctx.Route('exam_toggle_preset', '/exam/admin/presets/:id/toggle', PresetToggleHandler);
 
-    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 20 个路由 (Plugin loaded, 20 routes registered)');
+    console.log('[ExamHall] ✅ 赛考大厅插件加载完成，已注册 18 个路由 (Plugin loaded, 18 routes registered)');
 }

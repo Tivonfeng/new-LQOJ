@@ -36,7 +36,7 @@ export class QiniuStorageService {
     private readonly QINIU_ACCESS_KEY = 'KLk2UkLXhUIzuoollr8iJmAn_Hc6AeELiAEDfZCZ';
     private readonly QINIU_SECRET_KEY = 'SLeJSaHzxbfkgfwdemojwo9AH8mOxCFonDgZCxP0';
     private readonly QINIU_BUCKET = 'lq-exam-certificates';
-    private readonly QINIU_DOMAIN = 't4uiflb6g.hd-bkt.clouddn.com';
+    private readonly QINIU_DOMAIN = 'lq-exam-cert.lqcode.fun';
     private readonly QINIU_ZONE = 'Zone_z0';
 
     constructor() {

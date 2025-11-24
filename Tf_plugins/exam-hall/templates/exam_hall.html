@@ -1211,7 +1211,7 @@
         <h2 class="exam-hall-section-title">📊 {{ _('Popular Categories') }}</h2>
       </div>
       <div class="exam-hall-popular-categories">
-        {% set maxCount = popularCategories[0].count if popularCategories else 1 %}
+        {% set maxCount = popularCategories[0].count if popularCategories and popularCategories|length > 0 else 1 %}
         {% for category in popularCategories %}
         <div class="exam-hall-category-item">
           <div class="exam-hall-category-rank">{{ loop.index }}</div>
@@ -1334,7 +1334,10 @@
       </div>
       <div class="exam-hall-popular-categories">
         {% set categoryList = userStats.categoryStats | dictsort | list %}
-        {% set maxCount = (categoryList | map(attribute='1') | list | max) if categoryList else 1 %}
+        {% set maxCount = 1 %}
+        {% for category in categoryList %}
+          {% if category[1] > maxCount %}{% set maxCount = category[1] %}{% endif %}
+        {% endfor %}
         {% for category in categoryList %}
         <div class="exam-hall-category-item">
           <div class="exam-hall-category-rank">📌</div>

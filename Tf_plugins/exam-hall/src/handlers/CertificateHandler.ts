@@ -3,6 +3,7 @@ import * as path from 'path';
 import { ObjectId } from 'mongodb';
 import { Handler, PRIV } from 'hydrooj';
 import CertificateService from '../services/CertificateService';
+import PresetService from '../services/PresetService';
 
 // ============================================================================
 // 🎓 证书管理处理器集合
@@ -23,14 +24,11 @@ abstract class CertificateHandlerBase extends Handler {
      * @throws 如果权限不足，自动返回403响应
      */
     protected checkManagePermission(): void {
-        console.log(`[ExamHall] 检查权限: role=${this.user.role}, perm=${this.user.perm}, hasEditSystemPerm=${!!(this.user.perm & BigInt(PRIV.PRIV_EDIT_SYSTEM))}`);
         if (this.user.role !== 'admin' && !(this.user.perm & BigInt(PRIV.PRIV_EDIT_SYSTEM))) {
-            console.error('[ExamHall] 权限检查失败: 既不是admin也没有PRIV_EDIT_SYSTEM权限');
             this.response.status = 403;
             this.response.body = { success: false, error: '无权限访问此资源' };
             throw new Error('PERMISSION_DENIED');
         }
-        console.log('[ExamHall] 权限检查成功');
     }
 
     /**
@@ -97,59 +95,46 @@ export class CertificateUploadHandler extends CertificateHandlerBase {
      */
     async post() {
         try {
-            console.log('[ExamHall] POST /exam/admin/upload-certificate 开始处理');
             this.checkManagePermission();
-            console.log('[ExamHall] 权限检查通过');
 
             // HydroOJ已自动通过中间件解析multipart，直接从this.request.files访问
             const imageFile = this.request.files?.image || this.request.files?.certificate;
-            console.log(`[ExamHall] 接收到文件: ${JSON.stringify(imageFile ? { originalFilename: imageFile.originalFilename, size: imageFile.size } : null)}`);
 
             if (!imageFile) {
-                console.error('[ExamHall] 未找到上传的文件');
                 this.sendError('未找到上传的文件', 400);
                 return;
             }
 
             const filePath = imageFile.filepath;
-            console.log(`[ExamHall] 文件路径: ${filePath}`);
 
             if (!fs.existsSync(filePath)) {
-                console.error(`[ExamHall] 文件不存在: ${filePath}`);
                 this.sendError('文件不存在', 400);
                 return;
             }
 
             const fileExt = path.extname(filePath).toLowerCase();
             const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf'];
-            console.log(`[ExamHall] 文件扩展名: ${fileExt}`);
 
             if (!allowedExts.includes(fileExt)) {
-                console.error(`[ExamHall] 不支持的文件格式: ${fileExt}`);
                 this.sendError(`不支持的文件格式: ${fileExt}`, 400);
                 return;
             }
 
             const certService = new CertificateService(this.ctx);
-            console.log('[ExamHall] CertificateService初始化完成，开始上传...');
-
             const uploadResult = await certService.uploadCertificateImage(filePath);
-            console.log(`[ExamHall] 上传结果: ${JSON.stringify(uploadResult)}`);
 
             if (uploadResult.success) {
-                this.response.body = {
+                this.setJsonResponse({
                     success: true,
                     url: uploadResult.url,
                     key: uploadResult.key,
                     size: uploadResult.size,
                     message: '证书上传成功',
-                };
+                });
             } else {
                 this.sendError(uploadResult.error || '上传失败', 500);
             }
         } catch (err: any) {
-            console.error(`[ExamHall] POST处理异常: ${err.message}`);
-            console.error(`[ExamHall] 错误堆栈: ${err.stack}`);
             if (err.message === 'PERMISSION_DENIED') return;
             this.sendError(`上传异常: ${err.message}`, 500);
         }
@@ -172,15 +157,12 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
 
             const {
                 username,
-                uid,
                 presetId,
                 certificateName,
                 certifyingBody,
                 category,
                 level,
-                score,
                 issueDate,
-                expiryDate,
                 notes,
                 certificateImageUrl,
                 certificateImageKey,
@@ -211,18 +193,16 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             // 如果使用预设，从预设中获取信息
             let finalCertName = certificateName;
             let finalCertifyingBody = certifyingBody;
-            let finalCategory = category;
+            let finalCategory = category; // category 应该来自 event（赛项）
             let finalExamType = examType;
-            let finalCompetitionName = competitionName;
-            let finalCertificationSeries = certificationSeries;
-            let finalLevelNumber = levelNumber;
+            const finalCompetitionName = competitionName;
+            const finalCertificationSeries = certificationSeries;
+            const finalLevelNumber = levelNumber;
             let finalWeight = weight || 1;
 
             if (presetId) {
                 try {
-                    const PresetService = (await import('../services/PresetService')).default;
                     const presetService = new PresetService(this.ctx);
-                    const { ObjectId } = await import('mongodb');
                     const preset = await presetService.getPresetById(new ObjectId(presetId));
 
                     if (!preset) {
@@ -231,12 +211,14 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     }
 
                     // 从预设获取值
-                    finalCertName = preset.certificateName;
+                    finalCertName = preset.name;
                     finalCertifyingBody = preset.certifyingBody;
-                    finalCategory = preset.category;
+                    // category 应该使用前端传来的 category（即赛项），而不是预设名称
+                    // 如果没有 category 则使用赛项名称
+                    if (!finalCategory) {
+                        finalCategory = category; // 使用前端传来的赛项或分类
+                    }
                     finalExamType = preset.type;
-                    finalCompetitionName = preset.competitionName;
-                    finalCertificationSeries = preset.certificationSeries;
                     finalWeight = preset.weight || 1;
                 } catch (err: any) {
                     console.warn(`[ExamHall] 获取预设失败: ${err.message}`);
@@ -245,8 +227,15 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             }
 
             // 验证必需的证书字段
-            if (!finalCertName || !finalCertifyingBody || !finalCategory) {
-                this.sendError('缺少证书信息（名称、机构、分类）', 400);
+            if (!finalCertName || !finalCertifyingBody) {
+                this.sendError('缺少证书信息（名称或机构）', 400);
+                return;
+            }
+
+            // 如果还是没有分类，使用赛项（category 字段来自前端的 event 字段）
+            if (!finalCategory) {
+                // 这个应该不会发生，因为前端会验证赛项是必填的
+                this.sendError('缺少赛项信息', 400);
                 return;
             }
 
@@ -259,9 +248,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     certifyingBody: finalCertifyingBody,
                     category: finalCategory,
                     level,
-                    score: score ? Number.parseInt(score) : undefined,
                     issueDate: new Date(issueDate),
-                    expiryDate: expiryDate ? new Date(expiryDate) : undefined,
                     certificateImageUrl,
                     certificateImageKey,
                     notes,
@@ -307,8 +294,8 @@ export class CertificateGetHandler extends CertificateHandlerBase {
         try {
             const category = (this.request.query?.category as string) || undefined;
             const status = (this.request.query?.status as string) || undefined;
-            const skip = Number.parseInt((this.request.query?.skip as string) || '0');
-            const limit = Number.parseInt((this.request.query?.limit as string) || '100');
+            const skip = Math.max(0, Number.parseInt((this.request.query?.skip as string) || '0') || 0);
+            const limit = Math.min(1000, Math.max(1, Number.parseInt((this.request.query?.limit as string) || '100') || 100));
 
             const certService = new CertificateService(this.ctx);
 
@@ -334,6 +321,97 @@ export class CertificateGetHandler extends CertificateHandlerBase {
                 limit,
             });
         } catch (err: any) {
+            this.sendError(err.message, 500);
+        }
+    }
+}
+
+/**
+ * 证书列表处理器 (管理员用)
+ * 路由: GET /exam/admin/certificates-list
+ * 功能: 获取所有证书列表（带用户名）
+ */
+export class CertificateListAdminHandler extends CertificateHandlerBase {
+    /**
+     * GET /exam/admin/certificates-list
+     * 获取证书列表（支持按 uid 或 username 过滤）
+     */
+    async get() {
+        try {
+            this.checkManagePermission();
+
+            const uid = (this.request.query?.uid as string) || undefined;
+            const certService = new CertificateService(this.ctx);
+            const UserModel = (global as any).Hydro.model.user;
+
+            let targetUid: number | undefined;
+            let certificates: any[] = [];
+
+            if (uid) {
+                // 尝试作为 uid 或 username 查找用户
+                let user: any = null;
+
+                // 先尝试数字 uid
+                if (/^\d+$/.test(uid)) {
+                    const uidNum = Number.parseInt(uid);
+                    user = await UserModel.getById('system', uidNum);
+                }
+
+                // 再尝试 username
+                user ||= await UserModel.getByUname('system', uid.trim());
+
+                if (!user) {
+                    this.sendSuccess({
+                        success: true,
+                        data: [],
+                    });
+                    return;
+                }
+
+                targetUid = user._id;
+            }
+
+            // 获取证书列表
+            if (targetUid) {
+                certificates = await certService.getUserCertificates(targetUid);
+            } else {
+                // 获取所有证书
+                const collection = this.ctx.db.collection('exam.certificates' as any);
+                certificates = (await collection
+                    .find({ domainId: this.ctx.domain!._id })
+                    .sort({ issueDate: -1 })
+                    .toArray()) as any[];
+            }
+
+            // 批量查找用户信息并补充 username
+            const userIds = [...new Set(certificates.map((c) => c.uid))];
+            const userMap = new Map<number, { _id: number, uname: string }>();
+
+            // 并行查询用户信息，提高性能
+            const userResults = await Promise.allSettled(
+                userIds.map((userId) => UserModel.getById('system', userId)),
+            );
+
+            for (let i = 0; i < userResults.length; i++) {
+                const result = userResults[i];
+                if (result.status === 'fulfilled' && result.value) {
+                    const userId = userIds[i];
+                    userMap.set(userId, { _id: result.value._id, uname: result.value.uname });
+                }
+            }
+
+            // 补充 username 到每个证书
+            const enrichedCertificates = certificates.map((cert) => ({
+                ...cert,
+                username: userMap.get(cert.uid)?.uname || undefined,
+            }));
+
+            this.sendSuccess({
+                success: true,
+                data: enrichedCertificates,
+            });
+        } catch (err: any) {
+            if (err.message === 'PERMISSION_DENIED') return;
             this.sendError(err.message, 500);
         }
     }
@@ -406,9 +484,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 certifyingBody,
                 category,
                 level,
-                score,
                 issueDate,
-                expiryDate,
                 status,
                 notes,
             } = this.request.body;
@@ -420,9 +496,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 certifyingBody,
                 category,
                 level,
-                score: score ? Number.parseInt(score) : undefined,
                 issueDate: issueDate ? new Date(issueDate) : undefined,
-                expiryDate: expiryDate ? new Date(expiryDate) : undefined,
                 status,
                 notes,
             });

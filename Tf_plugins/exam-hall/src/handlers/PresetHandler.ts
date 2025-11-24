@@ -67,17 +67,14 @@ export class PresetListHandler extends PresetHandlerBase {
             const {
                 type,
                 name,
-                certificateName,
                 certifyingBody,
-                category,
-                competitionName,
-                certificationSeries,
                 weight,
                 description,
+                events,
             } = this.request.body;
 
             // 验证必填字段
-            if (!type || !name || !certificateName || !certifyingBody || !category) {
+            if (!type || !name || !certifyingBody) {
                 this.sendError('缺少必填字段', 400);
                 return;
             }
@@ -87,17 +84,25 @@ export class PresetListHandler extends PresetHandlerBase {
                 return;
             }
 
+            // 验证赛项
+            if (!Array.isArray(events) || events.length === 0) {
+                this.sendError('赛项不能为空', 400);
+                return;
+            }
+
+            if (events.some((event: any) => !event.name || typeof event.name !== 'string')) {
+                this.sendError('赛项名称无效', 400);
+                return;
+            }
+
             const presetService = new PresetService(this.ctx);
             const preset = await presetService.createPreset({
                 type,
                 name,
-                certificateName,
                 certifyingBody,
-                category,
-                competitionName: type === 'competition' ? competitionName : undefined,
-                certificationSeries: type === 'certification' ? certificationSeries : undefined,
                 weight: weight ? Number(weight) : 1,
                 description,
+                events,
             });
 
             this.sendSuccess({
@@ -165,28 +170,39 @@ export class PresetDetailHandler extends PresetHandlerBase {
 
             const {
                 name,
-                certificateName,
                 certifyingBody,
-                category,
-                competitionName,
-                certificationSeries,
                 weight,
                 description,
                 enabled,
+                events,
             } = this.request.body;
 
+            // 验证赛项（如果提供）
+            if (events !== undefined) {
+                if (!Array.isArray(events) || events.length === 0) {
+                    this.sendError('赛项不能为空', 400);
+                    return;
+                }
+
+                if (events.some((event: any) => !event.name || typeof event.name !== 'string')) {
+                    this.sendError('赛项名称无效', 400);
+                    return;
+                }
+            }
+
+            // 构建更新对象，只包含提供的字段
+            const updateData: any = {};
+            if (name !== undefined) updateData.name = name;
+            if (certifyingBody !== undefined) updateData.certifyingBody = certifyingBody;
+            if (weight !== undefined) updateData.weight = weight ? Number(weight) : 1;
+            if (description !== undefined) updateData.description = description;
+            if (enabled !== undefined) updateData.enabled = enabled;
+            if (events !== undefined) updateData.events = events;
+
+            console.log(`[ExamHall] 更新预设请求: id=${id}, domainId=${this.ctx.domain!._id}, updateData=${JSON.stringify(updateData)}`);
+
             const presetService = new PresetService(this.ctx);
-            const preset = await presetService.updatePreset(new ObjectId(id), {
-                name,
-                certificateName,
-                certifyingBody,
-                category,
-                competitionName,
-                certificationSeries,
-                weight: weight ? Number(weight) : undefined,
-                description,
-                enabled,
-            });
+            const preset = await presetService.updatePreset(new ObjectId(id), updateData);
 
             this.sendSuccess({
                 success: true,
@@ -195,6 +211,7 @@ export class PresetDetailHandler extends PresetHandlerBase {
             });
         } catch (err: any) {
             if (err.message === 'PERMISSION_DENIED') return;
+            console.error(`[ExamHall] 预设更新失败: ${err.message}`);
             this.sendError(err.message, 500);
         }
     }

@@ -1,9 +1,3 @@
-// 批量导入处理器导出
-export {
-    BatchImportHandler,
-    ImportHistoryHandler,
-} from './BatchImportHandler';
-
 // 证书管理处理器导出
 export {
     CertificateBatchDeleteHandler,
@@ -11,6 +5,7 @@ export {
     CertificateDeleteHandler,
     CertificateDetailHandler,
     CertificateGetHandler,
+    CertificateListAdminHandler,
     CertificateStatsHandler,
     CertificateUpdateHandler,
     CertificateUploadHandler,
@@ -21,15 +16,6 @@ export {
     CertificateManagementListHandler,
     CertificateManagementPageHandler,
 } from './CertificateManagementHandler';
-
-// 预设管理处理器导出
-export {
-    PresetBatchDeleteHandler,
-    PresetCreateHandler,
-    PresetDetailHandler,
-    PresetListHandler,
-    PresetToggleHandler,
-} from './PresetHandler';
 
 // 赛考大厅主入口处理器
 export { ExamHallHandler } from './ExamHallHandler';
@@ -42,3 +28,12 @@ export {
     PopularCategoriesHandler,
     UserRankHandler,
 } from './LeaderboardHandler';
+
+// 预设管理处理器导出
+export {
+    PresetBatchDeleteHandler,
+    PresetCreateHandler,
+    PresetDetailHandler,
+    PresetListHandler,
+    PresetToggleHandler,
+} from './PresetHandler';

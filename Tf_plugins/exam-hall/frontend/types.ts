@@ -215,6 +215,17 @@ export interface ExamHallData {
 // ============================================================================
 
 /**
+ * 赛项接口
+ * 表示赛考下的单个赛项
+ */
+export interface ExamEvent {
+  /** 赛项名称 */
+  name: string;
+  /** 赛项描述（可选） */
+  description?: string;
+}
+
+/**
  * 证书预设接口
  * 用于管理比赛/考级的预设配置
  */
@@ -225,20 +236,14 @@ export interface CertificatePreset {
   type: 'competition' | 'certification';
   /** 预设名称（比赛/考级名称） */
   name: string;
-  /** 证书名称 */
-  certificateName: string;
   /** 认证机构 */
   certifyingBody: string;
-  /** 分类 */
-  category: string;
-  /** 竞赛名称（仅竞赛类型） */
-  competitionName?: string;
-  /** 考级系列（仅考级类型） */
-  certificationSeries?: string;
   /** 权重值 */
   weight?: number;
   /** 描述 */
   description?: string;
+  /** 赛项列表 */
+  events?: ExamEvent[];
   /** 是否启用 */
   enabled: boolean;
   /** 创建时间 */

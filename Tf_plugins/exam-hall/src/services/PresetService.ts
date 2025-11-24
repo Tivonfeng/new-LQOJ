@@ -2,6 +2,14 @@ import { ObjectId } from 'mongodb';
 import { Context } from 'hydrooj';
 
 /**
+ * 赛项数据接口
+ */
+export interface ExamEvent {
+    name: string;
+    description?: string;
+}
+
+/**
  * 证书预设接口
  * 用于管理比赛/考级的预设配置
  */
@@ -12,20 +20,14 @@ export interface CertificatePreset {
     type: 'competition' | 'certification';
     // 预设名称（比赛/考级名称）
     name: string;
-    // 证书名称
-    certificateName: string;
     // 认证机构
     certifyingBody: string;
-    // 分类（如：编程、数据科学等）
-    category: string;
-    // 竞赛名称（仅竞赛类型）
-    competitionName?: string;
-    // 考级系列（仅考级类型）
-    certificationSeries?: string;
     // 权重值（用于排行榜计算）
     weight?: number;
     // 描述
     description?: string;
+    // 赛项列表
+    events?: ExamEvent[];
     // 创建时间
     createdAt: Date;
     // 更新时间
@@ -47,20 +49,17 @@ export class PresetService {
     /**
      * 创建新预设
      */
-    async createPreset(data: Omit<CertificatePreset, '_id' | 'domainId' | 'createdAt' | 'updatedAt'>): Promise<CertificatePreset> {
+    async createPreset(data: Omit<CertificatePreset, '_id' | 'domainId' | 'createdAt' | 'updatedAt' | 'enabled'>): Promise<CertificatePreset> {
         const collection = this.ctx.db.collection('exam.presets' as any);
 
         const preset: CertificatePreset = {
             domainId: this.ctx.domain!._id as any as ObjectId,
             type: data.type,
             name: data.name,
-            certificateName: data.certificateName,
             certifyingBody: data.certifyingBody,
-            category: data.category,
-            competitionName: data.competitionName,
-            certificationSeries: data.certificationSeries,
             weight: data.weight || 1,
             description: data.description,
+            events: data.events || [],
             enabled: true,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -89,6 +88,17 @@ export class PresetService {
         delete updateData.domainId;
         delete updateData.createdAt;
 
+        console.log(`[ExamHall] 执行更新: 查询条件 id=${id}, domainId=${this.ctx.domain!._id}`);
+
+        // 首先检查预设是否存在
+        const existingPreset = await collection.findOne({ _id: id });
+        if (!existingPreset) {
+            console.error(`[ExamHall] 预设完全不存在: id=${id}`);
+            throw new Error('预设不存在');
+        }
+
+        console.log(`[ExamHall] 找到预设, domainId=${existingPreset.domainId}, ctx.domain=${this.ctx.domain!._id}`);
+
         const result = await collection.findOneAndUpdate(
             { _id: id, domainId: this.ctx.domain!._id },
             { $set: updateData },
@@ -96,6 +106,7 @@ export class PresetService {
         );
 
         if (!result.value) {
+            console.error(`[ExamHall] 更新失败: 权限不足 id=${id}, domainId=${this.ctx.domain!._id}`);
             throw new Error('预设不存在或无权限修改');
         }
 

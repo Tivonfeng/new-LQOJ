@@ -1,5 +1,3 @@
-export { default as CertificateBatchImportService } from './CertificateBatchImportService';
-export type { CertificateRecord, ImportResult } from './CertificateBatchImportService';
 export { default as CertificateLeaderboardService } from './CertificateLeaderboardService';
 export type {
     CategoryStats,
@@ -13,3 +11,5 @@ export { default as CertificateService } from './CertificateService';
 export type { Certificate, CertificateFilter } from './CertificateService';
 export { default as QiniuStorageService } from './QiniuStorageService';
 export type { DeleteResult, UploadResult } from './QiniuStorageService';
+export { default as PresetService } from './PresetService';
+export type { CertificatePreset, ExamEvent } from './PresetService';
