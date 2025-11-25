@@ -7,7 +7,6 @@ import React, {
   useState,
 } from 'react';
 import { createRoot } from 'react-dom/client';
-import './certificate-management.css';
 import type { CertificateInfo, CertificatePreset } from './types';
 
 /** 表单数据类型 - 用于编辑/新增表单 */
@@ -279,9 +278,7 @@ const CertificateManagement: React.FC = () => {
   const [isPresetSubmitting, setIsPresetSubmitting] = useState(false);
   const [previewingCertId, setPreviewingCertId] = useState<string | null>(null);
   const [arePresetsLoading, setArePresetsLoading] = useState(false);
-  const [certificateFilter, setCertificateFilter] = useState<'all' | 'withImage' | 'noImage'>('all');
   const [certificateSort, setCertificateSort] = useState<'newest' | 'oldest' | 'name'>('newest');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset._id === formData.presetId),
     [presets, formData.presetId],
@@ -311,58 +308,14 @@ const CertificateManagement: React.FC = () => {
     certification: 0,
   }), [allPresets]);
 
-  const certificateStats = useMemo(() => {
-    const stats = {
-      total: certificates.length,
-      withImage: 0,
-      noImage: 0,
-      recent: 0,
-      uniqueUsers: 0,
-    };
-    const userSet = new Set<string>();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    certificates.forEach((cert) => {
-      if (cert.certificateImageUrl) {
-        stats.withImage += 1;
-      } else {
-        stats.noImage += 1;
-      }
-
-      if (cert.issueDate) {
-        const issueDate = new Date(cert.issueDate);
-        if (!Number.isNaN(issueDate.getTime()) && issueDate >= thirtyDaysAgo) {
-          stats.recent += 1;
-        }
-      }
-
-      if (cert.uid !== undefined && cert.uid !== null) {
-        userSet.add(String(cert.uid));
-      } else if (cert.username) {
-        userSet.add(cert.username);
-      }
-    });
-
-    stats.uniqueUsers = userSet.size;
-    return stats;
-  }, [certificates]);
-
   const filteredCertificates = useMemo(() => {
-    let workingList = certificates;
-    if (certificateFilter === 'withImage') {
-      workingList = certificates.filter((cert) => Boolean(cert.certificateImageUrl));
-    } else if (certificateFilter === 'noImage') {
-      workingList = certificates.filter((cert) => !cert.certificateImageUrl);
-    }
-
     const getIssueTimestamp = (cert: CertificateInfo) => {
       if (!cert.issueDate) return 0;
       const time = new Date(cert.issueDate).getTime();
       return Number.isNaN(time) ? 0 : time;
     };
 
-    const sorted = [...workingList].sort((a, b) => {
+    const sorted = [...certificates].sort((a, b) => {
       if (certificateSort === 'newest') {
         return getIssueTimestamp(b) - getIssueTimestamp(a);
       }
@@ -376,7 +329,7 @@ const CertificateManagement: React.FC = () => {
     });
 
     return sorted;
-  }, [certificateFilter, certificates, certificateSort]);
+  }, [certificates, certificateSort]);
 
   const filteredPresets = useMemo(() => {
     const search = presetSearch.trim().toLowerCase();
@@ -937,16 +890,6 @@ const CertificateManagement: React.FC = () => {
     return parsed.toLocaleDateString('zh-CN');
   };
 
-  const getAvatarText = (cert: CertificateInfo): string => {
-    if (cert.username) {
-      return cert.username.slice(0, 1).toUpperCase();
-    }
-    if (cert.uid !== undefined && cert.uid !== null) {
-      return String(cert.uid).slice(0, 1);
-    }
-    return 'U';
-  };
-
   /**
    * 重置表单并清除用户选择组件
    */
@@ -1098,57 +1041,20 @@ const CertificateManagement: React.FC = () => {
             </button>
           </div>
 
-          <div className="certificates-toolbar">
-            <div className="filter-chips">
-              {([
-                { value: 'all', label: '全部', count: certificateStats.total },
-                { value: 'withImage', label: '有图片', count: certificateStats.withImage },
-                { value: 'noImage', label: '待补图', count: certificateStats.noImage },
-              ] as const).map((tab) => (
-                <button
-                  key={tab.value}
-                  className={`filter-chip ${certificateFilter === tab.value ? 'active' : ''}`}
-                  onClick={() => setCertificateFilter(tab.value)}
-                >
-                  <span>{tab.label}</span>
-                  <span className="chip-divider">|</span>
-                  <span className="chip-count">{tab.count}</span>
-                </button>
-              ))}
-            </div>
-            <div className="toolbar-right">
-              <div className="certificate-controls">
-                <label className="sort-select" htmlFor="certificate-sort">
-                  排序
-                  <select
-                    id="certificate-sort"
-                    value={certificateSort}
-                    onChange={(e) => setCertificateSort(e.target.value as typeof certificateSort)}
-                    disabled={loading}
-                  >
-                    <option value="newest">最新优先</option>
-                    <option value="oldest">最早优先</option>
-                    <option value="name">按名称排序</option>
-                  </select>
-                </label>
-                <div className="view-toggle" role="group">
-                  <button
-                    className={`btn btn-sm ${viewMode === 'table' ? 'active' : ''}`}
-                    onClick={() => setViewMode('table')}
-                    aria-pressed={viewMode === 'table'}
-                  >
-                    📋 列表
-                  </button>
-                  <button
-                    className={`btn btn-sm ${viewMode === 'grid' ? 'active' : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    aria-pressed={viewMode === 'grid'}
-                  >
-                    🗂️ 卡片
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="certificate-controls">
+            <label className="sort-select" htmlFor="certificate-sort">
+              排序
+              <select
+                id="certificate-sort"
+                value={certificateSort}
+                onChange={(e) => setCertificateSort(e.target.value as typeof certificateSort)}
+                disabled={loading}
+              >
+                <option value="newest">最新优先</option>
+                <option value="oldest">最早优先</option>
+                <option value="name">按名称排序</option>
+              </select>
+            </label>
           </div>
         </div>
 
@@ -1158,15 +1064,9 @@ const CertificateManagement: React.FC = () => {
           </div>
         ) : filteredCertificates.length === 0 ? (
           <div className="empty-state">
-            <p>
-              {certificateFilter === 'withImage'
-                ? '📷 暂无已上传图片的证书'
-                : certificateFilter === 'noImage'
-                  ? '🖼️ 暂无待补充图片的证书'
-                  : '📭 暂无证书数据'}
-            </p>
+            <p>📭 暂无证书数据</p>
           </div>
-        ) : viewMode === 'table' ? (
+        ) : (
           <table className="certificates-table" aria-label="证书列表">
             <thead>
               <tr>
@@ -1238,87 +1138,6 @@ const CertificateManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
-        ) : (
-          <div className="certificate-card-grid">
-            {filteredCertificates.map((cert) => (
-              <div key={cert._id} className="certificate-card">
-                <div className="certificate-card-top">
-                  <div className="certificate-card-avatar">{getAvatarText(cert)}</div>
-                  <div className="certificate-card-headline">
-                    <p className="certificate-card-title">{cert.certificateName}</p>
-                    <span className="certificate-card-subtitle">
-                      {cert.certifyingBody || '主办单位未填写'}
-                    </span>
-                  </div>
-                  <span className="chip chip-primary chip-sm">
-                    {cert.level || '等级未定'}
-                  </span>
-                </div>
-                <hr className="divider" />
-                <div className="certificate-card-body">
-                  <div className="certificate-card-meta">
-                    <span>👤 {cert.username || `#${cert.uid}`}</span>
-                    <span>🏷️ {cert.category || '赛项未填写'}</span>
-                    <span>📅 {formatDisplayDate(cert.issueDate)}</span>
-                    {cert.examType && (
-                      <span>{cert.examType === 'competition' ? '🏆 竞赛' : '📚 考级'}</span>
-                    )}
-                    {typeof cert.weight === 'number' && (
-                      <span>⚖️ 权重 {cert.weight}</span>
-                    )}
-                  </div>
-                  {cert.notes && <p className="certificate-card-notes">📝 {cert.notes}</p>}
-                  <div className="certificate-card-media">
-                    {cert.certificateImageUrl ? (
-                      <img
-                        src={cert.certificateImageUrl}
-                        alt={cert.certificateName}
-                        onClick={() => setPreviewingCertId(cert._id || '')}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setPreviewingCertId(cert._id || '');
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="certificate-card-placeholder">
-                        <span>暂无图片</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <hr className="divider" />
-                <div className="certificate-card-footer">
-                  <div className="card-actions">
-                    <button
-                      className="btn btn-icon"
-                      aria-label="预览"
-                      onClick={() => setPreviewingCertId(cert._id || '')}
-                      disabled={!cert.certificateImageUrl}
-                    >
-                      👁️
-                    </button>
-                    <button
-                      className="btn btn-icon"
-                      aria-label="编辑"
-                      onClick={() => handleEdit(cert)}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      className="btn btn-icon btn-danger"
-                      aria-label="删除"
-                      onClick={() => handleDelete(cert._id || '')}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         )}
       </div>
 
