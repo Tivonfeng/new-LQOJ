@@ -46,8 +46,18 @@ export interface Certificate {
     competitionName?: string;
     /** 考级系列（仅考级类型使用，如"Python"、"C++"、"Scratch"） */
     certificationSeries?: string;
-    /** 权重值（用于排行榜计算，默认为1，值越大在排行榜中权重越高） */
+    /** 权重值（用于排行榜计算，默认为1，值越大在排行榜中权重越高）- 已弃用 */
     weight?: number;
+    /** 计算得出的权重值 */
+    calculatedWeight?: number;
+    /** 权重计算详情 */
+    weightBreakdown?: {
+        baseWeight: number;
+        levelFactor: number;
+        awardFactor: number;
+        typeFactor: number;
+        calculation: string;
+    };
 }
 
 export interface CertificateFilter {

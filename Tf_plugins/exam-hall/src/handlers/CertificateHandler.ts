@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { Handler, PRIV } from 'hydrooj';
 import CertificateService from '../services/CertificateService';
 import PresetService from '../services/PresetService';
+import WeightCalculationService from '../services/WeightCalculationService';
 
 // ============================================================================
 // 🎓 证书管理处理器集合
@@ -222,16 +223,6 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             let finalExamType = examType as 'competition' | 'certification' | undefined; // examType = 分类（competition/certification）
             let finalCompetitionName = typeof competitionName === 'string' ? competitionName.trim() : undefined;
             let finalCertificationSeries = typeof certificationSeries === 'string' ? certificationSeries.trim() : undefined;
-            let finalWeight: number | undefined;
-            if (weight !== undefined && weight !== null && weight !== '') {
-                const numericWeight = Number(weight);
-                if (Number.isNaN(numericWeight)) {
-                    this.sendError('权重必须是数字', 400);
-                    return;
-                }
-                finalWeight = numericWeight;
-            }
-
             if (presetId) {
                 try {
                     const presetService = new PresetService(this.ctx);
@@ -259,17 +250,10 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                         finalCertificationSeries ||= preset.name;
                         finalCompetitionName = undefined;
                     }
-                    if (finalWeight === undefined) {
-                        finalWeight = preset.weight || 1;
-                    }
                 } catch (err: any) {
                     console.warn(`[ExamHall] 获取预设失败: ${err.message}`);
                     // 如果预设获取失败，继续使用提交的值
                 }
-            }
-
-            if (finalWeight === undefined) {
-                finalWeight = 1;
             }
 
             if (finalExamType !== 'certification') {
@@ -314,11 +298,24 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     examType: finalExamType,
                     competitionName: finalCompetitionName,
                     certificationSeries: finalCertificationSeries,
-                    weight: finalWeight,
                 },
                 undefined,
                 this.user._id,
             );
+
+            // 自动计算权重
+            try {
+                const weightService = new WeightCalculationService(this.ctx);
+                const preset = presetId ? await new PresetService(this.ctx).getPresetById(new ObjectId(presetId)) : undefined;
+                const weightResult = await weightService.calculateCertificateWeight(certificate, preset);
+                await certService.updateCertificate(certificate._id!, {
+                    calculatedWeight: weightResult.finalWeight,
+                    weightBreakdown: weightResult.breakdown,
+                });
+            } catch (err: any) {
+                console.warn(`[ExamHall] 权重计算失败: ${err.message}`);
+                // 权重计算失败不影响证书创建
+            }
 
             this.sendSuccess({
                 success: true,
@@ -549,15 +546,6 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 weight,
             } = this.request.body;
 
-            let parsedWeight: number | undefined;
-            if (weight !== undefined && weight !== null && weight !== '') {
-                parsedWeight = Number(weight);
-                if (Number.isNaN(parsedWeight)) {
-                    this.sendError('权重必须是数字', 400);
-                    return;
-                }
-            }
-
             // 更新证书 - 只更新允许的字段，保留 examType、competitionName 等用于统计的字段
             const certService = new CertificateService(this.ctx);
             const updateData: any = {
@@ -570,7 +558,6 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 notes,
                 competitionName: typeof competitionName === 'string' ? competitionName.trim() : undefined,
                 certificationSeries: typeof certificationSeries === 'string' ? certificationSeries.trim() : undefined,
-                weight: parsedWeight,
             };
 
             // 如果提供了预设ID，从预设中获取examType
@@ -597,6 +584,20 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             }
 
             const certificate = await certService.updateCertificate(new ObjectId(id), updateData);
+
+            // 自动重新计算权重
+            try {
+                const weightService = new WeightCalculationService(this.ctx);
+                const preset = certificate.presetId ? await new PresetService(this.ctx).getPresetById(certificate.presetId) : undefined;
+                const weightResult = await weightService.calculateCertificateWeight(certificate, preset);
+                await certService.updateCertificate(new ObjectId(id), {
+                    calculatedWeight: weightResult.finalWeight,
+                    weightBreakdown: weightResult.breakdown,
+                });
+            } catch (err: any) {
+                console.warn(`[ExamHall] 权重计算失败: ${err.message}`);
+                // 权重计算失败不影响证书更新
+            }
 
             this.sendSuccess({
                 success: true,

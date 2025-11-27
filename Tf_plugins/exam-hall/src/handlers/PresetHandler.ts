@@ -68,19 +68,26 @@ export class PresetListHandler extends PresetHandlerBase {
                 type,
                 name,
                 certifyingBody,
-                weight,
+                level,
                 description,
                 events,
             } = this.request.body;
 
             // 验证必填字段
-            if (!type || !name || !certifyingBody) {
+            if (!type || !name || !certifyingBody || !level) {
                 this.sendError('缺少必填字段', 400);
                 return;
             }
 
             if (type !== 'competition' && type !== 'certification') {
                 this.sendError('无效的预设类型', 400);
+                return;
+            }
+
+            // 验证级别
+            const validLevels = ['city', 'province', 'national', 'international'];
+            if (!validLevels.includes(level)) {
+                this.sendError('无效的级别', 400);
                 return;
             }
 
@@ -100,7 +107,7 @@ export class PresetListHandler extends PresetHandlerBase {
                 type,
                 name,
                 certifyingBody,
-                weight: weight ? Number(weight) : 1,
+                level,
                 description,
                 events,
             });
@@ -171,11 +178,20 @@ export class PresetDetailHandler extends PresetHandlerBase {
             const {
                 name,
                 certifyingBody,
-                weight,
+                level,
                 description,
                 enabled,
                 events,
             } = this.request.body;
+
+            // 验证级别（如果提供）
+            if (level !== undefined) {
+                const validLevels = ['city', 'province', 'national', 'international'];
+                if (!validLevels.includes(level)) {
+                    this.sendError('无效的级别', 400);
+                    return;
+                }
+            }
 
             // 验证赛项（如果提供）
             if (events !== undefined) {
@@ -194,7 +210,7 @@ export class PresetDetailHandler extends PresetHandlerBase {
             const updateData: any = {};
             if (name !== undefined) updateData.name = name;
             if (certifyingBody !== undefined) updateData.certifyingBody = certifyingBody;
-            if (weight !== undefined) updateData.weight = weight ? Number(weight) : 1;
+            if (level !== undefined) updateData.level = level;
             if (description !== undefined) updateData.description = description;
             if (enabled !== undefined) updateData.enabled = enabled;
             if (events !== undefined) updateData.events = events;

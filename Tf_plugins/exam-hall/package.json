@@ -9,6 +9,7 @@
     "cli": false
   },
   "dependencies": {
+    "antd": "^5.21.2",
     "chart.js": "^4.4.0",
     "csv-parse": "^5.4.0",
     "formidable": "^3.5.4",

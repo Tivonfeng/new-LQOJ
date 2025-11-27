@@ -43,6 +43,11 @@ export interface ExamEvent {
 }
 
 /**
+ * 级别类型
+ */
+export type Level = 'city' | 'province' | 'national' | 'international';
+
+/**
  * 证书预设接口
  * 用于管理比赛/考级的预设配置
  */
@@ -55,8 +60,8 @@ export interface CertificatePreset {
   name: string;
   /** 认证机构 */
   certifyingBody: string;
-  /** 权重值 */
-  weight?: number;
+  /** 级别：市级(city)、省级(province)、国级(national)、国际级(international) */
+  level: Level;
   /** 描述 */
   description?: string;
   /** 赛项列表 */
@@ -102,8 +107,18 @@ export interface CertificateInfo {
   competitionName?: string;
   /** 考级系列（仅考级类型） */
   certificationSeries?: string;
-  /** 权重值 */
+  /** 权重值（已弃用，使用 calculatedWeight） */
   weight?: number;
+  /** 计算得出的权重值 */
+  calculatedWeight?: number;
+  /** 权重计算详情 */
+  weightBreakdown?: {
+    baseWeight: number;
+    levelFactor: number;
+    awardFactor: number;
+    typeFactor: number;
+    calculation: string;
+  };
   /** 颁发日期 */
   issueDate: string | Date;
   /** 过期日期（可选） */

@@ -10,6 +10,11 @@ export interface ExamEvent {
 }
 
 /**
+ * 级别类型
+ */
+export type Level = 'city' | 'province' | 'national' | 'international';
+
+/**
  * 证书预设接口
  * 用于管理比赛/考级的预设配置
  */
@@ -22,8 +27,8 @@ export interface CertificatePreset {
     name: string;
     // 认证机构
     certifyingBody: string;
-    // 权重值（用于排行榜计算）
-    weight?: number;
+    // 级别：市级(city)、省级(province)、国级(national)、国际级(international)
+    level: Level;
     // 描述
     description?: string;
     // 赛项列表
@@ -67,12 +72,12 @@ export class PresetService {
     async createPreset(data: Omit<CertificatePreset, '_id' | 'domainId' | 'createdAt' | 'updatedAt' | 'enabled'>): Promise<CertificatePreset> {
         const preset: CertificatePreset = {
             domainId: this.domainId,
-            type: data.type,
-            name: data.name,
-            certifyingBody: data.certifyingBody,
-            weight: data.weight ?? 1,
-            description: data.description,
-            events: data.events ?? [],
+        type: data.type,
+        name: data.name,
+        certifyingBody: data.certifyingBody,
+        level: data.level,
+        description: data.description,
+        events: data.events ?? [],
             enabled: true,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -81,7 +86,7 @@ export class PresetService {
         const result = await this.presets.insertOne(preset);
         preset._id = result.insertedId;
 
-        console.log(`[ExamHall] 创建预设成功: type=${data.type}, name=${data.name}`);
+        console.log(`[ExamHall] 创建预设成功: type=${data.type}, name=${data.name}, level=${data.level}`);
         return preset;
     }
 
