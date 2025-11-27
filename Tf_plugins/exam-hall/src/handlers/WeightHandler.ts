@@ -1,15 +1,14 @@
-import { Context, Handler, param, Types } from 'hydrooj';
-import { ObjectId } from 'mongodb';
-import WeightCalculationService from '../services/WeightCalculationService';
-import { CertificateService } from '../services/CertificateService';
+import { Handler, ObjectId, PRIV } from 'hydrooj';
+import { Certificate, CertificateService } from '../services/CertificateService';
 import { PresetService } from '../services/PresetService';
+import WeightCalculationService from '../services/WeightCalculationService';
 
 /**
  * 权重管理基础处理器
  */
 abstract class WeightHandlerBase extends Handler {
     protected checkManagePermission(): void {
-        if (!this.user.hasPriv('PRIV_MANAGE_EXAM') && !this.user.hasPriv('PRIV_MANAGE_ALL_DOMAIN')) {
+        if (this.user.role !== 'admin' && !(this.user.perm & BigInt(PRIV.PRIV_EDIT_SYSTEM))) {
             this.sendError('权限不足', 403);
             throw new Error('PERMISSION_DENIED');
         }
@@ -110,33 +109,32 @@ export class WeightConfigHandler extends WeightHandlerBase {
  * POST /exam/admin/weight-preview - 预览权重计算结果
  */
 export class WeightPreviewHandler extends WeightHandlerBase {
-    @param('examType', Types.String, true)
-    @param('level', Types.String, true)
-    @param('awardLevel', Types.String, true)
-    async post(
-        domainId: string,
-        examType: 'competition' | 'certification',
-        level: string,
-        awardLevel: string,
-    ) {
+    async post() {
         try {
             this.checkManagePermission();
 
+            const { examType, level, awardLevel } = this.request.body;
+
             // 验证参数
-            if (!['competition', 'certification'].includes(examType)) {
+            if (!examType || !['competition', 'certification'].includes(examType)) {
                 this.sendError('无效的赛考类型', 400);
                 return;
             }
 
             const validLevels = ['city', 'province', 'national', 'international'];
-            if (!validLevels.includes(level)) {
+            if (!level || !validLevels.includes(level)) {
                 this.sendError('无效的级别', 400);
+                return;
+            }
+
+            if (!awardLevel) {
+                this.sendError('缺少获奖等级参数', 400);
                 return;
             }
 
             const weightService = new WeightCalculationService(this.ctx);
             const result = await weightService.previewWeight(
-                examType,
+                examType as 'competition' | 'certification',
                 level as any,
                 awardLevel,
             );
@@ -168,16 +166,16 @@ export class WeightRecalculationHandler extends WeightHandlerBase {
             const presetService = new PresetService(this.ctx);
             const weightService = new WeightCalculationService(this.ctx);
 
-            let certificates;
+            let certificates: Certificate[];
             if (recalculateAll) {
                 // 重新计算所有证书
                 certificates = await certificateService.getAllCertificates();
             } else if (certificateIds && Array.isArray(certificateIds)) {
                 // 重新计算指定证书
                 const objectIds = certificateIds
-                    .filter(id => ObjectId.isValid(id))
-                    .map(id => new ObjectId(id));
-                
+                    .filter((id: any) => ObjectId.isValid(id))
+                    .map((id: any) => new ObjectId(id));
+
                 if (objectIds.length === 0) {
                     this.sendError('无效的证书ID列表', 400);
                     return;
@@ -192,32 +190,35 @@ export class WeightRecalculationHandler extends WeightHandlerBase {
             // 获取所有预设
             const allPresets = await presetService.getAllPresets();
             const presetMap = new Map(
-                allPresets.map(preset => [preset._id!.toString(), preset])
+                allPresets.map((preset) => [preset._id!.toString(), preset]),
             );
 
             // 批量计算权重
             const weightResults = await weightService.batchCalculateWeights(certificates, presetMap);
 
-            // 更新证书权重
-            let updatedCount = 0;
-            for (const cert of certificates) {
-                if (!cert._id) continue;
-                
+            // 优化：批量更新证书权重，使用 Promise.all 并发执行
+            const updatePromises = certificates.map(async (cert) => {
+                if (!cert._id) return false;
+
                 const weightResult = weightResults.get(cert._id.toString());
                 if (weightResult) {
                     await certificateService.updateCertificate(cert._id, {
                         calculatedWeight: weightResult.finalWeight,
                         weightBreakdown: weightResult.breakdown,
                     });
-                    updatedCount++;
+                    return true;
                 }
-            }
+                return false;
+            });
 
-            // 重新计算用户统计
-            const affectedUsers = [...new Set(certificates.map(cert => cert.uid))];
-            for (const uid of affectedUsers) {
-                await certificateService.updateUserStats(uid);
-            }
+            const updateResults = await Promise.all(updatePromises);
+            const updatedCount = updateResults.filter((success) => success).length;
+
+            // 优化：批量重新计算用户统计，使用 Promise.all 并发执行
+            const affectedUsers = [...new Set(certificates.map((cert) => cert.uid))];
+            await Promise.all(
+                affectedUsers.map((uid: number) => certificateService.updateUserStats(uid)),
+            );
 
             this.sendSuccess({
                 success: true,
@@ -258,9 +259,9 @@ export class WeightStatsHandler extends WeightHandlerBase {
                 { min: 100, max: Infinity, label: '100分以上' },
             ];
 
-            const distribution = weightRanges.map(range => ({
+            const distribution = weightRanges.map((range) => ({
                 ...range,
-                count: certificates.filter(cert => {
+                count: certificates.filter((cert) => {
                     const weight = cert.calculatedWeight || cert.weight || 0;
                     return weight >= range.min && weight < range.max;
                 }).length,
@@ -285,7 +286,7 @@ export class WeightStatsHandler extends WeightHandlerBase {
                 success: true,
                 data: {
                     totalCertificates: certificates.length,
-                    averageWeight: certificates.length > 0 
+                    averageWeight: certificates.length > 0
                         ? certificates.reduce((sum, cert) => sum + (cert.calculatedWeight || cert.weight || 0), 0) / certificates.length
                         : 0,
                     distribution,

@@ -1,5 +1,4 @@
-import { Collection, Filter, ObjectId } from 'mongodb';
-import { Context } from 'hydrooj';
+import { Context, ObjectId } from 'hydrooj';
 
 /**
  * 赛项数据接口
@@ -55,11 +54,11 @@ export class PresetService {
         return this.ctx.domain!._id as any as ObjectId;
     }
 
-    private get presets(): Collection<CertificatePreset> {
-        return this.ctx.db.collection('exam.presets' as any) as Collection<CertificatePreset>;
+    private get presets(): any {
+        return this.ctx.db.collection('exam.presets' as any);
     }
 
-    private buildDomainQuery(filter: Filter<CertificatePreset> = {}): Filter<CertificatePreset> {
+    private buildDomainQuery(filter: any = {}): any {
         return {
             domainId: this.domainId,
             ...filter,
@@ -72,12 +71,12 @@ export class PresetService {
     async createPreset(data: Omit<CertificatePreset, '_id' | 'domainId' | 'createdAt' | 'updatedAt' | 'enabled'>): Promise<CertificatePreset> {
         const preset: CertificatePreset = {
             domainId: this.domainId,
-        type: data.type,
-        name: data.name,
-        certifyingBody: data.certifyingBody,
-        level: data.level,
-        description: data.description,
-        events: data.events ?? [],
+            type: data.type,
+            name: data.name,
+            certifyingBody: data.certifyingBody,
+            level: data.level,
+            description: data.description,
+            events: data.events ?? [],
             enabled: true,
             createdAt: new Date(),
             updatedAt: new Date(),

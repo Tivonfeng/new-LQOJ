@@ -1,6 +1,5 @@
-import { ObjectId } from 'mongodb';
-import { Handler, PRIV } from 'hydrooj';
-import PresetService from '../services/PresetService';
+import { Handler, ObjectId, PRIV } from 'hydrooj';
+import PresetService, { CertificatePreset } from '../services/PresetService';
 
 /**
  * 预设管理处理器基类
@@ -42,7 +41,7 @@ export class PresetListHandler extends PresetHandlerBase {
             const enabledOnly = this.request.query?.enabledOnly === 'true';
 
             const presetService = new PresetService(this.ctx);
-            let presets;
+            let presets: CertificatePreset[];
 
             if (type && (type === 'competition' || type === 'certification')) {
                 presets = await presetService.getPresetsByType(type, enabledOnly);

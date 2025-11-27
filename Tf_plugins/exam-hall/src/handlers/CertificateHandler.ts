@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ObjectId } from 'mongodb';
-import { Handler, PRIV } from 'hydrooj';
+import { Handler, ObjectId, PRIV } from 'hydrooj';
 import CertificateService from '../services/CertificateService';
 import PresetService from '../services/PresetService';
 import WeightCalculationService from '../services/WeightCalculationService';
@@ -172,7 +171,6 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 examType,
                 competitionName,
                 certificationSeries,
-                weight,
             } = this.request.body;
 
             // 验证必填字段
@@ -307,7 +305,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             try {
                 const weightService = new WeightCalculationService(this.ctx);
                 const preset = presetId ? await new PresetService(this.ctx).getPresetById(new ObjectId(presetId)) : undefined;
-                const weightResult = await weightService.calculateCertificateWeight(certificate, preset);
+                const weightResult = await weightService.calculateCertificateWeight(certificate, preset || undefined);
                 await certService.updateCertificate(certificate._id!, {
                     calculatedWeight: weightResult.finalWeight,
                     weightBreakdown: weightResult.breakdown,
@@ -543,7 +541,6 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 notes,
                 competitionName,
                 certificationSeries,
-                weight,
             } = this.request.body;
 
             // 更新证书 - 只更新允许的字段，保留 examType、competitionName 等用于统计的字段
@@ -588,8 +585,14 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             // 自动重新计算权重
             try {
                 const weightService = new WeightCalculationService(this.ctx);
-                const preset = certificate.presetId ? await new PresetService(this.ctx).getPresetById(certificate.presetId) : undefined;
-                const weightResult = await weightService.calculateCertificateWeight(certificate, preset);
+                const preset = certificate.presetId
+                    ? await new PresetService(this.ctx).getPresetById(
+                        typeof certificate.presetId === 'string'
+                            ? new ObjectId(certificate.presetId)
+                            : certificate.presetId,
+                    )
+                    : undefined;
+                const weightResult = await weightService.calculateCertificateWeight(certificate, preset || undefined);
                 await certService.updateCertificate(new ObjectId(id), {
                     calculatedWeight: weightResult.finalWeight,
                     weightBreakdown: weightResult.breakdown,

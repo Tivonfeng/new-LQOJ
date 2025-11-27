@@ -1,6 +1,5 @@
 import * as fs from 'fs';
-import { ObjectId } from 'mongodb';
-import { Context } from 'hydrooj';
+import { Context, ObjectId } from 'hydrooj';
 import QiniuStorageService from './QiniuStorageService';
 
 export interface Certificate {
@@ -422,6 +421,27 @@ export class CertificateService {
     async getCertificateById(id: ObjectId): Promise<Certificate | null> {
         const collection = this.ctx.db.collection('exam.certificates' as any);
         return (await collection.findOne({ _id: id })) as Certificate | null;
+    }
+
+    /**
+     * 获取所有证书（管理员用）
+     */
+    async getAllCertificates(): Promise<Certificate[]> {
+        const collection = this.ctx.db.collection('exam.certificates' as any);
+        return (await collection
+            .find({ domainId: this.ctx.domain!._id })
+            .sort({ issueDate: -1 })
+            .toArray()) as Certificate[];
+    }
+
+    /**
+     * 根据ID列表批量获取证书
+     */
+    async getCertificatesByIds(ids: ObjectId[]): Promise<Certificate[]> {
+        const collection = this.ctx.db.collection('exam.certificates' as any);
+        return (await collection
+            .find({ _id: { $in: ids } })
+            .toArray()) as Certificate[];
     }
 
     /**

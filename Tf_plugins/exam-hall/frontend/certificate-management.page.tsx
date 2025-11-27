@@ -1908,6 +1908,7 @@ const CertificateManagement: React.FC = () => {
             style={{ marginBottom: 12 }}
           >
             <Input
+              name="name"
               size="small"
               value={presetFormData.name}
               onChange={handlePresetInputChange}
@@ -1923,6 +1924,7 @@ const CertificateManagement: React.FC = () => {
             style={{ marginBottom: 12 }}
           >
             <Input
+              name="certifyingBody"
               size="small"
               value={presetFormData.certifyingBody}
               onChange={handlePresetInputChange}
@@ -1955,6 +1957,7 @@ const CertificateManagement: React.FC = () => {
 
           <Form.Item label="描述" name="description" style={{ marginBottom: 12 }}>
             <TextArea
+              name="description"
               size="small"
               value={presetFormData.description}
               onChange={handlePresetInputChange}
