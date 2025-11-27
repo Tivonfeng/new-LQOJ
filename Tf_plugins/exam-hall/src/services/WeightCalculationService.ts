@@ -7,7 +7,7 @@ import { CertificatePreset, Level } from './PresetService';
  */
 export interface WeightConfig {
     // 级别权重系数 (40% 权重)
-    levelWeights: Record<Level | 'international', number>;
+    levelWeights: Record<Level, number>;
 
     // 奖项权重系数 (35% 权重)
     awardWeights: {
@@ -54,36 +54,31 @@ export class WeightCalculationService {
 
     /**
      * 获取默认权重配置
+     * 权重范围: 10 ~ 80 分
+     * 积分 = 权重 × 10，范围: 100 ~ 800 分
      */
     private getDefaultConfig(): WeightConfig {
         return {
             levelWeights: {
                 city: 1.0, // 市级基础权重
-                province: 1.5, // 省级 +50%
-                national: 2.0, // 国家级 +100%
-                international: 3.0, // 国际级 +200%
+                province: 2.0, // 省级 +100%
+                national: 4.0, // 国家级 +300%
             },
 
             awardWeights: {
                 competition: {
-                    一等奖: 1.0,
-                    二等奖: 0.8,
-                    三等奖: 0.6,
-                    优秀奖: 0.4,
-                    参与奖: 0.2,
-                    入围奖: 0.3,
-                    鼓励奖: 0.2,
+                    一等奖: 2.0,
+                    二等奖: 1.6,
+                    三等奖: 1.3,
+                    优秀奖: 1.0,
                 },
                 certification: {
-                    通过: 1.0,
-                    优秀: 1.2,
-                    良好: 1.1,
-                    合格: 1.0,
+                    通过: 1.2, // 考级统一权重
                 },
             },
 
             examTypeWeights: {
-                competition: 1.2, // 竞赛权重稍高
+                competition: 1.0, // 竞赛基础权重
                 certification: 1.0, // 考级基础权重
             },
 
@@ -172,14 +167,13 @@ export class WeightCalculationService {
     /**
      * 获取级别文本
      */
-    private getLevelText(level?: Level | 'international'): string {
-        const levelTexts = {
+    private getLevelText(level?: Level): string {
+        const levelTexts: Record<Level, string> = {
             city: '市级',
             province: '省级',
             national: '国家级',
-            international: '国际级',
         };
-        return levelTexts[level as keyof typeof levelTexts] || '未知级别';
+        return level ? levelTexts[level] : '未知级别';
     }
 
     /**
@@ -230,7 +224,7 @@ export class WeightCalculationService {
      */
     async previewWeight(
         examType: 'competition' | 'certification',
-        level: Level | 'international',
+        level: Level,
         awardLevel: string,
     ): Promise<WeightCalculationResult> {
         const mockCertificate: Partial<Certificate> = {

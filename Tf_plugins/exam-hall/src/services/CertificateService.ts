@@ -505,6 +505,9 @@ export class CertificateService {
     async getRecentQuarterCertificates(
         examType?: 'competition' | 'certification',
         limit = 20,
+        options?: {
+            includeAllDomains?: boolean;
+        },
     ): Promise<Certificate[]> {
         const collection = this.ctx.db.collection('exam.certificates' as any);
 
@@ -532,10 +535,13 @@ export class CertificateService {
         const quarterStartDate = new Date(currentYear, quarterStartMonth, 1);
 
         const query: any = {
-            domainId: this.ctx.domain!._id,
             status: 'active',
             issueDate: { $gte: quarterStartDate },
         };
+
+        if (!options?.includeAllDomains) {
+            query.domainId = this.ctx.domain!._id;
+        }
 
         if (examType) {
             query.examType = examType;

@@ -1,17 +1,12 @@
 import './exam-hall.page.css';
 
-import {
-  CalendarOutlined,
-  ClockCircleOutlined,
-  SettingOutlined,
-  TrophyOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { ClockCircleOutlined, SettingOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons';
 import {
   Button,
   Card,
   Col,
   Empty,
+  Modal,
   Row,
   Space,
   Spin,
@@ -30,6 +25,10 @@ const { Title, Text, Paragraph } = Typography;
 const ExamHallApp: React.FC = () => {
   const [data, setData] = useState<ExamHallData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailCertificate, setDetailCertificate] = useState<{
+    cert: any;
+    type: 'competition' | 'certification';
+  } | null>(null);
 
   useEffect(() => {
     // 模拟加载延迟,让UI更流畅
@@ -58,60 +57,48 @@ const ExamHallApp: React.FC = () => {
   // 渲染证书卡片
   const renderCertificateCard = (cert: any, type: 'competition' | 'certification') => {
     const isCompetition = type === 'competition';
+    const displayName = cert.username || '优秀学员';
+    const certificateTitle = cert.certificateName || '证书';
+
     return (
       <Col xs={24} sm={12} lg={8} xl={6} key={cert._id}>
         <Card
           hoverable
           className={`certificate-card ${type}-card`}
-          cover={
-            cert.certificateImageUrl ? (
-              <div className="certificate-card-image">
-                <img src={cert.certificateImageUrl} alt={cert.certificateName} />
-                <Tag
-                  icon={isCompetition ? <TrophyOutlined /> : undefined}
-                  color={isCompetition ? 'gold' : 'purple'}
-                  className="certificate-type-badge"
-                >
-                  {isCompetition ? '竞赛' : '考级'}
-                </Tag>
-              </div>
-            ) : undefined
-          }
+          onClick={() => setDetailCertificate({ cert, type })}
+          role="button"
         >
-          <Card.Meta
-            title={
-              <Tooltip title={cert.certificateName}>
-                <div className="certificate-card-title">{cert.certificateName}</div>
-              </Tooltip>
-            }
-            description={
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Text type="secondary" className="certificate-card-subtitle">
-                  {cert.certifyingBody}
-                </Text>
-                <div className="certificate-card-meta">
-                  <Text strong>赛项:</Text> {cert.category}
-                </div>
-                {cert.level && (
-                  <Tag
-                    color={isCompetition ? 'orange' : 'blue'}
-                    className="certificate-level-badge"
-                  >
-                    {cert.level}
-                  </Tag>
-                )}
-              </Space>
-            }
-          />
-          <div className="certificate-card-footer">
-            {cert.username && (
-              <Text type="secondary" className="certificate-card-username">
-                <UserOutlined /> {cert.username}
-              </Text>
+          <div className="certificate-card-thumbnail">
+            <Tag
+              icon={isCompetition ? <TrophyOutlined /> : undefined}
+              color={isCompetition ? 'gold' : 'purple'}
+              className="certificate-card-badge"
+            >
+              {isCompetition ? '竞赛证书' : '考级证书'}
+            </Tag>
+            {cert.certificateImageUrl ? (
+              <img src={cert.certificateImageUrl} alt={cert.certificateName} />
+            ) : (
+              <div className="certificate-card-placeholder">
+                <span role="img" aria-label="Certificate icon">
+                  📄
+                </span>
+                暂无证书图片
+              </div>
             )}
-            <Text type="secondary" className="certificate-card-date">
-              <CalendarOutlined /> {dayjs(cert.issueDate).format('YYYY/MM/DD')}
-            </Text>
+          </div>
+
+          <div className="certificate-card-basic">
+            <Tooltip title={displayName}>
+              <div className="certificate-card-basic-name">
+                <UserOutlined /> {displayName}
+              </div>
+            </Tooltip>
+            <Tooltip title={certificateTitle}>
+              <Text type="secondary" className="certificate-card-basic-title">
+                {certificateTitle}
+              </Text>
+            </Tooltip>
           </div>
         </Card>
       </Col>
@@ -254,6 +241,77 @@ const ExamHallApp: React.FC = () => {
           </Card>
         )}
       </div>
+      <Modal
+        open={!!detailCertificate}
+        onCancel={() => setDetailCertificate(null)}
+        footer={null}
+        destroyOnClose
+        title={detailCertificate?.cert.certificateName || '证书详情'}
+        width={520}
+      >
+        {detailCertificate && (() => {
+          const { cert, type } = detailCertificate;
+          const issueDate = cert.issueDate ? dayjs(cert.issueDate).format('YYYY/MM/DD') : '暂无日期';
+          const issuerName = cert.certifyingBody || '未提供';
+          const eventName = cert.category || '-';
+          const examName = cert.competitionName || cert.certificationSeries;
+          return (
+            <div className="certificate-detail-modal">
+              <div className="certificate-detail-image">
+                {cert.certificateImageUrl ? (
+                  <img src={cert.certificateImageUrl} alt={cert.certificateName} />
+                ) : (
+                  <div className="certificate-card-placeholder">
+                    <span role="img" aria-label="Certificate icon">
+                      📄
+                    </span>
+                    暂无证书图片
+                  </div>
+                )}
+                <Tag
+                  icon={type === 'competition' ? <TrophyOutlined /> : undefined}
+                  color={type === 'competition' ? 'gold' : 'purple'}
+                  className="certificate-detail-badge"
+                >
+                  {type === 'competition' ? '竞赛证书' : '考级证书'}
+                </Tag>
+              </div>
+              <Space direction="vertical" size="small" className="certificate-detail-meta">
+                <Text strong>学员：{cert.username || '优秀学员'}</Text>
+                <Text type="secondary">颁发机构：{issuerName}</Text>
+              </Space>
+              <div className="certificate-detail-grid">
+                <div className="detail-item">
+                  <Text type="secondary">赛项</Text>
+                  <span>{eventName}</span>
+                </div>
+                <div className="detail-item">
+                  <Text type="secondary">级别</Text>
+                  <span>
+                    {cert.level ? (
+                      <Tag color={type === 'competition' ? 'orange' : 'blue'} className="certificate-level-badge">
+                        {cert.level}
+                      </Tag>
+                    ) : (
+                      '-'
+                    )}
+                  </span>
+                </div>
+                {examName && (
+                  <div className="detail-item detail-item-span">
+                    <Text type="secondary">考试名称</Text>
+                    <span>{examName}</span>
+                  </div>
+                )}
+                <div className="detail-item detail-item-span">
+                  <Text type="secondary">颁发日期</Text>
+                  <span>{issueDate}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

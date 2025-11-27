@@ -11,7 +11,7 @@ export interface ExamEvent {
 /**
  * 级别类型
  */
-export type Level = 'city' | 'province' | 'national' | 'international';
+export type Level = 'city' | 'province' | 'national';
 
 /**
  * 证书预设接口
@@ -26,7 +26,7 @@ export interface CertificatePreset {
     name: string;
     // 认证机构
     certifyingBody: string;
-    // 级别：市级(city)、省级(province)、国级(national)、国际级(international)
+    // 级别：市级(city)、省级(province)、国家级(national)
     level: Level;
     // 描述
     description?: string;
