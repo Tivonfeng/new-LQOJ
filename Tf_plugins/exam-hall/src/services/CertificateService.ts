@@ -478,6 +478,57 @@ export class CertificateService {
     }
 
     /**
+     * 获取最近一个季度的证书
+     * @param examType 证书类型：competition 或 certification，如果未指定则返回所有类型
+     * @param limit 返回数量限制，默认20
+     */
+    async getRecentQuarterCertificates(
+        examType?: 'competition' | 'certification',
+        limit = 20,
+    ): Promise<Certificate[]> {
+        const collection = this.ctx.db.collection('exam.certificates' as any);
+
+        // 计算最近一个季度的开始日期
+        const now = new Date();
+        const currentMonth = now.getMonth(); // 0-11
+        const currentYear = now.getFullYear();
+
+        // 确定当前季度
+        let quarterStartMonth: number;
+        if (currentMonth < 3) {
+            // Q1: 1-3月
+            quarterStartMonth = 0;
+        } else if (currentMonth < 6) {
+            // Q2: 4-6月
+            quarterStartMonth = 3;
+        } else if (currentMonth < 9) {
+            // Q3: 7-9月
+            quarterStartMonth = 6;
+        } else {
+            // Q4: 10-12月
+            quarterStartMonth = 9;
+        }
+
+        const quarterStartDate = new Date(currentYear, quarterStartMonth, 1);
+
+        const query: any = {
+            domainId: this.ctx.domain!._id,
+            status: 'active',
+            issueDate: { $gte: quarterStartDate },
+        };
+
+        if (examType) {
+            query.examType = examType;
+        }
+
+        return (await collection
+            .find(query)
+            .sort({ issueDate: -1 })
+            .limit(limit)
+            .toArray()) as Certificate[];
+    }
+
+    /**
      * 更新用户证书统计
      * 支持竞赛/考级的多维度统计
      * 优化：使用投影只查询需要的字段，减少数据传输

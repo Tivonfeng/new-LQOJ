@@ -25,6 +25,30 @@ export interface ExamHallData {
   canManage: boolean;
   /** 证书管理页面 URL（如果用户有管理权限） */
   managementUrl?: string;
+  /** 最近一个季度的竞赛证书 */
+  recentCompetitions?: Array<{
+    _id?: string;
+    username?: string;
+    certificateName: string;
+    certifyingBody: string;
+    category: string;
+    level?: string;
+    issueDate: string | Date;
+    certificateImageUrl?: string;
+    competitionName?: string;
+  }>;
+  /** 最近一个季度的考级证书 */
+  recentCertifications?: Array<{
+    _id?: string;
+    username?: string;
+    certificateName: string;
+    certifyingBody: string;
+    category: string;
+    level?: string;
+    issueDate: string | Date;
+    certificateImageUrl?: string;
+    certificationSeries?: string;
+  }>;
 }
 
 // ============================================================================

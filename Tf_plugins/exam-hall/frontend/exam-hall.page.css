@@ -1,0 +1,144 @@
+.exam-hall-react {
+  padding: 16px 0 32px;
+}
+
+.exam-hall-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.exam-hall-header .manage-button {
+  text-decoration: none;
+  font-weight: 600;
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(79, 70, 229, 0.08);
+  transition: background 0.2s;
+}
+
+.exam-hall-header .manage-button:hover {
+  background: rgba(79, 70, 229, 0.15);
+}
+
+.certificate-scroll-container {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.certificate-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.certificate-scroll-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.certificate-scroll-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.certificate-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.certificate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.certificate-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.certificate-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.certificate-card.competition-card {
+  border-left: 3px solid #f6ad55;
+}
+
+.certificate-card.certification-card {
+  border-left: 3px solid #667eea;
+}
+.certificate-section {
+  margin-top: 24px;
+}
+
+.certificate-card-image {
+  text-align: center;
+}
+
+.certificate-card-image img {
+  width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.certificate-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.certificate-card-title {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 600;
+  margin: 0;
+}
+
+.certificate-card-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.certificate-card-meta {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.certificate-card-meta strong {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.certificate-card-username,
+.certificate-card-date {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.certificate-empty-state {
+  text-align: center;
+  color: #9ca3af;
+  padding: 48px 0;
+}
+
+.certificate-empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+

@@ -288,6 +288,8 @@ const CertificateManagement: React.FC = () => {
   const [isPresetSubmitting, setIsPresetSubmitting] = useState(false);
   const [previewingCertId, setPreviewingCertId] = useState<string | null>(null);
   const [arePresetsLoading, setArePresetsLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedRows, setSelectedRows] = useState<CertificateTableRecord[]>([]);
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset._id === formData.presetId),
     [presets, formData.presetId],
@@ -963,6 +965,9 @@ const CertificateManagement: React.FC = () => {
           if (data.success) {
             await fetchCertificates();
             messageApi.success('证书已删除');
+            // 清除选中状态
+            setSelectedRowKeys([]);
+            setSelectedRows([]);
           } else {
             const errorMessage = data.error || '删除失败';
             console.error('证书删除失败:', errorMessage);
@@ -971,6 +976,59 @@ const CertificateManagement: React.FC = () => {
         } catch (error) {
           console.error('证书删除失败:', error);
           messageApi.error('证书删除失败，请稍后重试');
+        }
+      },
+    });
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedRowKeys.length === 0) {
+      messageApi.warning('请先选择要删除的证书');
+      return;
+    }
+
+    modalApi.confirm({
+      title: `确定要删除选中的 ${selectedRowKeys.length} 个证书吗？`,
+      content: '删除后将无法恢复，请谨慎操作。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const deletePromises = selectedRows.map((row) => {
+            const id = row._id;
+            if (!id) return Promise.resolve({ success: false });
+            return fetch(`/exam/admin/certificates/${id}`, {
+              method: 'DELETE',
+            }).then((res) => res.json());
+          });
+
+          const results = await Promise.allSettled(deletePromises);
+          const successCount = results.filter(
+            (r) => r.status === 'fulfilled' && r.value.success,
+          ).length;
+          const failCount = selectedRowKeys.length - successCount;
+
+          if (successCount > 0) {
+            await fetchCertificates();
+            if (failCount === 0) {
+              messageApi.success(`成功删除 ${successCount} 个证书`);
+            } else {
+              messageApi.warning(`成功删除 ${successCount} 个证书，${failCount} 个删除失败`);
+            }
+          } else {
+            messageApi.error('批量删除失败，请稍后重试');
+          }
+
+          // 清除选中状态
+          setSelectedRowKeys([]);
+          setSelectedRows([]);
+        } catch (error) {
+          console.error('批量删除失败:', error);
+          messageApi.error('批量删除失败，请稍后重试');
+        } finally {
+          setLoading(false);
         }
       },
     });
@@ -1236,6 +1294,16 @@ const CertificateManagement: React.FC = () => {
           >
             添加证书
           </Button>
+          {selectedRowKeys.length > 0 && (
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleBatchDelete}
+              disabled={loading}
+            >
+              批量删除 ({selectedRowKeys.length})
+            </Button>
+          )}
         </Space>
 
         {/* 筛选条件 */}
@@ -1249,6 +1317,8 @@ const CertificateManagement: React.FC = () => {
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, username: e.target.value }));
                 setPagination((prev) => ({ ...prev, current: 1 }));
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
               }}
             />
           </Col>
@@ -1261,6 +1331,8 @@ const CertificateManagement: React.FC = () => {
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, certificateName: e.target.value }));
                 setPagination((prev) => ({ ...prev, current: 1 }));
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
               }}
             />
           </Col>
@@ -1273,6 +1345,8 @@ const CertificateManagement: React.FC = () => {
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, category: e.target.value }));
                 setPagination((prev) => ({ ...prev, current: 1 }));
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
               }}
             />
           </Col>
@@ -1285,6 +1359,8 @@ const CertificateManagement: React.FC = () => {
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, certifyingBody: e.target.value }));
                 setPagination((prev) => ({ ...prev, current: 1 }));
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
               }}
             />
           </Col>
@@ -1293,6 +1369,16 @@ const CertificateManagement: React.FC = () => {
           rowKey="key"
           columns={certificateColumns}
           dataSource={certificateTableData}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys, rows) => {
+              setSelectedRowKeys(keys);
+              setSelectedRows(rows);
+            },
+            getCheckboxProps: (record) => ({
+              name: record._id,
+            }),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -1307,6 +1393,8 @@ const CertificateManagement: React.FC = () => {
                 current: page,
                 pageSize: pageSize || prev.pageSize,
               }));
+              setSelectedRowKeys([]);
+              setSelectedRows([]);
             },
           }}
           loading={loading}

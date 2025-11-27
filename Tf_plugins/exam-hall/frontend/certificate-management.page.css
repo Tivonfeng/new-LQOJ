@@ -163,3 +163,24 @@
   font-size: 12px !important;
   padding: 2px 8px !important;
 }
+
+/* 表格选择框对齐优化 */
+.ant-table-selection-column {
+  vertical-align: middle !important;
+}
+
+.ant-table-selection-column .ant-checkbox-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+}
+
+.ant-table-tbody > tr > td.ant-table-selection-column {
+  vertical-align: middle !important;
+  padding: 16px !important;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column {
+  vertical-align: middle !important;
+}
