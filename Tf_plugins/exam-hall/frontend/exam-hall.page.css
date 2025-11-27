@@ -1,144 +1,428 @@
+/* ========================================
+   赛考大厅 - 现代时尚UI设计
+   ======================================== */
+
+/* 主容器 */
 .exam-hall-react {
-  padding: 16px 0 32px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  padding: 0;
 }
 
+/* ========================================
+   Hero区域 - 顶部横幅
+   ======================================== */
+.exam-hall-hero {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  padding: 24px 20px 20px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.exam-hall-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+
+.exam-hall-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.exam-hall-hero-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.5px;
+}
+
+.exam-hall-hero-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 12px 0;
+  font-weight: 400;
+}
+
+.exam-hall-hero-stats {
+  margin-top: 12px;
+}
+
+.hero-stat-item {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 100px;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.hero-stat-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.hero-stat-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.hero-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 顶部工具栏 */
 .exam-hall-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
+  position: absolute;
+  top: 24px;
+  right: 32px;
+  z-index: 10;
 }
 
 .exam-hall-header .manage-button {
-  text-decoration: none;
   font-weight: 600;
-  color: #4f46e5;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: rgba(79, 70, 229, 0.08);
-  transition: background 0.2s;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .exam-hall-header .manage-button:hover {
-  background: rgba(79, 70, 229, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Ant Design Statistic 样式覆盖 */
+.hero-stat-item .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.hero-stat-item .ant-statistic-content {
+  color: #ffffff;
+}
+
+.hero-stat-item .ant-statistic-content-value {
+  font-size: 20px !important;
+}
+
+.hero-stat-item .anticon {
+  font-size: 16px;
+}
+
+.hero-stat-item .ant-card-body {
+  padding: 10px 12px;
+}
+
+/* ========================================
+   内容区域
+   ======================================== */
+.exam-hall-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 24px;
+}
+
+/* 分区标题 */
+.exam-hall-section {
+  margin-bottom: 24px;
+}
+
+.exam-hall-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.exam-hall-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exam-hall-section-title::before {
+  content: '';
+  width: 3px;
+  height: 18px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* ========================================
+   证书卡片容器
+   ======================================== */
 .certificate-scroll-container {
-  max-height: 400px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: #d1d5db #f3f4f6;
-}
-
-.certificate-scroll-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.certificate-scroll-container::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
-}
-
-.certificate-scroll-container::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-.certificate-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
 }
 
 .certificate-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  margin-top: 8px;
 }
 
-.certificate-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ========================================
+   证书卡片 - 使用Ant Design Card组件
+   ======================================== */
+.certificate-card.ant-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
 }
 
-.certificate-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+.certificate-card.ant-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
 }
 
+.certificate-card .ant-card-body {
+  padding: 10px;
+}
+
+.certificate-card .ant-card-meta-title {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.certificate-card .ant-card-meta-description {
+  font-size: 12px;
+}
+
+/* 竞赛卡片 - 金色渐变 */
 .certificate-card.competition-card {
-  border-left: 3px solid #f6ad55;
+  border-top: 3px solid #f59e0b;
 }
 
+.certificate-card.competition-card:hover {
+  border-top-color: #f97316;
+}
+
+/* 考级卡片 - 紫色渐变 */
 .certificate-card.certification-card {
-  border-left: 3px solid #667eea;
-}
-.certificate-section {
-  margin-top: 24px;
+  border-top: 3px solid #8b5cf6;
 }
 
+.certificate-card.certification-card:hover {
+  border-top-color: #6366f1;
+}
+
+/* 证书图片区域 */
 .certificate-card-image {
-  text-align: center;
+  position: relative;
+  width: 100%;
+  height: 140px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  overflow: hidden;
 }
 
 .certificate-card-image img {
   width: 100%;
-  max-height: 150px;
-  object-fit: contain;
-  border-radius: 4px;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
+.certificate-card:hover .certificate-card-image img {
+  transform: scale(1.05);
+}
+
+/* 类型标签 - 浮动在图片上 */
+.certificate-type-badge {
+  position: absolute !important;
+  top: 6px;
+  right: 6px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 10px;
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+
+/* 证书内容区 */
 .certificate-card-heading {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .certificate-card-title {
-  font-size: 16px;
+  font-size: 14px;
   color: #1f2937;
   font-weight: 600;
   margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .certificate-card-subtitle {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 11px;
+  display: block;
+  margin-bottom: 4px;
 }
 
+/* 元数据 */
 .certificate-card-meta {
-  font-size: 13px;
+  font-size: 11px;
   color: #4b5563;
+  margin-bottom: 4px;
 }
 
-.certificate-card-meta strong {
-  font-weight: 600;
-  margin-right: 4px;
+/* 等级徽章 */
+.certificate-level-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  line-height: 1.6;
 }
 
-.certificate-card-username,
+/* 底部信息 */
+.certificate-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.certificate-card-username {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .certificate-card-date {
-  font-size: 12px;
-  color: #9ca3af;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.certificate-empty-state {
+/* ========================================
+   空状态
+   ======================================== */
+.certificate-empty-state.ant-card {
   text-align: center;
-  color: #9ca3af;
-  padding: 48px 0;
+  padding: 40px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .certificate-empty-state-icon {
   font-size: 48px;
-  margin-bottom: 16px;
+  display: block;
+  margin-bottom: 8px;
+  opacity: 0.6;
 }
 
+.certificate-empty-state-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ========================================
+   加载状态
+   ======================================== */
+.exam-hall-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 18px;
+  color: #6b7280;
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+@media (max-width: 992px) {
+  .hero-stat-item .ant-statistic-content-value {
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .exam-hall-hero {
+    padding: 20px 16px 16px;
+  }
+
+  .exam-hall-hero-title {
+    font-size: 20px;
+  }
+
+  .exam-hall-hero-subtitle {
+    font-size: 12px;
+  }
+
+  .exam-hall-header {
+    position: static;
+    text-align: right;
+    margin-bottom: 10px;
+  }
+
+  .exam-hall-content {
+    padding: 0 16px 20px;
+  }
+
+  .exam-hall-section {
+    margin-bottom: 20px;
+  }
+
+  .exam-hall-section-title {
+    font-size: 16px;
+  }
+
+  .hero-stat-item {
+    min-width: 80px;
+  }
+
+  .hero-stat-item .ant-statistic-title {
+    font-size: 10px;
+  }
+
+  .hero-stat-item .ant-statistic-content-value {
+    font-size: 16px !important;
+  }
+
+  .certificate-card-image {
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .certificate-card-image {
+    height: 100px;
+  }
+}

@@ -28,6 +28,7 @@ export interface ExamHallData {
   /** 最近一个季度的竞赛证书 */
   recentCompetitions?: Array<{
     _id?: string;
+    uid: number;
     username?: string;
     certificateName: string;
     certifyingBody: string;
@@ -40,6 +41,7 @@ export interface ExamHallData {
   /** 最近一个季度的考级证书 */
   recentCertifications?: Array<{
     _id?: string;
+    uid: number;
     username?: string;
     certificateName: string;
     certifyingBody: string;

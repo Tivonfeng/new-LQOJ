@@ -169,13 +169,13 @@ const CertificateUploader: React.FC<{
       ) : hasFile ? (
         <div style={{ textAlign: 'center', padding: '8px', border: '1px dashed #d9d9d9', borderRadius: 6 }}>
           {preview || (isImage && value) ? (
-            <Image
+          <Image
               src={preview || value || ''}
-              alt="证书预览"
+            alt="证书预览"
               width={100}
               style={{ borderRadius: 4, display: 'block', margin: '0 auto 4px' }}
-              preview={false}
-            />
+            preview={false}
+          />
           ) : (
             <div style={{ fontSize: 24, marginBottom: 4 }}>📄</div>
           )}
@@ -192,10 +192,10 @@ const CertificateUploader: React.FC<{
           <Text style={{ display: 'block', fontSize: 12, marginBottom: 2 }}>点击上传</Text>
           <Text type="secondary" style={{ fontSize: 10 }}>
             JPG/PNG/PDF，最大 10MB
-          </Text>
+            </Text>
         </div>
       )}
-    </Upload>
+      </Upload>
   );
 };
 
@@ -755,27 +755,27 @@ const CertificateManagement: React.FC = () => {
     if (fieldName) {
       switch (fieldName) {
         case 'username':
-          if (!formData.username.trim()) {
+    if (!formData.username.trim()) {
             errors.username = '请选择用户';
-          }
+    }
           break;
         case 'presetId':
-          if (!formData.presetId) {
+    if (!formData.presetId) {
             errors.presetId = '请选择赛考预设';
-          }
+    }
           break;
         case 'event':
-          if (!formData.event.trim()) {
+    if (!formData.event.trim()) {
             errors.event = '请选择赛项';
-          }
+    }
           break;
         case 'level':
-          if (!formData.level.trim()) {
+    if (!formData.level.trim()) {
             errors.level = '请选择证书等级';
-          }
+    }
           break;
         case 'issueDate':
-          if (!formData.issueDate) {
+    if (!formData.issueDate) {
             errors.issueDate = '请选择颁发日期';
           } else {
             const issueDate = new Date(formData.issueDate);
@@ -785,11 +785,11 @@ const CertificateManagement: React.FC = () => {
           }
           break;
         case 'certificateImage':
-          if (!formData.certificateImageUrl && !pendingCertificateFile) {
+    if (!formData.certificateImageUrl && !pendingCertificateFile) {
             errors.certificateImage = '请上传证书材料';
           }
           break;
-      }
+    }
       setFormErrors((prev) => ({ ...prev, ...errors }));
       return Object.keys(errors).length === 0;
     }
@@ -810,8 +810,8 @@ const CertificateManagement: React.FC = () => {
     if (!formData.issueDate) {
       errors.issueDate = '请选择颁发日期';
     } else {
-      const issueDate = new Date(formData.issueDate);
-      if (issueDate > new Date()) {
+    const issueDate = new Date(formData.issueDate);
+    if (issueDate > new Date()) {
         errors.issueDate = '颁发日期不能是未来日期';
       }
     }
@@ -1024,12 +1024,12 @@ const CertificateManagement: React.FC = () => {
           // 清除选中状态
           setSelectedRowKeys([]);
           setSelectedRows([]);
-        } catch (error) {
+      } catch (error) {
           console.error('批量删除失败:', error);
           messageApi.error('批量删除失败，请稍后重试');
         } finally {
           setLoading(false);
-        }
+    }
       },
     });
   };
@@ -1576,35 +1576,35 @@ const CertificateManagement: React.FC = () => {
       >
         <form id="certificate-form" onSubmit={handleSubmit} className="certificate-form compact-form" noValidate>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div className="form-field">
-              <label>选择赛考 *</label>
-              <Select
-                value={formData.presetId || undefined}
-                placeholder="请选择赛考预设"
-                disabled={isSubmitting}
-                showSearch
-                optionFilterProp="label"
+                    <div className="form-field">
+                      <label>选择赛考 *</label>
+                      <Select
+                        value={formData.presetId || undefined}
+                        placeholder="请选择赛考预设"
+                        disabled={isSubmitting}
+                        showSearch
+                        optionFilterProp="label"
                 status={formErrors.presetId ? 'error' : undefined}
-                options={presetOptions}
+                        options={presetOptions}
                 dropdownMatchSelectWidth={false}
                 dropdownStyle={{ minWidth: '400px', maxWidth: '500px' }}
                 listHeight={300}
-                onChange={(value) => {
-                  const matchedPreset = presets.find((p) => p._id === value);
-                  if (matchedPreset) {
-                    handlePresetSelect(matchedPreset);
-                  } else {
-                    setFormData((prev) => ({
-                      ...prev,
-                      presetId: '',
-                      presetName: '',
-                      certifyingBody: '',
-                      event: '',
-                      examType: '',
-                      competitionName: '',
-                      certificationSeries: '',
-                    }));
-                  }
+                        onChange={(value) => {
+                          const matchedPreset = presets.find((p) => p._id === value);
+                          if (matchedPreset) {
+                            handlePresetSelect(matchedPreset);
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              presetId: '',
+                              presetName: '',
+                              certifyingBody: '',
+                              event: '',
+                              examType: '',
+                              competitionName: '',
+                              certificationSeries: '',
+                            }));
+                          }
                   if (formErrors.presetId) {
                     setFormErrors((prev) => {
                       const newErrors = { ...prev };
@@ -1617,9 +1617,9 @@ const CertificateManagement: React.FC = () => {
               {formErrors.presetId && (
                 <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
                   {formErrors.presetId}
-                </div>
-              )}
-            </div>
+                          </div>
+                        )}
+                          </div>
 
             {selectedPreset && (
               <div style={{
@@ -1646,7 +1646,7 @@ const CertificateManagement: React.FC = () => {
                   }}
                 >
                   {formData.examType === 'competition' ? '竞赛' : '考级'}
-                </Tag>
+                                  </Tag>
                 <span style={{ color: '#999', margin: '0 4px' }}>|</span>
                 <span style={{ color: '#666' }}>级别：</span>
                 <Tag
@@ -1660,22 +1660,22 @@ const CertificateManagement: React.FC = () => {
                 >
                   {getLevelText(selectedPreset.level)}
                 </Tag>
-              </div>
-            )}
+                          </div>
+                        )}
 
-            <div className="form-field">
-              <label>选择用户 *</label>
-              <input
-                ref={userInputRef}
-                type="text"
+                    <div className="form-field">
+                      <label>选择用户 *</label>
+                      <input
+                        ref={userInputRef}
+                        type="text"
                 className={`eui-form-control ${formErrors.username ? 'error' : ''}`}
-                placeholder="搜索用户名..."
-                value={formData.username}
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    username: e.target.value,
-                  }));
+                        placeholder="搜索用户名..."
+                        value={formData.username}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            username: e.target.value,
+                          }));
                   if (formErrors.username) {
                     setFormErrors((prev) => {
                       const newErrors = { ...prev };
@@ -1683,38 +1683,38 @@ const CertificateManagement: React.FC = () => {
                       return newErrors;
                     });
                   }
-                }}
-                disabled={isSubmitting}
-              />
+                        }}
+                        disabled={isSubmitting}
+                      />
               {formErrors.username && (
                 <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
                   {formErrors.username}
                 </div>
               )}
-            </div>
+                    </div>
 
-            <Row gutter={6}>
-              <Col span={12}>
-                <div className="form-field">
-                  <label>赛项 *</label>
-                  <Select
-                    placeholder={selectedPreset ? '请选择赛项' : '请先选择赛考预设'}
-                    value={formData.event || undefined}
-                    disabled={
-                      isSubmitting
-                      || !selectedPreset
-                      || !selectedPreset.events
-                      || selectedPreset.events.length === 0
-                    }
+                    <Row gutter={6}>
+                      <Col span={12}>
+                        <div className="form-field">
+                          <label>赛项 *</label>
+                          <Select
+                            placeholder={selectedPreset ? '请选择赛项' : '请先选择赛考预设'}
+                            value={formData.event || undefined}
+                            disabled={
+                              isSubmitting
+                              || !selectedPreset
+                              || !selectedPreset.events
+                              || selectedPreset.events.length === 0
+                            }
                     status={formErrors.event ? 'error' : undefined}
-                    options={eventOptions}
+                            options={eventOptions}
                     dropdownMatchSelectWidth={false}
                     dropdownStyle={{ minWidth: '250px' }}
-                    onChange={(value) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        event: value,
-                      }));
+                            onChange={(value) => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                event: value,
+                              }));
                       if (formErrors.event) {
                         setFormErrors((prev) => {
                           const newErrors = { ...prev };
@@ -1722,31 +1722,31 @@ const CertificateManagement: React.FC = () => {
                           return newErrors;
                         });
                       }
-                    }}
-                  />
+                            }}
+                          />
                   {formErrors.event && (
                     <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
                       {formErrors.event}
                     </div>
                   )}
-                </div>
-              </Col>
-              <Col span={12}>
-                <div className="form-field">
-                  <label>证书等级 *</label>
-                  <Select
-                    placeholder="请选择等级"
-                    value={formData.level || undefined}
-                    disabled={isSubmitting}
+                        </div>
+                      </Col>
+                      <Col span={12}>
+                        <div className="form-field">
+                          <label>证书等级 *</label>
+                          <Select
+                            placeholder="请选择等级"
+                            value={formData.level || undefined}
+                            disabled={isSubmitting}
                     status={formErrors.level ? 'error' : undefined}
-                    options={levelOptions}
+                            options={levelOptions}
                     dropdownMatchSelectWidth={false}
                     dropdownStyle={{ minWidth: '200px' }}
-                    onChange={(value) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        level: value,
-                      }));
+                            onChange={(value) => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                level: value,
+                              }));
                       if (formErrors.level) {
                         setFormErrors((prev) => {
                           const newErrors = { ...prev };
@@ -1754,30 +1754,30 @@ const CertificateManagement: React.FC = () => {
                           return newErrors;
                         });
                       }
-                    }}
-                  />
+                            }}
+                          />
                   {formErrors.level && (
                     <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
                       {formErrors.level}
                     </div>
                   )}
-                </div>
-              </Col>
-            </Row>
+                        </div>
+                      </Col>
+                    </Row>
 
-            <div className="form-field">
-              <label>颁发日期 *</label>
-              <DatePicker
-                style={{ width: '100%' }}
-                format="YYYY-MM-DD"
-                value={formData.issueDate ? dayjs(formData.issueDate) : null}
-                disabled={isSubmitting}
+                    <div className="form-field">
+                      <label>颁发日期 *</label>
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        format="YYYY-MM-DD"
+                        value={formData.issueDate ? dayjs(formData.issueDate) : null}
+                        disabled={isSubmitting}
                 status={formErrors.issueDate ? 'error' : undefined}
-                onChange={(date) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    issueDate: date ? date.format('YYYY-MM-DD') : '',
-                  }));
+                        onChange={(date) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            issueDate: date ? date.format('YYYY-MM-DD') : '',
+                          }));
                   if (formErrors.issueDate) {
                     setFormErrors((prev) => {
                       const newErrors = { ...prev };
@@ -1785,26 +1785,26 @@ const CertificateManagement: React.FC = () => {
                       return newErrors;
                     });
                   }
-                }}
-              />
+                        }}
+                      />
               {formErrors.issueDate && (
                 <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
                   {formErrors.issueDate}
                 </div>
               )}
-            </div>
+                    </div>
 
-            <div className="form-field">
-              <label>证书材料 *</label>
-              <CertificateUploader
-                value={formData.certificateImageUrl}
-                onFileSelected={(file) => {
-                  setPendingCertificateFile(file);
-                  setFormData((prev) => ({
-                    ...prev,
-                    certificateImageUrl: '',
-                    certificateImageKey: '',
-                  }));
+                    <div className="form-field">
+                      <label>证书材料 *</label>
+                      <CertificateUploader
+                        value={formData.certificateImageUrl}
+                        onFileSelected={(file) => {
+                          setPendingCertificateFile(file);
+                          setFormData((prev) => ({
+                            ...prev,
+                            certificateImageUrl: '',
+                            certificateImageKey: '',
+                          }));
                   if (formErrors.certificateImage) {
                     setFormErrors((prev) => {
                       const newErrors = { ...prev };
@@ -1812,31 +1812,31 @@ const CertificateManagement: React.FC = () => {
                       return newErrors;
                     });
                   }
-                }}
-                onUploadError={handleUploadError}
-                disabled={isSubmitting || isFileUploading}
-                isUploading={isFileUploading}
-                uploadProgress={fileUploadProgress}
-                pendingUpload={Boolean(pendingCertificateFile)}
-              />
+                        }}
+                        onUploadError={handleUploadError}
+                        disabled={isSubmitting || isFileUploading}
+                        isUploading={isFileUploading}
+                        uploadProgress={fileUploadProgress}
+                        pendingUpload={Boolean(pendingCertificateFile)}
+                      />
               {formErrors.certificateImage && (
                 <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '8px' }}>
                   {formErrors.certificateImage}
-                </div>
+                    </div>
               )}
             </div>
 
             <div className="form-field">
               <label>备注</label>
-              <TextArea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                placeholder="输入备注信息（可选）"
+                  <TextArea
+                    id="notes"
+                    name="notes"
+                    value={formData.notes}
+                    placeholder="输入备注信息（可选）"
                 rows={2}
-                disabled={isSubmitting}
-                onChange={(e) => handleInputChange(e as any)}
-              />
+                    disabled={isSubmitting}
+                    onChange={(e) => handleInputChange(e as any)}
+                  />
             </div>
           </div>
           <div className="modal-actions">
@@ -1844,9 +1844,9 @@ const CertificateManagement: React.FC = () => {
               <Button
                 onClick={() => {
                   if (!isSubmitting && !isFileUploading) {
-                    resetFormAndUser();
+                  resetFormAndUser();
                     setEditingId(null);
-                    setShowAddCertificateModal(false);
+                  setShowAddCertificateModal(false);
                   }
                 }}
                 disabled={isSubmitting || isFileUploading}
