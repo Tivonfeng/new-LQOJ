@@ -232,6 +232,36 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     imageUrl: '/avatar_preset_34.jpg',
     description: 'Preset avatar 34',
   },
+  {
+    id: 'avatar_35',
+    name: 'Avatar 35',
+    imageUrl: '/avatar_preset_35.jpg',
+    description: 'Preset avatar 35',
+  },
+  {
+    id: 'avatar_36',
+    name: 'Avatar 36',
+    imageUrl: '/avatar_preset_36.jpeg',
+    description: 'Preset avatar 36',
+  },
+  {
+    id: 'avatar_37',
+    name: 'Avatar 37',
+    imageUrl: '/avatar_preset_37.jpg',
+    description: 'Preset avatar 37',
+  },
+  {
+    id: 'avatar_38',
+    name: 'Avatar 38',
+    imageUrl: '/avatar_preset_38.jpg',
+    description: 'Preset avatar 38',
+  },
+  {
+    id: 'avatar_39',
+    name: 'Avatar 39',
+    imageUrl: '/avatar_preset_39.webp',
+    description: 'Preset avatar 39',
+  },
 ];
 
 /**
