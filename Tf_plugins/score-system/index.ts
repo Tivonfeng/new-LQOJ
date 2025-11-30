@@ -65,6 +65,25 @@ interface ScoreEventData {
     recordId: any;
 }
 
+// 证书事件数据类型
+interface CertificateEventData {
+    uid: number;
+    domainId: string;
+    certificateId: any;
+    weight: number;
+    certificateName: string;
+}
+
+// 打字奖励事件数据类型
+interface TypingBonusEventData {
+    uid: number;
+    domainId: string;
+    bonus: number;
+    reason: string;
+    bonusType: 'progress' | 'level' | 'surpass';
+    recordId?: any;
+}
+
 // 声明数据库集合类型和事件类型
 declare module 'hydrooj' {
     interface Collections {
@@ -85,6 +104,9 @@ declare module 'hydrooj' {
     interface EventMap {
         'score/ac-rewarded': (data: ScoreEventData) => void;
         'score/ac-repeated': (data: ScoreEventData) => void;
+        'certificate/created': (data: CertificateEventData) => void;
+        'certificate/deleted': (data: CertificateEventData) => void;
+        'typing/bonus-awarded': (data: TypingBonusEventData) => void;
     }
 }
 
@@ -210,6 +232,70 @@ export default async function apply(ctx: Context, config: any = {}) {
             });
         } catch (error) {
             console.error('[Score System] ❌ Error:', error);
+        }
+    });
+
+    // 📜 监听证书事件，自动处理积分
+    ctx.on('certificate/created', async (data: CertificateEventData) => {
+        try {
+            if (!finalConfig.enabled) return;
+            if (data.weight <= 0) return;
+
+            const scoreToAdd = Math.round(data.weight * 10);
+            await scoreService.updateUserScore(data.domainId, data.uid, scoreToAdd);
+            await scoreService.addScoreRecord({
+                uid: data.uid,
+                domainId: data.domainId,
+                pid: 0, // 证书积分不使用pid
+                recordId: data.certificateId,
+                score: scoreToAdd,
+                reason: `获得证书 ${data.certificateName}，权重 ${data.weight}，获得积分 ${scoreToAdd}`,
+            });
+            console.log(`[Score System] ✅ 用户 ${data.uid} 获得证书积分 ${scoreToAdd}（权重 ${data.weight}）`);
+        } catch (err: any) {
+            console.error(`[Score System] ❌ 处理证书创建事件失败: ${err.message}`);
+        }
+    });
+
+    ctx.on('certificate/deleted', async (data: CertificateEventData) => {
+        try {
+            if (!finalConfig.enabled) return;
+            if (data.weight <= 0) return;
+
+            const scoreToDeduct = Math.round(data.weight * 10);
+            await scoreService.updateUserScore(data.domainId, data.uid, -scoreToDeduct);
+            await scoreService.addScoreRecord({
+                uid: data.uid,
+                domainId: data.domainId,
+                pid: 0, // 证书积分不使用pid
+                recordId: data.certificateId,
+                score: -scoreToDeduct,
+                reason: `删除证书 ${data.certificateName}，权重 ${data.weight}，扣除积分 ${scoreToDeduct}`,
+            });
+            console.log(`[Score System] ✅ 用户 ${data.uid} 删除证书扣除积分 ${scoreToDeduct}（权重 ${data.weight}）`);
+        } catch (err: any) {
+            console.error(`[Score System] ❌ 处理证书删除事件失败: ${err.message}`);
+        }
+    });
+
+    // 📜 监听打字奖励事件，自动处理积分
+    ctx.on('typing/bonus-awarded', async (data: TypingBonusEventData) => {
+        try {
+            if (!finalConfig.enabled) return;
+            if (data.bonus <= 0) return;
+
+            await scoreService.updateUserScore(data.domainId, data.uid, data.bonus);
+            await scoreService.addScoreRecord({
+                uid: data.uid,
+                domainId: data.domainId,
+                pid: 0, // 打字奖励不使用pid
+                recordId: data.recordId || null,
+                score: data.bonus,
+                reason: data.reason,
+            });
+            console.log(`[Score System] ✅ 用户 ${data.uid} 获得打字奖励积分 ${data.bonus}（${data.bonusType}）`);
+        } catch (err: any) {
+            console.error(`[Score System] ❌ 处理打字奖励事件失败: ${err.message}`);
         }
     });
 

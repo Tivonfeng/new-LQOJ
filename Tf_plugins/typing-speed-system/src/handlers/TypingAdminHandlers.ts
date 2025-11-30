@@ -1,8 +1,8 @@
 import { Handler, PERM, PRIV } from 'hydrooj';
 import {
+    TypingBonusService,
     TypingRecordService,
     TypingStatsService,
-    TypingBonusService,
 } from '../services';
 
 /**
@@ -114,27 +114,21 @@ export class TypingAdminHandler extends Handler {
 
             let bonusMessage = '';
             if (bonusInfo.totalBonus > 0) {
-                // 为每个奖励添加积分记录
+                // 触发打字奖励事件，由积分系统处理积分增加
                 for (const bonus of bonusInfo.bonuses) {
-                    await this.ctx.db.collection('score.records' as any).insertOne({
-                        uid: user._id,
-                        domainId: this.domain._id,
-                        pid: 0,
-                        recordId: null,
-                        score: bonus.bonus,
-                        reason: bonus.reason,
-                        createdAt: new Date(),
-                    });
-
-                    // 更新用户积分
-                    await this.ctx.db.collection('score.users' as any).updateOne(
-                        { uid: user._id },
-                        {
-                            $inc: { totalScore: bonus.bonus },
-                            $set: { lastUpdated: new Date() },
-                        },
-                        { upsert: true },
-                    );
+                    try {
+                        this.ctx.emit('typing/bonus-awarded', {
+                            uid: user._id,
+                            domainId: this.domain._id.toString(),
+                            bonus: bonus.bonus,
+                            reason: bonus.reason,
+                            bonusType: bonus.type,
+                            recordId,
+                        });
+                    } catch (err: any) {
+                        console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
+                        // 事件触发失败不影响奖励记录
+                    }
                 }
                 bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
             }
@@ -182,13 +176,13 @@ export class TypingAdminHandler extends Handler {
             );
 
             let totalBonus = 0;
-            const bonusDetails: Array<{ username: string; wpm: number; bonus: number }> = [];
+            const bonusDetails: Array<{ username: string, wpm: number, bonus: number }> = [];
 
             // 更新所有涉及用户的统计和处理奖励
             const lines = csvData.trim().split('\n');
-            const hasHeader = lines[0].trim().toLowerCase().includes('username') &&
-                             (lines[0].trim().toLowerCase().includes('wpm') ||
-                              lines[0].trim().toLowerCase().includes('speed'));
+            const hasHeader = lines[0].trim().toLowerCase().includes('username')
+                && (lines[0].trim().toLowerCase().includes('wpm')
+                    || lines[0].trim().toLowerCase().includes('speed'));
             const startLine = hasHeader ? 1 : 0;
 
             for (let i = startLine; i < lines.length; i++) {
@@ -223,26 +217,21 @@ export class TypingAdminHandler extends Handler {
                         );
 
                         if (bonusInfo.totalBonus > 0) {
-                            // 添加积分记录
+                            // 触发打字奖励事件，由积分系统处理积分增加
                             for (const bonus of bonusInfo.bonuses) {
-                                await this.ctx.db.collection('score.records' as any).insertOne({
-                                    uid: user._id,
-                                    domainId: this.domain._id,
-                                    pid: 0,
-                                    recordId: null,
-                                    score: bonus.bonus,
-                                    reason: bonus.reason,
-                                    createdAt: new Date(),
-                                });
-
-                                await this.ctx.db.collection('score.users' as any).updateOne(
-                                    { uid: user._id },
-                                    {
-                                        $inc: { totalScore: bonus.bonus },
-                                        $set: { lastUpdated: new Date() },
-                                    },
-                                    { upsert: true },
-                                );
+                                try {
+                                    this.ctx.emit('typing/bonus-awarded', {
+                                        uid: user._id,
+                                        domainId: this.domain._id.toString(),
+                                        bonus: bonus.bonus,
+                                        reason: bonus.reason,
+                                        bonusType: bonus.type,
+                                        recordId: latestRecord._id,
+                                    });
+                                } catch (err: any) {
+                                    console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
+                                    // 事件触发失败不影响奖励记录
+                                }
                             }
 
                             totalBonus += bonusInfo.totalBonus;

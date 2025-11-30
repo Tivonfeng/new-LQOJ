@@ -302,10 +302,12 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             );
 
             // 自动计算权重
+            let finalWeight = 0;
             try {
                 const weightService = new WeightCalculationService(this.ctx);
                 const preset = presetId ? await new PresetService(this.ctx).getPresetById(new ObjectId(presetId)) : undefined;
                 const weightResult = await weightService.calculateCertificateWeight(certificate, preset || undefined);
+                finalWeight = weightResult.finalWeight;
                 await certService.updateCertificate(certificate._id!, {
                     calculatedWeight: weightResult.finalWeight,
                     weightBreakdown: weightResult.breakdown,
@@ -313,6 +315,23 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             } catch (err: any) {
                 console.warn(`[ExamHall] 权重计算失败: ${err.message}`);
                 // 权重计算失败不影响证书创建
+            }
+
+            // 触发证书创建事件，由积分系统处理积分增加
+            if (finalWeight > 0) {
+                try {
+                    this.ctx.emit('certificate/created', {
+                        uid: targetUid,
+                        domainId: this.ctx.domain!._id.toString(),
+                        certificateId: certificate._id,
+                        weight: finalWeight,
+                        certificateName: certificate.certificateName,
+                    });
+                    console.log(`[ExamHall] 触发证书创建事件，权重 ${finalWeight}`);
+                } catch (err: any) {
+                    console.error(`[ExamHall] 触发证书创建事件失败: ${err.message}`);
+                    // 事件触发失败不影响证书创建
+                }
             }
 
             this.sendSuccess({
@@ -629,13 +648,41 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 return;
             }
 
-            // 删除证书
+            // 获取证书信息（删除前获取权重）
             const certService = new CertificateService(this.ctx);
+            const certificate = await certService.getCertificateById(new ObjectId(id));
+
+            if (!certificate) {
+                this.sendError('证书不存在', 404);
+                return;
+            }
+
+            // 获取证书权重，用于减少积分
+            const weight = certificate.calculatedWeight || certificate.weight || 0;
+
+            // 删除证书
             const success = await certService.deleteCertificate(new ObjectId(id));
 
             if (!success) {
-                this.sendError('证书不存在', 404);
+                this.sendError('证书删除失败', 500);
                 return;
+            }
+
+            // 触发证书删除事件，由积分系统处理积分减少
+            if (weight > 0) {
+                try {
+                    this.ctx.emit('certificate/deleted', {
+                        uid: certificate.uid,
+                        domainId: this.ctx.domain!._id.toString(),
+                        certificateId: new ObjectId(id),
+                        weight,
+                        certificateName: certificate.certificateName,
+                    });
+                    console.log(`[ExamHall] 触发证书删除事件，权重 ${weight}`);
+                } catch (err: any) {
+                    console.error(`[ExamHall] 触发证书删除事件失败: ${err.message}`);
+                    // 事件触发失败不影响证书删除
+                }
             }
 
             this.sendSuccess({
@@ -691,9 +738,36 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
                 return;
             }
 
-            // 批量删除
+            // 获取证书信息（删除前获取权重）
             const certService = new CertificateService(this.ctx);
+            const certificates = await certService.getCertificatesByIds(validIds);
+
+            // 批量删除
             const deletedCount = await certService.deleteCertificates(validIds);
+
+            // 批量触发证书删除事件，由积分系统处理积分减少
+            if (certificates.length > 0) {
+                try {
+                    const domainId = this.ctx.domain!._id.toString();
+                    // 为每个证书触发删除事件
+                    for (const cert of certificates) {
+                        const weight = cert.calculatedWeight || cert.weight || 0;
+                        if (weight > 0) {
+                            this.ctx.emit('certificate/deleted', {
+                                uid: cert.uid,
+                                domainId,
+                                certificateId: cert._id,
+                                weight,
+                                certificateName: cert.certificateName,
+                            });
+                        }
+                    }
+                    console.log(`[ExamHall] 批量触发证书删除事件，共 ${certificates.length} 个证书`);
+                } catch (err: any) {
+                    console.error(`[ExamHall] 批量触发证书删除事件失败: ${err.message}`);
+                    // 事件触发失败不影响证书删除
+                }
+            }
 
             this.sendSuccess({
                 success: true,
