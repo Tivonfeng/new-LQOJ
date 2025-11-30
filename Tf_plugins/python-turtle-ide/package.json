@@ -1,0 +1,17 @@
+{
+  "name": "@hydrooj/python-turtle-ide",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "Python Turtle 在线编程环境插件 - 支持代码编辑、实时运行、作品保存与分享",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

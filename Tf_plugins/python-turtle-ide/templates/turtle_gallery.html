@@ -1,0 +1,177 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div class="gallery-container">
+    <div class="gallery-header">
+        <h1>{{ _('Turtle Gallery') }}</h1>
+        {% if isLoggedIn %}
+        <a href="{{ url('turtle_playground') }}" class="btn-create">{{ _('New Work') }}</a>
+        {% endif %}
+    </div>
+
+    <div class="works-grid">
+        {% for work in works %}
+        <div class="work-card">
+            {% if work.imageUrl %}
+            <div class="work-preview" style="background-image: url({{ work.imageUrl }})"></div>
+            {% else %}
+            <div class="work-preview work-preview-empty">🐢</div>
+            {% endif %}
+
+            <div class="work-info">
+                <h3 class="work-title">{{ work.title }}</h3>
+                <p class="work-author">{{ _('Author') }}: {{ udocs[work.uid].uname }}</p>
+                <div class="work-meta">
+                    <span>❤️ {{ work.likes }}</span>
+                    <span>👁️ {{ work.views }}</span>
+                </div>
+            </div>
+
+            <a href="{{ url('turtle_work', workId=work._id) }}" class="work-link">{{ _('View') }}</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if totalPages > 1 %}
+    <div class="pagination">
+        {% for p in range(1, totalPages + 1) %}
+        <a href="?page={{ p }}" class="page-link {% if p == page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.gallery-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.gallery-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.btn-create {
+    padding: 12px 24px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-create:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.works-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.work-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.work-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.work-preview {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: #f3f4f6;
+}
+
+.work-preview-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+}
+
+.work-info {
+    padding: 16px;
+}
+
+.work-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.work-author {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.work-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.work-link {
+    display: block;
+    text-align: center;
+    padding: 12px;
+    background: #f3f4f6;
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.work-link:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+}
+
+.page-link {
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #111827;
+    transition: all 0.3s;
+}
+
+.page-link:hover {
+    background: #f3f4f6;
+}
+
+.page-link.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+</style>
+{% endblock %}
