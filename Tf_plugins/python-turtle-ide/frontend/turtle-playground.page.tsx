@@ -21,8 +21,7 @@ t.speed(3)
 for i in range(4):
     t.forward(100)
     t.left(90)
-
-turtle.done()`;
+`;
 
 // Skulpt 初始化和执行函数
 function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void) {
