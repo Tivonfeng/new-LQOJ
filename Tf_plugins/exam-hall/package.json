@@ -1,0 +1,26 @@
+{
+  "name": "@hydrooj/exam-hall",
+  "version": "1.0.0",
+  "description": "赛考大厅插件 - 线下赛考证书管理系统",
+  "main": "index.ts",
+  "author": "Tivon Feng",
+  "license": "AGPL-3.0",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "antd": "^5.21.2",
+    "chart.js": "^4.4.0",
+    "csv-parse": "^5.4.0",
+    "formidable": "^3.5.4",
+    "hydrooj": "workspace:^",
+    "qiniu": "^7.10.0",
+    "react-chartjs-2": "^5.2.0",
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0"
+  }
+}

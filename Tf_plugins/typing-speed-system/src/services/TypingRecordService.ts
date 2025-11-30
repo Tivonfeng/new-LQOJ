@@ -27,14 +27,15 @@ export class TypingRecordService {
 
     /**
      * 添加打字记录
+     * @returns 返回插入的记录ID
      */
-    async addRecord(uid: number, domainId: string, wpm: number, recordedBy: number, note?: string): Promise<void> {
+    async addRecord(uid: number, domainId: string, wpm: number, recordedBy: number, note?: string): Promise<any> {
         // 验证WPM范围
         if (wpm < 0 || wpm > 300) {
             throw new Error('WPM must be between 0 and 300');
         }
 
-        await this.ctx.db.collection('typing.records' as any).insertOne({
+        const result = await this.ctx.db.collection('typing.records' as any).insertOne({
             uid,
             domainId,
             wpm,
@@ -42,6 +43,7 @@ export class TypingRecordService {
             recordedBy,
             note: note || '',
         });
+        return result.insertedId;
     }
 
     /**
@@ -237,6 +239,30 @@ export class TypingRecordService {
         }
 
         return await this.ctx.db.collection('typing.records' as any).findOne({ _id: queryId });
+    }
+
+    /**
+     * 获取用户最新的记录
+     */
+    async getLatestRecord(uid: number): Promise<TypingRecord | null> {
+        return await this.ctx.db.collection('typing.records' as any)
+            .findOne({ uid }, { sort: { createdAt: -1 } });
+    }
+
+    /**
+     * 获取所有记录（用于批量操作）
+     */
+    async getAllRecords(): Promise<TypingRecord[]> {
+        return await this.ctx.db.collection('typing.records' as any)
+            .find({})
+            .toArray();
+    }
+
+    /**
+     * 清空所有记录
+     */
+    async clearAllRecords(): Promise<void> {
+        await this.ctx.db.collection('typing.records' as any).deleteMany({});
     }
 
     /**

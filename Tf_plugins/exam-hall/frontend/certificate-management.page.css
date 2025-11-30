@@ -1,0 +1,186 @@
+/* 紧凑证书modal样式 */
+.compact-certificate-modal .ant-modal-body {
+  padding: 12px !important;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+/* 超紧凑样式 */
+.compact-certificate-modal.ultra-compact .ant-modal-body {
+  padding: 8px !important;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.compact-certificate-modal .compact-form {
+  margin: 0;
+}
+
+.compact-certificate-modal .compact-card {
+  margin-bottom: 8px;
+}
+
+.compact-certificate-modal .compact-card .ant-card-head {
+  padding: 8px 16px !important;
+  min-height: 40px !important;
+}
+
+.compact-certificate-modal .compact-card .ant-card-head-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.compact-certificate-modal .compact-card .ant-card-body {
+  padding: 12px 16px !important;
+}
+
+.compact-certificate-modal.ultra-compact .compact-card .ant-card-body {
+  padding: 8px 12px !important;
+}
+
+.compact-certificate-modal.ultra-compact .compact-card .ant-card-head {
+  padding: 6px 12px !important;
+  min-height: 36px !important;
+}
+
+.compact-certificate-modal .form-field {
+  margin-bottom: 8px !important;
+}
+
+.compact-certificate-modal.ultra-compact .form-field {
+  margin-bottom: 6px !important;
+}
+
+.compact-certificate-modal .form-field label {
+  display: block;
+  margin-bottom: 4px !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.compact-certificate-modal .form-hint {
+  font-size: 11px !important;
+  color: #999 !important;
+  margin-top: 2px !important;
+}
+
+.compact-certificate-modal .ant-input,
+.compact-certificate-modal .ant-select-selector,
+.compact-certificate-modal .ant-picker {
+  height: 32px !important;
+  font-size: 13px !important;
+}
+
+.compact-certificate-modal .ant-select-selection-item {
+  line-height: 30px !important;
+}
+
+.compact-certificate-modal .ant-input-affix-wrapper {
+  padding: 4px 8px !important;
+}
+
+.compact-certificate-modal .modal-actions {
+  margin-top: 12px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.compact-certificate-modal .ant-btn {
+  height: 32px !important;
+  font-size: 13px !important;
+  padding: 4px 12px !important;
+}
+
+.compact-certificate-modal .ant-space-item {
+  margin-bottom: 0 !important;
+}
+
+.compact-certificate-modal .ant-row {
+  margin-bottom: 0 !important;
+}
+
+.compact-certificate-modal .ant-col {
+  margin-bottom: 0 !important;
+}
+
+/* 压缩TextArea */
+.compact-certificate-modal .ant-input {
+  padding: 6px 8px !important;
+}
+
+/* 压缩DatePicker */
+.compact-certificate-modal .ant-picker-input > input {
+  font-size: 13px !important;
+}
+
+/* 优化用户输入框 */
+.compact-certificate-modal .eui-form-control {
+  height: 32px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+/* 超紧凑输入框样式 */
+.compact-certificate-modal.ultra-compact .ant-input,
+.compact-certificate-modal.ultra-compact .ant-select-selector,
+.compact-certificate-modal.ultra-compact .ant-picker,
+.compact-certificate-modal.ultra-compact .eui-form-control {
+  height: 28px !important;
+  font-size: 12px !important;
+  padding: 2px 6px !important;
+}
+
+.compact-certificate-modal.ultra-compact .ant-select-selection-item {
+  line-height: 26px !important;
+}
+
+.compact-certificate-modal.ultra-compact .form-field label {
+  font-size: 12px !important;
+  margin-bottom: 2px !important;
+}
+
+.compact-certificate-modal.ultra-compact .form-hint {
+  font-size: 10px !important;
+  margin-top: 1px !important;
+}
+
+.compact-certificate-modal.ultra-compact .compact-card {
+  margin-bottom: 8px !important;
+}
+
+.compact-certificate-modal.ultra-compact .modal-actions {
+  margin-top: 12px !important;
+  padding-top: 8px !important;
+}
+
+.compact-certificate-modal.ultra-compact .ant-btn {
+  height: 28px !important;
+  font-size: 12px !important;
+  padding: 2px 8px !important;
+}
+
+/* 表格选择框对齐优化 */
+.ant-table-selection-column {
+  vertical-align: middle !important;
+}
+
+.ant-table-selection-column .ant-checkbox-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+}
+
+.ant-table-tbody > tr > td.ant-table-selection-column {
+  vertical-align: middle !important;
+  padding: 16px !important;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column {
+  vertical-align: middle !important;
+}

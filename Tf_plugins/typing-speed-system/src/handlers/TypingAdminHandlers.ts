@@ -1,8 +1,8 @@
 import { Handler, PERM, PRIV } from 'hydrooj';
 import {
+    TypingBonusService,
     TypingRecordService,
     TypingStatsService,
-    TypingBonusService,
 } from '../services';
 
 /**
@@ -85,22 +85,16 @@ export class TypingAdminHandler extends Handler {
             const previousMaxWpm = currentStats?.maxWpm || 0;
 
             // 获取更新前的排行榜（用于超越检查）
-            const oldRanking = await this.ctx.db.collection('typing.stats' as any)
-                .find({})
-                .sort({ maxWpm: -1, lastUpdated: 1 })
-                .toArray();
+            const oldRanking = await statsService.getAllStats();
 
             // 添加记录
-            const insertResult = await this.ctx.db.collection('typing.records' as any).insertOne({
-                uid: user._id,
-                domainId: this.domain._id,
-                wpm: wpmNum,
-                createdAt: new Date(),
-                recordedBy: this.user._id,
-                note: note || '',
-            });
-
-            const recordId = insertResult.insertedId;
+            const recordId = await recordService.addRecord(
+                user._id,
+                this.domain._id,
+                wpmNum,
+                this.user._id,
+                note,
+            );
 
             // 更新用户统计
             await statsService.updateUserStats(user._id, this.domain._id);
@@ -114,27 +108,21 @@ export class TypingAdminHandler extends Handler {
 
             let bonusMessage = '';
             if (bonusInfo.totalBonus > 0) {
-                // 为每个奖励添加积分记录
+                // 触发打字奖励事件，由积分系统处理积分增加
                 for (const bonus of bonusInfo.bonuses) {
-                    await this.ctx.db.collection('score.records' as any).insertOne({
-                        uid: user._id,
-                        domainId: this.domain._id,
-                        pid: 0,
-                        recordId: null,
-                        score: bonus.bonus,
-                        reason: bonus.reason,
-                        createdAt: new Date(),
-                    });
-
-                    // 更新用户积分
-                    await this.ctx.db.collection('score.users' as any).updateOne(
-                        { uid: user._id },
-                        {
-                            $inc: { totalScore: bonus.bonus },
-                            $set: { lastUpdated: new Date() },
-                        },
-                        { upsert: true },
-                    );
+                    try {
+                        this.ctx.emit('typing/bonus-awarded', {
+                            uid: user._id,
+                            domainId: this.domain._id.toString(),
+                            bonus: bonus.bonus,
+                            reason: bonus.reason,
+                            bonusType: bonus.type,
+                            recordId,
+                        });
+                    } catch (err: any) {
+                        console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
+                        // 事件触发失败不影响奖励记录
+                    }
                 }
                 bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
             }
@@ -169,10 +157,7 @@ export class TypingAdminHandler extends Handler {
             const bonusService = new TypingBonusService(this.ctx);
 
             // 获取更新前的排行榜（用于超越检查）
-            const oldRanking = await this.ctx.db.collection('typing.stats' as any)
-                .find({})
-                .sort({ maxWpm: -1, lastUpdated: 1 })
-                .toArray();
+            const oldRanking = await statsService.getAllStats();
 
             // 导入记录
             const result = await recordService.importRecordsFromCSV(
@@ -182,13 +167,13 @@ export class TypingAdminHandler extends Handler {
             );
 
             let totalBonus = 0;
-            const bonusDetails: Array<{ username: string; wpm: number; bonus: number }> = [];
+            const bonusDetails: Array<{ username: string, wpm: number, bonus: number }> = [];
 
             // 更新所有涉及用户的统计和处理奖励
             const lines = csvData.trim().split('\n');
-            const hasHeader = lines[0].trim().toLowerCase().includes('username') &&
-                             (lines[0].trim().toLowerCase().includes('wpm') ||
-                              lines[0].trim().toLowerCase().includes('speed'));
+            const hasHeader = lines[0].trim().toLowerCase().includes('username')
+                && (lines[0].trim().toLowerCase().includes('wpm')
+                    || lines[0].trim().toLowerCase().includes('speed'));
             const startLine = hasHeader ? 1 : 0;
 
             for (let i = startLine; i < lines.length; i++) {
@@ -208,9 +193,8 @@ export class TypingAdminHandler extends Handler {
                     const currentStats = await statsService.getUserStats(user._id);
                     const previousMaxWpm = currentStats?.maxWpm || 0;
 
-                    // 获取该用户最新的记录ID
-                    const latestRecord = await this.ctx.db.collection('typing.records' as any)
-                        .findOne({ uid: user._id }, { sort: { createdAt: -1 } });
+                    // 获取该用户最新的记录
+                    const latestRecord = await recordService.getLatestRecord(user._id);
 
                     if (latestRecord && latestRecord.wpm === wpm) {
                         // 处理奖励（传递旧排行榜用于超越检查）
@@ -223,26 +207,21 @@ export class TypingAdminHandler extends Handler {
                         );
 
                         if (bonusInfo.totalBonus > 0) {
-                            // 添加积分记录
+                            // 触发打字奖励事件，由积分系统处理积分增加
                             for (const bonus of bonusInfo.bonuses) {
-                                await this.ctx.db.collection('score.records' as any).insertOne({
-                                    uid: user._id,
-                                    domainId: this.domain._id,
-                                    pid: 0,
-                                    recordId: null,
-                                    score: bonus.bonus,
-                                    reason: bonus.reason,
-                                    createdAt: new Date(),
-                                });
-
-                                await this.ctx.db.collection('score.users' as any).updateOne(
-                                    { uid: user._id },
-                                    {
-                                        $inc: { totalScore: bonus.bonus },
-                                        $set: { lastUpdated: new Date() },
-                                    },
-                                    { upsert: true },
-                                );
+                                try {
+                                    this.ctx.emit('typing/bonus-awarded', {
+                                        uid: user._id,
+                                        domainId: this.domain._id.toString(),
+                                        bonus: bonus.bonus,
+                                        reason: bonus.reason,
+                                        bonusType: bonus.type,
+                                        recordId: latestRecord._id,
+                                    });
+                                } catch (err: any) {
+                                    console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
+                                    // 事件触发失败不影响奖励记录
+                                }
                             }
 
                             totalBonus += bonusInfo.totalBonus;
@@ -329,17 +308,15 @@ export class TypingAdminHandler extends Handler {
             const statsService = new TypingStatsService(this.ctx, recordService);
 
             // 获取所有有记录的用户（全域）
-            const allRecords = await this.ctx.db.collection('typing.records' as any)
-                .find({})
-                .toArray();
+            const allRecords = await recordService.getAllRecords();
 
             // 按 uid 提取唯一用户（全域统一数据）
             const validUids = [...new Set(allRecords.map((r) => r.uid))];
 
             if (validUids.length === 0) {
                 // 如果没有任何记录，清空统计表和快照表（全域）
-                await this.ctx.db.collection('typing.stats' as any).deleteMany({});
-                await this.ctx.db.collection('typing.weekly_snapshots' as any).deleteMany({});
+                await statsService.clearAllStats();
+                await statsService.clearAllWeeklySnapshots();
 
                 console.log(`[TypingAdmin] Admin ${this.user._id} cleared all stats (no records found)`);
 
@@ -359,9 +336,13 @@ export class TypingAdminHandler extends Handler {
             }
 
             // 删除没有对应记录的统计数据（全域）
-            await this.ctx.db.collection('typing.stats' as any).deleteMany({
-                uid: { $nin: validUids },
-            });
+            const allStats = await statsService.getAllStats();
+            const uidsToDelete = allStats
+                .filter((stat) => !validUids.includes(stat.uid))
+                .map((stat) => stat.uid);
+            if (uidsToDelete.length > 0) {
+                await statsService.deleteStatsByUids(uidsToDelete);
+            }
 
             console.log(`[TypingAdmin] Admin ${this.user._id} recalculated stats for ${updated} users (全域)`);
 

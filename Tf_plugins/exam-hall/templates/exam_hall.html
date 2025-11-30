@@ -1,0 +1,14 @@
+{% extends "layout/basic.html" %}
+
+{% block title %}{{ _('Exam Hall') }} - {{ this.config.server.name }}{% endblock %}
+
+{% block content %}
+
+
+<div id="exam-hall-react-app"></div>
+
+<script>
+  // 将后端数据传递给React组件
+  window.examHallData = {{ examHallDataJSON | safe }};
+</script>
+{% endblock %}
