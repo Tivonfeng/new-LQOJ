@@ -1,5 +1,4 @@
-import { ObjectId } from 'mongodb';
-import { Context } from 'hydrooj';
+import { Context, ObjectId } from 'hydrooj';
 import type { SaveWorkParams, TurtleWork } from '../types';
 
 /**
