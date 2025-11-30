@@ -1,4 +1,5 @@
 import { Handler } from 'hydrooj';
+import { getExamples } from '../..';
 import { TurtleWorkService } from '../services';
 
 /**
@@ -25,11 +26,8 @@ export class TurtlePlaygroundHandler extends Handler {
             await workService.incrementViews(workId);
         }
 
-        // 获取示例代码列表
-        const examples = await this.ctx.db.collection('turtle.examples' as any)
-            .find({})
-            .sort({ category: 1, order: 1 })
-            .toArray();
+        // 获取示例代码列表(硬编码)
+        const examples = getExamples();
 
         // 获取用户的作品列表
         let userWorks: any[] = [];

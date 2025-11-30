@@ -85,7 +85,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isL
         // 创建Monaco editor
         const editor = monacoInstance.editor.create(editorRef.current, {
           model,
-          theme: 'vs-dark',
+          theme: 'vs',
           fontSize: 14,
           lineNumbers: 'on',
           minimap: { enabled: false },

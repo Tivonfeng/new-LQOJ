@@ -1,11 +1,11 @@
 import { Context, Schema } from 'hydrooj';
 import {
-    TurtlePlaygroundHandler,
-    TurtleGalleryHandler,
-    TurtleWorkHandler,
     TurtleAdminHandler,
+    TurtleGalleryHandler,
+    TurtlePlaygroundHandler,
+    TurtleWorkHandler,
 } from './src/handlers';
-import type { TurtleWork, TurtleExample } from './src/types';
+import type { TurtleExample, TurtleWork } from './src/types';
 
 // 配置 Schema
 const Config = Schema.object({
@@ -18,73 +18,14 @@ const Config = Schema.object({
 declare module 'hydrooj' {
     interface Collections {
         'turtle.works': TurtleWork;
-        'turtle.examples': TurtleExample;
     }
-}
-
-// 插件主函数
-export default async function apply(ctx: Context, config: any = {}) {
-    const defaultConfig = {
-        enabled: true,
-        maxCodeLength: 10000,
-        maxWorksPerUser: 50,
-    };
-
-    const finalConfig = { ...defaultConfig, ...config };
-
-    if (!finalConfig.enabled) {
-        console.log('[Python Turtle IDE] Plugin is disabled in config');
-        return;
-    }
-
-    console.log('[Python Turtle IDE] Plugin loading...');
-
-    // 创建数据库索引
-    try {
-        await ctx.db.ensureIndexes(
-            ctx.db.collection('turtle.works' as any),
-            { key: { domainId: 1, uid: 1, createdAt: -1 }, name: 'user_works' },
-            { key: { domainId: 1, isPublic: 1, isFeatured: 1 }, name: 'public_featured' },
-            { key: { domainId: 1, likes: -1 }, name: 'popular_works' },
-            { key: { domainId: 1, createdAt: -1 }, name: 'recent_works' },
-        );
-
-        await ctx.db.ensureIndexes(
-            ctx.db.collection('turtle.examples' as any),
-            { key: { category: 1, order: 1 }, name: 'category_order' },
-        );
-
-        console.log('[Python Turtle IDE] ✅ Indexes created successfully');
-    } catch (error) {
-        console.error('[Python Turtle IDE] ❌ Error creating indexes:', error.message);
-    }
-
-    // 初始化示例代码(如果数据库为空)
-    const examplesCount = await ctx.db.collection('turtle.examples' as any).countDocuments();
-    if (examplesCount === 0) {
-        await initExamples(ctx);
-    }
-
-    // 注册路由
-    ctx.Route('turtle_playground', '/turtle/playground', TurtlePlaygroundHandler);
-    ctx.Route('turtle_gallery', '/turtle/gallery', TurtleGalleryHandler);
-    ctx.Route('turtle_work', '/turtle/work/:workId', TurtleWorkHandler);
-    ctx.Route('turtle_admin', '/turtle/admin', TurtleAdminHandler);
-
-    // 注入导航栏
-    ctx.injectUI('Nav', 'turtle_playground', {
-        prefix: 'turtle',
-        before: 'typing',
-    });
-
-    console.log('[Python Turtle IDE] ✅ Plugin loaded successfully!');
 }
 
 /**
- * 初始化示例代码
+ * 获取示例代码列表(硬编码)
  */
-async function initExamples(ctx: Context) {
-    const examples: TurtleExample[] = [
+export function getExamples(): TurtleExample[] {
+    return [
         {
             name: 'Square',
             nameZh: '正方形',
@@ -214,9 +155,53 @@ turtle.done()`,
             order: 6,
         },
     ];
+}
 
-    await ctx.db.collection('turtle.examples' as any).insertMany(examples);
-    console.log('[Python Turtle IDE] ✅ Example codes initialized');
+// 插件主函数
+export default async function apply(ctx: Context, config: any = {}) {
+    const defaultConfig = {
+        enabled: true,
+        maxCodeLength: 10000,
+        maxWorksPerUser: 50,
+    };
+
+    const finalConfig = { ...defaultConfig, ...config };
+
+    if (!finalConfig.enabled) {
+        console.log('[Python Turtle IDE] Plugin is disabled in config');
+        return;
+    }
+
+    console.log('[Python Turtle IDE] Plugin loading...');
+
+    // 创建数据库索引(只为作品集合创建)
+    try {
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('turtle.works' as any),
+            { key: { domainId: 1, uid: 1, createdAt: -1 }, name: 'user_works' },
+            { key: { domainId: 1, isPublic: 1, isFeatured: 1 }, name: 'public_featured' },
+            { key: { domainId: 1, likes: -1 }, name: 'popular_works' },
+            { key: { domainId: 1, createdAt: -1 }, name: 'recent_works' },
+        );
+
+        console.log('[Python Turtle IDE] ✅ Indexes created successfully');
+    } catch (error) {
+        console.error('[Python Turtle IDE] ❌ Error creating indexes:', error.message);
+    }
+
+    // 注册路由
+    ctx.Route('turtle_playground', '/turtle/playground', TurtlePlaygroundHandler);
+    ctx.Route('turtle_gallery', '/turtle/gallery', TurtleGalleryHandler);
+    ctx.Route('turtle_work', '/turtle/work/:workId', TurtleWorkHandler);
+    ctx.Route('turtle_admin', '/turtle/admin', TurtleAdminHandler);
+
+    // 注入导航栏
+    ctx.injectUI('Nav', 'turtle_playground', {
+        prefix: 'turtle',
+        before: 'typing',
+    });
+
+    console.log('[Python Turtle IDE] ✅ Plugin loaded successfully!');
 }
 
 // 导出配置 Schema
