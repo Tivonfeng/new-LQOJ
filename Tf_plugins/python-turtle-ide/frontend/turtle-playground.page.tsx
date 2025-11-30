@@ -82,6 +82,149 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isL
         const model = monacoInstance.editor.createModel(code, 'python');
         console.log('[Monaco] Model created');
 
+        // 注册Python代码补全
+        // Note: insertText 中的 ${} 是 Monaco snippet 占位符语法，不是模板字符串
+        monacoInstance.languages.registerCompletionItemProvider('python', {
+          provideCompletionItems: (textModel, position) => {
+            // 获取当前单词的range
+            const word = textModel.getWordUntilPosition(position);
+            const range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+
+            const suggestions: monaco.languages.CompletionItem[] = [
+              // Turtle 基础命令
+              {
+                label: 'forward',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'forward(${1:100})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '向前移动指定距离',
+                range,
+              },
+              {
+                label: 'backward',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'backward(${1:100})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '向后移动指定距离',
+                range,
+              },
+              {
+                label: 'left',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'left(${1:90})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '向左转指定角度',
+                range,
+              },
+              {
+                label: 'right',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'right(${1:90})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '向右转指定角度',
+                range,
+              },
+              {
+                label: 'circle',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'circle(${1:100})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '绘制圆形',
+                range,
+              },
+              {
+                label: 'penup',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                insertText: 'penup()',
+                documentation: '抬起画笔',
+                range,
+              },
+              {
+                label: 'pendown',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                insertText: 'pendown()',
+                documentation: '放下画笔',
+                range,
+              },
+              {
+                label: 'goto',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'goto(${1:0}, ${2:0})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '移动到指定坐标',
+                range,
+              },
+              {
+                label: 'color',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'color(\'${1:red}\')',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '设置画笔颜色',
+                range,
+              },
+              {
+                label: 'pensize',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'pensize(${1:3})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '设置画笔粗细',
+                range,
+              },
+              {
+                label: 'speed',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'speed(${1:5})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '设置绘制速度 (0-10)',
+                range,
+              },
+              // Python 基础
+              {
+                label: 'for',
+                kind: monacoInstance.languages.CompletionItemKind.Keyword,
+                // eslint-disable-next-line
+                insertText: 'for ${1:i} in range(${2:10}):\n    ${3:pass}',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: 'for 循环',
+                range,
+              },
+              {
+                label: 'if',
+                kind: monacoInstance.languages.CompletionItemKind.Keyword,
+                // eslint-disable-next-line
+                insertText: 'if ${1:condition}:\n    ${2:pass}',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: 'if 条件语句',
+                range,
+              },
+              {
+                label: 'range',
+                kind: monacoInstance.languages.CompletionItemKind.Function,
+                // eslint-disable-next-line
+                insertText: 'range(${1:10})',
+                insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: '生成数字序列',
+                range,
+              },
+            ];
+            return { suggestions };
+          },
+        });
+
         // 创建Monaco editor
         const editor = monacoInstance.editor.create(editorRef.current, {
           model,
@@ -93,6 +236,11 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isL
           automaticLayout: true,
           wordWrap: 'on',
           tabSize: 4,
+          // 启用代码补全相关功能
+          suggestOnTriggerCharacters: true,
+          quickSuggestions: true,
+          acceptSuggestionOnEnter: 'on',
+          tabCompletion: 'on',
         });
         console.log('[Monaco] Editor created');
 
