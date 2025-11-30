@@ -24,6 +24,22 @@ const status = {
     [STATUS.STATUS_ETC]: 'SYSTEM_ERROR',
     [STATUS.STATUS_CANCELED]: 'CANCELED',
 };
+const statusPrivate = {
+    [STATUS.STATUS_WRONG_ANSWER]: 'REJECTED',
+    [STATUS.STATUS_ACCEPTED]: 'CORRECT',
+    [STATUS.STATUS_COMPILING]: 'PENDING',
+    [STATUS.STATUS_WAITING]: 'PENDING',
+    [STATUS.STATUS_JUDGING]: 'PENDING',
+    [STATUS.STATUS_TIME_LIMIT_EXCEEDED]: 'REJECTED',
+    [STATUS.STATUS_MEMORY_LIMIT_EXCEEDED]: 'REJECTED',
+    [STATUS.STATUS_RUNTIME_ERROR]: 'REJECTED',
+    [STATUS.STATUS_SYSTEM_ERROR]: 'SYSTEM_ERROR',
+    [STATUS.STATUS_COMPILE_ERROR]: 'COMPILATION_ERROR',
+    [STATUS.STATUS_FETCHED]: 'PENDING',
+    [STATUS.STATUS_OUTPUT_LIMIT_EXCEEDED]: 'REJECTED',
+    [STATUS.STATUS_ETC]: 'SYSTEM_ERROR',
+    [STATUS.STATUS_CANCELED]: 'CANCELED',
+};
 
 function submissionBase(tdoc: Tdoc, rdoc: RecordDoc, uid?: number) {
     // NOTE: rdoc can be either record, or a tsdoc detail entry
@@ -39,6 +55,7 @@ function submissionBase(tdoc: Tdoc, rdoc: RecordDoc, uid?: number) {
 
 async function loadContestState(tdoc: Tdoc, realtime: boolean) {
     const tsdocs = await ContestModel.getMultiStatus(tdoc.domainId, { docId: tdoc.docId }).toArray();
+    const ended = ContestModel.isDone(tdoc);
     const udict = await UserModel.getList(tdoc.domainId, tsdocs.map((i) => i.uid));
     const teams = tsdocs.map((i) => {
         const udoc = udict[i.uid];
@@ -46,11 +63,11 @@ async function loadContestState(tdoc: Tdoc, realtime: boolean) {
             team_id: `${udoc._id}`,
             name: udoc.uname,
             organization: udoc.school,
-            members: udoc.members?.split(',').filter((t) => t) || [],
+            members: 'members' in udoc ? (typeof udoc.members === 'string' ? udoc.members.split(',').filter((t) => t) : udoc.members) : [],
             coach: udoc.coach,
             badge: { url: avatar(udoc.avatar) },
             group: [
-                ...(udoc.group || []),
+                ...((udoc.group || []).filter((g) => !Number.isSafeInteger(+g))),
                 i.unrank ? 'unofficial' : 'official',
             ],
         };
@@ -58,11 +75,11 @@ async function loadContestState(tdoc: Tdoc, realtime: boolean) {
     return {
         submissions: tsdocs.flatMap((i) => (i.journal || []).map((j) => {
             const submit = new ObjectId(j.rid as string).getTimestamp().getTime();
-            const curStatus = status[j.status] || 'SYSTEM_ERROR';
+            const curStatus = (ended ? status : statusPrivate)[j.status] || 'SYSTEM_ERROR';
             return {
                 ...submissionBase(tdoc, j, i.uid),
                 status: (ContestModel.isLocked(tdoc) && submit > tdoc.lockAt.getTime() && !realtime)
-                    ? 'PENDING'
+                    ? 'FROZEN'
                     : curStatus,
             };
         })),
@@ -74,6 +91,8 @@ export const name = 'scoreboard-xcpcio';
 export const Config = Schema.object({
     cacheTTL: Schema.number().default(0).description('Cache TTL in milliseconds'),
     cacheSize: Schema.number().default(100).description('Cache size'),
+    asDefault: Schema.boolean().default(false).description('As default scoreboard'),
+    override: Schema.any().default({}).description('Scoreboard contest override'),
 });
 
 export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
@@ -95,7 +114,7 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
             const tdoc = await ContestModel.get(rdoc.domainId, rdoc.contest);
             const submit = new ObjectId(rdoc._id).getTimestamp().getTime();
             const isLocked = ContestModel.isLocked(tdoc) && submit > tdoc.lockAt.getTime();
-            const statusStr = status[rdoc.status] || 'SYSTEM_ERROR';
+            const statusStr = statusPrivate[rdoc.status] || 'SYSTEM_ERROR';
             if (realtime) {
                 const found = realtime.submissions.find((i) => i.submission_id === rdoc._id.toHexString());
                 if (found) found.status = statusStr;
@@ -104,7 +123,17 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
             if (pub) {
                 const found = pub.submissions.find((i) => i.submission_id === rdoc._id.toHexString());
                 if (found && !isLocked) found.status = statusStr;
-                else pub.submissions.push({ ...submissionBase(tdoc, rdoc), status: isLocked ? 'PENDING' : statusStr });
+                else pub.submissions.push({ ...submissionBase(tdoc, rdoc), status: isLocked ? 'FROZEN' : statusStr });
+            }
+        });
+    }
+
+    if (config.asDefault) {
+        // eslint-disable-next-line consistent-return
+        ctx.on('handler/before/ContestScoreboard#get', (that) => {
+            if (that.request.path.endsWith('/scoreboard') && that.tdoc?.rule === 'acm') {
+                that.response.redirect = `${that.request.path}/xcpcio`;
+                return 'cleanup';
             }
         });
     }
@@ -115,12 +144,14 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
             groups: 'groups',
             json: Types.Boolean,
             realtime: Types.Boolean,
+            badge: Types.Boolean,
+            banner: Types.Boolean,
             gold: Schema.transform(Schema.union([Schema.string(), Schema.number().step(1).min(0)]), (v) => +v).default(0),
             silver: Schema.transform(Schema.union([Schema.string(), Schema.number().step(1).min(0)]), (v) => +v).default(0),
             bronze: Schema.transform(Schema.union([Schema.string(), Schema.number().step(1).min(0)]), (v) => +v).default(0),
         }, {
             async display({
-                tdoc, groups, json, realtime, gold, silver, bronze,
+                tdoc, groups, json, realtime, gold, silver, bronze, badge = true, banner = false,
             }) {
                 if (realtime && !this.user.own(tdoc)) this.checkPerm(PERM.PERM_VIEW_CONTEST_HIDDEN_SCOREBOARD);
                 if (json || this.request.json) {
@@ -143,6 +174,7 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
                                 unofficial: '打星队伍',
                                 ...Object.fromEntries(groups.filter((i) => relatedGroups.includes(i.name)).map((i) => [i.name, i.name])),
                             },
+                            ...(badge ? { badge: 'Badge' } : {}),
                             organization: 'School',
                             status_time_display: {
                                 correct: true,
@@ -165,12 +197,11 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
                             logo: {
                                 preset: 'ICPC',
                             },
-                            // banner: {
-                            //     url: 'assets/banner.png',
-                            // },
+                            ...(banner ? { banner: { url: 'banner.jpg' } } : {}),
                             options: {
                                 submission_timestamp_unit: 'millisecond',
                             },
+                            ...(typeof config.override === 'object' ? config.override || {} : {}),
                         },
                         ...state,
                     };
@@ -178,12 +209,16 @@ export async function apply(ctx: Context, config: ReturnType<typeof Config>) {
                     this.response.template = 'xcpcio_board.html';
                     let query = '';
                     if (gold || silver || bronze) query = `&gold=${gold}&silver=${silver}&bronze=${bronze}`;
+                    if (badge) query += '&badge=true';
+                    if (banner) query += '&banner=true';
                     if (realtime) query += '&realtime=true';
                     const endpoint = `/d/${tdoc.domainId}/contest/${tdoc.docId}/scoreboard/xcpcio`;
                     this.response.body = {
                         dataSource: `${endpoint}?json=true${query}#allInOne=true`,
                         js: indexJs,
                         css: indexCss,
+                        realtime,
+                        tdoc: this.tdoc,
                     };
                 }
             },

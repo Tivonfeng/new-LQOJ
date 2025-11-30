@@ -170,15 +170,17 @@ export class ProblemMainHandler extends Handler {
                 pdocs.map((i) => i.docId),
             ));
         }
+        let qs = sortStrategy !== 'default' ? `sort=${sortStrategy}` : '';
+        if (q) qs += `${qs ? '&' : ''}q=${encodeURIComponent(q)}`;
         if (pjax) {
             this.response.body = {
                 title: this.renderTitle(this.translate('problem_main')),
                 fragments: (await Promise.all([
                     this.renderHTML('partials/problem_list.html', {
-                        page, ppcount, pcount, pdocs, psdict, qs: q, sort: sortStrategy,
+                        page, ppcount, pcount, pdocs, psdict, qs, q, sort: sortStrategy,
                     }),
                     this.renderHTML('partials/problem_stat.html', { pcount, pcountRelation: this.queryContext.pcountRelation }),
-                    this.renderHTML('partials/problem_lucky.html', { qs: q }),
+                    this.renderHTML('partials/problem_lucky.html', { q }),
                 ])).map((i) => ({ html: i })),
             };
         } else {
@@ -189,7 +191,8 @@ export class ProblemMainHandler extends Handler {
                 pcountRelation: this.queryContext.pcountRelation,
                 pdocs,
                 psdict,
-                qs: q,
+                qs,
+                q,
                 sort: sortStrategy,
             };
         }
@@ -519,7 +522,10 @@ export class ProblemSubmitHandler extends ProblemDetailHandler {
                 await storage.put(`submission/${this.user._id}/${id}`, file.filepath, this.user._id);
                 files.code = `${this.user._id}/${id}#${file.originalFilename}`;
             }
-        } else if (code.length > lengthLimit) throw new ValidationError('code');
+        } else {
+            code = code.replace(/\r\n/g, '\n');
+            if (code.length > lengthLimit) throw new ValidationError('code');
+        }
         const rid = await record.add(
             domainId, this.pdoc.docId, this.user._id, lang, code, true,
             pretest ? { input, type: 'pretest' } : { contest: tid, files, type: 'judge' },
@@ -922,12 +928,14 @@ export class ProblemSolutionHandler extends ProblemDetailHandler {
 
     @param('psid', Types.ObjectId)
     async postUpvote(domainId: string, psid: ObjectId) {
+        this.checkPerm(PERM.PERM_VOTE_PROBLEM_SOLUTION);
         const psdoc = await solution.vote(domainId, psid, this.user._id, 1);
         this.back({ vote: psdoc.vote, user_vote: 1 });
     }
 
     @param('psid', Types.ObjectId)
     async postDownvote(domainId: string, psid: ObjectId) {
+        this.checkPerm(PERM.PERM_VOTE_PROBLEM_SOLUTION);
         const psdoc = await solution.vote(domainId, psid, this.user._id, -1);
         this.back({ vote: psdoc.vote, user_vote: -1 });
     }
@@ -983,6 +991,7 @@ export class ProblemStatisticsHandler extends ProblemDetailHandler {
 
 export class ProblemCreateHandler extends Handler {
     async get() {
+        this.response.body.statementLangs = this.ctx.i18n.langs(false);
         this.response.template = 'problem_edit.html';
         this.response.body = {
             page_name: 'problem_create',
