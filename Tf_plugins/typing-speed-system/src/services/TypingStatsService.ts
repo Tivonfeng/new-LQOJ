@@ -183,6 +183,63 @@ export class TypingStatsService {
     }
 
     /**
+     * 获取分页排行榜（支持最高速度或平均速度）
+     */
+    async getRankingWithPagination(
+        type: 'max' | 'avg',
+        page: number,
+        limit: number,
+    ): Promise<{
+        users: TypingUserStats[];
+        total: number;
+        totalPages: number;
+    }> {
+        const skip = (page - 1) * limit;
+        const sortField = type === 'max' ? 'maxWpm' : 'avgWpm';
+
+        const [users, total] = await Promise.all([
+            this.ctx.db.collection('typing.stats' as any)
+                .find({})
+                .sort({ [sortField]: -1, lastUpdated: 1 })
+                .skip(skip)
+                .limit(limit)
+                .toArray(),
+            this.ctx.db.collection('typing.stats' as any)
+                .countDocuments({}),
+        ]);
+
+        return {
+            users,
+            total,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    /**
+     * 获取所有统计记录（用于获取旧排行榜）
+     */
+    async getAllStats(): Promise<TypingUserStats[]> {
+        return await this.ctx.db.collection('typing.stats' as any)
+            .find({})
+            .sort({ maxWpm: -1, lastUpdated: 1 })
+            .toArray();
+    }
+
+    /**
+     * 清空所有统计数据
+     */
+    async clearAllStats(): Promise<void> {
+        await this.ctx.db.collection('typing.stats' as any).deleteMany({});
+    }
+
+    /**
+     * 清空所有周快照数据
+     */
+    async clearAllWeeklySnapshots(): Promise<void> {
+        await this.ctx.db.collection('typing.weekly_snapshots' as any).deleteMany({});
+    }
+
+    /**
      * 获取进步最快排行榜（本周 vs 上周）
      */
     async getImprovementRanking(limit: number = 50, _domainId?: string): Promise<Array<TypingUserStats & { improvement: number }>> {
@@ -304,5 +361,15 @@ export class TypingStatsService {
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 周一为一周开始
         return new Date(d.setDate(diff));
+    }
+
+    /**
+     * 删除指定用户的统计数据
+     */
+    async deleteStatsByUids(uids: number[]): Promise<void> {
+        if (uids.length === 0) return;
+        await this.ctx.db.collection('typing.stats' as any).deleteMany({
+            uid: { $in: uids },
+        });
     }
 }

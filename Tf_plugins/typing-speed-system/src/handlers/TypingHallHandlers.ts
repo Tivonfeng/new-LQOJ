@@ -135,17 +135,14 @@ export class TypingRankingHandler extends Handler {
             total = allImprovements.length;
             users = allImprovements.slice(skip, skip + limit);
         } else {
-            // 最高速度或平均速度排行榜（全域统一数据）
-            const sortField = type === 'max' ? 'maxWpm' : 'avgWpm';
-            users = await this.ctx.db.collection('typing.stats' as any)
-                .find({})
-                .sort({ [sortField]: -1, lastUpdated: 1 })
-                .skip(skip)
-                .limit(limit)
-                .toArray();
-
-            total = await this.ctx.db.collection('typing.stats' as any)
-                .countDocuments({});
+            // 最高速度或平均速度排行榜（使用 service 方法）
+            const rankingResult = await statsService.getRankingWithPagination(
+                type as 'max' | 'avg',
+                page,
+                limit,
+            );
+            users = rankingResult.users;
+            total = rankingResult.total;
         }
 
         // 获取用户信息
