@@ -31,6 +31,10 @@ export class TurtlePlaygroundHandler extends Handler {
             userWorks = await workService.getUserWorks(uid, this.domain._id);
         }
 
+        // 获取当前用户名并序列化为 JSON 字符串
+        const currentUserName = this.user?.uname || '';
+        const currentUserNameJSON = currentUserName ? JSON.stringify(currentUserName) : 'null';
+
         this.response.template = 'turtle_playground.html';
         this.response.body = {
             work: work || null,
@@ -39,6 +43,8 @@ export class TurtlePlaygroundHandler extends Handler {
             userWorksJSON: JSON.stringify(userWorks),
             isLoggedIn: !!uid,
             currentUserId: uid || null,
+            currentUserName,
+            currentUserNameJSON,
         };
     }
 
@@ -69,9 +75,9 @@ export class TurtlePlaygroundHandler extends Handler {
             } else if (action === 'delete') {
                 await workService.deleteWork(workId, uid);
                 this.response.body = { success: true };
-            } else if (action === 'like') {
-                await workService.likeWork(workId, uid);
-                this.response.body = { success: true };
+            } else if (action === 'coin') {
+                await workService.coinWork(workId, uid, this.domain._id);
+                this.response.body = { success: true, message: '投币成功！作品主人已获得1积分' };
             } else {
                 this.response.body = { success: false, message: 'Invalid action' };
             }

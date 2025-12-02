@@ -11,6 +11,7 @@ interface TurtleData {
   userWorks: any[];
   isLoggedIn: boolean;
   currentUserId: number | null;
+  currentUserName: string | null;
 }
 
 const DEFAULT_CODE = `import turtle
@@ -57,12 +58,28 @@ async function runPythonCode(code: string, onOutput: (text: string) => void) {
   console.log('[Skulpt] Code execution completed');
 }
 
-const TurtlePlayground: React.FC<TurtleData> = ({ work, userWorks = [], isLoggedIn }) => {
+const TurtlePlayground: React.FC<TurtleData> = ({
+  work,
+  userWorks = [],
+  isLoggedIn,
+  currentUserName,
+}) => {
+  // 生成默认标题：学生姓名+日期
+  const generateDefaultTitle = () => {
+    if (!currentUserName) return '未命名';
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    return `${currentUserName}-${dateStr}`;
+  };
+
   const [code, setCode] = useState(work?.code || DEFAULT_CODE);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
   const [isRunning, setIsRunning] = useState(false);
   const [currentWorkId, setCurrentWorkId] = useState(work?._id || null);
-  const [workTitle, setWorkTitle] = useState(work?.title || '未命名');
+  const [workTitle, setWorkTitle] = useState(work?.title || generateDefaultTitle());
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -353,8 +370,49 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, userWorks = [], isLogged
     }
 
     // 捕获画布截图（从div中找到canvas元素）
-    const canvasElement = canvasRef.current?.querySelector('canvas') as HTMLCanvasElement;
-    const imageUrl = canvasElement?.toDataURL('image/png') || '';
+    // 如果有多个canvas，合并它们
+    const canvasDiv = canvasRef.current;
+    if (!canvasDiv) {
+      setConsoleOutput((prev) => `${prev}\n⚠️ 画布容器未找到\n`);
+      return;
+    }
+
+    const allCanvases = canvasDiv.querySelectorAll('canvas');
+    let imageUrl = '';
+
+    if (allCanvases.length === 0) {
+      setConsoleOutput((prev) => `${prev}\n⚠️ 未找到画布，请先运行代码\n`);
+      return;
+    }
+
+    try {
+      if (allCanvases.length > 1) {
+        // 如果有多个canvas，合并它们
+        const firstCanvas = allCanvases[0] as HTMLCanvasElement;
+        const mergedCanvas = document.createElement('canvas');
+        mergedCanvas.width = firstCanvas.width;
+        mergedCanvas.height = firstCanvas.height;
+        const mergedCtx = mergedCanvas.getContext('2d')!;
+
+        // 白色背景
+        mergedCtx.fillStyle = 'white';
+        mergedCtx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
+
+        // 绘制所有canvas层
+        allCanvases.forEach((canvas) => {
+          mergedCtx.drawImage(canvas as HTMLCanvasElement, 0, 0);
+        });
+
+        imageUrl = mergedCanvas.toDataURL('image/png');
+      } else {
+        // 只有一个canvas，直接使用
+        const canvas = allCanvases[0] as HTMLCanvasElement;
+        imageUrl = canvas.toDataURL('image/png');
+      }
+    } catch (error) {
+      console.error('[Save] Failed to capture canvas:', error);
+      setConsoleOutput((prev) => `${prev}\n⚠️ 截图失败，将保存不带封面的作品\n`);
+    }
 
     const response = await fetch(window.location.pathname, {
       method: 'POST',

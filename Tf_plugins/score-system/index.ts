@@ -84,6 +84,16 @@ interface TypingBonusEventData {
     recordId?: any;
 }
 
+// 作品投币事件数据类型
+interface TurtleWorkCoinedEventData {
+    fromUid: number; // 投币者
+    toUid: number; // 作品主人
+    domainId: string;
+    workId: string;
+    workTitle: string;
+    amount: number; // 投币数量（通常为1）
+}
+
 // 声明数据库集合类型和事件类型
 declare module 'hydrooj' {
     interface Collections {
@@ -107,6 +117,7 @@ declare module 'hydrooj' {
         'certificate/created': (data: CertificateEventData) => void;
         'certificate/deleted': (data: CertificateEventData) => void;
         'typing/bonus-awarded': (data: TypingBonusEventData) => void;
+        'turtle/work-coined': (data: TurtleWorkCoinedEventData) => void;
     }
 }
 
@@ -296,6 +307,42 @@ export default async function apply(ctx: Context, config: any = {}) {
             console.log(`[Score System] ✅ 用户 ${data.uid} 获得打字奖励积分 ${data.bonus}（${data.bonusType}）`);
         } catch (err: any) {
             console.error(`[Score System] ❌ 处理打字奖励事件失败: ${err.message}`);
+        }
+    });
+
+    // 🐢 监听作品投币事件，自动处理积分
+    ctx.on('turtle/work-coined', async (data: TurtleWorkCoinedEventData) => {
+        try {
+            if (!finalConfig.enabled) return;
+            if (data.amount <= 0) return;
+
+            // 扣除投币者积分
+            await scoreService.updateUserScore(data.domainId, data.fromUid, -data.amount);
+            await scoreService.addScoreRecord({
+                uid: data.fromUid,
+                domainId: data.domainId,
+                pid: 0,
+                recordId: data.workId,
+                score: -data.amount,
+                reason: `给作品「${data.workTitle}」投币`,
+                problemTitle: '作品投币',
+            });
+
+            // 给作品主人加积分
+            await scoreService.updateUserScore(data.domainId, data.toUid, data.amount);
+            await scoreService.addScoreRecord({
+                uid: data.toUid,
+                domainId: data.domainId,
+                pid: 0,
+                recordId: data.workId,
+                score: data.amount,
+                reason: `收到作品「${data.workTitle}」的投币`,
+                problemTitle: '作品投币',
+            });
+
+            console.log(`[Score System] ✅ 用户 ${data.fromUid} 给作品「${data.workTitle}」投币 ${data.amount}，作品主人 ${data.toUid} 获得积分`);
+        } catch (err: any) {
+            console.error(`[Score System] ❌ 处理作品投币事件失败: ${err.message}`);
         }
     });
 

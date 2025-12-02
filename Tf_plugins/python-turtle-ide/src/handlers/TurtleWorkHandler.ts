@@ -60,15 +60,16 @@ export class TurtleWorkHandler extends Handler {
             throw new Error('This work is private');
         }
 
-        // 解决 JSON.stringify 不能序列化 BigInt 的问题
-        const bigintReplacer = (_key: string, value: any) =>
-            typeof value === 'bigint' ? value.toString() : value;
-
-        this.response.template = 'turtle_work.html';
+        // 返回 JSON 格式（前端使用弹窗查看，不再需要HTML页面）
         this.response.body = {
-            work,
-            workJSON: JSON.stringify(work, bigintReplacer),
-            author,
+            work: {
+                ...work,
+                _id: work._id?.toString(),
+            },
+            author: author ? {
+                _id: author._id,
+                uname: author.uname,
+            } : null,
             isAuthor,
             isLoggedIn: !!this.user?._id,
         };
@@ -80,14 +81,14 @@ export class TurtleWorkHandler extends Handler {
         const workService = new TurtleWorkService(this.ctx);
 
         try {
-            if (action === 'like') {
+            if (action === 'coin') {
                 if (!uid) {
                     this.response.status = 401;
-                    this.response.body = { success: false, message: 'Please login first' };
+                    this.response.body = { success: false, message: '请先登录' };
                     return;
                 }
-                await workService.likeWork(workId, uid);
-                this.response.body = { success: true };
+                await workService.coinWork(workId, uid, this.domain._id);
+                this.response.body = { success: true, message: '投币成功！作品主人已获得1积分' };
             } else if (action === 'delete') {
                 if (!uid) {
                     this.response.status = 401;

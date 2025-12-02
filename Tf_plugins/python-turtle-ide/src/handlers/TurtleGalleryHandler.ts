@@ -20,8 +20,16 @@ export class TurtleGalleryHandler extends Handler {
             24, // 每页24个作品
         );
 
+        // 获取热门作品排行榜（前20名）
+        const popularWorks = await workService.getPopularWorks(this.domain._id, 20);
+
         // 将作品中的 _id 转成字符串形式，避免模板和前端使用时出现 ObjectId 序列化问题
         const viewWorks = works.map((w: any) => ({
+            ...w,
+            id: w._id?.toString?.() || w._id,
+        }));
+
+        const popularWorksView = popularWorks.map((w: any) => ({
             ...w,
             id: w._id?.toString?.() || w._id,
         }));
@@ -35,8 +43,8 @@ export class TurtleGalleryHandler extends Handler {
             workIds: viewWorks.map((w) => w.id),
         });
 
-        // 获取所有涉及的用户ID（用于全站作品作者信息）
-        const allUids = [...new Set(works.map((w) => w.uid))];
+        // 获取所有涉及的用户ID（用于全站作品作者信息，包括热门作品）
+        const allUids = [...new Set([...works.map((w) => w.uid), ...popularWorks.map((w) => w.uid)])];
 
         // 获取用户信息
         const UserModel = global.Hydro.model.user;
@@ -61,6 +69,8 @@ export class TurtleGalleryHandler extends Handler {
         this.response.body = {
             works: viewWorks,
             worksJSON: JSON.stringify(viewWorks, bigintReplacer),
+            popularWorks: popularWorksView,
+            popularWorksJSON: JSON.stringify(popularWorksView, bigintReplacer),
             myWorks: myWorksView,
             myWorksJSON: JSON.stringify(myWorksView, bigintReplacer),
             udocs,

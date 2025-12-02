@@ -9,7 +9,8 @@
     "work": {{ workJSON | safe }},
     "userWorks": {{ userWorksJSON | safe }},
     "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
-    "currentUserId": {{ currentUserId if currentUserId else 'null' }}
+    "currentUserId": {{ currentUserId if currentUserId else 'null' }},
+    "currentUserName": {{ currentUserNameJSON | safe }}
 }
 </script>
 

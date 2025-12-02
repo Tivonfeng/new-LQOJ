@@ -6,6 +6,7 @@
 <script id="turtle-gallery-data" type="application/json">
 {
   "works": {{ worksJSON | safe }},
+  "popularWorks": {{ popularWorksJSON | safe }},
   "myWorks": {{ myWorksJSON | safe }},
   "udocs": {{ udocsJSON | safe }},
   "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
@@ -15,4 +16,8 @@
   "totalPages": {{ totalPages }}
 }
 </script>
+
+<!-- Skulpt 库 CDN (用于弹窗中运行代码) -->
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
 {% endblock %}

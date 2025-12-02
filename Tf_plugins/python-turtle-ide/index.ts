@@ -38,7 +38,7 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Python Turtle IDE] Plugin loading...');
 
-    // 创建数据库索引(作品集合 + 点赞集合)
+    // 创建数据库索引(作品集合 + 投币集合)
     try {
         await ctx.db.ensureIndexes(
             ctx.db.collection('turtle.works' as any),
@@ -48,7 +48,7 @@ export default async function apply(ctx: Context, config: any = {}) {
             { key: { domainId: 1, createdAt: -1 }, name: 'recent_works' },
         );
 
-        // 点赞记录集合：确保同一 (workId, uid) 唯一，防止重复点赞
+        // 投币记录集合：确保同一 (workId, uid) 唯一，防止重复投币
         await ctx.db.ensureIndexes(
             ctx.db.collection('turtle.work_likes' as any),
             { key: { workId: 1, uid: 1 }, name: 'work_likes_unique', unique: true },
