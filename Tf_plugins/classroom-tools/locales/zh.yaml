@@ -1,0 +1,18 @@
+classroom_tools: 课堂工具
+Classroom Tools: 课堂工具
+Random Number Generator: 随机数字生成器
+Generate random numbers for classroom activities: 为课堂活动生成随机数字
+Settings: 参数设置
+Results: 结果显示
+Min Value: 最小值
+Max Value: 最大值
+Count: 数量
+Allow Duplicate: 允许重复
+Start: 开始摇号
+Stop: 停止摇号
+Reset: 重新开始
+Press Space to Start/Stop: 按空格键开始/停止
+Click Start to begin: 点击开始按钮开始摇号
+Min value cannot be greater than max value: 最小值不能大于最大值
+Generation failed: 生成失败
+Request failed, please try again: 请求失败，请重试

@@ -1,0 +1,19 @@
+{
+  "name": "@hydrooj/classroom-tools",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "TivonFeng",
+  "license": "AGPL-3.0",
+  "description": "课堂辅助工具集，包括随机数字生成、随机点名、分组等教学工具",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "antd": "^5.21.2",
+    "dayjs": "^1.11.10",
+    "hydrooj": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
