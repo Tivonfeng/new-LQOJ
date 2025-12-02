@@ -14,7 +14,7 @@ export interface TurtleWork {
     tags?: string[]; // 标签(如: "入门", "几何", "艺术")
     isPublic: boolean; // 是否公开
     isFeatured: boolean; // 是否推荐
-    likes: number; // 点赞数
+    likes: number; // 投币数（兼容字段名）
     views: number; // 浏览次数
     createdAt: Date; // 创建时间
     updatedAt: Date; // 更新时间

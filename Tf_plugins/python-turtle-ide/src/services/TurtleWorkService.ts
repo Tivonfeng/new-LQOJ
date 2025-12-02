@@ -126,6 +126,21 @@ export class TurtleWorkService {
     }
 
     /**
+     * 获取热门作品排行榜（按投币数排序）
+     */
+    async getPopularWorks(domainId: string, limit: number = 20): Promise<TurtleWork[]> {
+        const collection = this.ctx.db.collection('turtle.works' as any);
+
+        const works = await collection
+            .find({ domainId, isPublic: true })
+            .sort({ likes: -1, createdAt: -1 }) // 按投币数降序，然后按创建时间降序
+            .limit(limit)
+            .toArray();
+
+        return works;
+    }
+
+    /**
      * 删除作品
      */
     async deleteWork(workId: string, uid: number): Promise<void> {
@@ -153,9 +168,55 @@ export class TurtleWorkService {
     }
 
     /**
-     * 点赞作品
+     * 投币作品：同一用户对同一作品只能投1积分
+     * 投币后，扣除投币者1积分，给作品主人加1积分
+     * 通过事件系统与积分系统通信
      */
-    async likeWork(workId: string): Promise<void> {
+    async coinWork(workId: string, uid: number, domainId: string): Promise<void> {
+        const coinsColl = this.ctx.db.collection('turtle.work_likes' as any); // 复用集合，保持兼容
+
+        // 如果已经投过币，则直接返回，避免重复计数
+        const existed = await coinsColl.findOne({ workId, uid });
+        if (existed) {
+            throw new Error('您已经投过币了，每个作品只能投1次');
+        }
+
+        // 获取作品信息，找到作品主人
+        const work = await this.getWork(workId);
+        if (!work) {
+            throw new Error('作品不存在');
+        }
+
+        // 不能给自己投币
+        if (work.uid === uid) {
+            throw new Error('不能给自己的作品投币');
+        }
+
+        // 检查投币者积分是否足够（至少1积分）
+        // 直接查询积分数据库，避免依赖 ScoreService
+        const userScore = await this.ctx.db.collection('score.users' as any).findOne({ uid });
+        if (!userScore || (userScore.totalScore || 0) < 1) {
+            throw new Error('积分不足，至少需要1积分才能投币');
+        }
+
+        // 触发投币事件，让积分系统处理积分变更
+        this.ctx.emit('turtle/work-coined', {
+            fromUid: uid,
+            toUid: work.uid,
+            domainId,
+            workId,
+            workTitle: work.title,
+            amount: 1,
+        });
+
+        // 记录投币行为
+        await coinsColl.insertOne({
+            workId,
+            uid,
+            createdAt: new Date(),
+        });
+
+        // 增加作品的投币数（使用 likes 字段保持兼容）
         await this.ctx.db.collection('turtle.works' as any)
             .updateOne(
                 { _id: new ObjectId(workId) },

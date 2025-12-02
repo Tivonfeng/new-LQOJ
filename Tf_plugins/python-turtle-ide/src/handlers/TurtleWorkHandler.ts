@@ -6,13 +6,43 @@ import { TurtleWorkService } from '../services';
  * 路由: /turtle/work/:workId
  */
 export class TurtleWorkHandler extends Handler {
-    async get(domainId: string, workId: string) {
+    async get(args: any) {
         const workService = new TurtleWorkService(this.ctx);
+
+        const workId = args.workId as string | undefined;
+
+        // 调试日志：记录路由参数与解析出的 workId
+        console.log('[TurtleWorkHandler] GET /turtle/work', {
+            args,
+            parsedWorkId: workId,
+            rawUrl: this.request.url,
+        });
+
+        if (!workId) {
+            console.warn('[TurtleWorkHandler] Missing workId in args', { args });
+            this.response.status = 404;
+            this.response.template = 'turtle_work_not_found.html';
+            this.response.body = {
+                workId: '',
+                isLoggedIn: !!this.user?._id,
+            };
+            return;
+        }
 
         // 获取作品
         const work = await workService.getWork(workId);
         if (!work) {
-            throw new Error('Work not found');
+            // 作品不存在时返回友好的 404 页面，而不是抛出后端错误
+            console.warn('[TurtleWorkHandler] Work not found', {
+                workId,
+            });
+            this.response.status = 404;
+            this.response.template = 'turtle_work_not_found.html';
+            this.response.body = {
+                workId,
+                isLoggedIn: !!this.user?._id,
+            };
+            return;
         }
 
         // 增加浏览次数
@@ -30,29 +60,48 @@ export class TurtleWorkHandler extends Handler {
             throw new Error('This work is private');
         }
 
-        this.response.template = 'turtle_work.html';
+        // 返回 JSON 格式（前端使用弹窗查看，不再需要HTML页面）
         this.response.body = {
-            work,
-            workJSON: JSON.stringify(work),
-            author,
+            work: {
+                ...work,
+                _id: work._id?.toString(),
+            },
+            author: author ? {
+                _id: author._id,
+                uname: author.uname,
+            } : null,
             isAuthor,
             isLoggedIn: !!this.user?._id,
         };
     }
 
-    async post() {
+    async post(args: any) {
+        const uid = this.user?._id;
         const { action, workId } = this.request.body;
         const workService = new TurtleWorkService(this.ctx);
 
         try {
-            if (action === 'like') {
-                await workService.likeWork(workId);
+            if (action === 'coin') {
+                if (!uid) {
+                    this.response.status = 401;
+                    this.response.body = { success: false, message: '请先登录' };
+                    return;
+                }
+                await workService.coinWork(workId, uid, this.domain._id);
+                this.response.body = { success: true, message: '投币成功！作品主人已获得1积分' };
+            } else if (action === 'delete') {
+                if (!uid) {
+                    this.response.status = 401;
+                    this.response.body = { success: false, message: 'Please login first' };
+                    return;
+                }
+                await workService.deleteWork(workId, uid);
                 this.response.body = { success: true };
             } else {
                 this.response.body = { success: false, message: 'Invalid action' };
             }
         } catch (error) {
-            this.response.body = { success: false, message: error.message };
+            this.response.body = { success: false, message: (error as Error).message };
         }
     }
 }

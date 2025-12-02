@@ -1,0 +1,17 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div class="section">
+  <div class="section__body">
+    <h2>{{ _('Turtle Work Not Found') }}</h2>
+    <p>{{ _('The work you are trying to view does not exist or has been deleted.') }}</p>
+    <p>ID: <code>{{ workId }}</code></p>
+    <p>
+      <a href="{{ url('turtle_gallery') }}" class="button primary rounded">
+        {{ _('Back to Turtle Gallery') }}
+      </a>
+    </p>
+  </div>
+{% endblock %}
+
+
