@@ -1,5 +1,4 @@
 import { Handler } from 'hydrooj';
-import { getExamples } from '../..';
 import { TurtleWorkService } from '../services';
 
 /**
@@ -26,9 +25,6 @@ export class TurtlePlaygroundHandler extends Handler {
             await workService.incrementViews(workId);
         }
 
-        // 获取示例代码列表(硬编码)
-        const examples = getExamples();
-
         // 获取用户的作品列表
         let userWorks: any[] = [];
         if (uid) {
@@ -39,8 +35,6 @@ export class TurtlePlaygroundHandler extends Handler {
         this.response.body = {
             work: work || null,
             workJSON: JSON.stringify(work || null),
-            examples,
-            examplesJSON: JSON.stringify(examples),
             userWorks,
             userWorksJSON: JSON.stringify(userWorks),
             isLoggedIn: !!uid,
@@ -76,7 +70,7 @@ export class TurtlePlaygroundHandler extends Handler {
                 await workService.deleteWork(workId, uid);
                 this.response.body = { success: true };
             } else if (action === 'like') {
-                await workService.likeWork(workId);
+                await workService.likeWork(workId, uid);
                 this.response.body = { success: true };
             } else {
                 this.response.body = { success: false, message: 'Invalid action' };

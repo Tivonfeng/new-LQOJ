@@ -1,0 +1,482 @@
+/* ========================================
+   Python Turtle IDE - Playground 样式
+   ======================================== */
+
+:root {
+    --primary-color: #6366f1;
+    --primary-dark: #4f46e5;
+    --accent-color: #ec4899;
+    --success-color: #10b981;
+    --success-dark: #059669;
+    --danger-color: #ef4444;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --bg-primary: #ffffff;
+    --border-color: #e5e7eb;
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#turtle-playground-app {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: transparent;
+}
+
+/* 主内容区域 */
+#turtle-playground-app .main-content {
+    display: flex !important;
+    flex: 1;
+    min-height: 0;
+    max-height: calc(100vh - 100px);
+    gap: 6px;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* 编辑器区域 */
+#turtle-playground-app .editor-section {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    padding: 8px;
+    gap: 6px;
+    transition: var(--transition-normal);
+}
+
+
+.code-editor {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.05);
+    border: 2px solid rgba(99, 102, 241, 0.15);
+    background: #ffffff;
+    transition: var(--transition-fast);
+}
+
+.code-editor:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.monaco-editor-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.console {
+    height: 100px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #4ade80;
+    padding: 4px 8px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    position: relative;
+}
+
+.console::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+}
+
+.console::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.console::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.console::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.console-error {
+    color: #fca5a5;
+}
+
+/* 画布区域 */
+.canvas-section {
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    min-height: 0;
+    max-height: 100%;
+    flex-shrink: 0;
+    transition: var(--transition-normal);
+}
+
+.canvas-section:hover {
+    box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+/* 画布头部：按钮工具栏 */
+.canvas-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 0;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.15);
+    flex-shrink: 0;
+    gap: 8px;
+    background: linear-gradient(to bottom, rgba(99, 102, 241, 0.02), transparent);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.canvas-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.canvas-toolbar button {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-toolbar .btn-run {
+    background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+    color: white;
+}
+
+.canvas-toolbar .btn-run:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--success-dark), #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+}
+
+.canvas-toolbar .btn-run:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.canvas-toolbar .btn-clear {
+    background: linear-gradient(135deg, #f87171, var(--danger-color));
+    color: white;
+}
+
+.canvas-toolbar .btn-clear:hover {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+.canvas-toolbar .btn-save {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.canvas-toolbar .btn-save:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.canvas-toolbar .btn-download {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.canvas-toolbar .btn-download:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+#turtle-canvas {
+    width: 100%;
+    max-width: 100%;
+    flex: 1;
+    min-height: 0;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.05);
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    transition: var(--transition-fast);
+}
+
+#turtle-canvas:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+#turtle-canvas:empty::before {
+    content: '点击"运行"按钮开始绘图';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0.6;
+    letter-spacing: 0.5px;
+}
+
+#turtle-canvas canvas {
+    display: block;
+    border-radius: var(--radius-md);
+    /* 不设置 width/height，让 JavaScript 动态设置，避免拉伸 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+
+/* 模态框输入框样式 */
+
+.modal-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    transition: var(--transition-fast);
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+}
+
+.modal-input:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(255, 255, 255, 1);
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 968px) {
+    #turtle-playground-app {
+        padding: 6px;
+        gap: 6px;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .editor-section {
+        padding: 6px;
+    }
+
+    .canvas-section {
+        width: 100%;
+        padding: 6px;
+    }
+}
+
+/* Ant Design 按钮样式优化 */
+.canvas-toolbar .ant-btn {
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 6px 16px;
+    height: auto;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.canvas-toolbar .ant-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.canvas-toolbar .ant-btn:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.canvas-toolbar .ant-btn-primary {
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-toolbar .ant-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--success-dark) 0%, #047857 100%);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.canvas-toolbar .ant-btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.canvas-toolbar .ant-btn-dangerous {
+    background: linear-gradient(135deg, #f87171 0%, var(--danger-color) 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-toolbar .ant-btn-dangerous:hover {
+    background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.canvas-toolbar .ant-btn-dangerous:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.canvas-toolbar .ant-btn:not(.ant-btn-primary):not(.ant-btn-dangerous) {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+    color: var(--text-primary);
+    border: 1.5px solid var(--border-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.canvas-toolbar .ant-btn:not(.ant-btn-primary):not(.ant-btn-dangerous):hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 251, 1) 100%);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-toolbar .ant-btn:not(.ant-btn-primary):not(.ant-btn-dangerous):active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+
+.canvas-toolbar .ant-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.canvas-toolbar .ant-btn:disabled::before {
+    display: none;
+}

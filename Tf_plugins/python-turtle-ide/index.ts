@@ -5,7 +5,7 @@ import {
     TurtlePlaygroundHandler,
     TurtleWorkHandler,
 } from './src/handlers';
-import type { TurtleExample, TurtleWork } from './src/types';
+import type { TurtleWork } from './src/types';
 
 // 配置 Schema
 const Config = Schema.object({
@@ -19,142 +19,6 @@ declare module 'hydrooj' {
     interface Collections {
         'turtle.works': TurtleWork;
     }
-}
-
-/**
- * 获取示例代码列表(硬编码)
- */
-export function getExamples(): TurtleExample[] {
-    return [
-        {
-            name: 'Square',
-            nameZh: '正方形',
-            category: 'basic',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(3)
-
-# 绘制正方形
-for i in range(4):
-    t.forward(100)
-    t.left(90)
-
-turtle.done()`,
-            description: '绘制一个简单的正方形',
-            difficulty: 1,
-            order: 1,
-        },
-        {
-            name: 'Star',
-            nameZh: '五角星',
-            category: 'basic',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(5)
-t.color('gold')
-
-# 绘制五角星
-for i in range(5):
-    t.forward(200)
-    t.right(144)
-
-turtle.done()`,
-            description: '绘制一个漂亮的五角星',
-            difficulty: 1,
-            order: 2,
-        },
-        {
-            name: 'Circle',
-            nameZh: '圆形',
-            category: 'basic',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(5)
-t.color('blue')
-
-# 绘制圆形
-t.circle(100)
-
-turtle.done()`,
-            description: '绘制一个圆形',
-            difficulty: 1,
-            order: 3,
-        },
-        {
-            name: 'Spiral',
-            nameZh: '彩色螺旋',
-            category: 'advanced',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(10)
-
-colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange']
-
-# 绘制彩色螺旋
-for i in range(100):
-    t.color(colors[i % 6])
-    t.forward(i * 2)
-    t.left(91)
-
-turtle.done()`,
-            description: '绘制彩色螺旋图案',
-            difficulty: 2,
-            order: 4,
-        },
-        {
-            name: 'Flower',
-            nameZh: '花朵',
-            category: 'art',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(0)
-
-# 绘制花朵
-for i in range(36):
-    t.color('pink')
-    t.circle(100)
-    t.left(10)
-
-turtle.done()`,
-            description: '绘制美丽的花朵图案',
-            difficulty: 2,
-            order: 5,
-        },
-        {
-            name: 'Rainbow',
-            nameZh: '彩虹',
-            category: 'art',
-            code: `import turtle
-
-t = turtle.Turtle()
-t.speed(10)
-
-colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
-
-# 绘制彩虹
-t.penup()
-t.goto(-200, 0)
-t.pendown()
-
-for i, color in enumerate(colors):
-    t.color(color)
-    t.pensize(10)
-    t.circle(150 - i * 20, 180)
-    t.penup()
-    t.goto(-200, i * 20)
-    t.pendown()
-
-turtle.done()`,
-            description: '绘制七色彩虹',
-            difficulty: 3,
-            order: 6,
-        },
-    ];
 }
 
 // 插件主函数
@@ -174,7 +38,7 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Python Turtle IDE] Plugin loading...');
 
-    // 创建数据库索引(只为作品集合创建)
+    // 创建数据库索引(作品集合 + 点赞集合)
     try {
         await ctx.db.ensureIndexes(
             ctx.db.collection('turtle.works' as any),
@@ -184,19 +48,27 @@ export default async function apply(ctx: Context, config: any = {}) {
             { key: { domainId: 1, createdAt: -1 }, name: 'recent_works' },
         );
 
+        // 点赞记录集合：确保同一 (workId, uid) 唯一，防止重复点赞
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('turtle.work_likes' as any),
+            { key: { workId: 1, uid: 1 }, name: 'work_likes_unique', unique: true },
+        );
+
         console.log('[Python Turtle IDE] ✅ Indexes created successfully');
     } catch (error) {
         console.error('[Python Turtle IDE] ❌ Error creating indexes:', error.message);
     }
 
     // 注册路由
-    ctx.Route('turtle_playground', '/turtle/playground', TurtlePlaygroundHandler);
+    // 作品社区：作为入口页面，展示全站作品 + 我的作品
     ctx.Route('turtle_gallery', '/turtle/gallery', TurtleGalleryHandler);
+    // 编辑器：用于新建和编辑作品
+    ctx.Route('turtle_playground', '/turtle/playground', TurtlePlaygroundHandler);
     ctx.Route('turtle_work', '/turtle/work/:workId', TurtleWorkHandler);
     ctx.Route('turtle_admin', '/turtle/admin', TurtleAdminHandler);
 
-    // 注入导航栏
-    ctx.injectUI('Nav', 'turtle_playground', {
+    // 注入导航栏：入口指向作品社区，而不是直接进入编辑器
+    ctx.injectUI('Nav', 'turtle_gallery', {
         prefix: 'turtle',
         before: 'typing',
     });

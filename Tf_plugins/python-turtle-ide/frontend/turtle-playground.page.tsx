@@ -1,4 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
+import './turtle-playground.page.css';
+
 import { addPage, loadMonaco, NamedPage } from '@hydrooj/ui-default';
 import type * as monaco from 'monaco-editor';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -6,7 +8,6 @@ import { createRoot } from 'react-dom/client';
 
 interface TurtleData {
   work: any | null;
-  examples: any[];
   userWorks: any[];
   isLoggedIn: boolean;
   currentUserId: number | null;
@@ -56,7 +57,7 @@ async function runPythonCode(code: string, onOutput: (text: string) => void) {
   console.log('[Skulpt] Code execution completed');
 }
 
-const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isLoggedIn }) => {
+const TurtlePlayground: React.FC<TurtleData> = ({ work, userWorks = [], isLoggedIn }) => {
   const [code, setCode] = useState(work?.code || DEFAULT_CODE);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
   const [isRunning, setIsRunning] = useState(false);
@@ -380,110 +381,15 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isL
     }
   }, [isLoggedIn, code, workTitle, currentWorkId]);
 
-  // 加载示例代码
-  const loadExample = useCallback((exampleCode: string) => {
-    setCode(exampleCode);
-    if (monacoEditorRef.current) {
-      monacoEditorRef.current.setValue(exampleCode);
-    }
-    setConsoleOutput('>>> 示例已加载\n');
-  }, []);
-
-  // 加载用户作品
-  const loadWork = useCallback((workData: any) => {
-    setCode(workData.code);
-    if (monacoEditorRef.current) {
-      monacoEditorRef.current.setValue(workData.code);
-    }
-    setWorkTitle(workData.title);
-    setCurrentWorkId(workData._id);
-    setConsoleOutput('>>> 作品已加载\n');
-  }, []);
-
   useEffect(() => {
     console.log('[TurtlePlayground] Component rendered');
-    console.log('[TurtlePlayground] Examples:', examples?.length);
     console.log('[TurtlePlayground] User works:', userWorks?.length);
-  }, [examples, userWorks]);
+  }, [userWorks]);
 
   return (
         <>
-            {/* 页面标题和工具栏 */}
-            <div className="page-header">
-                <h1>🐢 Python 海龟绘图</h1>
-                <div className="header-toolbar">
-                    <button
-                        className="btn-run"
-                        onClick={() => {
-                          console.log('[Button] Run button clicked!');
-                          handleRun();
-                        }}
-                        disabled={isRunning}
-                    >
-                        {isRunning ? '⏸ 运行中...' : '▶ 运行'}
-                    </button>
-                    <button
-                        className="btn-clear"
-                        onClick={() => {
-                          console.log('[Button] Clear button clicked!');
-                          handleClear();
-                        }}
-                    >
-                        🗑 清空
-                    </button>
-                    {isLoggedIn && (
-                        <button
-                            className="btn-save"
-                            onClick={() => {
-                              console.log('[Button] Save button clicked!');
-                              setShowSaveDialog(true);
-                            }}
-                        >
-                            💾 保存
-                        </button>
-                    )}
-                </div>
-            </div>
-
             {/* 主内容区 */}
             <div className="main-content">
-                {/* 左侧边栏 */}
-                <div className="sidebar">
-                    {/* 示例代码 */}
-                    <div className="sidebar-section">
-                        <h3>📚 示例代码</h3>
-                        <div className="example-list">
-                            {examples.map((ex, idx) => (
-                                <div
-                                    key={idx}
-                                    className="example-item"
-                                    onClick={() => loadExample(ex.code)}
-                                >
-                                    {ex.nameZh || ex.name}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 用户作品 */}
-                    {isLoggedIn && userWorks.length > 0 && (
-                        <div className="sidebar-section">
-                            <h3>📁 我的作品</h3>
-                            <div className="work-list">
-                                {userWorks.map((w: any, idx: number) => (
-                                    <div
-                                        key={idx}
-                                        className="work-item"
-                                        onClick={() => loadWork(w)}
-                                    >
-                                        {w.title}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
                 {/* 编辑器区域 */}
                 <div className="editor-section">
                     <div className="code-editor">
@@ -496,68 +402,103 @@ const TurtlePlayground: React.FC<TurtleData> = ({ work, examples, userWorks, isL
 
                 {/* 画布区域 */}
                 <div className="canvas-section">
-                    <h2 className="canvas-title">🎨 绘图画布</h2>
+                    {/* 画布工具栏 */}
+                    <div className="canvas-header">
+                        <div className="canvas-toolbar">
+                            <button
+                                className="btn-run"
+                                onClick={() => {
+                                  console.log('[Button] Run button clicked!');
+                                  handleRun();
+                                }}
+                                disabled={isRunning}
+                            >
+                                {isRunning ? '⏸ 运行中...' : '▶ 运行'}
+                            </button>
+                            <button
+                                className="btn-clear"
+                                onClick={() => {
+                                  console.log('[Button] Clear button clicked!');
+                                  handleClear();
+                                }}
+                            >
+                                🗑 清空
+                            </button>
+                            {isLoggedIn && (
+                                <button
+                                    className="btn-save"
+                                    onClick={() => {
+                                      console.log('[Button] Save button clicked!');
+                                      setShowSaveDialog(true);
+                                    }}
+                                >
+                                    💾 保存
+                                </button>
+                            )}
+                            <button
+                                className="btn-download"
+                                onClick={() => {
+                                  const canvasDiv = canvasRef.current;
+                                  if (!canvasDiv) {
+                                    setConsoleOutput((prev) => `${prev}\n⚠️ 画布容器未找到\n`);
+                                    return;
+                                  }
+
+                                  // Skulpt可能创建多个canvas，找到所有的
+                                  const allCanvases = canvasDiv.querySelectorAll('canvas');
+
+                                  if (allCanvases.length === 0) {
+                                    setConsoleOutput((prev) => `${prev}\n⚠️ 未找到画布，请先运行代码\n`);
+                                    return;
+                                  }
+
+                                  try {
+                                    // 如果有多个canvas，需要合并它们
+                                    if (allCanvases.length > 1) {
+                                      // 创建一个新的canvas来合并所有层
+                                      const mergedCanvas = document.createElement('canvas');
+                                      const firstCanvas = allCanvases[0] as HTMLCanvasElement;
+                                      mergedCanvas.width = firstCanvas.width;
+                                      mergedCanvas.height = firstCanvas.height;
+                                      const mergedCtx = mergedCanvas.getContext('2d')!;
+
+                                      // 白色背景
+                                      mergedCtx.fillStyle = 'white';
+                                      mergedCtx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
+
+                                      // 绘制所有canvas层
+                                      allCanvases.forEach((canvas) => {
+                                        mergedCtx.drawImage(canvas as HTMLCanvasElement, 0, 0);
+                                      });
+
+                                      // 下载合并后的图像
+                                      const link = document.createElement('a');
+                                      link.download = `海龟绘图-${Date.now()}.png`;
+                                      link.href = mergedCanvas.toDataURL('image/png');
+                                      link.click();
+                                    } else {
+                                      // 只有一个canvas，直接下载
+                                      const canvas = allCanvases[0] as HTMLCanvasElement;
+                                      const link = document.createElement('a');
+                                      link.download = `海龟绘图-${Date.now()}.png`;
+                                      link.href = canvas.toDataURL('image/png');
+                                      link.click();
+                                    }
+
+                                    setConsoleOutput((prev) => `${prev}\n✅ 图片下载成功！\n`);
+                                  } catch (error) {
+                                    setConsoleOutput((prev) => `${prev}\n❌ 下载失败: ${error}\n`);
+                                  }
+                                }}
+                            >
+                                📥 下载图片
+                            </button>
+                        </div>
+                    </div>
                     <div
                         ref={canvasRef}
                         id="turtle-canvas"
                     />
-                    <div className="canvas-controls">
-                        <button onClick={() => {
-                          const canvasDiv = canvasRef.current;
-                          if (!canvasDiv) {
-                            setConsoleOutput((prev) => `${prev}\n⚠️ 画布容器未找到\n`);
-                            return;
-                          }
-
-                          // Skulpt可能创建多个canvas，找到所有的
-                          const allCanvases = canvasDiv.querySelectorAll('canvas');
-
-                          if (allCanvases.length === 0) {
-                            setConsoleOutput((prev) => `${prev}\n⚠️ 未找到画布，请先运行代码\n`);
-                            return;
-                          }
-
-                          try {
-                            // 如果有多个canvas，需要合并它们
-                            if (allCanvases.length > 1) {
-                              // 创建一个新的canvas来合并所有层
-                              const mergedCanvas = document.createElement('canvas');
-                              const firstCanvas = allCanvases[0] as HTMLCanvasElement;
-                              mergedCanvas.width = firstCanvas.width;
-                              mergedCanvas.height = firstCanvas.height;
-                              const mergedCtx = mergedCanvas.getContext('2d')!;
-
-                              // 白色背景
-                              mergedCtx.fillStyle = 'white';
-                              mergedCtx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
-
-                              // 绘制所有canvas层
-                              allCanvases.forEach((canvas) => {
-                                mergedCtx.drawImage(canvas as HTMLCanvasElement, 0, 0);
-                              });
-
-                              // 下载合并后的图像
-                              const link = document.createElement('a');
-                              link.download = `海龟绘图-${Date.now()}.png`;
-                              link.href = mergedCanvas.toDataURL('image/png');
-                              link.click();
-                            } else {
-                              // 只有一个canvas，直接下载
-                              const canvas = allCanvases[0] as HTMLCanvasElement;
-                              const link = document.createElement('a');
-                              link.download = `海龟绘图-${Date.now()}.png`;
-                              link.href = canvas.toDataURL('image/png');
-                              link.click();
-                            }
-
-                            setConsoleOutput((prev) => `${prev}\n✅ 图片下载成功！\n`);
-                          } catch (error) {
-                            setConsoleOutput((prev) => `${prev}\n❌ 下载失败: ${error}\n`);
-                          }
-                        }}>
-                            📥 下载图片
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -615,7 +556,6 @@ addPage(
       try {
         const data: TurtleData = JSON.parse(dataElement.textContent || '{}');
         console.log('[Turtle Playground] Data loaded:', data);
-        console.log('[Turtle Playground] Examples count:', data.examples?.length);
         console.log('[Turtle Playground] User works count:', data.userWorks?.length);
 
         const root = createRoot(mountPoint);

@@ -153,9 +153,23 @@ export class TurtleWorkService {
     }
 
     /**
-     * 点赞作品
+     * 点赞作品：同一用户对同一作品只能点赞一次
      */
-    async likeWork(workId: string): Promise<void> {
+    async likeWork(workId: string, uid: number): Promise<void> {
+        const likesColl = this.ctx.db.collection('turtle.work_likes' as any);
+
+        // 如果已经点过赞，则直接返回，避免重复计数
+        const existed = await likesColl.findOne({ workId, uid });
+        if (existed) return;
+
+        // 记录点赞行为
+        await likesColl.insertOne({
+            workId,
+            uid,
+            createdAt: new Date(),
+        });
+
+        // 增加作品的点赞数
         await this.ctx.db.collection('turtle.works' as any)
             .updateOne(
                 { _id: new ObjectId(workId) },
