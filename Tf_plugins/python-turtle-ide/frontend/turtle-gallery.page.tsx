@@ -25,6 +25,8 @@ interface TurtleWork {
   likes: number;
   views: number;
   uid: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface UserDoc {
@@ -83,6 +85,16 @@ function useHydroMarkdown(text?: string) {
   }, [text]);
 
   return html;
+}
+
+function formatDateTime(iso?: string): string {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  } catch {
+    return iso || '';
+  }
 }
 
 function TaskDescription({ text }: { text?: string }) {
@@ -335,7 +347,7 @@ function WorkGrid(props: WorkGridProps) {
                 </div>
               )
             }
-            bodyStyle={{ padding: '12px' }}
+            styles={{ body: { padding: '12px' } }}
           >
             <Card.Meta
               title={
@@ -376,6 +388,11 @@ function WorkGrid(props: WorkGridProps) {
                       {work.views}
                     </span>
                   </div>
+                  {work.updatedAt && (
+                    <div style={{ marginTop: 4, fontSize: 10, color: '#9ca3af' }}>
+                      更新时间：{formatDateTime(work.updatedAt)}
+                    </div>
+                  )}
                 </div>
               }
             />
@@ -690,7 +707,7 @@ function RankingList(props: RankingListProps) {
                   ? `linear-gradient(135deg, ${medalColor}22 0%, ${medalColor}08 100%)`
                   : 'white',
               }}
-              bodyStyle={{ padding: '16px' }}
+              styles={{ body: { padding: '16px' } }}
             >
               <div
                 style={{
@@ -992,7 +1009,7 @@ const TaskCourseTab: React.FC<TaskCourseTabProps> = ({ tasks, progressMap = {}, 
                 </div>
               )
             }
-            bodyStyle={{ minHeight: 220, display: 'flex', flexDirection: 'column' }}
+            styles={{ body: { minHeight: 220, display: 'flex', flexDirection: 'column' } }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <Tag color={statusMeta.color} icon={statusMeta.icon}>
@@ -1050,6 +1067,8 @@ interface GalleryData {
   totalPages: number;
 }
 
+type AllSortKey = 'latest' | 'likes' | 'views';
+
 const TurtleGallery: React.FC<GalleryData> = ({
   works,
   popularWorks,
@@ -1077,6 +1096,24 @@ const TurtleGallery: React.FC<GalleryData> = ({
     }
   });
 
+  const [allSort, setAllSort] = useState<AllSortKey>('latest');
+
+  const sortedAllWorks = useMemo(() => {
+    const list = [...allWorks];
+    if (allSort === 'likes') {
+      list.sort((a, b) => b.likes - a.likes || (b.views ?? 0) - (a.views ?? 0));
+    } else if (allSort === 'views') {
+      list.sort((a, b) => (b.views ?? 0) - (a.views ?? 0) || b.likes - a.likes);
+    } else {
+      list.sort((a, b) => {
+        const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return bt - at;
+      });
+    }
+    return list;
+  }, [allWorks, allSort]);
+
   const tabsItems = useMemo(() => {
     const items = [
       {
@@ -1093,28 +1130,58 @@ const TurtleGallery: React.FC<GalleryData> = ({
           </>
         ),
         children:
-          allWorks.length === 0 ? (
+          sortedAllWorks.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description="当前还没有公开作品，快来成为第一个分享作品的人吧～"
             />
           ) : (
-            <WorkGrid
-              works={allWorks}
-              udocs={udocs}
-              currentUserId={currentUserId}
-              onCoined={(id) => {
-                setAllWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-                setPopularWorksList((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
-                );
-                setOwnWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-              }}
-            />
+            <>
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>排序：</span>
+                <Space size={4}>
+                  <Button
+                    size="small"
+                    type={allSort === 'latest' ? 'primary' : 'default'}
+                    onClick={() => setAllSort('latest')}
+                  >
+                    最新更新
+                  </Button>
+                  <Button
+                    size="small"
+                    type={allSort === 'likes' ? 'primary' : 'default'}
+                    onClick={() => setAllSort('likes')}
+                  >
+                    投币最多
+                  </Button>
+                  <Button
+                    size="small"
+                    type={allSort === 'views' ? 'primary' : 'default'}
+                    onClick={() => setAllSort('views')}
+                  >
+                    浏览最多
+                  </Button>
+                </Space>
+              </div>
+              <WorkGrid
+                works={sortedAllWorks}
+                udocs={udocs}
+                currentUserId={currentUserId}
+                onCoined={(id) => {
+                  setAllWorks((list) =>
+                    list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                  );
+                  setPopularWorksList((list) =>
+                    list
+                      .map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w))
+                      .sort((a, b) => b.likes - a.likes),
+                  );
+                  setOwnWorks((list) =>
+                    list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                  );
+                }}
+              />
+            </>
           ),
       },
       {
@@ -1229,6 +1296,8 @@ const TurtleGallery: React.FC<GalleryData> = ({
     currentUserId,
     tasks,
     taskProgress,
+    allSort,
+    sortedAllWorks,
   ]);
 
   const handleTabChange = (key: string) => {
