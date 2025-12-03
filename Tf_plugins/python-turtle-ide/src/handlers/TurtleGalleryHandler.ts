@@ -1,5 +1,4 @@
-import { ObjectId } from 'mongodb';
-import { Handler, PRIV } from 'hydrooj';
+import { Handler, ObjectId, PRIV } from 'hydrooj';
 import { TurtleTaskService, TurtleWorkService } from '../services';
 
 /**

@@ -42,16 +42,37 @@ const TASK_STATUS_LABELS: Record<TaskProgressStatus, string> = {
   completed: '已完成',
 };
 
-const DEFAULT_CODE = `import turtle
+function useHydroMarkdown(text?: string) {
+  const [html, setHtml] = useState<string>('');
 
-t = turtle.Turtle()
-t.speed(3)
+  useEffect(() => {
+    if (!text) {
+      setHtml('');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch('/markdown', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, inline: false }),
+        });
+        const rendered = await resp.text();
+        if (!cancelled) setHtml(rendered);
+      } catch {
+        if (!cancelled) setHtml(text);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [text]);
 
-# 绘制正方形
-for i in range(4):
-    t.forward(100)
-    t.left(90)
-`;
+  return html;
+}
+
+const DEFAULT_CODE = '';
 
 // Skulpt 初始化和执行函数
 function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void) {
@@ -121,6 +142,8 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const taskStatus = currentTaskProgress?.status || (task ? 'not_started' : null);
+  const taskDescriptionHtml = useHydroMarkdown(task?.description);
+  const taskHintHtml = useHydroMarkdown(task?.hint);
 
   const describeTaskStatus = (status: TaskProgressStatus | null) => {
     if (!status) return '';
@@ -550,11 +573,17 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                             ))}
                         </div>
                     )}
-                    <p>{task.description}</p>
+                    <div
+                        style={{ marginBottom: 8 }}
+                        dangerouslySetInnerHTML={{ __html: taskDescriptionHtml }}
+                    />
                     {task.hint && (
                         <details style={{ marginBottom: 12 }}>
                             <summary style={{ cursor: 'pointer', color: 'var(--primary-dark)' }}>查看任务提示</summary>
-                            <p style={{ marginTop: 8 }}>{task.hint}</p>
+                            <div
+                                style={{ marginTop: 8 }}
+                                dangerouslySetInnerHTML={{ __html: taskHintHtml }}
+                            />
                         </details>
                     )}
                     <div className="task-panel-actions">

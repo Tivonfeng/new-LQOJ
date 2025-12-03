@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components, @typescript-eslint/no-use-before-define */
+/* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   CheckCircleOutlined,
@@ -14,7 +14,6 @@ import {
   TrophyOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Empty, message, Modal, Space, Tabs, Tag } from 'antd';
-import MarkdownIt from 'markdown-it';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -54,6 +53,46 @@ interface TaskProgress {
   updatedAt?: string;
   completedAt?: string;
   bestWorkId?: string;
+}
+
+function useHydroMarkdown(text?: string) {
+  const [html, setHtml] = useState<string>('');
+
+  useEffect(() => {
+    if (!text) {
+      setHtml('');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch('/markdown', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, inline: false }),
+        });
+        const rendered = await resp.text();
+        if (!cancelled) setHtml(rendered);
+      } catch {
+        if (!cancelled) setHtml(text);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [text]);
+
+  return html;
+}
+
+function TaskDescription({ text }: { text?: string }) {
+  const html = useHydroMarkdown(text);
+  return (
+    <div
+      style={{ flex: 1, color: '#4b5563' }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 interface WorkGridProps {
@@ -894,21 +933,6 @@ interface TaskCourseTabProps {
   isLoggedIn: boolean;
 }
 
-const taskMarkdown = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-});
-
-function renderTaskMarkdown(src?: string): string {
-  if (!src) return '';
-  try {
-    return taskMarkdown.render(src);
-  } catch {
-    return src;
-  }
-}
-
 const TASK_STATUS_META: Record<TaskProgressStatus, { label: string, color: string, icon: React.ReactNode }> = {
   not_started: { label: '未开始', color: 'default', icon: <FlagOutlined /> },
   in_progress: { label: '进行中', color: 'blue', icon: <CodeOutlined /> },
@@ -979,7 +1003,7 @@ const TaskCourseTab: React.FC<TaskCourseTabProps> = ({ tasks, progressMap = {}, 
               </Tag>
             </div>
             <h3 style={{ marginBottom: 8 }}>{task.title}</h3>
-            <p style={{ flex: 1, color: '#4b5563', whiteSpace: 'pre-line' }}>{task.description}</p>
+            <TaskDescription text={task.description} />
             {task.tags && task.tags.length > 0 && (
               <div style={{ marginBottom: 12 }}>
                 {task.tags.map((tag) => (
@@ -1094,22 +1118,6 @@ const TurtleGallery: React.FC<GalleryData> = ({
           ),
       },
       {
-        key: 'course',
-        label: (
-          <>
-            <ReadOutlined style={{ marginRight: 4 }} />
-            课程任务
-          </>
-        ),
-        children: (
-          <TaskCourseTab
-            tasks={tasks}
-            progressMap={taskProgress || {}}
-            isLoggedIn={isLoggedIn}
-          />
-        ),
-      },
-      {
         key: 'popular',
         label: (
           <>
@@ -1146,6 +1154,22 @@ const TurtleGallery: React.FC<GalleryData> = ({
               }}
             />
           ),
+      },
+      {
+        key: 'course',
+        label: (
+          <>
+            <ReadOutlined style={{ marginRight: 4 }} />
+            课程任务
+          </>
+        ),
+        children: (
+          <TaskCourseTab
+            tasks={tasks}
+            progressMap={taskProgress || {}}
+            isLoggedIn={isLoggedIn}
+          />
+        ),
       },
     ];
 
@@ -1256,6 +1280,91 @@ const TurtleGallery: React.FC<GalleryData> = ({
               }}
             >
               新建作品
+            </Button>
+            <Button
+              size="large"
+              onClick={() => {
+                Modal.info({
+                  title: 'Python Turtle 常用指令速查',
+                  width: 720,
+                  content: (
+                    <div style={{ maxHeight: 480, overflow: 'auto', paddingTop: 8 }}>
+                      <p style={{ marginBottom: 8, color: '#4b5563' }}>
+                        下面是常用的 Turtle 指令，直接在编辑器中输入使用：
+                      </p>
+                      <table
+                        style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          fontSize: 13,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        <thead>
+                          <tr>
+                            <th style={{ borderBottom: '1px solid #e5e7eb', padding: '4px 8px', textAlign: 'left' }}>
+                              指令
+                            </th>
+                            <th style={{ borderBottom: '1px solid #e5e7eb', padding: '4px 8px', textAlign: 'left' }}>
+                              说明
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.forward(100)</td>
+                            <td style={{ padding: '4px 8px' }}>向前移动 100 像素</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.backward(100)</td>
+                            <td style={{ padding: '4px 8px' }}>向后移动 100 像素</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.left(90)</td>
+                            <td style={{ padding: '4px 8px' }}>左转 90 度</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.right(90)</td>
+                            <td style={{ padding: '4px 8px' }}>右转 90 度</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.circle(50)</td>
+                            <td style={{ padding: '4px 8px' }}>画半径为 50 的圆</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.penup()</td>
+                            <td style={{ padding: '4px 8px' }}>抬笔（移动但不画线）</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.pendown()</td>
+                            <td style={{ padding: '4px 8px' }}>落笔（开始画线）</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.goto(x, y)</td>
+                            <td style={{ padding: '4px 8px' }}>移动到坐标 (x, y)</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.color('red')</td>
+                            <td style={{ padding: '4px 8px' }}>设置画笔颜色为红色</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.pensize(3)</td>
+                            <td style={{ padding: '4px 8px' }}>设置画笔粗细为 3 像素</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>t.speed(0~10)</td>
+                            <td style={{ padding: '4px 8px' }}>设置绘制速度，0 为最快</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p style={{ marginTop: 12, color: '#6b7280' }}>更多指令可以在课堂上按需补充给学生。</p>
+                    </div>
+                  ),
+                  okText: '我知道了',
+                });
+              }}
+            >
+              Turtle 指令速查
             </Button>
             {isAdmin && (
               <Button

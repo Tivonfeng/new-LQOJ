@@ -1,5 +1,4 @@
-import { Handler, PRIV } from 'hydrooj';
-import avatar from 'hydrooj/src/lib/avatar';
+import { avatar, Handler, PRIV } from 'hydrooj';
 import {
     TypingAnalyticsService,
     TypingRecordService,

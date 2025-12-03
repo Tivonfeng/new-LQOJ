@@ -141,9 +141,11 @@ export default async function apply(ctx: Context, config: any = {}) {
         );
         console.log('[Score System] ✅ 唯一索引创建成功');
     } catch (error) {
-        if (error.message.includes('already exists')) {
-            console.log('[Score System] ✅ 唯一索引已存在');
-        } else if (error.message.includes('E11000') || error.message.includes('duplicate key')) {
+        const msg = (error as Error).message || '';
+        // 索引已存在或配置兼容时，视为成功，避免重复报错
+        if (msg.includes('already exists') || msg.includes('same name as the requested index')) {
+            console.log('[Score System] ✅ 唯一索引已存在或配置兼容，跳过创建');
+        } else if (msg.includes('E11000') || msg.includes('duplicate key')) {
             console.error('[Score System] ❌ 数据库中存在重复记录，无法创建唯一索引');
             console.log('[Score System] 🧹 正在清理重复记录...');
 
