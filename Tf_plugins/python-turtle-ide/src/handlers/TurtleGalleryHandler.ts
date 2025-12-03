@@ -1,5 +1,6 @@
-import { Handler } from 'hydrooj';
-import { TurtleWorkService } from '../services';
+import { ObjectId } from 'mongodb';
+import { Handler, PRIV } from 'hydrooj';
+import { TurtleTaskService, TurtleWorkService } from '../services';
 
 /**
  * Turtle 作品展示墙
@@ -8,10 +9,12 @@ import { TurtleWorkService } from '../services';
 export class TurtleGalleryHandler extends Handler {
     async get() {
         const workService = new TurtleWorkService(this.ctx);
+        const taskService = new TurtleTaskService(this.ctx);
 
         // 从查询参数获取页码
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const uid = this.user?._id;
+        const isAdmin = !!(this.user?.priv & PRIV.PRIV_EDIT_SYSTEM);
 
         // 获取公开作品
         const { works, total, totalPages } = await workService.getPublicWorks(
@@ -31,6 +34,12 @@ export class TurtleGalleryHandler extends Handler {
         const popularWorksView = popularWorks.map((w: any) => ({
             ...w,
             id: w._id?.toString?.() || w._id,
+        }));
+
+        const tasks = await taskService.getPublicTasks();
+        const taskViews = tasks.map((task: any) => ({
+            ...task,
+            id: task._id?.toString?.() || task._id,
         }));
 
         // 调试日志：记录当前页作品及其 ID
@@ -58,6 +67,22 @@ export class TurtleGalleryHandler extends Handler {
             }));
         }
 
+        // 用户任务进度
+        const taskProgressView: Record<string, any> = {};
+        if (uid && taskViews.length) {
+            const progressList = await taskService.listUserProgress(
+                uid,
+                taskViews.map((task) => new ObjectId(task.id)),
+            );
+            for (const progress of progressList) {
+                taskProgressView[progress.taskId?.toString?.()] = {
+                    status: progress.status,
+                    updatedAt: progress.updatedAt,
+                    completedAt: progress.completedAt,
+                };
+            }
+        }
+
         // 解决 JSON.stringify 不能序列化 BigInt 的问题：
         // 将对象中的 BigInt 字段统一转换为字符串，避免抛出 TypeError
         const bigintReplacer = (_key: string, value: any) =>
@@ -71,9 +96,14 @@ export class TurtleGalleryHandler extends Handler {
             popularWorksJSON: JSON.stringify(popularWorksView, bigintReplacer),
             myWorks: myWorksView,
             myWorksJSON: JSON.stringify(myWorksView, bigintReplacer),
+            tasks: taskViews,
+            tasksJSON: JSON.stringify(taskViews, bigintReplacer),
+            taskProgress: taskProgressView,
+            taskProgressJSON: JSON.stringify(taskProgressView, bigintReplacer),
             udocs,
             udocsJSON: JSON.stringify(udocs, bigintReplacer),
             currentUserId: uid || null,
+            isAdmin,
             page,
             total,
             totalPages,

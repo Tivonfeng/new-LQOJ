@@ -1,6 +1,20 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components, @typescript-eslint/no-use-before-define */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { Button, Card, Empty, message, Modal, Tabs, Tag } from 'antd';
+import {
+  CheckCircleOutlined,
+  CodeOutlined,
+  CrownOutlined,
+  DollarCircleOutlined,
+  EyeOutlined,
+  FlagOutlined,
+  FolderOpenOutlined,
+  GlobalOutlined,
+  PictureOutlined,
+  ReadOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Card, Empty, message, Modal, Space, Tabs, Tag } from 'antd';
+import MarkdownIt from 'markdown-it';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -20,232 +34,27 @@ interface UserDoc {
   [key: string]: any;
 }
 
-interface GalleryData {
-  works: TurtleWork[];
-  popularWorks: TurtleWork[];
-  myWorks: TurtleWork[];
-  udocs: Record<string | number, UserDoc>;
-  isLoggedIn: boolean;
-  currentUserId: number | null;
-  page: number;
-  total: number;
-  totalPages: number;
+type TaskProgressStatus = 'not_started' | 'in_progress' | 'completed';
+
+interface TurtleTask {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
+  starterCode?: string;
+  hint?: string;
+  coverImage?: string;
+  isPublished: boolean;
 }
 
-const TurtleGallery: React.FC<GalleryData> = ({
-  works,
-  popularWorks,
-  myWorks,
-  udocs,
-  isLoggedIn,
-  currentUserId,
-  page,
-  total,
-  totalPages,
-}) => {
-  const [allWorks, setAllWorks] = useState<TurtleWork[]>(works);
-  const [popularWorksList, setPopularWorksList] = useState<TurtleWork[]>(popularWorks);
-  const [ownWorks, setOwnWorks] = useState<TurtleWork[]>(myWorks);
-
-  const hasMyWorks = isLoggedIn && ownWorks.length > 0;
-
-  const tabsItems = useMemo(
-    () => [
-      {
-        key: 'all',
-        label: (
-          <>
-            🌍 全部作品
-            {total > 0 && (
-              <Tag style={{ marginLeft: 8 }} color="default">
-                {total}
-              </Tag>
-            )}
-          </>
-        ),
-        children:
-          allWorks.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="当前还没有公开作品，快来成为第一个分享作品的人吧～"
-            />
-          ) : (
-            <WorkGrid
-              works={allWorks}
-              udocs={udocs}
-              currentUserId={currentUserId}
-              onCoined={(id) => {
-                setAllWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-                setPopularWorksList((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
-                );
-                setOwnWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-              }}
-            />
-          ),
-      },
-      {
-        key: 'popular',
-        label: (
-          <>
-            🏆 投币榜
-            {popularWorksList.length > 0 && (
-              <Tag style={{ marginLeft: 8 }} color="gold">
-                TOP {popularWorksList.length}
-              </Tag>
-            )}
-          </>
-        ),
-        children:
-          popularWorksList.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="当前还没有作品获得投币，快来成为第一个获得投币的作品吧～"
-            />
-          ) : (
-            <RankingList
-              works={popularWorksList}
-              udocs={udocs}
-              currentUserId={currentUserId}
-              onCoined={(id) => {
-                setPopularWorksList((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
-                );
-                setAllWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-                setOwnWorks((list) =>
-                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                );
-              }}
-            />
-          ),
-      },
-      ...(isLoggedIn
-        ? [
-          {
-            key: 'my',
-            label: (
-                <>
-                  📁 我的作品
-                  {ownWorks.length > 0 && (
-                    <Tag style={{ marginLeft: 8 }} color="blue">
-                      {ownWorks.length}
-                    </Tag>
-                  )}
-                </>
-            ),
-            children: ownWorks.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="你还没有创作任何作品，点击右上角「新建作品」来开始吧～"
-                />
-            ) : (
-                <WorkGrid
-                  works={ownWorks}
-                  udocs={udocs}
-                  isOwn
-                  onDeleted={(id) => {
-                    setOwnWorks((list) => list.filter((w) => w.id !== id));
-                    setAllWorks((list) => list.filter((w) => w.id !== id));
-                  }}
-                  onCoined={(id) => {
-                    setOwnWorks((list) =>
-                      list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                    );
-                    setAllWorks((list) =>
-                      list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
-                    );
-                    setPopularWorksList((list) =>
-                      list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
-                    );
-                  }}
-                />
-            ),
-          },
-        ]
-        : []),
-    ],
-    [isLoggedIn, ownWorks, allWorks, popularWorksList, total, udocs, currentUserId],
-  );
-
-  return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24,
-          gap: 16,
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              marginBottom: 4,
-            }}
-          >
-            🐢 Python Turtle 作品社区
-          </h1>
-          <p style={{ color: '#6b7280', margin: 0 }}>
-            创作、分享、浏览同学们的海龟绘图作品。
-          </p>
-        </div>
-        {isLoggedIn && (
-          <Button
-            type="primary"
-            size="large"
-            onClick={() => {
-              window.location.href = '/turtle/playground';
-            }}
-          >
-            新建作品
-          </Button>
-        )}
-      </div>
-
-      <Card>
-        <Tabs
-          defaultActiveKey="all"
-          items={tabsItems}
-        />
-      </Card>
-
-      {totalPages > 1 && (
-        <div
-          style={{
-            marginTop: 24,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <Button
-              key={p}
-              size="small"
-              type={p === page ? 'primary' : 'default'}
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('page', String(p));
-                window.location.href = url.toString();
-              }}
-            >
-              {p}
-            </Button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+interface TaskProgress {
+  status: TaskProgressStatus;
+  lastCode?: string;
+  updatedAt?: string;
+  completedAt?: string;
+  bestWorkId?: string;
+}
 
 interface WorkGridProps {
   works: TurtleWork[];
@@ -256,14 +65,8 @@ interface WorkGridProps {
   currentUserId?: number | null;
 }
 
-const WorkGrid: React.FC<WorkGridProps> = ({
-  works,
-  udocs,
-  isOwn,
-  onDeleted,
-  currentUserId,
-  onCoined,
-}) => {
+function WorkGrid(props: WorkGridProps) {
+  const { works, udocs, isOwn, onDeleted, currentUserId, onCoined } = props;
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewingWork, setViewingWork] = useState<TurtleWork | null>(null);
   const [workCode, setWorkCode] = useState<string>('');
@@ -388,7 +191,7 @@ const WorkGrid: React.FC<WorkGridProps> = ({
       // 获取作品详情（包含代码），请求JSON格式
       const resp = await fetch(`/turtle/work/${work.id}`, {
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
       if (resp.ok) {
@@ -426,23 +229,31 @@ const WorkGrid: React.FC<WorkGridProps> = ({
   };
   const handleDelete = async (work: TurtleWork) => {
     if (!onDeleted) return;
-    if (!window.confirm(`确定要删除作品「${work.title}」吗？`)) return;
-    try {
-      const resp = await fetch(`/turtle/work/${work.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', workId: work.id }),
-      });
-      const data = await resp.json();
-      if (data.success) {
-        onDeleted(work.id);
-        message.success('删除成功');
-      } else {
-        message.error(data.message || '删除失败');
-      }
-    } catch (e) {
-      message.error('删除请求失败');
-    }
+    Modal.confirm({
+      title: '确认删除作品？',
+      content: `确定要删除作品「${work.title}」吗？`,
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const resp = await fetch(`/turtle/work/${work.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', workId: work.id }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+            onDeleted(work.id);
+            message.success('删除成功');
+          } else {
+            message.error(data.message || '删除失败');
+          }
+        } catch (e) {
+          message.error('删除请求失败');
+        }
+      },
+    });
   };
 
   return (
@@ -478,11 +289,10 @@ const WorkGrid: React.FC<WorkGridProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 24,
                     background: '#f3f4f6',
                   }}
                 >
-                  🐢
+                  <PictureOutlined style={{ fontSize: 28, color: '#9ca3af' }} />
                 </div>
               )
             }
@@ -515,10 +325,17 @@ const WorkGrid: React.FC<WorkGridProps> = ({
                       justifyContent: 'space-between',
                       fontSize: 11,
                       color: '#6b7280',
+                      alignItems: 'center',
                     }}
                   >
-                    <span>🪙 {work.likes}</span>
-                    <span>👁️ {work.views}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <DollarCircleOutlined />
+                      {work.likes}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <EyeOutlined />
+                      {work.views}
+                    </span>
                   </div>
                 </div>
               }
@@ -541,10 +358,11 @@ const WorkGrid: React.FC<WorkGridProps> = ({
               {!isOwn && (
                 <Button
                   size="small"
+                  icon={<DollarCircleOutlined />}
                   disabled={!currentUserId || currentUserId === work.uid}
                   onClick={() => handleCoin(work)}
                 >
-                  🪙 投币
+                  投币
                 </Button>
               )}
               {isOwn && (
@@ -594,15 +412,18 @@ const WorkGrid: React.FC<WorkGridProps> = ({
           >
             {isRunning ? '运行中...' : '运行代码'}
           </Button>,
-          <Button key="close" onClick={() => {
-            setViewModalVisible(false);
-            setViewingWork(null);
-            setWorkCode('');
-            setIsRunning(false);
-            if (canvasRef.current) {
-              canvasRef.current.innerHTML = '';
-            }
-          }}>
+          <Button
+            key="close"
+            onClick={() => {
+              setViewModalVisible(false);
+              setViewingWork(null);
+              setWorkCode('');
+              setIsRunning(false);
+              if (canvasRef.current) {
+                canvasRef.current.innerHTML = '';
+              }
+            }}
+          >
             关闭
           </Button>,
         ]}
@@ -660,24 +481,7 @@ const WorkGrid: React.FC<WorkGridProps> = ({
       </Modal>
     </div>
   );
-};
-
-// 注册页面
-addPage(
-  new NamedPage(['turtle_gallery'], async () => {
-    const mountPoint = document.getElementById('turtle-gallery-app');
-    const dataElement = document.getElementById('turtle-gallery-data');
-    if (!mountPoint || !dataElement) return;
-    try {
-      const data: GalleryData = JSON.parse(dataElement.textContent || '{}');
-      const root = createRoot(mountPoint);
-      root.render(<TurtleGallery {...data} />);
-    } catch (e) {
-      console.error('[TurtleGallery] Failed to init React page', e);
-    }
-  }),
-);
-
+}
 // 排行榜组件
 interface RankingListProps {
   works: TurtleWork[];
@@ -686,12 +490,8 @@ interface RankingListProps {
   onCoined?: (id: string) => void;
 }
 
-const RankingList: React.FC<RankingListProps> = ({
-  works,
-  udocs,
-  currentUserId,
-  onCoined,
-}) => {
+function RankingList(props: RankingListProps) {
+  const { works, udocs, currentUserId, onCoined } = props;
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewingWork, setViewingWork] = useState<TurtleWork | null>(null);
   const [workCode, setWorkCode] = useState<string>('');
@@ -789,7 +589,7 @@ const RankingList: React.FC<RankingListProps> = ({
     setLoadingWork(true);
     try {
       const resp = await fetch(`/turtle/work/${work.id}`, {
-        headers: { 'Accept': 'application/json' },
+        headers: { Accept: 'application/json' },
       });
       if (resp.ok) {
         const data = await resp.json();
@@ -838,16 +638,17 @@ const RankingList: React.FC<RankingListProps> = ({
           const author = udocs[work.uid] || udocs[String(work.uid)];
           const rank = index + 1;
           const isTopThree = rank <= 3;
-          const medals = ['🥇', '🥈', '🥉'];
+          const medalColors = ['#facc15', '#c0c0c0', '#cd7f32'];
+          const medalColor = medalColors[rank - 1] || '#e5e7eb';
 
           return (
             <Card
               key={work.id}
               hoverable
               style={{
-                border: isTopThree ? '2px solid #ffd700' : '1px solid #e5e7eb',
+                border: isTopThree ? `2px solid ${medalColor}` : '1px solid #e5e7eb',
                 background: isTopThree
-                  ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 215, 0, 0.02) 100%)'
+                  ? `linear-gradient(135deg, ${medalColor}22 0%, ${medalColor}08 100%)`
                   : 'white',
               }}
               bodyStyle={{ padding: '16px' }}
@@ -869,7 +670,7 @@ const RankingList: React.FC<RankingListProps> = ({
                     justifyContent: 'center',
                     borderRadius: '50%',
                     background: isTopThree
-                      ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
+                      ? `linear-gradient(135deg, ${medalColor} 0%, ${medalColor}cc 100%)`
                       : '#f3f4f6',
                     fontSize: isTopThree ? 24 : 18,
                     fontWeight: 700,
@@ -877,7 +678,7 @@ const RankingList: React.FC<RankingListProps> = ({
                     flexShrink: 0,
                   }}
                 >
-                  {isTopThree ? medals[rank - 1] : rank}
+                  {isTopThree ? <CrownOutlined style={{ fontSize: 24 }} /> : rank}
                 </div>
 
                 {/* 作品封面 */}
@@ -911,10 +712,9 @@ const RankingList: React.FC<RankingListProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: 32,
                       }}
                     >
-                      🐢
+                      <PictureOutlined style={{ fontSize: 32, color: '#9ca3af' }} />
                     </div>
                   )}
                 </div>
@@ -956,11 +756,13 @@ const RankingList: React.FC<RankingListProps> = ({
                       alignItems: 'center',
                     }}
                   >
-                    <span style={{ fontSize: 14, color: '#6b7280' }}>
-                      🪙 {work.likes} 投币
+                    <span style={{ fontSize: 14, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <DollarCircleOutlined />
+                      {work.likes} 投币
                     </span>
-                    <span style={{ fontSize: 14, color: '#6b7280' }}>
-                      👁️ {work.views} 浏览
+                    <span style={{ fontSize: 14, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <EyeOutlined />
+                      {work.views} 浏览
                     </span>
                   </div>
                 </div>
@@ -980,9 +782,10 @@ const RankingList: React.FC<RankingListProps> = ({
                     <Button
                       size="small"
                       type="primary"
+                      icon={<DollarCircleOutlined />}
                       onClick={() => handleCoin(work)}
                     >
-                      🪙 投币
+                      投币
                     </Button>
                   )}
                 </div>
@@ -1084,4 +887,439 @@ const RankingList: React.FC<RankingListProps> = ({
       </Modal>
     </>
   );
+}
+interface TaskCourseTabProps {
+  tasks: TurtleTask[];
+  progressMap: Record<string, TaskProgress>;
+  isLoggedIn: boolean;
+}
+
+const taskMarkdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+});
+
+function renderTaskMarkdown(src?: string): string {
+  if (!src) return '';
+  try {
+    return taskMarkdown.render(src);
+  } catch {
+    return src;
+  }
+}
+
+const TASK_STATUS_META: Record<TaskProgressStatus, { label: string, color: string, icon: React.ReactNode }> = {
+  not_started: { label: '未开始', color: 'default', icon: <FlagOutlined /> },
+  in_progress: { label: '进行中', color: 'blue', icon: <CodeOutlined /> },
+  completed: { label: '已完成', color: 'green', icon: <CheckCircleOutlined /> },
 };
+
+const difficultyLabel = (difficulty: TurtleTask['difficulty']) => {
+  if (difficulty === 'beginner') return '入门';
+  if (difficulty === 'intermediate') return '进阶';
+  return '挑战';
+};
+
+const TaskCourseTab: React.FC<TaskCourseTabProps> = ({ tasks, progressMap = {}, isLoggedIn }) => {
+  if (!tasks || tasks.length === 0) {
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description="管理员尚未发布任务，敬请期待～"
+      />
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+      {tasks.map((task) => {
+        const progress = progressMap[task.id];
+        const status = progress?.status || 'not_started';
+        const statusMeta = TASK_STATUS_META[status];
+        const primaryText = status === 'completed' ? '复习任务' : progress ? '继续任务' : '开始学习';
+
+        return (
+          <Card
+            key={task.id}
+            cover={
+              task.coverImage ? (
+                <div
+                  style={{
+                    backgroundImage: `url(${task.coverImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    width: '100%',
+                    paddingTop: '56%',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '100%',
+                    paddingTop: '56%',
+                    background: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PictureOutlined style={{ fontSize: 32, color: '#9ca3af' }} />
+                </div>
+              )
+            }
+            bodyStyle={{ minHeight: 220, display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Tag color={statusMeta.color} icon={statusMeta.icon}>
+                {statusMeta.label}
+              </Tag>
+              <Tag color={task.difficulty === 'beginner' ? 'blue' : task.difficulty === 'intermediate' ? 'orange' : 'red'}>
+                {difficultyLabel(task.difficulty)}
+              </Tag>
+            </div>
+            <h3 style={{ marginBottom: 8 }}>{task.title}</h3>
+            <p style={{ flex: 1, color: '#4b5563', whiteSpace: 'pre-line' }}>{task.description}</p>
+            {task.tags && task.tags.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                {task.tags.map((tag) => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+              </div>
+            )}
+            {!isLoggedIn && (
+              <Alert
+                style={{ marginBottom: 12 }}
+                type="info"
+                message="登录后可保存任务进度"
+                showIcon
+              />
+            )}
+            <Button
+              type="primary"
+              block
+              onClick={() => {
+                window.location.href = `/turtle/playground?taskId=${task.id}`;
+              }}
+            >
+              {primaryText}
+            </Button>
+          </Card>
+        );
+      })}
+    </div>
+  );
+};
+
+interface GalleryData {
+  works: TurtleWork[];
+  popularWorks: TurtleWork[];
+  myWorks: TurtleWork[];
+  tasks: TurtleTask[];
+  taskProgress: Record<string, TaskProgress>;
+  udocs: Record<string | number, UserDoc>;
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  currentUserId: number | null;
+  page: number;
+  total: number;
+  totalPages: number;
+}
+
+const TurtleGallery: React.FC<GalleryData> = ({
+  works,
+  popularWorks,
+  myWorks,
+  tasks,
+  taskProgress,
+  udocs,
+  isLoggedIn,
+  isAdmin,
+  currentUserId,
+  page,
+  total,
+  totalPages,
+}) => {
+  const [allWorks, setAllWorks] = useState<TurtleWork[]>(works);
+  const [popularWorksList, setPopularWorksList] = useState<TurtleWork[]>(popularWorks);
+  const [ownWorks, setOwnWorks] = useState<TurtleWork[]>(myWorks);
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get('tab') || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+
+  const tabsItems = useMemo(() => {
+    const items = [
+      {
+        key: 'all',
+        label: (
+          <>
+            <GlobalOutlined style={{ marginRight: 4 }} />
+            全部作品
+            {total > 0 && (
+              <Tag style={{ marginLeft: 8 }} color="default">
+                {total}
+              </Tag>
+            )}
+          </>
+        ),
+        children:
+          allWorks.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="当前还没有公开作品，快来成为第一个分享作品的人吧～"
+            />
+          ) : (
+            <WorkGrid
+              works={allWorks}
+              udocs={udocs}
+              currentUserId={currentUserId}
+              onCoined={(id) => {
+                setAllWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+                setPopularWorksList((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
+                );
+                setOwnWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+              }}
+            />
+          ),
+      },
+      {
+        key: 'course',
+        label: (
+          <>
+            <ReadOutlined style={{ marginRight: 4 }} />
+            课程任务
+          </>
+        ),
+        children: (
+          <TaskCourseTab
+            tasks={tasks}
+            progressMap={taskProgress || {}}
+            isLoggedIn={isLoggedIn}
+          />
+        ),
+      },
+      {
+        key: 'popular',
+        label: (
+          <>
+            <TrophyOutlined style={{ marginRight: 4 }} />
+            投币榜
+            {popularWorksList.length > 0 && (
+              <Tag style={{ marginLeft: 8 }} color="gold">
+                TOP {popularWorksList.length}
+              </Tag>
+            )}
+          </>
+        ),
+        children:
+          popularWorksList.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="当前还没有作品获得投币，快来成为第一个获得投币的作品吧～"
+            />
+          ) : (
+            <RankingList
+              works={popularWorksList}
+              udocs={udocs}
+              currentUserId={currentUserId}
+              onCoined={(id) => {
+                setPopularWorksList((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
+                );
+                setAllWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+                setOwnWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+              }}
+            />
+          ),
+      },
+    ];
+
+    if (isLoggedIn) {
+      items.push({
+        key: 'my',
+        label: (
+          <>
+            <FolderOpenOutlined style={{ marginRight: 4 }} />
+            我的作品
+            {ownWorks.length > 0 && (
+              <Tag style={{ marginLeft: 8 }} color="blue">
+                {ownWorks.length}
+              </Tag>
+            )}
+          </>
+        ),
+        children:
+          ownWorks.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="你还没有创作任何作品，点击右上角「新建作品」来开始吧～"
+            />
+          ) : (
+            <WorkGrid
+              works={ownWorks}
+              udocs={udocs}
+              isOwn
+              onDeleted={(id) => {
+                setOwnWorks((list) => list.filter((w) => w.id !== id));
+                setAllWorks((list) => list.filter((w) => w.id !== id));
+              }}
+              onCoined={(id) => {
+                setOwnWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+                setAllWorks((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
+                );
+                setPopularWorksList((list) =>
+                  list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
+                );
+              }}
+            />
+          ),
+      });
+    }
+
+    return items;
+  }, [
+    isLoggedIn,
+    ownWorks,
+    allWorks,
+    popularWorksList,
+    total,
+    udocs,
+    currentUserId,
+    tasks,
+    taskProgress,
+  ]);
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', key);
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+          gap: 16,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              marginBottom: 4,
+            }}
+          >
+            <CodeOutlined style={{ marginRight: 8 }} />
+            Python Turtle 作品社区
+          </h1>
+          <p style={{ color: '#6b7280', margin: 0 }}>
+            创作、分享、浏览同学们的海龟绘图作品。
+          </p>
+        </div>
+        {isLoggedIn && (
+          <Space>
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => {
+                window.location.href = '/turtle/playground';
+              }}
+            >
+              新建作品
+            </Button>
+            {isAdmin && (
+              <Button
+                size="large"
+                onClick={() => {
+                  window.location.href = '/turtle/course-admin';
+                }}
+              >
+                任务管理
+              </Button>
+            )}
+          </Space>
+        )}
+      </div>
+
+      <Card>
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabsItems}
+        />
+      </Card>
+
+      {totalPages > 1 && (
+        <div
+          style={{
+            marginTop: 24,
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <Button
+              key={p}
+              size="small"
+              type={p === page ? 'primary' : 'default'}
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', String(p));
+                window.location.href = url.toString();
+              }}
+            >
+              {p}
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 注册页面
+addPage(
+  new NamedPage(['turtle_gallery'], async () => {
+    const mountPoint = document.getElementById('turtle-gallery-app');
+    const dataElement = document.getElementById('turtle-gallery-data');
+    if (!mountPoint || !dataElement) return;
+    try {
+      const data: GalleryData = JSON.parse(dataElement.textContent || '{}');
+      const root = createRoot(mountPoint);
+      root.render(<TurtleGallery {...data} />);
+    } catch (e) {
+      console.error('[TurtleGallery] Failed to init React page', e);
+    }
+  }),
+);

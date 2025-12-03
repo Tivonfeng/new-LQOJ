@@ -45,3 +45,59 @@ export interface SaveWorkParams {
     isPublic: boolean;
     imageUrl?: string;
 }
+
+export type TurtleTaskDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type TurtleTaskStatus = 'not_started' | 'in_progress' | 'completed';
+
+/**
+ * Turtle 课程任务
+ */
+export interface TurtleTask {
+    _id?: ObjectId;
+    title: string;
+    description: string;
+    difficulty: TurtleTaskDifficulty;
+    tags?: string[];
+    starterCode?: string;
+    hint?: string;
+    coverImage?: string;
+    isPublished: boolean;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+/**
+ * 任务进度
+ */
+export interface TurtleTaskProgress {
+    _id?: ObjectId;
+    uid: number;
+    taskId: ObjectId;
+    status: TurtleTaskStatus;
+    lastCode?: string;
+    bestWorkId?: ObjectId;
+    updatedAt: Date;
+    completedAt?: Date;
+}
+
+export interface SaveTaskParams {
+    taskId?: string;
+    title: string;
+    description: string;
+    difficulty: TurtleTaskDifficulty;
+    tags?: string[];
+    starterCode?: string;
+    hint?: string;
+    coverImage?: string;
+    isPublished: boolean;
+    order?: number;
+}
+
+export interface UpdateTaskProgressParams {
+    taskId: string;
+    uid: number;
+    code?: string;
+    status: TurtleTaskStatus;
+    bestWorkId?: string;
+}

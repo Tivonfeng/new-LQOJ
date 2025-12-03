@@ -1,5 +1,5 @@
-import { Handler } from 'hydrooj';
-import { TurtleWorkService } from '../services';
+import { Handler, PRIV } from 'hydrooj';
+import { TurtleTaskService, TurtleWorkService } from '../services';
 
 /**
  * Turtle Playground 编辑器页面
@@ -9,9 +9,11 @@ export class TurtlePlaygroundHandler extends Handler {
     async get() {
         const uid = this.user?._id;
         const workService = new TurtleWorkService(this.ctx);
+        const taskService = new TurtleTaskService(this.ctx);
 
-        // 从查询参数获取 workId
+        // 从查询参数获取 workId 和 taskId
         const workId = this.request.query.workId as string | undefined;
+        const taskId = this.request.query.taskId as string | undefined;
 
         // 如果有 workId,加载作品
         let work: any = null;
@@ -23,6 +25,39 @@ export class TurtlePlaygroundHandler extends Handler {
             }
             // 增加浏览次数
             await workService.incrementViews(workId);
+        }
+
+        // 如果带有 taskId，获取任务信息
+        let task: any = null;
+        let taskProgress: any = null;
+        if (taskId) {
+            const fetchedTask = await taskService.getTask(taskId);
+            if (!fetchedTask) {
+                this.response.redirect = this.url('turtle_playground');
+                return;
+            }
+            if (!fetchedTask.isPublished && !(this.user?.priv & PRIV.PRIV_EDIT_SYSTEM)) {
+                this.response.redirect = this.url('turtle_playground');
+                return;
+            }
+
+            task = {
+                ...fetchedTask,
+                id: fetchedTask._id?.toString?.() || fetchedTask._id,
+            };
+
+            if (uid) {
+                const progress = await taskService.getUserProgress(uid, taskId);
+                if (progress) {
+                    taskProgress = {
+                        status: progress.status,
+                        lastCode: progress.lastCode || '',
+                        updatedAt: progress.updatedAt,
+                        completedAt: progress.completedAt,
+                        bestWorkId: progress.bestWorkId?.toString?.() || null,
+                    };
+                }
+            }
         }
 
         // 获取用户的作品列表
@@ -45,6 +80,10 @@ export class TurtlePlaygroundHandler extends Handler {
             currentUserId: uid || null,
             currentUserName,
             currentUserNameJSON,
+            task: task || null,
+            taskJSON: JSON.stringify(task || null),
+            taskProgress: taskProgress || null,
+            taskProgressJSON: JSON.stringify(taskProgress || null),
         };
     }
 
@@ -55,8 +94,19 @@ export class TurtlePlaygroundHandler extends Handler {
             return;
         }
 
-        const { action, workId, title, code, description, isPublic, imageUrl } = this.request.body;
+        const {
+            action,
+            workId,
+            title,
+            code,
+            description,
+            isPublic,
+            imageUrl,
+            taskId,
+            status,
+        } = this.request.body;
         const workService = new TurtleWorkService(this.ctx);
+        const taskService = new TurtleTaskService(this.ctx);
 
         try {
             if (action === 'save') {
@@ -70,6 +120,16 @@ export class TurtlePlaygroundHandler extends Handler {
                     imageUrl,
                 });
 
+                if (taskId) {
+                    await taskService.upsertProgress({
+                        taskId,
+                        uid,
+                        code,
+                        status: 'completed',
+                        bestWorkId: savedWorkId,
+                    });
+                }
+
                 this.response.body = { success: true, workId: savedWorkId };
             } else if (action === 'delete') {
                 await workService.deleteWork(workId, uid);
@@ -77,6 +137,28 @@ export class TurtlePlaygroundHandler extends Handler {
             } else if (action === 'coin') {
                 await workService.coinWork(workId, uid, this.domain._id);
                 this.response.body = { success: true, message: '投币成功！作品主人已获得1积分' };
+            } else if (action === 'taskProgress') {
+                if (!taskId) {
+                    this.response.body = { success: false, message: '缺少任务 ID' };
+                    return;
+                }
+                const progress = await taskService.upsertProgress({
+                    taskId,
+                    uid,
+                    code,
+                    status: status || 'in_progress',
+                });
+                this.response.body = {
+                    success: true,
+                    progress: {
+                        taskId: progress.taskId?.toString?.() || '',
+                        status: progress.status,
+                        lastCode: progress.lastCode || '',
+                        updatedAt: progress.updatedAt,
+                        completedAt: progress.completedAt,
+                        bestWorkId: progress.bestWorkId?.toString?.() || '',
+                    },
+                };
             } else {
                 this.response.body = { success: false, message: 'Invalid action' };
             }

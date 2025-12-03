@@ -12,7 +12,35 @@ interface TurtleData {
   isLoggedIn: boolean;
   currentUserId: number | null;
   currentUserName: string | null;
+  task: TurtleTask | null;
+  taskProgress: TaskProgress | null;
 }
+
+type TaskProgressStatus = 'not_started' | 'in_progress' | 'completed';
+
+interface TurtleTask {
+  id?: string;
+  title: string;
+  description: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
+  starterCode?: string;
+  hint?: string;
+}
+
+interface TaskProgress {
+  status: TaskProgressStatus;
+  lastCode?: string;
+  updatedAt?: string;
+  completedAt?: string;
+  bestWorkId?: string;
+}
+
+const TASK_STATUS_LABELS: Record<TaskProgressStatus, string> = {
+  not_started: '未开始',
+  in_progress: '进行中',
+  completed: '已完成',
+};
 
 const DEFAULT_CODE = `import turtle
 
@@ -63,6 +91,8 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   userWorks = [],
   isLoggedIn,
   currentUserName,
+  task,
+  taskProgress,
 }) => {
   // 生成默认标题：学生姓名+日期
   const generateDefaultTitle = () => {
@@ -75,15 +105,35 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     return `${currentUserName}-${dateStr}`;
   };
 
-  const [code, setCode] = useState(work?.code || DEFAULT_CODE);
+  const taskId = task?.id || null;
+  const initialCode = work?.code || taskProgress?.lastCode || task?.starterCode || DEFAULT_CODE;
+  const [code, setCode] = useState(initialCode);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
   const [isRunning, setIsRunning] = useState(false);
   const [currentWorkId, setCurrentWorkId] = useState(work?._id || null);
-  const [workTitle, setWorkTitle] = useState(work?.title || generateDefaultTitle());
+  const [workTitle, setWorkTitle] = useState(
+    work?.title || (task ? `${task.title}-${generateDefaultTitle()}` : generateDefaultTitle()),
+  );
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [currentTaskProgress, setCurrentTaskProgress] = useState<TaskProgress | null>(
+    taskProgress || (task ? { status: 'not_started' } : null),
+  );
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const taskStatus = currentTaskProgress?.status || (task ? 'not_started' : null);
+
+  const describeTaskStatus = (status: TaskProgressStatus | null) => {
+    if (!status) return '';
+    return TASK_STATUS_LABELS[status];
+  };
+
+  const describeDifficulty = (difficulty?: TurtleTask['difficulty']) => {
+    if (difficulty === 'beginner') return '入门';
+    if (difficulty === 'intermediate') return '进阶';
+    if (difficulty === 'advanced') return '挑战';
+    return '未知';
+  };
 
   // 初始化 Monaco Editor
   useEffect(() => {
@@ -361,6 +411,41 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     setConsoleOutput('>>> 画布已清空\n');
   }, []);
 
+  const handleSaveTaskProgress = useCallback(
+    async (nextStatus: TaskProgressStatus = 'in_progress') => {
+      if (!task || !taskId) return;
+      if (!isLoggedIn) {
+        setConsoleOutput((prev) => `${prev}\n⚠️ 登录后才能保存任务进度\n`);
+        return;
+      }
+
+      try {
+        const response = await fetch(window.location.pathname, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'taskProgress',
+            taskId,
+            status: nextStatus,
+            code,
+          }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          setCurrentTaskProgress(result.progress);
+          setConsoleOutput((prev) => `${prev}\n>>> 任务进度已保存（${TASK_STATUS_LABELS[nextStatus]}）\n`);
+        } else {
+          setConsoleOutput((prev) => `${prev}\n⚠️ 保存任务进度失败: ${result.message}\n`);
+        }
+      } catch (error) {
+        setConsoleOutput(
+          (prev) => `${prev}\n⚠️ 保存任务进度失败: ${error instanceof Error ? error.message : error}\n`,
+        );
+      }
+    },
+    [task, taskId, isLoggedIn, code],
+  );
+
   // 保存作品
   const handleSave = useCallback(async () => {
     if (!isLoggedIn) {
@@ -425,6 +510,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
         description: '',
         isPublic: true,
         imageUrl,
+        taskId,
       }),
     });
 
@@ -433,11 +519,14 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       setCurrentWorkId(result.workId);
       setConsoleOutput((prev) => `${prev}\n✅ 作品保存成功！\n`);
       setShowSaveDialog(false);
+      if (task) {
+        handleSaveTaskProgress('completed');
+      }
     } else {
       setConsoleOutput((prev) => `${prev}\n❌ 保存失败: ${result.message}\n`);
       setShowSaveDialog(false);
     }
-  }, [isLoggedIn, code, workTitle, currentWorkId]);
+  }, [isLoggedIn, code, workTitle, currentWorkId, task, taskId, handleSaveTaskProgress]);
 
   useEffect(() => {
     console.log('[TurtlePlayground] Component rendered');
@@ -446,6 +535,66 @@ const TurtlePlayground: React.FC<TurtleData> = ({
 
   return (
         <>
+            {task && (
+                <div className="task-panel">
+                    <div className="task-panel-header">
+                        <span className={`task-status ${taskStatus || 'not_started'}`}>
+                            {describeTaskStatus(taskStatus)}
+                        </span>
+                        <span className="task-tag">{describeDifficulty(task.difficulty)}</span>
+                    </div>
+                    <h2>{task.title}</h2>
+                    {task.tags && task.tags.length > 0 && (
+                        <div className="task-tags">
+                            {task.tags.map((tag) => (
+                                <span key={tag} className="task-tag">{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                    <p>{task.description}</p>
+                    {task.hint && (
+                        <details style={{ marginBottom: 12 }}>
+                            <summary style={{ cursor: 'pointer', color: 'var(--primary-dark)' }}>查看任务提示</summary>
+                            <p style={{ marginTop: 8 }}>{task.hint}</p>
+                        </details>
+                    )}
+                    <div className="task-panel-actions">
+                        {isLoggedIn ? (
+                            <>
+                                <button
+                                    className="btn-task-save"
+                                    onClick={() => handleSaveTaskProgress('in_progress')}
+                                >
+                                    保存任务进度
+                                </button>
+                                <button
+                                    className="btn-task-complete"
+                                    onClick={() => handleSaveTaskProgress('completed')}
+                                >
+                                    标记完成
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                className="btn-task-save"
+                                onClick={() => {
+                                  window.location.href = '/login';
+                                }}
+                            >
+                                登录后保存进度
+                            </button>
+                        )}
+                        <button
+                            className="btn-task-back"
+                            onClick={() => {
+                              window.location.href = '/turtle/gallery?tab=course';
+                            }}
+                        >
+                            返回课程
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* 主内容区 */}
             <div className="main-content">
                 {/* 编辑器区域 */}

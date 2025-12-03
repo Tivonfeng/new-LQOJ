@@ -10,7 +10,9 @@
     "userWorks": {{ userWorksJSON | safe }},
     "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
     "currentUserId": {{ currentUserId if currentUserId else 'null' }},
-    "currentUserName": {{ currentUserNameJSON | safe }}
+    "currentUserName": {{ currentUserNameJSON | safe }},
+    "task": {{ taskJSON | safe }},
+    "taskProgress": {{ taskProgressJSON | safe }}
 }
 </script>
 

@@ -8,9 +8,12 @@
   "works": {{ worksJSON | safe }},
   "popularWorks": {{ popularWorksJSON | safe }},
   "myWorks": {{ myWorksJSON | safe }},
+  "tasks": {{ tasksJSON | safe }},
+  "taskProgress": {{ taskProgressJSON | safe }},
   "udocs": {{ udocsJSON | safe }},
   "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
   "currentUserId": {{ currentUserId if isLoggedIn else 'null' }},
+  "isAdmin": {{ 'true' if isAdmin else 'false' }},
   "page": {{ page }},
   "total": {{ total }},
   "totalPages": {{ totalPages }}

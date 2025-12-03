@@ -3,9 +3,10 @@ import {
     TurtleAdminHandler,
     TurtleGalleryHandler,
     TurtlePlaygroundHandler,
+    TurtleTaskAdminHandler,
     TurtleWorkHandler,
 } from './src/handlers';
-import type { TurtleWork } from './src/types';
+import type { TurtleTask, TurtleTaskProgress, TurtleWork } from './src/types';
 
 // 配置 Schema
 const Config = Schema.object({
@@ -18,6 +19,8 @@ const Config = Schema.object({
 declare module 'hydrooj' {
     interface Collections {
         'turtle.works': TurtleWork;
+        'turtle.tasks': TurtleTask;
+        'turtle.task_progress': TurtleTaskProgress;
     }
 }
 
@@ -54,6 +57,18 @@ export default async function apply(ctx: Context, config: any = {}) {
             { key: { workId: 1, uid: 1 }, name: 'work_likes_unique', unique: true },
         );
 
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('turtle.tasks' as any),
+            { key: { isPublished: 1, order: 1 }, name: 'task_publish_order' },
+            { key: { createdAt: -1 }, name: 'task_created_at' },
+        );
+
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('turtle.task_progress' as any),
+            { key: { uid: 1, taskId: 1 }, name: 'task_progress_user', unique: true },
+            { key: { taskId: 1, status: 1 }, name: 'task_progress_status' },
+        );
+
         console.log('[Python Turtle IDE] ✅ Indexes created successfully');
     } catch (error) {
         console.error('[Python Turtle IDE] ❌ Error creating indexes:', error.message);
@@ -66,6 +81,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('turtle_playground', '/turtle/playground', TurtlePlaygroundHandler);
     ctx.Route('turtle_work', '/turtle/work/:workId', TurtleWorkHandler);
     ctx.Route('turtle_admin', '/turtle/admin', TurtleAdminHandler);
+    ctx.Route('turtle_course_admin', '/turtle/course-admin', TurtleTaskAdminHandler);
 
     // 注入导航栏：入口指向作品社区，而不是直接进入编辑器
     ctx.injectUI('Nav', 'turtle_gallery', {

@@ -1,0 +1,12 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<div id="turtle-course-admin-app"></div>
+
+<script id="turtle-course-admin-data" type="application/json">
+{
+  "tasks": {{ tasksJSON | safe }}
+}
+</script>
+{% endblock %}
+

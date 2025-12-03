@@ -11,13 +11,6 @@ export class TurtleWorkHandler extends Handler {
 
         const workId = args.workId as string | undefined;
 
-        // 调试日志：记录路由参数与解析出的 workId
-        console.log('[TurtleWorkHandler] GET /turtle/work', {
-            args,
-            parsedWorkId: workId,
-            rawUrl: this.request.url,
-        });
-
         if (!workId) {
             console.warn('[TurtleWorkHandler] Missing workId in args', { args });
             this.response.status = 404;
@@ -75,7 +68,7 @@ export class TurtleWorkHandler extends Handler {
         };
     }
 
-    async post(args: any) {
+    async post() {
         const uid = this.user?._id;
         const { action, workId } = this.request.body;
         const workService = new TurtleWorkService(this.ctx);
