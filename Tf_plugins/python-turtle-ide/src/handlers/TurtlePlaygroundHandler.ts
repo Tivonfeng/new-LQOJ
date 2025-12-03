@@ -28,7 +28,7 @@ export class TurtlePlaygroundHandler extends Handler {
         // 获取用户的作品列表
         let userWorks: any[] = [];
         if (uid) {
-            userWorks = await workService.getUserWorks(uid, this.domain._id);
+            userWorks = await workService.getUserWorks(uid);
         }
 
         // 获取当前用户名并序列化为 JSON 字符串
@@ -63,7 +63,6 @@ export class TurtlePlaygroundHandler extends Handler {
                 const savedWorkId = await workService.saveWork({
                     workId: workId || undefined,
                     uid,
-                    domainId: this.domain._id,
                     title: title || 'Untitled',
                     code,
                     description,

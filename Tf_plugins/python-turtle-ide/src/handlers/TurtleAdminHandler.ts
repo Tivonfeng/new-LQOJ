@@ -21,7 +21,6 @@ export class TurtleAdminHandler extends Handler {
 
         // 获取所有作品
         const { works, total, totalPages } = await workService.getAllWorks(
-            this.domain._id,
             page,
             50, // 每页50个作品
         );
