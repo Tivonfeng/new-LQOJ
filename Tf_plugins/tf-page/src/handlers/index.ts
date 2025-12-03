@@ -1,1 +1,0 @@
-export { TfPageHandler } from './TfPageHandler';
