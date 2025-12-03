@@ -54,6 +54,7 @@ export class TurtleWorkHandler extends Handler {
 
         // 检查是否为作者
         const isAuthor = this.user?._id === work.uid;
+        const canViewCode = !!isAuthor;
 
         // 如果作品不公开且不是作者,则拒绝访问
         if (!work.isPublic && !isAuthor) {
@@ -61,16 +62,24 @@ export class TurtleWorkHandler extends Handler {
         }
 
         // 返回 JSON 格式（前端使用弹窗查看，不再需要HTML页面）
+        const workPayload: any = {
+            ...work,
+            _id: work._id?.toString(),
+        };
+
+        if (!canViewCode) {
+            delete workPayload.code;
+        }
+
         this.response.body = {
-            work: {
-                ...work,
-                _id: work._id?.toString(),
-            },
+            work: workPayload,
             author: author ? {
                 _id: author._id,
                 uname: author.uname,
             } : null,
             isAuthor,
+            canViewCode,
+            codeHiddenReason: canViewCode ? '' : '该作品的代码仅对作者可见',
             isLoggedIn: !!this.user?._id,
         };
     }

@@ -1,6 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { Button, Card, Empty, message, Modal, Tabs, Tag } from 'antd';
+import { Alert, Button, Card, Empty, message, Modal, Tabs, Tag } from 'antd';
+import {
+  CodeOutlined,
+  CrownOutlined,
+  DollarCircleOutlined,
+  EyeOutlined,
+  FolderOpenOutlined,
+  GlobalOutlined,
+  PictureOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -55,7 +65,8 @@ const TurtleGallery: React.FC<GalleryData> = ({
         key: 'all',
         label: (
           <>
-            🌍 全部作品
+            <GlobalOutlined style={{ marginRight: 4 }} />
+            全部作品
             {total > 0 && (
               <Tag style={{ marginLeft: 8 }} color="default">
                 {total}
@@ -92,7 +103,8 @@ const TurtleGallery: React.FC<GalleryData> = ({
         key: 'popular',
         label: (
           <>
-            🏆 投币榜
+            <TrophyOutlined style={{ marginRight: 4 }} />
+            投币榜
             {popularWorksList.length > 0 && (
               <Tag style={{ marginLeft: 8 }} color="gold">
                 TOP {popularWorksList.length}
@@ -131,7 +143,8 @@ const TurtleGallery: React.FC<GalleryData> = ({
             key: 'my',
             label: (
                 <>
-                  📁 我的作品
+                  <FolderOpenOutlined style={{ marginRight: 4 }} />
+                  我的作品
                   {ownWorks.length > 0 && (
                     <Tag style={{ marginLeft: 8 }} color="blue">
                       {ownWorks.length}
@@ -192,7 +205,8 @@ const TurtleGallery: React.FC<GalleryData> = ({
               marginBottom: 4,
             }}
           >
-            🐢 Python Turtle 作品社区
+            <CodeOutlined style={{ marginRight: 8 }} />
+            Python Turtle 作品社区
           </h1>
           <p style={{ color: '#6b7280', margin: 0 }}>
             创作、分享、浏览同学们的海龟绘图作品。
@@ -269,6 +283,8 @@ const WorkGrid: React.FC<WorkGridProps> = ({
   const [workCode, setWorkCode] = useState<string>('');
   const [loadingWork, setLoadingWork] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [codeHidden, setCodeHidden] = useState(false);
+  const [codeHiddenReason, setCodeHiddenReason] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // 运行代码的函数
@@ -383,6 +399,8 @@ const WorkGrid: React.FC<WorkGridProps> = ({
     setViewingWork(work);
     setViewModalVisible(true);
     setLoadingWork(true);
+    setCodeHidden(false);
+    setCodeHiddenReason('');
 
     try {
       // 获取作品详情（包含代码），请求JSON格式
@@ -393,14 +411,33 @@ const WorkGrid: React.FC<WorkGridProps> = ({
       });
       if (resp.ok) {
         const data = await resp.json();
-        setWorkCode(data.work?.code || '');
+        const canViewCode = data.canViewCode ?? data.isAuthor ?? false;
+        if (canViewCode && data.work?.code) {
+          setWorkCode(data.work.code);
+          setCodeHidden(false);
+          setCodeHiddenReason('');
+        } else {
+          setWorkCode('');
+          setCodeHidden(true);
+          setCodeHiddenReason(data.codeHiddenReason || '该作品的代码仅对作者可见');
+        }
       } else {
         message.error('获取作品详情失败');
-        setWorkCode(work.code || '');
+        const fallbackCode = isOwn ? work.code || '' : '';
+        setWorkCode(fallbackCode);
+        if (!fallbackCode) {
+          setCodeHidden(!isOwn);
+          setCodeHiddenReason(!isOwn ? '该作品的代码仅对作者可见' : '');
+        }
       }
     } catch (error) {
       console.error('Failed to load work:', error);
-      setWorkCode(work.code || '');
+      const fallbackCode = isOwn ? work.code || '' : '';
+      setWorkCode(fallbackCode);
+      if (!fallbackCode) {
+        setCodeHidden(!isOwn);
+        setCodeHiddenReason(!isOwn ? '该作品的代码仅对作者可见' : '');
+      }
     } finally {
       setLoadingWork(false);
     }
@@ -482,7 +519,7 @@ const WorkGrid: React.FC<WorkGridProps> = ({
                     background: '#f3f4f6',
                   }}
                 >
-                  🐢
+                  <PictureOutlined style={{ fontSize: 28, color: '#9ca3af' }} />
                 </div>
               )
             }
@@ -515,10 +552,17 @@ const WorkGrid: React.FC<WorkGridProps> = ({
                       justifyContent: 'space-between',
                       fontSize: 11,
                       color: '#6b7280',
+                      alignItems: 'center',
                     }}
                   >
-                    <span>🪙 {work.likes}</span>
-                    <span>👁️ {work.views}</span>
+                    <span>
+                      <DollarCircleOutlined style={{ marginRight: 4 }} />
+                      {work.likes}
+                    </span>
+                    <span>
+                      <EyeOutlined style={{ marginRight: 4 }} />
+                      {work.views}
+                    </span>
                   </div>
                 </div>
               }
@@ -541,10 +585,11 @@ const WorkGrid: React.FC<WorkGridProps> = ({
               {!isOwn && (
                 <Button
                   size="small"
+                  icon={<DollarCircleOutlined />}
                   disabled={!currentUserId || currentUserId === work.uid}
                   onClick={() => handleCoin(work)}
                 >
-                  🪙 投币
+                  投币
                 </Button>
               )}
               {isOwn && (
@@ -580,6 +625,8 @@ const WorkGrid: React.FC<WorkGridProps> = ({
           setViewingWork(null);
           setWorkCode('');
           setIsRunning(false);
+          setCodeHidden(false);
+          setCodeHiddenReason('');
           if (canvasRef.current) {
             canvasRef.current.innerHTML = '';
           }
@@ -599,6 +646,8 @@ const WorkGrid: React.FC<WorkGridProps> = ({
             setViewingWork(null);
             setWorkCode('');
             setIsRunning(false);
+            setCodeHidden(false);
+            setCodeHiddenReason('');
             if (canvasRef.current) {
               canvasRef.current.innerHTML = '';
             }
@@ -632,6 +681,14 @@ const WorkGrid: React.FC<WorkGridProps> = ({
             </div>
 
             {/* 代码区域 */}
+            {codeHidden && !loadingWork && (
+              <Alert
+                type="info"
+                showIcon
+                message={codeHiddenReason || '该作品的代码仅对作者可见'}
+                style={{ marginBottom: 16 }}
+              />
+            )}
             {workCode && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
@@ -650,7 +707,7 @@ const WorkGrid: React.FC<WorkGridProps> = ({
                 </pre>
               </div>
             )}
-            {!workCode && !loadingWork && (
+            {!workCode && !loadingWork && !codeHidden && (
               <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                 暂无代码内容
               </div>
@@ -697,6 +754,8 @@ const RankingList: React.FC<RankingListProps> = ({
   const [workCode, setWorkCode] = useState<string>('');
   const [loadingWork, setLoadingWork] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [codeHidden, setCodeHidden] = useState(false);
+  const [codeHiddenReason, setCodeHiddenReason] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // 复用 WorkGrid 中的 runCode 逻辑
@@ -787,20 +846,35 @@ const RankingList: React.FC<RankingListProps> = ({
     setViewingWork(work);
     setViewModalVisible(true);
     setLoadingWork(true);
+    setCodeHidden(false);
+    setCodeHiddenReason('');
     try {
       const resp = await fetch(`/turtle/work/${work.id}`, {
         headers: { 'Accept': 'application/json' },
       });
       if (resp.ok) {
         const data = await resp.json();
-        setWorkCode(data.work?.code || '');
+        const canViewCode = data.canViewCode ?? data.isAuthor ?? false;
+        if (canViewCode && data.work?.code) {
+          setWorkCode(data.work.code);
+          setCodeHidden(false);
+          setCodeHiddenReason('');
+        } else {
+          setWorkCode('');
+          setCodeHidden(true);
+          setCodeHiddenReason(data.codeHiddenReason || '该作品的代码仅对作者可见');
+        }
       } else {
         message.error('获取作品详情失败');
-        setWorkCode(work.code || '');
+        setWorkCode('');
+        setCodeHidden(true);
+        setCodeHiddenReason('该作品的代码仅对作者可见');
       }
     } catch (error) {
       console.error('Failed to load work:', error);
-      setWorkCode(work.code || '');
+      setWorkCode('');
+      setCodeHidden(true);
+      setCodeHiddenReason('该作品的代码仅对作者可见');
     } finally {
       setLoadingWork(false);
     }
@@ -838,16 +912,17 @@ const RankingList: React.FC<RankingListProps> = ({
           const author = udocs[work.uid] || udocs[String(work.uid)];
           const rank = index + 1;
           const isTopThree = rank <= 3;
-          const medals = ['🥇', '🥈', '🥉'];
+          const medalColors = ['#facc15', '#c0c0c0', '#cd7f32'];
+          const currentMedalColor = medalColors[rank - 1] || '#e5e7eb';
 
           return (
             <Card
               key={work.id}
               hoverable
               style={{
-                border: isTopThree ? '2px solid #ffd700' : '1px solid #e5e7eb',
+                border: isTopThree ? `2px solid ${currentMedalColor}` : '1px solid #e5e7eb',
                 background: isTopThree
-                  ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 215, 0, 0.02) 100%)'
+                  ? `linear-gradient(135deg, ${currentMedalColor}22 0%, ${currentMedalColor}08 100%)`
                   : 'white',
               }}
               bodyStyle={{ padding: '16px' }}
@@ -869,7 +944,7 @@ const RankingList: React.FC<RankingListProps> = ({
                     justifyContent: 'center',
                     borderRadius: '50%',
                     background: isTopThree
-                      ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)'
+                      ? `linear-gradient(135deg, ${currentMedalColor} 0%, ${currentMedalColor}cc 100%)`
                       : '#f3f4f6',
                     fontSize: isTopThree ? 24 : 18,
                     fontWeight: 700,
@@ -877,7 +952,11 @@ const RankingList: React.FC<RankingListProps> = ({
                     flexShrink: 0,
                   }}
                 >
-                  {isTopThree ? medals[rank - 1] : rank}
+                  {isTopThree ? (
+                    <CrownOutlined style={{ fontSize: 24 }} />
+                  ) : (
+                    rank
+                  )}
                 </div>
 
                 {/* 作品封面 */}
@@ -914,7 +993,7 @@ const RankingList: React.FC<RankingListProps> = ({
                         fontSize: 32,
                       }}
                     >
-                      🐢
+                      <PictureOutlined style={{ fontSize: 32, color: '#9ca3af' }} />
                     </div>
                   )}
                 </div>
@@ -956,11 +1035,13 @@ const RankingList: React.FC<RankingListProps> = ({
                       alignItems: 'center',
                     }}
                   >
-                    <span style={{ fontSize: 14, color: '#6b7280' }}>
-                      🪙 {work.likes} 投币
+                    <span style={{ fontSize: 14, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <DollarCircleOutlined />
+                      {work.likes} 投币
                     </span>
-                    <span style={{ fontSize: 14, color: '#6b7280' }}>
-                      👁️ {work.views} 浏览
+                    <span style={{ fontSize: 14, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <EyeOutlined />
+                      {work.views} 浏览
                     </span>
                   </div>
                 </div>
@@ -980,9 +1061,10 @@ const RankingList: React.FC<RankingListProps> = ({
                     <Button
                       size="small"
                       type="primary"
+                      icon={<DollarCircleOutlined />}
                       onClick={() => handleCoin(work)}
                     >
-                      🪙 投币
+                      投币
                     </Button>
                   )}
                 </div>
@@ -1001,6 +1083,8 @@ const RankingList: React.FC<RankingListProps> = ({
           setViewingWork(null);
           setWorkCode('');
           setIsRunning(false);
+          setCodeHidden(false);
+          setCodeHiddenReason('');
           if (canvasRef.current) {
             canvasRef.current.innerHTML = '';
           }
@@ -1022,6 +1106,8 @@ const RankingList: React.FC<RankingListProps> = ({
               setViewingWork(null);
               setWorkCode('');
               setIsRunning(false);
+              setCodeHidden(false);
+              setCodeHiddenReason('');
               if (canvasRef.current) {
                 canvasRef.current.innerHTML = '';
               }
@@ -1056,6 +1142,14 @@ const RankingList: React.FC<RankingListProps> = ({
             </div>
 
             {/* 代码区域 */}
+            {codeHidden && !loadingWork && (
+              <Alert
+                type="info"
+                showIcon
+                message={codeHiddenReason || '该作品的代码仅对作者可见'}
+                style={{ marginBottom: 16 }}
+              />
+            )}
             {workCode && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
@@ -1074,7 +1168,7 @@ const RankingList: React.FC<RankingListProps> = ({
                 </pre>
               </div>
             )}
-            {!workCode && !loadingWork && (
+            {!workCode && !loadingWork && !codeHidden && (
               <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
                 暂无代码内容
               </div>

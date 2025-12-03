@@ -22,16 +22,18 @@ export class TurtleGalleryHandler extends Handler {
         // 获取热门作品排行榜（前20名）
         const popularWorks = await workService.getPopularWorks(20);
 
-        // 将作品中的 _id 转成字符串形式，避免模板和前端使用时出现 ObjectId 序列化问题
-        const viewWorks = works.map((w: any) => ({
-            ...w,
-            id: w._id?.toString?.() || w._id,
-        }));
+        // 统一处理公开作品，过滤掉代码字段，仅在「我的作品」中展示代码
+        const sanitizePublicWork = (work: any) => {
+            const { code, _id, ...rest } = work;
+            return {
+                ...rest,
+                id: _id?.toString?.() || _id,
+            };
+        };
 
-        const popularWorksView = popularWorks.map((w: any) => ({
-            ...w,
-            id: w._id?.toString?.() || w._id,
-        }));
+        const viewWorks = works.map(sanitizePublicWork);
+
+        const popularWorksView = popularWorks.map(sanitizePublicWork);
 
         // 调试日志：记录当前页作品及其 ID
         console.log('[TurtleGalleryHandler] Public works page loaded', {
