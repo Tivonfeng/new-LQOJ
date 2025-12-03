@@ -47,7 +47,6 @@ export class TurtleWorkService {
             // 检查用户作品数量限制
             const userWorksCount = await collection.countDocuments({
                 uid: data.uid,
-                domainId: data.domainId,
             });
 
             if (userWorksCount >= 50) {
@@ -57,7 +56,6 @@ export class TurtleWorkService {
             // 创建新作品
             const result = await collection.insertOne({
                 uid: data.uid,
-                domainId: data.domainId,
                 title: data.title,
                 code: data.code,
                 description: data.description || '',
@@ -90,9 +88,9 @@ export class TurtleWorkService {
     /**
      * 获取用户的所有作品
      */
-    async getUserWorks(uid: number, domainId: string, limit: number = 50): Promise<TurtleWork[]> {
+    async getUserWorks(uid: number, limit: number = 50): Promise<TurtleWork[]> {
         return await this.ctx.db.collection('turtle.works' as any)
-            .find({ uid, domainId })
+            .find({ uid })
             .sort({ updatedAt: -1 })
             .limit(limit)
             .toArray();
@@ -101,7 +99,7 @@ export class TurtleWorkService {
     /**
      * 获取公开作品列表(带分页)
      */
-    async getPublicWorks(domainId: string, page: number = 1, limit: number = 20): Promise<{
+    async getPublicWorks(page: number = 1, limit: number = 20): Promise<{
         works: TurtleWork[];
         total: number;
         totalPages: number;
@@ -110,13 +108,13 @@ export class TurtleWorkService {
         const collection = this.ctx.db.collection('turtle.works' as any);
 
         const works = await collection
-            .find({ domainId, isPublic: true })
+            .find({ isPublic: true })
             .sort({ isFeatured: -1, likes: -1, createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
 
-        const total = await collection.countDocuments({ domainId, isPublic: true });
+        const total = await collection.countDocuments({ isPublic: true });
 
         return {
             works,
@@ -128,11 +126,11 @@ export class TurtleWorkService {
     /**
      * 获取热门作品排行榜（按投币数排序）
      */
-    async getPopularWorks(domainId: string, limit: number = 20): Promise<TurtleWork[]> {
+    async getPopularWorks(limit: number = 20): Promise<TurtleWork[]> {
         const collection = this.ctx.db.collection('turtle.works' as any);
 
         const works = await collection
-            .find({ domainId, isPublic: true })
+            .find({ isPublic: true })
             .sort({ likes: -1, createdAt: -1 }) // 按投币数降序，然后按创建时间降序
             .limit(limit)
             .toArray();
@@ -250,7 +248,7 @@ export class TurtleWorkService {
     /**
      * 获取所有作品(管理员)
      */
-    async getAllWorks(domainId: string, page: number = 1, limit: number = 50): Promise<{
+    async getAllWorks(page: number = 1, limit: number = 50): Promise<{
         works: TurtleWork[];
         total: number;
         totalPages: number;
@@ -259,13 +257,13 @@ export class TurtleWorkService {
         const collection = this.ctx.db.collection('turtle.works' as any);
 
         const works = await collection
-            .find({ domainId })
+            .find({})
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
 
-        const total = await collection.countDocuments({ domainId });
+        const total = await collection.countDocuments({});
 
         return {
             works,

@@ -6,7 +6,6 @@ import { ObjectId } from 'mongodb';
 export interface TurtleWork {
     _id?: ObjectId;
     uid: number; // 用户 ID
-    domainId: string; // 域 ID
     title: string; // 作品标题
     description?: string; // 作品描述
     code: string; // Python 代码
@@ -40,7 +39,6 @@ export interface TurtleExample {
 export interface SaveWorkParams {
     workId?: string;
     uid: number;
-    domainId: string;
     title: string;
     code: string;
     description?: string;

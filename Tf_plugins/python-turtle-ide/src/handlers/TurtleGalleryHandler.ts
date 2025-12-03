@@ -15,13 +15,12 @@ export class TurtleGalleryHandler extends Handler {
 
         // 获取公开作品
         const { works, total, totalPages } = await workService.getPublicWorks(
-            this.domain._id,
             page,
             24, // 每页24个作品
         );
 
         // 获取热门作品排行榜（前20名）
-        const popularWorks = await workService.getPopularWorks(this.domain._id, 20);
+        const popularWorks = await workService.getPopularWorks(20);
 
         // 将作品中的 _id 转成字符串形式，避免模板和前端使用时出现 ObjectId 序列化问题
         const viewWorks = works.map((w: any) => ({
@@ -36,7 +35,6 @@ export class TurtleGalleryHandler extends Handler {
 
         // 调试日志：记录当前页作品及其 ID
         console.log('[TurtleGalleryHandler] Public works page loaded', {
-            domainId: this.domain._id,
             page,
             total,
             totalPages,
@@ -53,7 +51,7 @@ export class TurtleGalleryHandler extends Handler {
         // 获取当前用户的作品列表
         let myWorksView: any[] = [];
         if (uid) {
-            const myWorks = await workService.getUserWorks(uid, this.domain._id);
+            const myWorks = await workService.getUserWorks(uid);
             myWorksView = myWorks.map((w: any) => ({
                 ...w,
                 id: w._id?.toString?.() || w._id,

@@ -66,7 +66,6 @@ python-turtle-ide/
 {
     _id: ObjectId,
     uid: number,              // 用户 ID
-    domainId: string,         // 域 ID
     title: string,            // 作品标题
     description: string,      // 作品描述
     code: string,             // Python 代码
@@ -78,6 +77,8 @@ python-turtle-ide/
     createdAt: Date,
     updatedAt: Date
 }
+
+> 说明：Turtle 作品集合为全局共享（不再按域划分），所有域的用户都在同一作品池中创作与浏览。
 ```
 
 ### turtle.examples (示例代码集合)

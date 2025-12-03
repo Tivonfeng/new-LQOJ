@@ -42,10 +42,10 @@ export default async function apply(ctx: Context, config: any = {}) {
     try {
         await ctx.db.ensureIndexes(
             ctx.db.collection('turtle.works' as any),
-            { key: { domainId: 1, uid: 1, createdAt: -1 }, name: 'user_works' },
-            { key: { domainId: 1, isPublic: 1, isFeatured: 1 }, name: 'public_featured' },
-            { key: { domainId: 1, likes: -1 }, name: 'popular_works' },
-            { key: { domainId: 1, createdAt: -1 }, name: 'recent_works' },
+            { key: { uid: 1, createdAt: -1 }, name: 'user_works' },
+            { key: { isPublic: 1, isFeatured: 1 }, name: 'public_featured' },
+            { key: { isPublic: 1, likes: -1 }, name: 'popular_works' },
+            { key: { createdAt: -1 }, name: 'recent_works' },
         );
 
         // 投币记录集合：确保同一 (workId, uid) 唯一，防止重复投币

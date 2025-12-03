@@ -551,6 +551,14 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                             >
                                 📥 下载图片
                             </button>
+                            <button
+                                className="btn-back-gallery"
+                                onClick={() => {
+                                  window.location.href = '/turtle/gallery';
+                                }}
+                            >
+                                🏠 返回社区
+                            </button>
                         </div>
                     </div>
                     <div

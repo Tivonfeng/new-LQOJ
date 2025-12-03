@@ -282,6 +282,18 @@ body {
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
+.canvas-toolbar .btn-back-gallery {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border: none;
+}
+
+.canvas-toolbar .btn-back-gallery:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #3730a3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+}
+
 #turtle-canvas {
     width: 100%;
     max-width: 100%;
