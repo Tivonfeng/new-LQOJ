@@ -208,10 +208,11 @@
 
 .hero-stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: var(--spacing-2);
     width: 100%;
-    max-width: 180px;
+    max-width: 230px;
+    margin: 0 auto;
 }
 
 .hero-stat-item {
@@ -224,6 +225,7 @@
     transition: var(--personal-transition);
     position: relative;
     overflow: hidden;
+    min-width: 0;
 }
 
 .hero-stat-item::before {
