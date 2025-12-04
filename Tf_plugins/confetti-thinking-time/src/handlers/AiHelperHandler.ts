@@ -1,4 +1,4 @@
-import { Handler } from 'hydrooj';
+import { Handler, ProblemModel } from 'hydrooj';
 
 interface AiHelperRequestArgs {
     problemId?: string;
@@ -65,16 +65,25 @@ export class AiHelperHandler extends Handler {
             return;
         }
 
-        if (!problemId || !code) {
+        if (!problemId) {
             this.response.body = {
                 success: false,
-                message: '缺少必要参数：problemId 或 code。',
+                message: '缺少必要参数：problemId。',
+            };
+            return;
+        }
+
+        // debug/optimize 模式强制需要代码；hint 模式可以只看题目
+        if ((mode === 'debug' || mode === 'optimize') && !code) {
+            this.response.body = {
+                success: false,
+                message: '调试或优化模式需要提供代码。',
             };
             return;
         }
 
         // 简单的参数约束，避免过长请求
-        if (code.length > 100_000) {
+        if (code && code.length > 100_000) {
             this.response.body = {
                 success: false,
                 message: '代码过长，请只粘贴与本题相关的核心部分。',
@@ -82,20 +91,62 @@ export class AiHelperHandler extends Handler {
             return;
         }
 
+        // 尝试获取题面描述（包含题目内容与样例 Markdown）
+        let problemTitle: string | undefined;
+        let problemContentSnippet = '';
+        try {
+            const domainId = this.domain._id as string;
+            const pdoc = await ProblemModel.get(domainId, problemId as any);
+            if (pdoc) {
+                problemTitle = (pdoc as any).title;
+                const rawContent = (pdoc as any).content;
+                let text = '';
+                if (typeof rawContent === 'string') {
+                    text = rawContent;
+                } else if (rawContent && typeof rawContent === 'object') {
+                    const keys = Object.keys(rawContent);
+                    const prefer = language && keys.includes(language) ? language : keys[0];
+                    text = (rawContent as any)[prefer] || '';
+                }
+                if (text) {
+                    // 截断，避免 prompt 过长
+                    const limit = 1200;
+                    problemContentSnippet = text.length > limit
+                        ? `${text.slice(0, limit)}\n...(题面过长，已截断)`
+                        : text;
+                }
+            }
+        } catch (e) {
+            // 获取题面失败时忽略，不影响 AI 主流程
+            console.error('[Confetti AI Helper] 获取题面失败:', e);
+        }
+
         // 构造发给 DeepSeek 的 prompt
         const lines: string[] = [];
         lines.push(`题目编号: ${problemId}`);
+        if (problemTitle) {
+            lines.push(`题目标题: ${problemTitle}`);
+        }
         lines.push(`代码语言: ${language || '未指定'}`);
         lines.push(`当前模式: ${mode}`);
         if (prompt) {
             lines.push(`学生补充说明: ${prompt}`);
         }
         lines.push('');
-        lines.push('下面是学生当前的代码:');
-        lines.push('```');
-        lines.push(code);
-        lines.push('```');
+        if (problemContentSnippet) {
+            lines.push('');
+            lines.push('题目描述（可能包含样例与说明，已做适度截断）:');
+            lines.push(problemContentSnippet);
+        }
+
         lines.push('');
+        if (code) {
+            lines.push('下面是学生当前的代码:');
+            lines.push('```');
+            lines.push(code);
+            lines.push('```');
+            lines.push('');
+        }
         lines.push('请按照下面 JSON 结构返回，不要额外添加解释文本：'
             + '{ "analysis": "...", "suggestions": ["..."], "steps": ["..."] }');
         if (mode === 'debug') {

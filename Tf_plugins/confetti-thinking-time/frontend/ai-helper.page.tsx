@@ -86,6 +86,7 @@ const AiHelperApp: React.FC = () => {
   const [prompt, setPrompt] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiHelperResponse['data'] | null>(null);
+  const [analysisText, setAnalysisText] = useState<string>('');
 
   useEffect(() => {
     if (!open) return;
@@ -101,28 +102,28 @@ const AiHelperApp: React.FC = () => {
   }
 
   const handleAsk = async () => {
-    if (!code?.trim()) {
-      message.warning('请先填写或粘贴代码，再使用 AI 辅助。');
+    if ((mode === 'debug' || mode === 'optimize') && !code?.trim()) {
+      message.warning('调试/优化模式需要提供代码，请先填写或粘贴代码。');
       return;
     }
     setLoading(true);
     setResult(null);
+    setAnalysisText('');
     try {
-      const payload: AiHelperRequestPayload = {
+      const payload: AiHelperRequestPayload & { prompt?: string } = {
         problemId: ui.problemId || ui.problemNumId,
-        code,
+        code: code || undefined,
         mode,
         language: ui.codeLang,
+        ...(prompt ? { prompt } : {}),
       };
+
       const resp = await fetch('/confetti-thinking-time/ai-helper/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...payload,
-          prompt: prompt || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
@@ -132,7 +133,26 @@ const AiHelperApp: React.FC = () => {
         message.error(data.message || 'AI 分析失败，请稍后重试。');
         return;
       }
-      setResult(data.data || null);
+
+      const next = data.data || {};
+      setResult(next);
+
+      // 伪流式：把 analysis 按句子逐步显示，模拟思考过程
+      const full = next.analysis || '';
+      if (full) {
+        const parts = full.split(/(?<=[。！？\n])/);
+        let index = 0;
+        const reveal = () => {
+          setAnalysisText((prev) => prev + (parts[index] || ''));
+          index += 1;
+          if (index < parts.length) {
+            setTimeout(reveal, 120);
+          }
+        };
+        reveal();
+      } else {
+        setAnalysisText('');
+      }
     } catch (e: any) {
       console.error('[Confetti AI Helper] analyze failed', e);
       message.error('AI 服务暂不可用，请稍后重试或联系管理员。');
@@ -240,18 +260,6 @@ const AiHelperApp: React.FC = () => {
             />
           </div>
 
-          <div>
-            <div style={{ marginBottom: 4, fontSize: 12, color: '#6b7280' }}>
-              学生代码（默认为当前编辑器中的代码，支持手动修改）
-            </div>
-            <TextArea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="在这里粘贴或编辑你的代码..."
-              autoSize={{ minRows: 8, maxRows: 14 }}
-            />
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>
@@ -283,20 +291,20 @@ const AiHelperApp: React.FC = () => {
                   <span style={{ marginLeft: 8 }}>AI 正在思考中，请稍候...</span>
                 </div>
               )}
-              {!loading && !result && (
+              {!loading && !result && !analysisText && (
                 <div style={{ color: '#9ca3af' }}>
                   说明：本工具仅用于学习辅助，尽量避免直接给出完整答案，更适合用来查找错误、理解题意与优化代码。
                 </div>
               )}
-              {!loading && result && (
+              {!loading && (analysisText || result) && (
                 <div>
-                  {result.analysis && (
+                  {(analysisText || result?.analysis) && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>总体分析</div>
-                      <div>{result.analysis}</div>
+                      <div>{analysisText || result?.analysis}</div>
                     </div>
                   )}
-                  {result.suggestions && result.suggestions.length > 0 && (
+                  {result?.suggestions && result.suggestions.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>建议与注意点</div>
                       <ul style={{ paddingLeft: 18, margin: 0 }}>
@@ -308,7 +316,7 @@ const AiHelperApp: React.FC = () => {
                       </ul>
                     </div>
                   )}
-                  {result.steps && result.steps.length > 0 && (
+                  {result?.steps && result.steps.length > 0 && (
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>推荐解题步骤</div>
                       <ol style={{ paddingLeft: 18, margin: 0 }}>
