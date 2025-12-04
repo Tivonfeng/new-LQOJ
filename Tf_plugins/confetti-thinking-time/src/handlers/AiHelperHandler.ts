@@ -149,6 +149,8 @@ export class AiHelperHandler extends Handler {
         }
         lines.push('请按照下面 JSON 结构返回，不要额外添加解释文本：'
             + '{ "analysis": "...", "suggestions": ["..."], "steps": ["..."] }');
+        lines.push('注意：回答请使用简体中文；不要建议更换编程语言，只在当前语言下给出分析和建议；'
+            + '不要重复同一条观点或句子，如果已经在前面提到过，就不再重复。');
         if (mode === 'debug') {
             lines.push(
                 '重点从“可能的错误/边界情况/逻辑漏洞”角度分析，禁止直接给出可 AC 的完整代码。',
