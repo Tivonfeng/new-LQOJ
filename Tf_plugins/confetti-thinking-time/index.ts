@@ -4,10 +4,13 @@ import {
     ProblemModel,
     RecordModel,
 } from 'hydrooj';
-import { ThinkingTimeHandler } from './src/handlers';
+import { AiHelperHandler, ThinkingTimeHandler } from './src/handlers';
 
 export default function apply(ctx: Context) {
     ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
+
+    // AI 辅助接口路由
+    ctx.Route('confetti_ai_helper_analyze', '/confetti-thinking-time/ai-helper/analyze', AiHelperHandler);
 
     ctx.on('app/started' as any, async () => {
         try {

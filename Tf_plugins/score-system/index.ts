@@ -94,6 +94,14 @@ interface TurtleWorkCoinedEventData {
     amount: number; // 投币数量（通常为1）
 }
 
+// AI 使用事件数据类型
+interface AiHelperUsedEventData {
+    uid: number;
+    domainId: string;
+    cost: number; // 本次使用消耗的积分（正数）
+    reason?: string;
+}
+
 // 声明数据库集合类型和事件类型
 declare module 'hydrooj' {
     interface Collections {
@@ -118,6 +126,7 @@ declare module 'hydrooj' {
         'certificate/deleted': (data: CertificateEventData) => void;
         'typing/bonus-awarded': (data: TypingBonusEventData) => void;
         'turtle/work-coined': (data: TurtleWorkCoinedEventData) => void;
+        'ai/helper-used': (data: AiHelperUsedEventData) => void;
     }
 }
 
@@ -345,6 +354,32 @@ export default async function apply(ctx: Context, config: any = {}) {
             console.log(`[Score System] ✅ 用户 ${data.fromUid} 给作品「${data.workTitle}」投币 ${data.amount}，作品主人 ${data.toUid} 获得积分`);
         } catch (err: any) {
             console.error(`[Score System] ❌ 处理作品投币事件失败: ${err.message}`);
+        }
+    });
+
+    // 🤖 监听 AI 助手使用事件，每次扣除一定积分
+    ctx.on('ai/helper-used', async (data: AiHelperUsedEventData) => {
+        try {
+            if (!finalConfig.enabled) return;
+            if (!data.cost || data.cost <= 0) return;
+
+            const cost = Math.round(data.cost);
+
+            // 扣除用户积分
+            await scoreService.updateUserScore(data.domainId, data.uid, -cost);
+            await scoreService.addScoreRecord({
+                uid: data.uid,
+                domainId: data.domainId,
+                pid: 0, // AI 使用不绑定具体题目ID
+                recordId: null,
+                score: -cost,
+                reason: data.reason || `使用 AI 辅助解题，消耗积分 ${cost}`,
+                problemTitle: 'AI 辅助解题',
+            });
+
+            console.log(`[Score System] 🤖 用户 ${data.uid} 使用 AI 辅助一次，扣除积分 ${cost}`);
+        } catch (err: any) {
+            console.error(`[Score System] ❌ 处理 AI 使用事件失败: ${err.message}`);
         }
     });
 
