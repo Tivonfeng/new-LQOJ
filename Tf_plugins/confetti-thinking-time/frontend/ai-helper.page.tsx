@@ -1,5 +1,5 @@
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { CommentOutlined } from '@ant-design/icons';
+import { RobotOutlined } from '@ant-design/icons';
 import { Button, Drawer, Input, message, Spin, Tabs, Tag, Tooltip } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -188,7 +188,7 @@ const AiHelperApp: React.FC = () => {
             zIndex: 2000,
           }}
         >
-          <CommentOutlined style={{ fontSize: 24 }} />
+          <RobotOutlined style={{ fontSize: 22 }} />
         </button>
       </Tooltip>
 
