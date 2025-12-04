@@ -1,6 +1,6 @@
 {% set domainId = payload[0] %}
 
-<div id="carousel__container" class="section side">
+<div id="carousel__container" class="">
   <div>
     {% if domainId == 'system' %}
     <div class="img__container">
@@ -39,7 +39,7 @@
 </div>
 
 {% if domainId == 'system' %}
-<div class="section side">
+<div>
   <div class="card-container">
     <a href="https://noj.lqcode.fun/d/python/" class="card tech-background">
       <div class="card-content">
@@ -50,6 +50,12 @@
     <a href="https://noj.lqcode.fun/d/CSPJ/" class="card tech-background">
       <div class="card-content">
         <h2 class="card-title">CSP训练体系</h2>
+      </div>
+    </a>
+
+    <a href="{{ url('turtle_gallery') }}" class="card tech-background">
+      <div class="card-content">
+        <h2 class="card-title">Python Turtle IDE</h2>
       </div>
     </a>
   </div>
@@ -148,6 +154,7 @@
     display: flex;
     gap: 8px;
     margin-top: 16px;
+    margin-bottom: 16px;
 }
 
 /* 覆盖Hydro默认样式 - 仅针对包含卡片容器的section */
@@ -167,7 +174,7 @@
 }
 
 .card {
-    width: 50%;
+    flex: 1;
     height: 120px;
     overflow: hidden;
     transition: var(--swiper-transition);

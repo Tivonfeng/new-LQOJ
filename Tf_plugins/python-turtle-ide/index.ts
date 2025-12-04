@@ -83,12 +83,6 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('turtle_admin', '/turtle/admin', TurtleAdminHandler);
     ctx.Route('turtle_course_admin', '/turtle/course-admin', TurtleTaskAdminHandler);
 
-    // 注入导航栏：入口指向作品社区，而不是直接进入编辑器
-    ctx.injectUI('Nav', 'turtle_gallery', {
-        prefix: 'turtle',
-        before: 'typing',
-    });
-
     console.log('[Python Turtle IDE] ✅ Plugin loaded successfully!');
 }
 
