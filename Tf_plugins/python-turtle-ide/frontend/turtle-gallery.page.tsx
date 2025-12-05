@@ -43,9 +43,7 @@ interface TurtleTask {
   description: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags?: string[];
-  starterCode?: string;
-  hint?: string;
-  coverImage?: string;
+  answerCode?: string;
   isPublished: boolean;
 }
 
@@ -984,30 +982,20 @@ const TaskCourseTab: React.FC<TaskCourseTabProps> = ({ tasks, progressMap = {}, 
           <Card
             key={task.id}
             cover={
-              task.coverImage ? (
-                <div
-                  style={{
-                    backgroundImage: `url(${task.coverImage})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    width: '100%',
-                    paddingTop: '56%',
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: '100%',
-                    paddingTop: '56%',
-                    background: '#f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <PictureOutlined style={{ fontSize: 32, color: '#9ca3af' }} />
-                </div>
-              )
+              <div
+                style={{
+                  width: '100%',
+                  paddingTop: '56%',
+                  background: '#f3f4f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#6b7280',
+                  fontSize: 13,
+                }}
+              >
+                运行代码即可看到最终效果
+              </div>
             }
             styles={{ body: { minHeight: 220, display: 'flex', flexDirection: 'column' } }}
           >

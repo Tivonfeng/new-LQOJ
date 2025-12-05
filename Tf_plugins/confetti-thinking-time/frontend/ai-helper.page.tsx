@@ -1,6 +1,6 @@
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { CommentOutlined } from '@ant-design/icons';
-import { Button, Drawer, Input, message, Spin, Tabs, Tag, Tooltip } from 'antd';
+import { RobotOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { Button, Drawer, Form, Input, InputNumber, message, Spin, Switch, Tabs, Tag, Tooltip, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -44,6 +44,7 @@ interface AiHelperUiContext {
   codeTemplate?: string;
   pdoc: UiProblemDoc;
   domainId?: string;
+  isAdmin?: boolean;
 }
 
 function safeGetUiContext(): AiHelperUiContext | null {
@@ -77,6 +78,226 @@ function guessCurrentCode(): string | undefined {
 }
 
 const { TextArea } = Input;
+const { Title, Text } = Typography;
+
+const ClassroomToolsFloating: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rolling, setRolling] = useState(false);
+  const [results, setResults] = useState<number[]>([]);
+  const [form] = Form.useForm();
+  const rollIntervalsRef = React.useRef<NodeJS.Timeout[]>([]);
+
+  const clearRollingIntervals = () => {
+    rollIntervalsRef.current.forEach(clearInterval);
+    rollIntervalsRef.current = [];
+  };
+
+  const getRandomNumber = (min: number, max: number) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  const handleStart = async () => {
+    try {
+      const values = await form.validateFields();
+      const { min, max, count } = values;
+      setResults(Array.from({ length: count }, () => 0));
+      setRolling(true);
+      setLoading(false);
+
+      clearRollingIntervals();
+      for (let i = 0; i < count; i++) {
+        const interval = setInterval(() => {
+          setResults((prev) => {
+            const next = [...prev];
+            next[i] = getRandomNumber(min, max);
+            return next;
+          });
+        }, 60);
+        rollIntervalsRef.current.push(interval);
+      }
+    } catch (error: any) {
+      if (error?.errorFields) return;
+      console.error('[Classroom Tools] start failed', error);
+      message.error(error?.message || '参数校验失败');
+    }
+  };
+
+  const handleStop = async () => {
+    if (!rolling) return;
+
+    try {
+      setLoading(true);
+      clearRollingIntervals();
+
+      const values = form.getFieldsValue();
+      const resp = await fetch('/confetti-thinking-time/classroom-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'random_number',
+          min: values.min,
+          max: values.max,
+          count: values.count,
+          allowDuplicate: values.allowDuplicate,
+        }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || `HTTP ${resp.status}`);
+      }
+
+      const nums: number[] = data.data?.numbers || [];
+      nums.forEach((num, idx) => {
+        setTimeout(() => {
+          setResults((prev) => {
+            const next = [...prev];
+            next[idx] = num;
+            return next;
+          });
+        }, idx * 100);
+      });
+      message.success('生成完成');
+    } catch (error: any) {
+      console.error('[Classroom Tools] stop failed', error);
+      message.error(error?.message || '生成失败，请稍后再试');
+    } finally {
+      setLoading(false);
+      setRolling(false);
+    }
+  };
+
+  const handleReset = () => {
+    clearRollingIntervals();
+    setRolling(false);
+    setResults([]);
+    form.resetFields();
+  };
+
+  React.useEffect(() => {
+    return () => {
+      clearRollingIntervals();
+    };
+  }, []);
+
+  if (!isAdmin) return null;
+
+  return (
+    <>
+      <Tooltip title="课堂工具 - 随机数字">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{
+            position: 'fixed',
+            right: 24,
+            bottom: 156,
+            width: 45,
+            height: 45,
+            borderRadius: '50%',
+            border: 'none',
+            background: '#f59e0b',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 20px rgba(15, 23, 42, 0.25)',
+            cursor: 'pointer',
+            zIndex: 2000,
+          }}
+        >
+          <ThunderboltOutlined style={{ fontSize: 20 }} />
+        </button>
+      </Tooltip>
+
+      <Drawer
+        title={
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Title level={5} style={{ margin: 0 }}>
+              课堂工具（随机数字）
+            </Title>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              快速抽号/抽奖
+            </Text>
+          </div>
+        }
+        placement="right"
+        width={420}
+        open={open}
+        onClose={() => setOpen(false)}
+      >
+        <Form
+          layout="vertical"
+          form={form}
+          initialValues={{
+            min: 1,
+            max: 50,
+            count: 1,
+            allowDuplicate: false,
+          }}
+        >
+          <Form.Item label="最小值" name="min" rules={[{ required: true, message: '请输入最小值' }]}>
+            <InputNumber style={{ width: '100%' }} min={-9999} max={999999} />
+          </Form.Item>
+          <Form.Item label="最大值" name="max" rules={[{ required: true, message: '请输入最大值' }]}>
+            <InputNumber style={{ width: '100%' }} min={-9999} max={999999} />
+          </Form.Item>
+          <Form.Item label="数量" name="count" rules={[{ required: true, message: '请输入数量' }]}>
+            <InputNumber style={{ width: '100%' }} min={1} max={50} />
+          </Form.Item>
+          <Form.Item label="允许重复" name="allowDuplicate" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Form>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!rolling ? (
+            <Button type="primary" onClick={handleStart} disabled={loading} block>
+              开始摇号
+            </Button>
+          ) : (
+            <Button type="primary" danger onClick={handleStop} loading={loading} block>
+              停止并生成
+            </Button>
+          )}
+          <Button onClick={handleReset} disabled={loading || rolling} block>
+            重置
+          </Button>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8 }}>生成结果</div>
+          {results.length === 0 ? (
+            <Text type="secondary">点击开始摇号即可看到结果</Text>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 10 }}>
+              {results.map((num, idx) => (
+                <div
+                  key={`${num}-${idx}`}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 10,
+                    padding: '12px 10px',
+                    textAlign: 'center',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    background: rolling ? '#fff7ed' : '#fffbeb',
+                    transition: 'transform 120ms ease, box-shadow 120ms ease, background 120ms ease',
+                    boxShadow: rolling ? '0 4px 12px rgba(249, 115, 22, 0.15)' : '0 2px 6px rgba(0,0,0,0.06)',
+                    transform: rolling ? 'scale(1.02)' : 'scale(1)',
+                  }}
+                >
+                  {num}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Drawer>
+    </>
+  );
+};
 
 const AiHelperApp: React.FC = () => {
   const ui = useMemo(() => safeGetUiContext(), []);
@@ -165,6 +386,7 @@ const AiHelperApp: React.FC = () => {
 
   return (
     <>
+      <ClassroomToolsFloating isAdmin={!!ui?.isAdmin} />
       {/* 悬浮球 */}
       <Tooltip title="AI 辅助解题（实验功能）">
         <button
@@ -188,7 +410,7 @@ const AiHelperApp: React.FC = () => {
             zIndex: 2000,
           }}
         >
-          <CommentOutlined style={{ fontSize: 24 }} />
+          <RobotOutlined style={{ fontSize: 22 }} />
         </button>
       </Tooltip>
 

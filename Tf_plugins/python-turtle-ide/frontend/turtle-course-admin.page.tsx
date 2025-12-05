@@ -7,7 +7,6 @@ import {
   Input,
   message,
   Modal,
-  Select,
   Space,
   Switch,
   Tag,
@@ -15,15 +14,13 @@ import {
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
+// 简化为本地文本域，后台渲染时再走 Markdown 解析，避免运行时加载问题
+
 interface TaskView {
   id: string;
   title: string;
   description: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  tags?: string[];
-  starterCode?: string;
-  hint?: string;
-  coverImage?: string;
+  answerCode?: string;
   isPublished: boolean;
   order: number;
   updatedAt?: string;
@@ -33,12 +30,6 @@ interface TaskView {
 interface AdminData {
   tasks: TaskView[];
 }
-
-const difficultyOptions = [
-  { value: 'beginner', label: '入门' },
-  { value: 'intermediate', label: '进阶' },
-  { value: 'advanced', label: '挑战' },
-];
 
 const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,11 +49,7 @@ const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
       task || {
         title: '',
         description: '',
-        difficulty: 'beginner',
-        tags: [],
-        starterCode: '',
-        hint: '',
-        coverImage: '',
+        answerCode: '',
         isPublished: true,
         order: Date.now(),
       },
@@ -131,7 +118,7 @@ const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ marginBottom: 4 }}>🐢 Turtle 课程任务管理</h1>
-          <p style={{ color: '#6b7280', margin: 0 }}>创建任务、配置 starter code，并追踪学员进度。</p>
+          <p style={{ color: '#6b7280', margin: 0 }}>创建任务并追踪学员进度。</p>
         </div>
         <Button type="primary" onClick={() => openModal()}>
           新建任务
@@ -148,16 +135,6 @@ const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
                 <Tag color={task.isPublished ? 'green' : 'default'}>
                   {task.isPublished ? '已发布' : '草稿'}
                 </Tag>
-                <Tag color={
-                  task.difficulty === 'beginner'
-                    ? 'blue'
-                    : task.difficulty === 'intermediate'
-                      ? 'orange'
-                      : 'red'
-                }
-                >
-                  {difficultyOptions.find((opt) => opt.value === task.difficulty)?.label || task.difficulty}
-                </Tag>
               </div>
             }
             extra={
@@ -172,13 +149,6 @@ const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
             }
           >
             <p style={{ whiteSpace: 'pre-line', marginBottom: 12 }}>{task.description}</p>
-            {task.tags && task.tags.length > 0 && (
-              <Space wrap>
-                {task.tags.map((tag) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))}
-              </Space>
-            )}
           </Card>
         ))}
 
@@ -205,23 +175,13 @@ const TaskAdmin: React.FC<AdminData> = ({ tasks }) => {
             name="description"
             label="任务描述 / 要求"
             rules={[{ required: true, message: '请输入任务描述' }]}
+            valuePropName="value"
+            getValueFromEvent={(v) => v}
           >
-            <Input.TextArea rows={4} placeholder="用自然语言描述任务、目标及提示" />
+            <Input.TextArea rows={6} placeholder="支持 Markdown，提交后后台渲染" />
           </Form.Item>
-          <Form.Item name="difficulty" label="难度">
-            <Select options={difficultyOptions} />
-          </Form.Item>
-          <Form.Item name="tags" label="标签">
-            <Select mode="tags" placeholder="输入标签后回车" />
-          </Form.Item>
-          <Form.Item name="starterCode" label="起始代码">
-            <Input.TextArea rows={6} placeholder="提供模板代码（可选）" />
-          </Form.Item>
-          <Form.Item name="hint" label="提示 / 解析">
-            <Input.TextArea rows={3} placeholder="可选：提供解题思路" />
-          </Form.Item>
-          <Form.Item name="coverImage" label="封面图片 URL">
-            <Input placeholder="https://example.com/task-cover.png" />
+          <Form.Item name="answerCode" label="参考答案代码">
+            <Input.TextArea rows={6} placeholder="仅教师可见的参考答案代码" />
           </Form.Item>
           <Form.Item name="order" label="排序值">
             <Input type="number" placeholder="数字越小越靠前" />

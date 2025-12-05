@@ -56,11 +56,7 @@ export class TurtleTaskService {
         const taskPayload = {
             title: data.title,
             description: data.description,
-            difficulty: data.difficulty,
-            tags: data.tags || [],
-            starterCode: data.starterCode || '',
-            hint: data.hint || '',
-            coverImage: data.coverImage || '',
+            answerCode: data.answerCode || '',
             isPublished: data.isPublished,
             order: data.order ?? now.getTime(),
             updatedAt: now,
