@@ -38,11 +38,7 @@ export class TurtleTaskAdminHandler extends Handler {
                     taskId,
                     title,
                     description,
-                    difficulty,
-                    tags,
-                    starterCode,
-                    hint,
-                    coverImage,
+                    answerCode,
                     isPublished,
                     order,
                 } = this.request.body;
@@ -55,15 +51,7 @@ export class TurtleTaskAdminHandler extends Handler {
                     taskId,
                     title,
                     description,
-                    difficulty: difficulty || 'beginner',
-                    tags: Array.isArray(tags)
-                        ? tags
-                        : typeof tags === 'string' && tags.length
-                            ? tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
-                            : [],
-                    starterCode,
-                    hint,
-                    coverImage,
+                    answerCode,
                     isPublished: isPublished === true || isPublished === 'true',
                     order: typeof order === 'number' ? order : Number.parseInt(order, 10) || undefined,
                 });

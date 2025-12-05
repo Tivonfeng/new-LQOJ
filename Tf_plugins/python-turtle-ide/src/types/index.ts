@@ -56,11 +56,9 @@ export interface TurtleTask {
     _id?: ObjectId;
     title: string;
     description: string;
-    difficulty: TurtleTaskDifficulty;
+    difficulty?: TurtleTaskDifficulty;
     tags?: string[];
-    starterCode?: string;
-    hint?: string;
-    coverImage?: string;
+    answerCode?: string;
     isPublished: boolean;
     order: number;
     createdAt: Date;
@@ -85,11 +83,7 @@ export interface SaveTaskParams {
     taskId?: string;
     title: string;
     description: string;
-    difficulty: TurtleTaskDifficulty;
-    tags?: string[];
-    starterCode?: string;
-    hint?: string;
-    coverImage?: string;
+    answerCode?: string;
     isPublished: boolean;
     order?: number;
 }

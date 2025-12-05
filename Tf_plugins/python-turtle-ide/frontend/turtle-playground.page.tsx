@@ -24,8 +24,7 @@ interface TurtleTask {
   description: string;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   tags?: string[];
-  starterCode?: string;
-  hint?: string;
+  answerCode?: string;
 }
 
 interface TaskProgress {
@@ -126,7 +125,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   };
 
   const taskId = task?.id || null;
-  const initialCode = work?.code || taskProgress?.lastCode || task?.starterCode || DEFAULT_CODE;
+  const initialCode = work?.code || taskProgress?.lastCode || DEFAULT_CODE;
   const [code, setCode] = useState(initialCode);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
   const [isRunning, setIsRunning] = useState(false);
@@ -143,7 +142,6 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const taskStatus = currentTaskProgress?.status || (task ? 'not_started' : null);
   const taskDescriptionHtml = useHydroMarkdown(task?.description);
-  const taskHintHtml = useHydroMarkdown(task?.hint);
 
   const describeTaskStatus = (status: TaskProgressStatus | null) => {
     if (!status) return '';
@@ -577,15 +575,6 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                         style={{ marginBottom: 8 }}
                         dangerouslySetInnerHTML={{ __html: taskDescriptionHtml }}
                     />
-                    {task.hint && (
-                        <details style={{ marginBottom: 12 }}>
-                            <summary style={{ cursor: 'pointer', color: 'var(--primary-dark)' }}>查看任务提示</summary>
-                            <div
-                                style={{ marginTop: 8 }}
-                                dangerouslySetInnerHTML={{ __html: taskHintHtml }}
-                            />
-                        </details>
-                    )}
                     <div className="task-panel-actions">
                         {isLoggedIn ? (
                             <>
