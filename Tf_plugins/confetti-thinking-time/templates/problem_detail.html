@@ -6,7 +6,8 @@
   problemNumId: pdoc.docId,
   codeLang: handler.user.codeLang,
   codeTemplate: handler.user.codeTemplate,
-  pdoc: pdoc
+  pdoc: pdoc,
+  isAdmin: handler.user.hasPriv(PRIV.PRIV_EDIT_SYSTEM)
 }) }}
 {% if tdoc %}
   {{ set(UiContext, 'tdoc', tdoc) }}
