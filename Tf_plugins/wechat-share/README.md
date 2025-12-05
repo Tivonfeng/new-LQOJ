@@ -1,95 +1,77 @@
-# 微信分享插件 (WeChat Share Plugin)
+# 微信插件 (WeChat Plugin)
 
-一个为 Hydro OJ 开发的微信JSSDK分享插件，支持在微信生态中分享OJ内容，包括题目、比赛、用户资料等。
+一个为 Hydro OJ 开发的微信集成插件，支持微信分享(JSSDK)和微信登录(OAuth)功能。
 
 ## 功能特性
 
-- **微信JSSDK集成**：完整集成微信公众号JSSDK功能
-- **智能分享配置**：根据页面类型自动生成合适的分享内容
-- **管理后台**：提供可视化的配置管理界面
-- **多页面支持**：支持题目、比赛、用户、排行榜等页面分享
-- **分享统计**：记录分享行为，支持数据分析
-- **响应式设计**：适配移动端和桌面端
-- **国际化支持**：支持中英文界面
+### 1. 微信分享 (JSSDK)
+- **完整的JSSDK集成**：支持微信公众号JS-SDK功能
+- **智能签名生成**：自动生成和缓存AccessToken、JSApiTicket
+- **域名验证**：安全的域名白名单机制
+- **CORS支持**：跨域请求支持
+
+### 2. 微信登录 (OAuth)
+- **OAuth 2.0授权**：标准的微信网页授权流程
+- **账号自动绑定**：支持新用户注册和现有账号绑定
+- **UnionID支持**：优先使用UnionID实现跨应用统一身份
+- **用户信息同步**：自动获取昵称、头像等用户信息
 
 ## 安装方法
 
-1. 将插件文件放置到 `Tf_plugins/wechat-share/` 目录
-2. 安装依赖包：
+1. 确保插件位于 `Tf_plugins/wechat-share/` 目录
+2. 安装依赖：
    ```bash
-   npm install wechat-jssdk axios
+   cd Tf_plugins/wechat-share
+   yarn install
    ```
-3. 重启 Hydro 服务
-4. 访问 `/wechat/config` 配置微信参数
+3. 配置环境变量（可选）：
+   ```bash
+   export WECHAT_APP_ID=your_app_id
+   export WECHAT_APP_SECRET=your_app_secret
+   export WECHAT_DOMAIN=your_domain.com
+   ```
+4. 重启 Hydro 服务
 
 ## 配置要求
 
-### 微信公众号准备
+### 微信公众号设置
 
 1. **获取开发者信息**：
    - 登录 [微信公众平台](https://mp.weixin.qq.com/)
-   - 在 "开发 > 基本配置" 中获取 AppID 和 AppSecret
+   - 在"开发 > 基本配置"中获取 AppID 和 AppSecret
 
-2. **设置JS接口安全域名**：
-   - 在 "设置 > 公众号设置 > 功能设置" 中
-   - 添加您的网站域名到 "JS接口安全域名"
-   - 域名必须通过ICP备案且支持HTTPS
+2. **设置JS接口安全域名**（分享功能）：
+   - 在"设置 > 公众号设置 > 功能设置"中
+   - 添加您的网站域名到"JS接口安全域名"
 
-3. **接口权限**：
-   - 确保公众号具有自定义菜单和JS接口权限
+3. **设置网页授权域名**（登录功能）：
+   - 在"设置 > 公众号设置 > 功能设置"中
+   - 添加您的网站域名到"网页授权域名"
 
-### 系统配置
+4. **接口权限**：
+   - 确保公众号具有"网页授权获取用户基本信息"权限
+   - 服务号或已认证的订阅号
 
-访问 `/wechat/config` 配置以下参数：
+### 配置参数
 
-```yaml
-wechat-share:
-  enabled: true                    # 是否启用微信分享
-  appId: "wx1234567890abcdef"      # 微信公众号AppID
-  appSecret: "your_app_secret"     # 微信公众号AppSecret
-  domain: "example.com"            # 授权域名（不含协议）
+在 `index.ts` 中配置（或使用环境变量）：
+
+```typescript
+const WECHAT_CONFIG = {
+  appId: 'wx1234567890abcdef',      // 微信公众号AppID
+  appSecret: 'your_app_secret',     // 微信公众号AppSecret
+  domain: 'example.com',            // 授权域名（不含协议）
+};
 ```
 
 ## 功能说明
 
-### 管理界面
+### 微信分享
 
-- **配置管理**：`/wechat/config` - 设置微信公众号信息
-- **连接测试**：验证配置是否正确，测试微信API连通性
-- **缓存管理**：清理Token和Ticket缓存
-- **状态监控**：实时显示服务状态
+**API接口**: `GET /wechat/share?url={current_url}`
 
-### 分享功能
-
-插件会在以下页面自动启用分享：
-
-1. **题目页面** (`/p/{id}`)：
-   - 标题：题目名称
-   - 描述：难度和通过率信息
-   - 链接：题目详情页
-
-2. **比赛页面** (`/c/{id}`)：
-   - 标题：比赛名称
-   - 描述：报名截止时间和参赛人数
-   - 链接：比赛详情页
-
-3. **用户页面** (`/user/{id}`)：
-   - 标题：用户昵称
-   - 描述：等级和AC题数
-   - 链接：用户资料页
-
-4. **排行榜** (`/ranking`)：
-   - 标题：积分排行榜
-   - 描述：编程达人排名
-   - 链接：排行榜页面
-
-### API接口
-
-#### 获取JSSDK配置
-```javascript
-GET /wechat/share?url={current_url}
-
-Response:
+**响应示例**:
+```json
 {
   "success": true,
   "data": {
@@ -107,165 +89,181 @@ Response:
 }
 ```
 
-#### 生成分享配置
+**前端使用**:
 ```javascript
-POST /wechat/share
-Content-Type: application/json
+// 获取配置
+const response = await fetch(`/wechat/share?url=${encodeURIComponent(location.href)}`);
+const { jssdkConfig } = await response.json();
 
-{
-  "type": "problem",
-  "data": {
-    "_id": "1001",
-    "title": "A+B Problem",
-    "difficulty": "简单",
-    "stats": { "ac_rate": 0.85 }
-  }
-}
+// 初始化微信SDK
+wx.config({
+  debug: false,
+  ...jssdkConfig,
+  jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData']
+});
 
-Response:
-{
-  "success": true,
-  "data": {
-    "shareConfig": {
-      "title": "A+B Problem - 算法题目",
-      "desc": "难度: 简单 | 通过率: 85%",
-      "link": "https://example.com/p/1001",
-      "imgUrl": "https://example.com/static/oj-logo.png"
-    }
-  }
-}
-```
+// 设置分享内容
+wx.ready(() => {
+  const shareData = {
+    title: '分享标题',
+    desc: '分享描述',
+    link: location.href,
+    imgUrl: 'https://example.com/image.jpg'
+  };
 
-## 前端集成
-
-### 自动配置（推荐）
-
-插件会自动在支持的页面初始化分享功能：
-
-```javascript
-// 页面加载时自动执行
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.WechatShareManager) {
-        window.WechatShareManager.getInstance().autoConfigureShare();
-    }
+  wx.updateAppMessageShareData(shareData);
+  wx.updateTimelineShareData(shareData);
 });
 ```
 
-### 手动配置
+### 微信登录
 
-```javascript
-import { shareManager } from '/static/wechat-share-utils.js';
+**登录流程**:
+1. 用户点击"微信登录"按钮
+2. 跳转到微信授权页面（`/oauth/wechat/login`）
+3. 用户同意授权
+4. 回调到系统（`/oauth/wechat/callback`）
+5. 自动创建账号或绑定现有账号
 
-// 设置自定义分享内容
-shareManager.setShareData({
-    title: '自定义标题',
-    desc: '自定义描述',
-    link: 'https://example.com/custom',
-    imgUrl: 'https://example.com/custom-image.png'
-});
+**登录入口**:
+- 登录页面会自动显示"微信登录"按钮
+- 用户中心可以绑定/解绑微信账号
 
-// 配置菜单显示
-shareManager.configureMenu(
-    ['menuItem:copyUrl'],  // 隐藏的菜单项
-    ['menuItem:share:appMessage', 'menuItem:share:timeline']  // 显示的菜单项
-);
+**用户数据**:
+- 使用 UnionID（如有）或 OpenID 作为唯一标识
+- 自动导入昵称、头像
+- 占位邮箱格式：`wechat_{id}@wechat.placeholder`
+
+## 项目结构
+
+```
+Tf_plugins/wechat-share/
+├── index.ts                          # 主入口
+├── package.json                      # 包配置
+├── README.md                         # 文档
+└── src/
+    ├── core/
+    │   └── wechat-service.ts        # 微信API核心服务
+    ├── handlers/
+    │   └── share-handler.ts         # 分享路由处理器
+    ├── services/
+    │   └── oauth-service.ts         # OAuth业务逻辑
+    └── types/
+        ├── wechat.ts                # 微信类型定义
+        └── oauth.ts                 # OAuth类型定义
 ```
 
-## 数据库结构
+## 技术实现
 
-插件创建以下 MongoDB 集合：
+### 核心类: WechatService
 
-### wechat.config
-```javascript
-{
-  domainId: String,      // 域名ID
-  appId: String,         // 微信AppID
-  appSecret: String,     // 微信AppSecret
-  domain: String,        // 授权域名
-  enabled: Boolean,      // 是否启用
-  updatedAt: Date,       // 更新时间
-  updatedBy: Number      // 更新者ID
+```typescript
+class WechatService {
+  // 分享功能
+  async getAccessToken(): Promise<string>
+  async getJSApiTicket(): Promise<string>
+  async getJSSDKConfig(url: string): Promise<JSSDKConfig>
+  validateDomain(url: string): boolean
+
+  // OAuth登录
+  async getOAuthAccessToken(code: string): Promise<WechatOAuthToken>
+  async getUserInfo(accessToken: string, openid: string): Promise<WechatUserInfo>
+  isWechatBrowser(userAgent: string): boolean
 }
 ```
 
-### wechat.shares
-```javascript
-{
-  _id: String,           // 分享记录ID
-  type: String,          // 分享类型（problem/contest/user等）
-  title: String,         // 分享标题
-  link: String,          // 分享链接
-  shareType: String,     // 分享方式（friend/timeline）
-  timestamp: Date,       // 分享时间
-  uid: Number,           // 分享用户ID（可选）
-  domainId: String       // 域名ID
+### OAuth Provider
+
+遵循 Hydro OAuth 标准接口:
+```typescript
+interface OAuthProvider {
+  name: string
+  text: string
+  icon: string
+  canRegister: boolean
+  get: (this: Handler) => Promise<void>
+  callback: (this: Handler, args: any) => Promise<OAuthUserResponse>
 }
 ```
 
 ## 安全考虑
 
 1. **AppSecret保护**：
-   - 配置界面不显示完整AppSecret
-   - 数据库存储加密建议
-   - 定期更换AppSecret
+   - 使用环境变量存储敏感信息
+   - 不在日志中输出完整Secret
+   - 建议定期更换
 
 2. **域名验证**：
-   - 严格验证授权域名
-   - 防止未授权域名使用
+   - 严格验证请求来源域名
+   - 支持本地开发环境
 
-3. **API限制**：
-   - 微信API调用频率限制
-   - Token自动刷新机制
+3. **Token管理**：
+   - AccessToken自动缓存和刷新
+   - 提前5分钟过期避免临界问题
+   - State token防止CSRF攻击
 
 ## 故障排除
 
 ### 常见问题
 
-1. **签名验证失败**：
-   - 检查时间戳是否正确
-   - 确认URL编码格式
-   - 验证AppSecret是否正确
+**1. 分享签名验证失败**
+- 检查JS接口安全域名是否正确配置
+- 确认URL格式正确（不含hash部分）
+- 验证时间戳是否准确
 
-2. **分享不生效**：
-   - 确认在微信浏览器中测试
-   - 检查JS接口安全域名设置
-   - 查看浏览器控制台错误信息
+**2. 登录授权失败**
+- 确认网页授权域名已配置
+- 检查AppID和AppSecret是否正确
+- 验证公众号类型和权限
 
-3. **配置测试失败**：
-   - 验证网络连接
-   - 检查AppID和AppSecret
-   - 确认公众号类型和权限
+**3. 回调地址错误**
+- 确保 `server.url` 系统配置正确
+- 检查回调地址格式：`{server.url}oauth/wechat/callback`
 
 ### 调试模式
 
-开发环境可启用调试模式：
+启用详细日志:
+```typescript
+// 所有关键步骤都有日志输出
+// 查看控制台输出，前缀为 [WechatPlugin], [WechatService], [WechatOAuth]
+```
 
+前端调试:
 ```javascript
-// 在分享工具初始化时启用debug
-window.wx.config({
-    debug: true,  // 开启调试模式
-    // ... 其他配置
+wx.config({
+  debug: true,  // 开启调试模式，会在微信中弹出详细信息
+  // ...
 });
 ```
 
+## API限制
+
+- 微信 AccessToken: 2000次/天
+- 网页授权: 根据公众号类型不同
+- JSSDK签名: 无限制（建议缓存）
+
 ## 更新日志
 
+### v2.0.0 (Current)
+- ✨ 新增微信OAuth登录功能
+- ♻️ 重构代码结构，模块化设计
+- 📝 完善文档和类型定义
+- 🐛 修复Token缓存问题
+
 ### v1.0.0
-- 初始版本发布
-- 支持基本的微信JSSDK分享功能
-- 提供管理界面和API接口
-- 支持多种页面类型分享
-- 包含中英文国际化
+- 🎉 初始版本
+- ✅ 微信JSSDK分享功能
 
 ## 许可证
 
-本插件采用 AGPL-3.0 许可证。
+AGPL-3.0
 
 ## 技术支持
 
-- GitHub Issues: [项目地址]/issues
-- 微信开发文档: https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/JS-SDK.html
+- 微信开发文档: https://developers.weixin.qq.com/doc/offiaccount/
+- Hydro 文档: https://hydro.ac/
 
 ---
 
-**注意**：使用前请确保已获得微信公众号的相关权限，并正确配置域名白名单。
+**作者**: tivonfeng
+**版本**: 2.0.0

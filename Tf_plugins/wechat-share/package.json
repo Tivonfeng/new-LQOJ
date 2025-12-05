@@ -4,7 +4,7 @@
   "main": "index.ts",
   "author": "tivonfeng",
   "license": "AGPL-3.0",
-  "description": "微信JSSDK分享功能插件，支持在微信生态中分享OJ内容",
+  "description": "微信插件，支持JSSDK分享和OAuth登录功能",
   "hydro": {
     "cli": false
   },
