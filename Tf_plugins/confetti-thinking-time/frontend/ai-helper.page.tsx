@@ -363,13 +363,42 @@ const AiHelperApp: React.FC = () => {
       // 构建 WebSocket URL
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-      const wsPrefix = (window as any).UiContext?.ws_prefix || '';
-      const wsUrl = `${protocol}//${host}${wsPrefix}/ws/ai-helper/stream`;
+      const uiContext = (window as any).UiContext;
+      let wsPrefix = uiContext?.ws_prefix || '';
 
+      // 确保 wsPrefix 不以 / 结尾，避免路径重复
+      if (wsPrefix && wsPrefix.endsWith('/')) {
+        wsPrefix = wsPrefix.slice(0, -1);
+      }
+
+      // 构建完整的 WebSocket URL
+      let wsUrl = '';
+      if (wsPrefix && (wsPrefix.startsWith('ws://') || wsPrefix.startsWith('wss://'))) {
+        // 如果 wsPrefix 已经是完整的 WebSocket URL 前缀
+        wsUrl = `${wsPrefix}/ws/ai-helper/stream`;
+      } else {
+        // 否则手动构建
+        wsUrl = `${protocol}//${host}${wsPrefix}/ws/ai-helper/stream`;
+      }
+
+      console.log('[AI Helper] 连接 WebSocket:', wsUrl);
       const websocket = new WebSocket(wsUrl);
       setWs(websocket);
 
+      // 添加连接超时处理
+      const connectTimeout = setTimeout(() => {
+        if (websocket.readyState === WebSocket.CONNECTING) {
+          console.error('[AI Helper] WebSocket 连接超时');
+          websocket.close();
+          message.error('连接超时，请检查网络或稍后重试');
+          setLoading(false);
+          setWsStatus('disconnected');
+        }
+      }, 10000); // 10秒超时
+
       websocket.onopen = () => {
+        clearTimeout(connectTimeout);
+        console.log('[AI Helper] WebSocket 连接成功');
         setWsStatus('connected');
 
         // 发送请求
@@ -381,6 +410,7 @@ const AiHelperApp: React.FC = () => {
           ...(prompt ? { prompt } : {}),
         };
 
+        console.log('[AI Helper] 发送请求:', payload);
         websocket.send(JSON.stringify(payload));
       };
 
@@ -498,18 +528,32 @@ const AiHelperApp: React.FC = () => {
         }
       };
 
-      websocket.onerror = () => {
-        message.error('WebSocket 连接错误，请重试');
+      websocket.onerror = (error) => {
+        clearTimeout(connectTimeout);
+        console.error('[AI Helper] WebSocket 错误:', error);
+        message.error('WebSocket 连接错误，请检查 URL 或网络');
         setLoading(false);
         setWsStatus('disconnected');
       };
 
       websocket.onclose = (event) => {
+        clearTimeout(connectTimeout);
+        console.log('[AI Helper] WebSocket 关闭:', event.code, event.reason, 'wasClean:', event.wasClean);
         setWsStatus('disconnected');
         setWs(null);
-        if (event.code !== 1000 && event.code !== 4000 && loading) {
-          message.warning('连接意外断开，请重试');
-          setLoading(false);
+        if (event.code !== 1000 && event.code !== 4000) {
+          if (loading) {
+            let errorMsg = '连接关闭';
+            if (event.code === 1006) {
+              errorMsg = '连接异常关闭，可能是服务器未响应或 URL 错误';
+            } else if (event.code === 4001) {
+              errorMsg = '未授权，请先登录';
+            } else {
+              errorMsg = `连接关闭 (${event.code}): ${event.reason || '未知原因'}`;
+            }
+            message.warning(errorMsg);
+            setLoading(false);
+          }
         }
       };
     } catch (e: any) {

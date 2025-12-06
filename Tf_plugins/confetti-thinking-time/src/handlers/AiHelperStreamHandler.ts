@@ -124,6 +124,73 @@ async function* callDeepSeekStream(prompt: string): AsyncGenerator<string, void,
     }
 }
 
+/**
+ * 根据编程语言返回特定的提示信息
+ */
+function getLanguageSpecificHints(language?: string): string | null {
+    if (!language) return null;
+
+    const lang = language.toLowerCase();
+    const hints: Record<string, string> = {
+        cpp: '这是 C++ 代码。请注意：\n'
+            + '- 注意数据类型的范围（int、long long、unsigned 等）\n'
+            + '- 注意数组越界、空指针等常见错误\n'
+            + '- 注意输入输出格式（cin/cout vs scanf/printf）\n'
+            + '- 注意 STL 容器的使用（vector、map、set 等）\n'
+            + '- 注意内存管理（避免内存泄漏）',
+        c: '这是 C 代码。请注意：\n'
+            + '- 注意数据类型的范围和溢出问题\n'
+            + '- 注意数组越界、空指针等常见错误\n'
+            + '- 注意输入输出格式（scanf/printf）\n'
+            + '- 注意字符串处理（strlen、strcpy 等）\n'
+            + '- 注意内存管理（malloc/free）',
+        python: '这是 Python 代码。请注意：\n'
+            + '- 注意 Python 的缩进和语法特性\n'
+            + '- 注意列表、字典等数据结构的正确使用\n'
+            + '- 注意输入输出方式（input、print）\n'
+            + '- 注意 Python 的整数没有大小限制，但要注意浮点数精度\n'
+            + '- 注意 Python 的切片、推导式等特性',
+        java: '这是 Java 代码。请注意：\n'
+            + '- 注意 Java 的类和方法结构\n'
+            + '- 注意数据类型的范围（int、long、BigInteger 等）\n'
+            + '- 注意输入输出方式（Scanner、BufferedReader 等）\n'
+            + '- 注意集合类的使用（ArrayList、HashMap 等）\n'
+            + '- 注意异常处理',
+        javascript: '这是 JavaScript 代码。请注意：\n'
+            + '- 注意 JavaScript 的异步特性（Promise、async/await）\n'
+            + '- 注意数字精度问题（使用 BigInt 处理大整数）\n'
+            + '- 注意数组和对象的使用\n'
+            + '- 注意输入输出方式（readline、console.log）\n'
+            + '- 注意 JavaScript 的类型转换',
+        go: '这是 Go 代码。请注意：\n'
+            + '- 注意 Go 的包管理和导入\n'
+            + '- 注意错误处理（error 类型）\n'
+            + '- 注意切片（slice）和映射（map）的使用\n'
+            + '- 注意 Go 的并发特性（goroutine、channel）\n'
+            + '- 注意输入输出方式（fmt 包）',
+        rust: '这是 Rust 代码。请注意：\n'
+            + '- 注意 Rust 的所有权系统\n'
+            + '- 注意借用和生命周期\n'
+            + '- 注意错误处理（Result、Option）\n'
+            + '- 注意 Rust 的类型系统和模式匹配\n'
+            + '- 注意输入输出方式（std::io）',
+    };
+
+    // 尝试精确匹配
+    if (hints[lang]) {
+        return hints[lang];
+    }
+
+    // 尝试部分匹配（如 cpp17、python3 等）
+    for (const [key, value] of Object.entries(hints)) {
+        if (lang.includes(key)) {
+            return value;
+        }
+    }
+
+    return null;
+}
+
 async function buildPromptText(
     domainId: string,
     args: {
@@ -189,13 +256,22 @@ async function buildPromptText(
         lines.push('```');
     }
     lines.push('');
+
+    // 根据编程语言添加特定的提示
+    const languageHints = getLanguageSpecificHints(language);
+    if (languageHints) {
+        lines.push(`编程语言特定提示（${language}）:`);
+        lines.push(languageHints);
+        lines.push('');
+    }
+
     lines.push(
         '请按照下面 JSON 结构返回，不要额外添加解释文本：'
         + '{ "analysis": "...", "suggestions": ["..."], "steps": ["..."] }',
     );
     if (mode === 'debug') {
         lines.push(
-            '重点从“可能的错误/边界情况/逻辑漏洞”角度分析，禁止直接给出可 AC 的完整代码。',
+            '重点从"可能的错误/边界情况/逻辑漏洞"角度分析，禁止直接给出可 AC 的完整代码。',
         );
     } else if (mode === 'optimize') {
         lines.push('重点从时间复杂度、空间复杂度和代码可读性角度给出优化建议。');
