@@ -13,7 +13,7 @@
   "udocs": {{ udocsJSON | safe }},
   "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
   "currentUserId": {{ currentUserId if isLoggedIn else 'null' }},
-  "isAdmin": {{ 'true' if isAdmin else 'false' }},
+  "hasEditPerm": {{ 'true' if hasEditPerm else 'false' }},
   "page": {{ page }},
   "total": {{ total }},
   "totalPages": {{ totalPages }}

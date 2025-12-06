@@ -1,4 +1,4 @@
-import { Handler } from 'hydrooj';
+import { Handler, PRIV, PERM } from 'hydrooj';
 import { TurtleWorkService } from '../services';
 
 /**
@@ -45,12 +45,13 @@ export class TurtleWorkHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const author = await UserModel.getById(this.domain._id, work.uid);
 
-        // 检查是否为作者
+        // 检查是否为作者或有编辑权限
         const isAuthor = this.user?._id === work.uid;
-        const canViewCode = !!isAuthor;
+        const hasEditPerm = this.user?.hasPerm(PERM.PERM_EDIT_DOMAIN) || false;
+        const canViewCode = !!isAuthor || !!hasEditPerm;
 
-        // 如果作品不公开且不是作者,则拒绝访问
-        if (!work.isPublic && !isAuthor) {
+        // 如果作品不公开且不是作者也没有编辑权限,则拒绝访问
+        if (!work.isPublic && !isAuthor && !hasEditPerm) {
             throw new Error('This work is private');
         }
 
@@ -70,8 +71,9 @@ export class TurtleWorkHandler extends Handler {
                 uname: author.uname,
             } : null,
             isAuthor,
+            hasEditPerm,
             canViewCode,
-            codeHiddenReason: canViewCode ? '' : '该作品的代码仅对作者可见',
+            codeHiddenReason: canViewCode ? '' : '该作品的代码仅对作者和有编辑权限的用户可见',
             isLoggedIn: !!this.user?._id,
         };
     }

@@ -119,15 +119,17 @@ interface WorkGridProps {
   onDeleted?: (id: string) => void;
   onCoined?: (id: string) => void;
   currentUserId?: number | null;
+  hasEditPerm?: boolean;
 }
 
 function WorkGrid(props: WorkGridProps) {
-  const { works, udocs, isOwn, onDeleted, currentUserId, onCoined } = props;
+  const { works, udocs, isOwn, onDeleted, currentUserId, onCoined, hasEditPerm } = props;
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewingWork, setViewingWork] = useState<TurtleWork | null>(null);
   const [workCode, setWorkCode] = useState<string>('');
   const [loadingWork, setLoadingWork] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [canViewCode, setCanViewCode] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // 运行代码的函数
@@ -253,13 +255,16 @@ function WorkGrid(props: WorkGridProps) {
       if (resp.ok) {
         const data = await resp.json();
         setWorkCode(data.work?.code || '');
+        setCanViewCode(data.canViewCode || false);
       } else {
         message.error('获取作品详情失败');
         setWorkCode(work.code || '');
+        setCanViewCode(isOwn || (hasEditPerm && currentUserId));
       }
     } catch (error) {
       console.error('Failed to load work:', error);
       setWorkCode(work.code || '');
+        setCanViewCode(isOwn || (hasEditPerm && currentUserId));
     } finally {
       setLoadingWork(false);
     }
@@ -529,8 +534,8 @@ function WorkGrid(props: WorkGridProps) {
               />
             </div>
 
-            {/* 代码区域 - 只有作者才能看到代码 */}
-            {workCode && (isOwn || (currentUserId && viewingWork && currentUserId === viewingWork.uid)) && (
+            {/* 代码区域 - 只有作者或管理员才能看到代码 */}
+            {workCode && canViewCode && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
                 <pre
@@ -548,9 +553,9 @@ function WorkGrid(props: WorkGridProps) {
                 </pre>
               </div>
             )}
-            {workCode && !(isOwn || (currentUserId && viewingWork && currentUserId === viewingWork.uid)) && (
+            {workCode && !canViewCode && (
               <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: 14 }}>
-                🔒 代码已隐藏，仅作者可见
+                🔒 代码已隐藏，仅作者和管理员可见
               </div>
             )}
             {!workCode && !loadingWork && (
@@ -570,15 +575,17 @@ interface RankingListProps {
   udocs: Record<string | number, UserDoc>;
   currentUserId?: number | null;
   onCoined?: (id: string) => void;
+  hasEditPerm?: boolean;
 }
 
 function RankingList(props: RankingListProps) {
-  const { works, udocs, currentUserId, onCoined } = props;
+  const { works, udocs, currentUserId, onCoined, hasEditPerm } = props;
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewingWork, setViewingWork] = useState<TurtleWork | null>(null);
   const [workCode, setWorkCode] = useState<string>('');
   const [loadingWork, setLoadingWork] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [canViewCode, setCanViewCode] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // 复用 WorkGrid 中的 runCode 逻辑
@@ -943,8 +950,8 @@ function RankingList(props: RankingListProps) {
               />
             </div>
 
-            {/* 代码区域 - 只有作者才能看到代码 */}
-            {workCode && currentUserId && viewingWork && currentUserId === viewingWork.uid && (
+            {/* 代码区域 - 只有作者或管理员才能看到代码 */}
+            {workCode && canViewCode && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
                 <pre
@@ -962,9 +969,9 @@ function RankingList(props: RankingListProps) {
                 </pre>
               </div>
             )}
-            {workCode && (!currentUserId || !viewingWork || currentUserId !== viewingWork.uid) && (
+            {workCode && !canViewCode && (
               <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: 14 }}>
-                🔒 代码已隐藏，仅作者可见
+                🔒 代码已隐藏，仅作者和管理员可见
               </div>
             )}
             {!workCode && !loadingWork && (
@@ -1084,7 +1091,7 @@ interface GalleryData {
   taskProgress: Record<string, TaskProgress>;
   udocs: Record<string | number, UserDoc>;
   isLoggedIn: boolean;
-  isAdmin: boolean;
+  hasEditPerm: boolean;
   currentUserId: number | null;
   page: number;
   total: number;
@@ -1101,7 +1108,7 @@ const TurtleGallery: React.FC<GalleryData> = ({
   taskProgress,
   udocs,
   isLoggedIn,
-  isAdmin,
+  hasEditPerm,
   currentUserId,
   page,
   total,
@@ -1191,6 +1198,7 @@ const TurtleGallery: React.FC<GalleryData> = ({
                 works={sortedAllWorks}
                 udocs={udocs}
                 currentUserId={currentUserId}
+                hasEditPerm={hasEditPerm}
                 onCoined={(id) => {
                   setAllWorks((list) =>
                     list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)),
@@ -1232,6 +1240,7 @@ const TurtleGallery: React.FC<GalleryData> = ({
               works={popularWorksList}
               udocs={udocs}
               currentUserId={currentUserId}
+              hasEditPerm={hasEditPerm}
               onCoined={(id) => {
                 setPopularWorksList((list) =>
                   list.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w)).sort((a, b) => b.likes - a.likes),
@@ -1289,6 +1298,7 @@ const TurtleGallery: React.FC<GalleryData> = ({
               works={ownWorks}
               udocs={udocs}
               isOwn
+              hasEditPerm={hasEditPerm}
               onDeleted={(id) => {
                 setOwnWorks((list) => list.filter((w) => w.id !== id));
                 setAllWorks((list) => list.filter((w) => w.id !== id));
@@ -1459,7 +1469,7 @@ const TurtleGallery: React.FC<GalleryData> = ({
             >
               Turtle 指令速查
             </Button>
-            {isAdmin && (
+            {hasEditPerm && (
               <Button
                 size="large"
                 onClick={() => {
