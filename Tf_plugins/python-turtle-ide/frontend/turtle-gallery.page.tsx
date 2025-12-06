@@ -318,6 +318,7 @@ function WorkGrid(props: WorkGridProps) {
         display: 'grid',
         gridTemplateColumns: 'repeat(6, 1fr)',
         gap: 12,
+        alignItems: 'start',
       }}
     >
       {works.map((work) => {
@@ -326,6 +327,19 @@ function WorkGrid(props: WorkGridProps) {
           <Card
             key={work.id}
             hoverable
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            styles={{
+              body: {
+                padding: '12px',
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+              },
+            }}
             cover={
               work.imageUrl ? (
                 <div
@@ -352,7 +366,6 @@ function WorkGrid(props: WorkGridProps) {
                 </div>
               )
             }
-            styles={{ body: { padding: '12px' } }}
           >
             <Card.Meta
               title={
@@ -363,7 +376,10 @@ function WorkGrid(props: WorkGridProps) {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    maxWidth: '100%',
+                    width: '100%',
                   }}
+                  title={work.title}
                 >
                   {work.title}
                 </div>
@@ -796,7 +812,10 @@ function RankingList(props: RankingListProps) {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       cursor: 'pointer',
+                      maxWidth: '100%',
+                      width: '100%',
                     }}
+                    title={work.title}
                     onClick={() => handleView(work)}
                   >
                     {work.title}
