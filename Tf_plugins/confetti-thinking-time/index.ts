@@ -4,13 +4,22 @@ import {
     ProblemModel,
     RecordModel,
 } from 'hydrooj';
-import { AiHelperHandler, ThinkingTimeHandler, ClassroomToolsHandler } from './src/handlers';
+import { AiHelperHandler, ClassroomToolsHandler, ThinkingTimeHandler } from './src/handlers';
+import { AiHelperStreamHandler } from './src/handlers/AiHelperStreamHandler';
 
 export default function apply(ctx: Context) {
     ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
 
-    // AI 辅助接口路由
+    // AI 辅助接口路由（HTTP，用于兼容）
     ctx.Route('confetti_ai_helper_analyze', '/confetti-thinking-time/ai-helper/analyze', AiHelperHandler);
+
+    // AI 辅助 WebSocket 流式接口
+    ctx.Connection(
+        'confetti_ai_helper_stream',
+        '/ws/ai-helper/stream',
+        AiHelperStreamHandler,
+    );
+
     // 课堂工具接口路由
     ctx.Route('confetti_classroom_tools', '/confetti-thinking-time/classroom-tools', ClassroomToolsHandler);
 
