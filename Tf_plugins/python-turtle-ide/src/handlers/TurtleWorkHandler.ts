@@ -55,14 +55,13 @@ export class TurtleWorkHandler extends Handler {
         }
 
         // 返回 JSON 格式（前端使用弹窗查看，不再需要HTML页面）
+        // 注意：代码始终返回（用于运行），但前端根据 canViewCode 决定是否显示
         const workPayload: any = {
             ...work,
             _id: work._id?.toString(),
         };
 
-        if (!canViewCode) {
-            delete workPayload.code;
-        }
+        // 代码不再删除，始终返回以便运行，但前端会根据 canViewCode 隐藏显示
 
         this.response.body = {
             work: workPayload,

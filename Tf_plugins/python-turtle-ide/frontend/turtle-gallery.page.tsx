@@ -529,8 +529,8 @@ function WorkGrid(props: WorkGridProps) {
               />
             </div>
 
-            {/* 代码区域 */}
-            {workCode && (
+            {/* 代码区域 - 只有作者才能看到代码 */}
+            {workCode && (isOwn || (currentUserId && viewingWork && currentUserId === viewingWork.uid)) && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
                 <pre
@@ -546,6 +546,11 @@ function WorkGrid(props: WorkGridProps) {
                 >
                   <code>{workCode}</code>
                 </pre>
+              </div>
+            )}
+            {workCode && !(isOwn || (currentUserId && viewingWork && currentUserId === viewingWork.uid)) && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: 14 }}>
+                🔒 代码已隐藏，仅作者可见
               </div>
             )}
             {!workCode && !loadingWork && (
@@ -938,8 +943,8 @@ function RankingList(props: RankingListProps) {
               />
             </div>
 
-            {/* 代码区域 */}
-            {workCode && (
+            {/* 代码区域 - 只有作者才能看到代码 */}
+            {workCode && currentUserId && viewingWork && currentUserId === viewingWork.uid && (
               <div>
                 <h4 style={{ marginBottom: 8 }}>代码：</h4>
                 <pre
@@ -955,6 +960,11 @@ function RankingList(props: RankingListProps) {
                 >
                   <code>{workCode}</code>
                 </pre>
+              </div>
+            )}
+            {workCode && (!currentUserId || !viewingWork || currentUserId !== viewingWork.uid) && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: 14 }}>
+                🔒 代码已隐藏，仅作者可见
               </div>
             )}
             {!workCode && !loadingWork && (
