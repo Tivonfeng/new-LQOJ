@@ -89,7 +89,14 @@ function formatDateTime(iso?: string): string {
   if (!iso) return '';
   try {
     const d = new Date(iso);
-    return d.toLocaleString();
+    // 格式化日期时间，不包含秒数
+    return d.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch {
     return iso || '';
   }
