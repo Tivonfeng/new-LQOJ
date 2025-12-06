@@ -35,6 +35,18 @@ interface TaskProgress {
   bestWorkId?: string;
 }
 
+interface EditorSettings {
+  fontSize: number;
+  fontFamily: string;
+  theme: string;
+  tabSize: number;
+  wordWrap: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
+  lineNumbers: 'on' | 'off' | 'relative' | 'interval';
+  minimap: boolean;
+  renderWhitespace: 'none' | 'boundary' | 'selection' | 'trailing' | 'all';
+  renderLineHighlight: 'none' | 'gutter' | 'line' | 'all';
+}
+
 const TASK_STATUS_LABELS: Record<TaskProgressStatus, string> = {
   not_started: '未开始',
   in_progress: '进行中',
@@ -47,7 +59,7 @@ function useHydroMarkdown(text?: string) {
   useEffect(() => {
     if (!text) {
       setHtml('');
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {
@@ -107,7 +119,7 @@ async function runPythonCode(code: string, onOutput: (text: string) => void) {
 
 const TurtlePlayground: React.FC<TurtleData> = ({
   work,
-  userWorks = [],
+  userWorks: _userWorks = [],
   isLoggedIn,
   currentUserName,
   task,
@@ -125,8 +137,40 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   };
 
   const taskId = task?.id || null;
-  const initialCode = work?.code || taskProgress?.lastCode || DEFAULT_CODE;
+
+  // 自动保存的 localStorage key
+  const AUTO_SAVE_KEY = 'turtle-editor-autosave-code';
+  const AUTO_SAVE_TIMESTAMP_KEY = 'turtle-editor-autosave-timestamp';
+
+  // 加载代码：优先级 work?.code > taskProgress?.lastCode > localStorage > DEFAULT_CODE
+  const loadInitialCode = (): string => {
+    // 如果有保存的作品或任务进度，优先使用
+    if (work?.code) return work.code;
+    if (taskProgress?.lastCode) return taskProgress.lastCode;
+    // 否则尝试从 localStorage 恢复
+    try {
+      const saved = localStorage.getItem(AUTO_SAVE_KEY);
+      if (saved) {
+        const timestamp = localStorage.getItem(AUTO_SAVE_TIMESTAMP_KEY);
+        if (timestamp) {
+          const savedTime = new Date(timestamp);
+          const now = new Date();
+          // 只恢复24小时内的自动保存
+          if (now.getTime() - savedTime.getTime() < 24 * 60 * 60 * 1000) {
+            return saved;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[AutoSave] Failed to load from localStorage:', error);
+    }
+    return DEFAULT_CODE;
+  };
+
+  const initialCode = loadInitialCode();
   const [code, setCode] = useState(initialCode);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | null>(null);
+  const autoSaveTimerRef = useRef<number | null>(null);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
   const [isRunning, setIsRunning] = useState(false);
   const [currentWorkId, setCurrentWorkId] = useState(work?._id || null);
@@ -137,11 +181,152 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   const [currentTaskProgress, setCurrentTaskProgress] = useState<TaskProgress | null>(
     taskProgress || (task ? { status: 'not_started' } : null),
   );
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const taskStatus = currentTaskProgress?.status || (task ? 'not_started' : null);
   const taskDescriptionHtml = useHydroMarkdown(task?.description);
+
+  // 编辑器设置 - 从 localStorage 读取或使用默认值
+  const getDefaultEditorSettings = (): EditorSettings => ({
+    fontSize: 14,
+    fontFamily: '"Fira Code", Consolas, monospace',
+    theme: 'vs',
+    tabSize: 4,
+    wordWrap: 'on',
+    lineNumbers: 'on',
+    minimap: false,
+    renderWhitespace: 'none',
+    renderLineHighlight: 'line',
+  });
+
+  const loadEditorSettings = (): EditorSettings => {
+    try {
+      const saved = localStorage.getItem('turtle-editor-settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...getDefaultEditorSettings(), ...parsed };
+      }
+    } catch (error) {
+      console.error('[Editor Settings] Failed to load settings:', error);
+    }
+    return getDefaultEditorSettings();
+  };
+
+  const [editorSettings, setEditorSettings] = useState<EditorSettings>(loadEditorSettings());
+
+  const saveEditorSettings = useCallback((settings: EditorSettings) => {
+    try {
+      localStorage.setItem('turtle-editor-settings', JSON.stringify(settings));
+      setEditorSettings(settings);
+      // 应用设置到编辑器
+      if (monacoEditorRef.current) {
+        monacoEditorRef.current.updateOptions({
+          fontSize: settings.fontSize,
+          fontFamily: settings.fontFamily,
+          tabSize: settings.tabSize,
+          wordWrap: settings.wordWrap,
+          lineNumbers: settings.lineNumbers,
+          minimap: { enabled: settings.minimap },
+          renderWhitespace: settings.renderWhitespace,
+          renderLineHighlight: settings.renderLineHighlight,
+        });
+        // 应用主题 - 需要等待 Monaco 加载完成
+        loadMonaco().then(({ monaco: monacoInstance }) => {
+          monacoInstance.editor.setTheme(settings.theme);
+        }).catch((error) => {
+          console.error('[Editor Settings] Failed to set theme:', error);
+        });
+      }
+    } catch (error) {
+      console.error('[Editor Settings] Failed to save settings:', error);
+    }
+  }, []);
+
+  // 性能优化：控制台输出批量更新
+  const consoleOutputBufferRef = useRef<string>('>>> 准备就绪\n');
+  const consoleUpdateTimerRef = useRef<number | null>(null);
+  const MAX_CONSOLE_LENGTH = 50000; // 限制控制台输出最大长度
+
+  // 批量更新控制台输出，减少重渲染
+  const appendConsoleOutput = useCallback((text: string) => {
+    consoleOutputBufferRef.current += text;
+    // 限制输出长度，防止内存泄漏
+    if (consoleOutputBufferRef.current.length > MAX_CONSOLE_LENGTH) {
+      const keepLength = MAX_CONSOLE_LENGTH * 0.7; // 保留70%
+      consoleOutputBufferRef.current =
+        `>>> [输出已截断，保留最近内容]\n${consoleOutputBufferRef.current.slice(-keepLength)}`;
+    }
+
+    // 使用防抖批量更新，每100ms更新一次
+    if (consoleUpdateTimerRef.current !== null) {
+      clearTimeout(consoleUpdateTimerRef.current);
+    }
+    consoleUpdateTimerRef.current = window.setTimeout(() => {
+      setConsoleOutput(consoleOutputBufferRef.current);
+      consoleUpdateTimerRef.current = null;
+    }, 100);
+  }, []);
+
+  // 立即更新控制台（用于重要消息）
+  const setConsoleOutputImmediate = useCallback((text: string) => {
+    consoleOutputBufferRef.current = text;
+    if (consoleUpdateTimerRef.current !== null) {
+      clearTimeout(consoleUpdateTimerRef.current);
+      consoleUpdateTimerRef.current = null;
+    }
+    setConsoleOutput(text);
+  }, []);
+
+  // 自动保存代码到 localStorage
+  const lastSaveTimeRef = useRef<number>(0);
+  const MIN_SAVE_INTERVAL = 5000; // 最小保存间隔：5秒
+
+  const autoSaveCode = useCallback((codeToSave: string) => {
+    // 如果代码为空，不保存
+    if (!codeToSave || codeToSave.trim() === '') {
+      return;
+    }
+
+    // 清除之前的定时器
+    if (autoSaveTimerRef.current !== null) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // 防抖保存：3秒后保存（增加防抖时间，减少提示频率）
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      const now = Date.now();
+      // 如果距离上次保存时间太短，不显示提示
+      if (now - lastSaveTimeRef.current < MIN_SAVE_INTERVAL) {
+        // 静默保存，不显示提示
+        try {
+          localStorage.setItem(AUTO_SAVE_KEY, codeToSave);
+          localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
+        } catch (error) {
+          console.error('[AutoSave] Failed to save code:', error);
+        }
+        autoSaveTimerRef.current = null;
+        return;
+      }
+
+      try {
+        localStorage.setItem(AUTO_SAVE_KEY, codeToSave);
+        localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
+        lastSaveTimeRef.current = now;
+        // 只在真正保存成功时显示提示，不显示"保存中"
+        setAutoSaveStatus('saved');
+        // 1.5秒后隐藏保存状态（缩短显示时间）
+        setTimeout(() => {
+          setAutoSaveStatus(null);
+        }, 1500);
+      } catch (error) {
+        console.error('[AutoSave] Failed to save code:', error);
+        setAutoSaveStatus(null);
+      }
+      autoSaveTimerRef.current = null;
+    }, 3000); // 从1秒增加到3秒
+  }, []);
 
   const describeTaskStatus = (status: TaskProgressStatus | null) => {
     if (!status) return '';
@@ -313,30 +498,59 @@ const TurtlePlayground: React.FC<TurtleData> = ({
           },
         });
 
-        // 创建Monaco editor
+        // 创建Monaco editor - 使用保存的设置
+        const savedSettings = (() => {
+          try {
+            const saved = localStorage.getItem('turtle-editor-settings');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              return { ...getDefaultEditorSettings(), ...parsed };
+            }
+          } catch (error) {
+            console.error('[Editor Settings] Failed to load settings:', error);
+          }
+          return getDefaultEditorSettings();
+        })();
         const editor = monacoInstance.editor.create(editorRef.current, {
           model,
-          theme: 'vs',
-          fontSize: 14,
-          lineNumbers: 'on',
-          minimap: { enabled: false },
+          theme: savedSettings.theme,
+          fontSize: savedSettings.fontSize,
+          fontFamily: savedSettings.fontFamily,
+          lineNumbers: savedSettings.lineNumbers,
+          minimap: { enabled: savedSettings.minimap },
           scrollBeyondLastLine: false,
           automaticLayout: true,
-          wordWrap: 'on',
-          tabSize: 4,
+          wordWrap: savedSettings.wordWrap,
+          tabSize: savedSettings.tabSize,
           // 启用代码补全相关功能
           suggestOnTriggerCharacters: true,
           quickSuggestions: true,
-          acceptSuggestionOnEnter: 'on',
+          acceptSuggestionOnEnter: 'smart', // 改为 'smart'，只在有明确建议时接受，避免误触发
           tabCompletion: 'on',
+          // 性能优化：减少不必要的计算
+          renderWhitespace: savedSettings.renderWhitespace,
+          renderLineHighlight: savedSettings.renderLineHighlight,
         });
         console.log('[Monaco] Editor created');
 
         monacoEditorRef.current = editor;
+        // 同步设置状态
+        setEditorSettings(savedSettings);
 
-        // 监听代码变化
+        // 监听代码变化 - 使用防抖减少更新频率和自动保存
+        let codeUpdateTimer: number | null = null;
         editor.onDidChangeModelContent(() => {
-          setCode(editor.getValue());
+          if (codeUpdateTimer !== null) {
+            clearTimeout(codeUpdateTimer);
+          }
+          // 防抖：300ms 后才更新状态
+          codeUpdateTimer = window.setTimeout(() => {
+            const newCode = editor.getValue();
+            setCode(newCode);
+            // 自动保存到 localStorage
+            autoSaveCode(newCode);
+            codeUpdateTimer = null;
+          }, 300);
         });
 
         console.log('[Monaco] Editor initialized successfully');
@@ -366,7 +580,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       console.log('[TurtlePlayground] Calling initSkulpt');
       initSkulpt(canvasRef.current, (text: string) => {
         console.log('[Skulpt Output]', text);
-        setConsoleOutput((prev) => prev + text);
+        appendConsoleOutput(text);
       });
     } else {
       console.error('[TurtlePlayground] Cannot initialize: canvas or Sk missing');
@@ -377,15 +591,18 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   const handleRun = useCallback(async () => {
     const canvasDiv = canvasRef.current;
     if (!canvasDiv) {
-      setConsoleOutput((prev) => `${prev}[错误] 画布容器未找到\n`);
+      appendConsoleOutput('[错误] 画布容器未找到\n');
       return;
     }
 
     setIsRunning(true);
-    setConsoleOutput('>>> 正在运行...\n');
+    setConsoleOutputImmediate('>>> 正在运行...\n');
+    consoleOutputBufferRef.current = '>>> 正在运行...\n';
 
-    // 清空div内容（Skulpt会在里面创建canvas）
-    canvasDiv.innerHTML = '';
+    // 优化：使用 removeChild 代替 innerHTML，性能更好
+    while (canvasDiv.firstChild) {
+      canvasDiv.removeChild(canvasDiv.firstChild);
+    }
 
     try {
       // 重新初始化Skulpt和Turtle图形目标
@@ -393,7 +610,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
         // 重要：Skulpt的Turtle需要特定的配置方式
         const runConfig: any = {
           output: (text: string) => {
-            setConsoleOutput((prev) => prev + text);
+            appendConsoleOutput(text);
           },
           read: (x: string) => {
             if ((window as any).Sk.builtinFiles?.files[x]) {
@@ -413,29 +630,34 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       }
 
       await runPythonCode(code, (text) => {
-        setConsoleOutput((prev) => prev + text);
+        appendConsoleOutput(text);
       });
 
-      setConsoleOutput((prev) => `${prev}\n>>> 运行完成\n`);
+      appendConsoleOutput('\n>>> 运行完成\n');
     } catch (err: any) {
-      setConsoleOutput((prev) => `${prev}\n❌ 错误: ${err.toString()}\n`);
+      appendConsoleOutput(`\n❌ 错误: ${err.toString()}\n`);
     }
 
     setIsRunning(false);
-  }, [code]);
+  }, [code, appendConsoleOutput, setConsoleOutputImmediate]);
 
   // 清空画布
   const handleClear = useCallback(() => {
     if (!canvasRef.current) return;
-    canvasRef.current.innerHTML = '';
-    setConsoleOutput('>>> 画布已清空\n');
-  }, []);
+    // 优化：使用 removeChild 代替 innerHTML
+    const canvasDiv = canvasRef.current;
+    while (canvasDiv.firstChild) {
+      canvasDiv.removeChild(canvasDiv.firstChild);
+    }
+    setConsoleOutputImmediate('>>> 画布已清空\n');
+    consoleOutputBufferRef.current = '>>> 画布已清空\n';
+  }, [setConsoleOutputImmediate]);
 
   const handleSaveTaskProgress = useCallback(
     async (nextStatus: TaskProgressStatus = 'in_progress') => {
       if (!task || !taskId) return;
       if (!isLoggedIn) {
-        setConsoleOutput((prev) => `${prev}\n⚠️ 登录后才能保存任务进度\n`);
+        appendConsoleOutput('\n⚠️ 登录后才能保存任务进度\n');
         return;
       }
 
@@ -453,23 +675,23 @@ const TurtlePlayground: React.FC<TurtleData> = ({
         const result = await response.json();
         if (result.success) {
           setCurrentTaskProgress(result.progress);
-          setConsoleOutput((prev) => `${prev}\n>>> 任务进度已保存（${TASK_STATUS_LABELS[nextStatus]}）\n`);
+          appendConsoleOutput(`\n>>> 任务进度已保存（${TASK_STATUS_LABELS[nextStatus]}）\n`);
         } else {
-          setConsoleOutput((prev) => `${prev}\n⚠️ 保存任务进度失败: ${result.message}\n`);
+          appendConsoleOutput(`\n⚠️ 保存任务进度失败: ${result.message}\n`);
         }
       } catch (error) {
-        setConsoleOutput(
-          (prev) => `${prev}\n⚠️ 保存任务进度失败: ${error instanceof Error ? error.message : error}\n`,
+        appendConsoleOutput(
+          `\n⚠️ 保存任务进度失败: ${error instanceof Error ? error.message : error}\n`,
         );
       }
     },
-    [task, taskId, isLoggedIn, code],
+    [task, taskId, isLoggedIn, code, appendConsoleOutput],
   );
 
   // 保存作品
   const handleSave = useCallback(async () => {
     if (!isLoggedIn) {
-      setConsoleOutput((prev) => `${prev}\n⚠️ 请先登录\n`);
+      appendConsoleOutput('\n⚠️ 请先登录\n');
       setShowSaveDialog(false);
       return;
     }
@@ -478,7 +700,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     // 如果有多个canvas，合并它们
     const canvasDiv = canvasRef.current;
     if (!canvasDiv) {
-      setConsoleOutput((prev) => `${prev}\n⚠️ 画布容器未找到\n`);
+      appendConsoleOutput('\n⚠️ 画布容器未找到\n');
       return;
     }
 
@@ -486,7 +708,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     let imageUrl = '';
 
     if (allCanvases.length === 0) {
-      setConsoleOutput((prev) => `${prev}\n⚠️ 未找到画布，请先运行代码\n`);
+      appendConsoleOutput('\n⚠️ 未找到画布，请先运行代码\n');
       return;
     }
 
@@ -516,7 +738,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       }
     } catch (error) {
       console.error('[Save] Failed to capture canvas:', error);
-      setConsoleOutput((prev) => `${prev}\n⚠️ 截图失败，将保存不带封面的作品\n`);
+      appendConsoleOutput('\n⚠️ 截图失败，将保存不带封面的作品\n');
     }
 
     const response = await fetch(window.location.pathname, {
@@ -537,21 +759,50 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     const result = await response.json();
     if (result.success) {
       setCurrentWorkId(result.workId);
-      setConsoleOutput((prev) => `${prev}\n✅ 作品保存成功！\n`);
+      appendConsoleOutput('\n✅ 作品保存成功！\n');
       setShowSaveDialog(false);
       if (task) {
         handleSaveTaskProgress('completed');
       }
     } else {
-      setConsoleOutput((prev) => `${prev}\n❌ 保存失败: ${result.message}\n`);
+      appendConsoleOutput(`\n❌ 保存失败: ${result.message}\n`);
       setShowSaveDialog(false);
     }
-  }, [isLoggedIn, code, workTitle, currentWorkId, task, taskId, handleSaveTaskProgress]);
+  }, [isLoggedIn, code, workTitle, currentWorkId, task, taskId, handleSaveTaskProgress, appendConsoleOutput]);
 
+  // 清理定时器
   useEffect(() => {
-    console.log('[TurtlePlayground] Component rendered');
-    console.log('[TurtlePlayground] User works:', userWorks?.length);
-  }, [userWorks]);
+    return () => {
+      if (consoleUpdateTimerRef.current !== null) {
+        clearTimeout(consoleUpdateTimerRef.current);
+      }
+      if (autoSaveTimerRef.current !== null) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 页面卸载前保存代码
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (monacoEditorRef.current) {
+        const currentCode = monacoEditorRef.current.getValue();
+        if (currentCode && currentCode.trim() !== '') {
+          try {
+            localStorage.setItem(AUTO_SAVE_KEY, currentCode);
+            localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
+          } catch (error) {
+            console.error('[AutoSave] Failed to save on unload:', error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   return (
         <>
@@ -618,6 +869,14 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                 <div className="editor-section">
                     <div className="code-editor">
                         <div ref={editorRef} className="monaco-editor-container" />
+                        <div className="auto-save-indicator">
+                            {autoSaveStatus === 'saving' && (
+                                <span className="auto-save-status saving">💾 保存中...</span>
+                            )}
+                            {autoSaveStatus === 'saved' && (
+                                <span className="auto-save-status saved">✅ 已自动保存</span>
+                            )}
+                        </div>
                     </div>
                     <div className="console">
                         {consoleOutput}
@@ -664,7 +923,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                                 onClick={() => {
                                   const canvasDiv = canvasRef.current;
                                   if (!canvasDiv) {
-                                    setConsoleOutput((prev) => `${prev}\n⚠️ 画布容器未找到\n`);
+                                    appendConsoleOutput('\n⚠️ 画布容器未找到\n');
                                     return;
                                   }
 
@@ -672,7 +931,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                                   const allCanvases = canvasDiv.querySelectorAll('canvas');
 
                                   if (allCanvases.length === 0) {
-                                    setConsoleOutput((prev) => `${prev}\n⚠️ 未找到画布，请先运行代码\n`);
+                                    appendConsoleOutput('\n⚠️ 未找到画布，请先运行代码\n');
                                     return;
                                   }
 
@@ -709,13 +968,21 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                                       link.click();
                                     }
 
-                                    setConsoleOutput((prev) => `${prev}\n✅ 图片下载成功！\n`);
+                                    appendConsoleOutput('\n✅ 图片下载成功！\n');
                                   } catch (error) {
-                                    setConsoleOutput((prev) => `${prev}\n❌ 下载失败: ${error}\n`);
+                                    appendConsoleOutput(`\n❌ 下载失败: ${error}\n`);
                                   }
                                 }}
                             >
                                 📥 下载图片
+                            </button>
+                            <button
+                                className="btn-settings"
+                                onClick={() => {
+                                  setShowSettingsDialog(true);
+                                }}
+                            >
+                                ⚙️ 设置
                             </button>
                             <button
                                 className="btn-back-gallery"
@@ -749,6 +1016,210 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                         <div className="modal-actions">
                             <button onClick={handleSave} className="btn-confirm">保存</button>
                             <button onClick={() => setShowSaveDialog(false)} className="btn-cancel">取消</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 编辑器设置对话框 */}
+            {showSettingsDialog && (
+                <div className="modal-overlay" onClick={() => setShowSettingsDialog(false)}>
+                    <div className="modal-content modal-settings" onClick={(e) => e.stopPropagation()}>
+                        <h2>编辑器设置</h2>
+                        <div className="settings-form">
+                            <div className="setting-item">
+                                <label htmlFor="fontSize">字体大小</label>
+                                <input
+                                    id="fontSize"
+                                    type="number"
+                                    min="10"
+                                    max="30"
+                                    value={editorSettings.fontSize}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        fontSize: Number.parseInt(e.target.value, 10) || 14,
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                />
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="fontFamily">字体家族</label>
+                                <select
+                                    id="fontFamily"
+                                    value={editorSettings.fontFamily}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        fontFamily: e.target.value,
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="Consolas, &quot;Courier New&quot;, monospace">Consolas</option>
+                                    <option value="&quot;Fira Code&quot;, Consolas, monospace">Fira Code</option>
+                                    <option value="&quot;JetBrains Mono&quot;, Consolas, monospace">JetBrains Mono</option>
+                                    <option value="&quot;Source Code Pro&quot;, Consolas, monospace">Source Code Pro</option>
+                                    <option value="Monaco, Consolas, monospace">Monaco</option>
+                                    <option value="&quot;Courier New&quot;, monospace">Courier New</option>
+                                </select>
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="theme">主题</label>
+                                <select
+                                    id="theme"
+                                    value={editorSettings.theme}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        theme: e.target.value,
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="vs">浅色主题 (VS)</option>
+                                    <option value="vs-dark">深色主题 (VS Dark)</option>
+                                    <option value="hc-black">高对比度 (HC Black)</option>
+                                </select>
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="tabSize">Tab 大小</label>
+                                <input
+                                    id="tabSize"
+                                    type="number"
+                                    min="2"
+                                    max="8"
+                                    value={editorSettings.tabSize}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        tabSize: Number.parseInt(e.target.value, 10) || 4,
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                />
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="wordWrap">自动换行</label>
+                                <select
+                                    id="wordWrap"
+                                    value={editorSettings.wordWrap}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        wordWrap: e.target.value as EditorSettings['wordWrap'],
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="on">开启</option>
+                                    <option value="off">关闭</option>
+                                </select>
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="lineNumbers">行号显示</label>
+                                <select
+                                    id="lineNumbers"
+                                    value={editorSettings.lineNumbers}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        lineNumbers: e.target.value as EditorSettings['lineNumbers'],
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="on">显示</option>
+                                    <option value="off">隐藏</option>
+                                    <option value="relative">相对行号</option>
+                                </select>
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="minimap">小地图</label>
+                                <input
+                                    id="minimap"
+                                    type="checkbox"
+                                    checked={editorSettings.minimap}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        minimap: e.target.checked,
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-checkbox"
+                                />
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="renderWhitespace">显示空白字符</label>
+                                <select
+                                    id="renderWhitespace"
+                                    value={editorSettings.renderWhitespace}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        renderWhitespace: e.target.value as EditorSettings['renderWhitespace'],
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="none">不显示</option>
+                                    <option value="boundary">边界</option>
+                                    <option value="selection">选中时</option>
+                                    <option value="trailing">尾随空格</option>
+                                    <option value="all">全部</option>
+                                </select>
+                            </div>
+                            <div className="setting-item">
+                                <label htmlFor="renderLineHighlight">行高亮</label>
+                                <select
+                                    id="renderLineHighlight"
+                                    value={editorSettings.renderLineHighlight}
+                                    onChange={(e) => {
+                                      const newSettings = {
+                                        ...editorSettings,
+                                        renderLineHighlight: e.target.value as EditorSettings['renderLineHighlight'],
+                                      };
+                                      setEditorSettings(newSettings);
+                                      saveEditorSettings(newSettings);
+                                    }}
+                                    className="modal-input"
+                                >
+                                    <option value="none">无</option>
+                                    <option value="gutter">仅装订线</option>
+                                    <option value="line">整行</option>
+                                    <option value="all">全部</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button
+                                onClick={() => {
+                                  const defaultSettings = getDefaultEditorSettings();
+                                  setEditorSettings(defaultSettings);
+                                  saveEditorSettings(defaultSettings);
+                                }}
+                                className="btn-reset"
+                            >
+                                重置为默认
+                            </button>
+                            <button onClick={() => setShowSettingsDialog(false)} className="btn-confirm">完成</button>
                         </div>
                     </div>
                 </div>

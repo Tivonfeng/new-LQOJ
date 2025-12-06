@@ -61,13 +61,14 @@ body {
 }
 
 .task-panel {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.98);
     border-radius: var(--radius-xl);
     padding: 16px 20px;
     box-shadow: var(--shadow-xl);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* 性能优化：低配置设备上禁用 backdrop-filter */
+    /* backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); */
 }
 
 .task-panel-header {
@@ -182,8 +183,9 @@ body {
     max-height: 100%;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    /* 性能优化：低配置设备上禁用 backdrop-filter */
+    /* backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px); */
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(0, 0, 0, 0.05);
@@ -192,6 +194,50 @@ body {
     transition: var(--transition-normal);
 }
 
+
+.auto-save-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.auto-save-status {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.auto-save-status.saving {
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.auto-save-status.saved {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    animation: fadeOut 2s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
 
 .code-editor {
     flex: 1;
@@ -279,8 +325,9 @@ body {
     gap: 8px;
     padding: 10px;
     background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    /* 性能优化：低配置设备上禁用 backdrop-filter */
+    /* backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px); */
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(0, 0, 0, 0.05);
@@ -388,6 +435,20 @@ body {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
     border: none;
+}
+
+.canvas-toolbar .btn-settings {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.canvas-toolbar .btn-settings:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 .canvas-toolbar .btn-back-gallery:hover {
@@ -517,6 +578,13 @@ body {
     max-width: 90%;
 }
 
+.modal-settings {
+    min-width: 500px;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
 .modal-actions {
     display: flex;
     gap: 12px;
@@ -556,4 +624,52 @@ body {
     background: rgba(255, 255, 255, 1);
     border-color: var(--primary-color);
     color: var(--primary-color);
+}
+
+.btn-reset {
+    padding: 8px 20px;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition-fast);
+}
+
+.btn-reset:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--danger-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.setting-item label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.modal-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.setting-item select.modal-input {
+    cursor: pointer;
 }
