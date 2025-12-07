@@ -1,11 +1,12 @@
 {
-  "name": "enhanced-user-import",
+  "name": "enhanced-user-tools",
   "version": "1.0.0",
-  "description": "Enhanced User Import Plugin for Hydro",
+  "description": "Enhanced User Tools Plugin for Hydro - User Import and Password Management",
   "main": "index.ts",
   "author": "TivonFeng",
   "license": "MIT",
   "dependencies": {
+    "antd": "^5.21.2",
     "hydrooj": "workspace:^"
   },
   "devDependencies": {

@@ -2,7 +2,6 @@
 import {
     BadRequestError,
     DomainModel,
-    SystemModel,
     Types,
     UserModel,
 } from 'hydrooj';
@@ -33,12 +32,12 @@ export interface UserCreationResult {
 
 export class UserImportService {
     /**
-     * 获取系统配置
+     * 获取系统配置（硬编码）
      */
     static getConfig(): UserImportConfig {
         return {
-            defaultEmailDomain: SystemModel.get('enhanced_user_import.defaultEmailDomain') || 'lqcode.fun',
-            defaultPassword: SystemModel.get('enhanced_user_import.defaultPassword') || '123456',
+            defaultEmailDomain: 'lqcode.fun',
+            defaultPassword: '123456',
         };
     }
 
