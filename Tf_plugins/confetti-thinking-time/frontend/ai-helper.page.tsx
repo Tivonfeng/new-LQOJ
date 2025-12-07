@@ -1,7 +1,8 @@
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import { RobotOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { Button, Drawer, Form, Input, InputNumber, message, Spin, Switch, Tabs, Tag, Tooltip, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 interface AiHelperRequestPayload {
@@ -308,6 +309,11 @@ const AiHelperApp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiHelperResponse['data'] | null>(null);
   const [analysisText, setAnalysisText] = useState<string>('');
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [wsStatus, setWsStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  // 使用 ref 来直接更新 DOM，绕过 React 的批处理，实现真正的实时显示
+  const analysisTextRef = useRef<HTMLDivElement>(null);
+  const currentTextRef = useRef<string>('');
 
   useEffect(() => {
     if (!open) return;
@@ -318,67 +324,242 @@ const AiHelperApp: React.FC = () => {
     }
   }, [open, code]);
 
+  // 清理 WebSocket 连接
+  useEffect(() => {
+    return () => {
+      if (ws) {
+        ws.close();
+        setWs(null);
+      }
+    };
+  }, [ws]);
+
   if (!ui) {
     return null;
   }
 
-  const handleAsk = async () => {
+  const handleAsk = () => {
     if ((mode === 'debug' || mode === 'optimize') && !code?.trim()) {
       message.warning('调试/优化模式需要提供代码，请先填写或粘贴代码。');
       return;
     }
+
+    // 如果已有连接，先关闭
+    if (ws) {
+      ws.close();
+      setWs(null);
+    }
+
     setLoading(true);
     setResult(null);
+    currentTextRef.current = '';
     setAnalysisText('');
+    if (analysisTextRef.current) {
+      analysisTextRef.current.textContent = '';
+    }
+    setWsStatus('connecting');
+
     try {
-      const payload: AiHelperRequestPayload & { prompt?: string } = {
-        problemId: ui.problemId || ui.problemNumId,
-        code: code || undefined,
-        mode,
-        language: ui.codeLang,
-        ...(prompt ? { prompt } : {}),
+      // 构建 WebSocket URL
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const uiContext = (window as any).UiContext;
+      let wsPrefix = uiContext?.ws_prefix || '';
+
+      // 确保 wsPrefix 不以 / 结尾，避免路径重复
+      if (wsPrefix && wsPrefix.endsWith('/')) {
+        wsPrefix = wsPrefix.slice(0, -1);
+      }
+
+      // 构建完整的 WebSocket URL
+      let wsUrl = '';
+      if (wsPrefix && (wsPrefix.startsWith('ws://') || wsPrefix.startsWith('wss://'))) {
+        // 如果 wsPrefix 已经是完整的 WebSocket URL 前缀
+        wsUrl = `${wsPrefix}/ws/ai-helper/stream`;
+      } else {
+        // 否则手动构建
+        wsUrl = `${protocol}//${host}${wsPrefix}/ws/ai-helper/stream`;
+      }
+
+      console.log('[AI Helper] 连接 WebSocket:', wsUrl);
+      const websocket = new WebSocket(wsUrl);
+      setWs(websocket);
+
+      // 添加连接超时处理
+      const connectTimeout = setTimeout(() => {
+        if (websocket.readyState === WebSocket.CONNECTING) {
+          console.error('[AI Helper] WebSocket 连接超时');
+          websocket.close();
+          message.error('连接超时，请检查网络或稍后重试');
+          setLoading(false);
+          setWsStatus('disconnected');
+        }
+      }, 10000); // 10秒超时
+
+      websocket.onopen = () => {
+        clearTimeout(connectTimeout);
+        console.log('[AI Helper] WebSocket 连接成功');
+        setWsStatus('connected');
+
+        // 发送请求
+        const payload: AiHelperRequestPayload & { prompt?: string } = {
+          problemId: ui.problemId || ui.problemNumId,
+          code: code || undefined,
+          mode,
+          language: ui.codeLang,
+          ...(prompt ? { prompt } : {}),
+        };
+
+        console.log('[AI Helper] 发送请求:', payload);
+        websocket.send(JSON.stringify(payload));
       };
 
-      const resp = await fetch('/confetti-thinking-time/ai-helper/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-      const data: AiHelperResponse = await resp.json();
-      if (!data.success) {
-        message.error(data.message || 'AI 分析失败，请稍后重试。');
-        return;
-      }
-
-      const next = data.data || {};
-      setResult(next);
-
-      // 伪流式：把 analysis 按句子逐步显示，模拟思考过程
-      const full = next.analysis || '';
-      if (full) {
-        const parts = full.split(/(?<=[。！？\n])/);
-        let index = 0;
-        const reveal = () => {
-          setAnalysisText((prev) => prev + (parts[index] || ''));
-          index += 1;
-          if (index < parts.length) {
-            setTimeout(reveal, 120);
+      websocket.onmessage = (event: MessageEvent) => {
+        // 处理心跳
+        if (typeof event.data === 'string' && (event.data === 'ping' || event.data === 'pong')) {
+          if (event.data === 'ping') {
+            websocket.send('pong');
           }
-        };
-        reveal();
-      } else {
-        setAnalysisText('');
-      }
+          return;
+        }
+
+        try {
+          const data = JSON.parse(event.data);
+
+          switch (data.type) {
+            case 'ready':
+              break;
+
+            case 'start':
+              currentTextRef.current = '';
+              setAnalysisText('');
+              // 立即清空 DOM
+              if (analysisTextRef.current) {
+                analysisTextRef.current.textContent = '';
+              }
+              message.info(data.message || 'AI 开始思考...');
+              break;
+
+            case 'delta': {
+              // 实时追加内容 - 优先使用 accumulated（更准确）
+              let newText = '';
+              if (data.accumulated !== undefined) {
+                newText = data.accumulated;
+              } else if (data.content) {
+                newText = currentTextRef.current + data.content;
+              }
+
+              if (newText && newText !== currentTextRef.current) {
+                currentTextRef.current = newText;
+
+                // 直接更新 DOM，绕过 React 批处理，实现真正的实时显示
+                if (analysisTextRef.current) {
+                  analysisTextRef.current.textContent = newText;
+                  // 显示容器（如果之前是隐藏的）
+                  const container = analysisTextRef.current.closest('div[style*="marginBottom: 12"]') as HTMLElement;
+                  if (container) {
+                    container.style.display = 'block';
+                  }
+                  // 自动滚动到底部
+                  const drawerBody = analysisTextRef.current.closest('.ant-drawer-body') as HTMLElement;
+                  if (drawerBody) {
+                    requestAnimationFrame(() => {
+                      drawerBody.scrollTop = drawerBody.scrollHeight;
+                    });
+                  }
+                }
+
+                // 使用 flushSync 强制同步更新 React state
+                try {
+                  flushSync(() => {
+                    setAnalysisText(newText);
+                  });
+                } catch (e) {
+                  setAnalysisText(newText);
+                }
+              }
+              break;
+            }
+
+            case 'structured':
+              // 收到结构化数据
+              if (data.data) {
+                setResult(data.data);
+                if (data.data.analysis) {
+                  setAnalysisText(data.data.analysis);
+                }
+              }
+              break;
+
+            case 'done':
+              message.success(data.message || 'AI 回答完成');
+              setLoading(false);
+              break;
+
+            case 'final':
+              // 最终结果
+              if (data.data) {
+                setResult(data.data);
+                if (data.data.analysis) {
+                  setAnalysisText(data.data.analysis);
+                }
+              }
+              setLoading(false);
+              // 关闭连接
+              if (websocket.readyState === WebSocket.OPEN) {
+                websocket.close(1000, 'completed');
+              }
+              break;
+
+            case 'error':
+              message.error(data.message || 'AI 服务出错');
+              setLoading(false);
+              setWsStatus('disconnected');
+              if (websocket.readyState === WebSocket.OPEN) {
+                websocket.close();
+              }
+              break;
+
+            default:
+              break;
+          }
+        } catch (e) {
+          console.error('[AI Helper] 解析消息失败:', e);
+        }
+      };
+
+      websocket.onerror = (error) => {
+        clearTimeout(connectTimeout);
+        console.error('[AI Helper] WebSocket 错误:', error);
+        message.error('WebSocket 连接错误，请检查 URL 或网络');
+        setLoading(false);
+        setWsStatus('disconnected');
+      };
+
+      websocket.onclose = (event) => {
+        clearTimeout(connectTimeout);
+        console.log('[AI Helper] WebSocket 关闭:', event.code, event.reason, 'wasClean:', event.wasClean);
+        setWsStatus('disconnected');
+        setWs(null);
+        if (event.code !== 1000 && event.code !== 4000) {
+          if (loading) {
+            let errorMsg = '连接关闭';
+            if (event.code === 1006) {
+              errorMsg = '连接异常关闭，可能是服务器未响应或 URL 错误';
+            } else if (event.code === 4001) {
+              errorMsg = '未授权，请先登录';
+            } else {
+              errorMsg = `连接关闭 (${event.code}): ${event.reason || '未知原因'}`;
+            }
+            message.warning(errorMsg);
+            setLoading(false);
+          }
+        }
+      };
     } catch (e: any) {
-      console.error('[Confetti AI Helper] analyze failed', e);
-      message.error('AI 服务暂不可用，请稍后重试或联系管理员。');
-    } finally {
+      message.error('无法建立连接，请检查网络或稍后重试');
       setLoading(false);
+      setWsStatus('disconnected');
     }
   };
 
@@ -487,8 +668,15 @@ const AiHelperApp: React.FC = () => {
               <div style={{ fontSize: 11, color: '#9ca3af' }}>
                 每次调用将消耗 <span style={{ fontWeight: 600, color: '#f97316' }}>100</span> 积分
               </div>
-              <Button type="primary" onClick={handleAsk} loading={loading}>
-                {loading ? 'AI 分析中...' : '发送给 AI'}
+              <Button
+                type="primary"
+                onClick={handleAsk}
+                loading={loading}
+                disabled={wsStatus === 'connecting'}
+              >
+                {loading
+                  ? (wsStatus === 'connected' ? 'AI 正在回答...' : '连接中...')
+                  : '发送给 AI（流式）'}
               </Button>
             </div>
           </div>
@@ -507,12 +695,35 @@ const AiHelperApp: React.FC = () => {
                 whiteSpace: 'pre-wrap',
               }}
             >
-              {loading && (
+              {loading && wsStatus === 'connecting' && (
+                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24, color: '#6b7280' }}>
+                  <Spin />
+                  <span style={{ marginLeft: 8 }}>正在连接 AI 服务...</span>
+                </div>
+              )}
+              {loading && wsStatus === 'connected' && !analysisText && (
                 <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24, color: '#6b7280' }}>
                   <Spin />
                   <span style={{ marginLeft: 8 }}>AI 正在思考中，请稍候...</span>
                 </div>
               )}
+              {/* 始终渲染文本容器，确保 ref 始终可用，这样可以直接更新 DOM */}
+              <div style={{ marginBottom: 12, display: (analysisText || result || loading) ? 'block' : 'none' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>总体分析</div>
+                <div
+                  ref={analysisTextRef}
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    minHeight: '1em',
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    lineHeight: 'inherit',
+                  }}
+                >
+                  {analysisText || result?.analysis || ''}
+                </div>
+              </div>
               {!loading && !result && !analysisText && (
                 <div style={{ color: '#9ca3af' }}>
                   说明：本工具仅用于学习辅助，尽量避免直接给出完整答案，更适合用来查找错误、理解题意与优化代码。
@@ -520,12 +731,6 @@ const AiHelperApp: React.FC = () => {
               )}
               {!loading && (analysisText || result) && (
                 <div>
-                  {(analysisText || result?.analysis) && (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontWeight: 600, marginBottom: 4 }}>总体分析</div>
-                      <div>{analysisText || result?.analysis}</div>
-                    </div>
-                  )}
                   {result?.suggestions && result.suggestions.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>建议与注意点</div>
