@@ -1,1 +1,0 @@
-export { PasswordChangeHandler } from './PasswordChangeHandler';

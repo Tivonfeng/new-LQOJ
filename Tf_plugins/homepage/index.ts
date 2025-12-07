@@ -6,6 +6,17 @@ import {
     UserModel,
 } from 'hydrooj';
 
+/**
+ * Homepage Plugin - 首页插件
+ *
+ * 功能：
+ * 1. 首页轮播图和公告显示
+ * 2. 用户个人信息展示（积分、今日AC等）
+ * 3. 自定义 Logo 和 Favicon（通过 public/ 目录中的文件）
+ *    - 替换导航栏 Logo
+ *    - 替换网站 Favicon
+ */
+
 async function getPersonal(domainId: string, userId: number, ctx: Context) {
     try {
         const tfUdoc = await UserModel.getById(domainId, userId);
@@ -125,5 +136,7 @@ export async function apply(ctx: Context) {
         console.log('Homepage methods added to HomeHandler');
     });
 
-    console.log('Homepage plugin loaded successfully!');
+    // 静态文件（Logo 和 Favicon）会自动从 public/ 目录加载
+    // 这些文件会被复制到 ~/.hydro/static/ 目录
+    console.log('Homepage plugin loaded successfully! (includes logos and favicon support)');
 }
