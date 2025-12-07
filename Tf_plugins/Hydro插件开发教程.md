@@ -575,3 +575,691 @@ ctx.injectUI('Nav', 'score_hall', {
 ```
 
 这个教程基于真实的插件实现，涵盖了Hydro插件开发的所有关键方面，可以作为您开发插件的完整指南和参考。
+
+
+
+
+# Hydro WebSocket 在插件中的使用指南
+
+## 目录
+1. [架构概述](#架构概述)
+2. [核心组件](#核心组件)
+3. [创建 WebSocket 处理器](#创建-websocket-处理器)
+4. [注册 WebSocket 路由](#注册-websocket-路由)
+5. [前端连接](#前端连接)
+6. [完整示例](#完整示例)
+7. [高级特性](#高级特性)
+8. [最佳实践](#最佳实践)
+
+---
+
+## 架构概述
+
+Hydro 的 WebSocket 实现基于 `ws` 库，集成在框架的服务器层中。主要特点：
+
+- **统一管理**：所有 WebSocket 连接由 `WebSocketServer` 统一管理
+- **路由系统**：使用与 HTTP 路由类似的路径匹配机制
+- **Handler 模式**：通过继承 `ConnectionHandler` 创建处理器
+- **自动压缩**：支持 Shorty 压缩算法，减少传输数据量
+- **心跳机制**：内置 ping/pong 心跳检测
+
+### 核心文件位置
+
+- **服务器实现**：`framework/framework/server.ts`
+- **路由系统**：`framework/framework/router.ts`
+- **API 集成**：`framework/framework/api.ts`
+
+---
+
+## 核心组件
+
+### 1. WebSocketServer
+
+在 `server.ts` 中创建：
+
+```typescript
+import { WebSocketServer } from 'ws';
+
+export const wsServer = new WebSocketServer({ server: httpServer });
+```
+
+### 2. ConnectionHandler 基类
+
+所有 WebSocket 处理器都应继承自 `ConnectionHandler`：
+
+```typescript
+export class ConnectionHandler<C> extends HandlerCommon<C> {
+    static [kHandler] = 'ConnectionHandler';
+    
+    conn: WebSocket;              // WebSocket 连接对象
+    compression: Shorty;          // 压缩器
+    counter = 0;                  // 消息计数器
+    
+    // 发送数据（支持自动压缩）
+    send(data: any): void;
+    
+    // 关闭连接
+    close(code: number, reason: string): void;
+    
+    // 错误处理
+    onerror(err: HydroError): void;
+    
+    // 重置压缩（当消息过多时）
+    resetCompression(): void;
+}
+```
+
+### 3. 关键方法说明
+
+#### `send(data: any)`
+发送数据到客户端，支持：
+- 字符串直接发送
+- 对象自动 JSON 序列化
+- 自动压缩（如果启用）
+
+```typescript
+// 发送字符串
+this.send('Hello');
+
+// 发送对象（自动序列化）
+this.send({ type: 'message', content: 'Hello' });
+```
+
+#### `close(code: number, reason: string)`
+关闭 WebSocket 连接：
+- `code`: 关闭代码（建议使用 4000+ 的自定义代码）
+- `reason`: 关闭原因
+
+```typescript
+this.close(4000, 'completed');
+this.close(4001, 'Unauthorized');
+```
+
+#### `message(payload: any)`
+处理客户端发送的消息（需要手动实现）：
+
+```typescript
+async message(payload: any) {
+    // payload 已经是解析后的对象
+    // 处理消息逻辑
+}
+```
+
+---
+
+## 创建 WebSocket 处理器
+
+### 基本结构
+
+```typescript
+import { ConnectionHandler } from 'hydrooj';
+
+export class MyWebSocketHandler extends ConnectionHandler {
+    // 1. 连接准备阶段（可选）
+    async prepare() {
+        // 验证权限、初始化等
+        if (!this.user?._id) {
+            this.send({ type: 'error', message: '请先登录' });
+            this.close(4001, 'Unauthorized');
+            return;
+        }
+    }
+    
+    // 2. 连接建立后（可选）
+    async open() {
+        this.send({ type: 'ready' });
+    }
+    
+    // 3. 处理客户端消息（必需）
+    async message(payload: any) {
+        // 处理消息
+    }
+    
+    // 4. 清理资源（可选）
+    async cleanup() {
+        // 清理定时器、取消订阅等
+    }
+}
+```
+
+### 生命周期钩子
+
+1. **`prepare()`**: 在连接建立前执行，用于验证和初始化
+2. **`open()`**: 连接建立后立即执行（注意：框架中没有默认的 `open` 方法，需要在 `prepare` 后手动发送欢迎消息）
+3. **`message(payload)`**: 处理客户端发送的消息
+4. **`cleanup()`**: 连接关闭时执行清理
+
+### 实际示例：AI 辅助流式处理
+
+参考 `confetti-thinking-time` 插件的实现：
+
+```typescript
+export class AiHelperStreamHandler extends ConnectionHandler {
+    async prepare() {
+        // 权限检查
+        if (!this.user?._id) {
+            this.send(JSON.stringify({ 
+                type: 'error', 
+                message: '请先登录后再使用 AI 辅助功能。' 
+            }));
+            this.close(4001, 'Unauthorized');
+        }
+    }
+    
+    // 注意：这里使用 onmessage 而不是 message
+    // 因为框架会将原始消息字符串传递给 onmessage
+    async onmessage(message: string) {
+        try {
+            const data = JSON.parse(message || '{}');
+            const { problemId, code, mode = 'hint' } = data;
+            
+            if (!problemId) {
+                this.send(JSON.stringify({ 
+                    type: 'error', 
+                    message: '缺少必要参数：problemId。' 
+                }));
+                this.close(4002, 'bad_request');
+                return;
+            }
+            
+            // 处理业务逻辑
+            const result = await processAIRequest(data);
+            
+            // 流式发送结果
+            for (const chunk of result) {
+                this.send(JSON.stringify({ 
+                    type: 'delta', 
+                    content: chunk 
+                }));
+            }
+            
+            this.send(JSON.stringify({ type: 'done' }));
+            this.close(4000, 'completed');
+        } catch (e: any) {
+            this.send(JSON.stringify({
+                type: 'error',
+                message: `处理失败: ${e.message}`,
+            }));
+            this.close(4003, 'error');
+        }
+    }
+}
+```
+
+**重要提示**：
+- 如果使用 `message(payload)`，`payload` 已经是解析后的对象
+- 如果使用 `onmessage(message: string)`，需要手动解析 JSON
+
+---
+
+## 注册 WebSocket 路由
+
+### 使用 `ctx.server.Connection()`
+
+```typescript
+export default async function apply(ctx: Context) {
+    ctx.server.Connection(
+        'my_websocket_handler',  // 路由名称
+        '/ws/my-handler',         // 路径
+        MyWebSocketHandler,       // Handler 类
+        // 权限检查（可选）
+        PERM.PERM_VIEW_PROBLEM,   // 权限
+        PRIV.PRIV_USER_PROFILE,    // 特权
+    );
+}
+```
+
+### 路径参数
+
+支持路径参数，使用 `:paramName` 语法：
+
+```typescript
+ctx.server.Connection(
+    'problem_ws',
+    '/ws/problem/:pid',  // pid 会作为参数传递
+    ProblemWebSocketHandler,
+);
+
+// 在 Handler 中访问
+async prepare() {
+    const pid = this.args.pid;  // 从路径参数获取
+}
+```
+
+### 权限控制
+
+```typescript
+// 需要特定权限
+ctx.server.Connection(
+    'admin_ws',
+    '/ws/admin',
+    AdminWebSocketHandler,
+    PERM.PERM_EDIT_DOMAIN,  // 需要编辑域权限
+);
+
+// 需要特定特权
+ctx.server.Connection(
+    'user_ws',
+    '/ws/user',
+    UserWebSocketHandler,
+    null,                   // 无权限要求
+    PRIV.PRIV_USER_PROFILE, // 需要用户档案特权
+);
+
+// 自定义检查函数
+ctx.server.Connection(
+    'custom_ws',
+    '/ws/custom',
+    CustomWebSocketHandler,
+    () => {
+        // 自定义检查逻辑
+        if (!this.user) throw new PermissionError();
+    },
+);
+```
+
+---
+
+## 前端连接
+
+### 基本连接
+
+```typescript
+// 获取 WebSocket URL
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const host = window.location.host;
+const wsUrl = `${protocol}//${host}${UiContext.ws_prefix || ''}/ws/my-handler`;
+
+// 创建连接
+const ws = new WebSocket(wsUrl);
+
+ws.onopen = () => {
+    console.log('WebSocket 连接成功');
+};
+
+ws.onmessage = (event) => {
+    // 处理心跳
+    if (event.data === 'ping') {
+        ws.send('pong');
+        return;
+    }
+    if (event.data === 'pong') {
+        return;
+    }
+    
+    // 处理业务消息
+    const msg = JSON.parse(event.data);
+    console.log('收到消息:', msg);
+};
+
+ws.onclose = (event) => {
+    console.log('连接关闭:', event.code, event.reason);
+};
+
+ws.onerror = (error) => {
+    console.error('连接错误:', error);
+};
+```
+
+### 使用 UiContext
+
+Hydro 提供了 `UiContext` 来获取 WebSocket 前缀：
+
+```typescript
+// 在模板中
+const wsUrl = UiContext.ws_prefix + '/ws/my-handler';
+
+// 或者在前端页面中
+const wsUrl = (UiContext.ws_prefix || '') + '/ws/my-handler';
+```
+
+### 心跳机制
+
+框架会自动发送 ping/pong，但前端也可以主动发送：
+
+```typescript
+class WebSocketManager {
+    private ws: WebSocket | null = null;
+    private heartbeatTimer: number | null = null;
+    private heartbeatInterval = 30000; // 30秒
+    
+    connect(url: string) {
+        this.ws = new WebSocket(url);
+        
+        this.ws.onopen = () => {
+            this.startHeartbeat();
+        };
+        
+        this.ws.onmessage = (event) => {
+            if (event.data === 'ping') {
+                this.ws?.send('pong');
+            } else if (event.data === 'pong') {
+                // 心跳正常
+            } else {
+                // 处理业务消息
+                this.handleMessage(event.data);
+            }
+        };
+        
+        this.ws.onclose = () => {
+            this.stopHeartbeat();
+        };
+    }
+    
+    private startHeartbeat() {
+        this.stopHeartbeat();
+        this.heartbeatTimer = window.setInterval(() => {
+            if (this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send('ping');
+            }
+        }, this.heartbeatInterval);
+    }
+    
+    private stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+}
+```
+
+### 重连机制
+
+```typescript
+class ReconnectingWebSocket {
+    private ws: WebSocket | null = null;
+    private reconnectAttempts = 0;
+    private maxReconnectAttempts = 5;
+    private baseReconnectDelay = 1000;
+    private maxReconnectDelay = 30000;
+    private reconnectTimer: number | null = null;
+    
+    connect(url: string) {
+        try {
+            this.ws = new WebSocket(url);
+            
+            this.ws.onopen = () => {
+                this.reconnectAttempts = 0;
+            };
+            
+            this.ws.onclose = (event) => {
+                if (this.shouldReconnect(event.code)) {
+                    this.scheduleReconnect(url);
+                }
+            };
+            
+            this.ws.onerror = () => {
+                // 错误处理
+            };
+        } catch (error) {
+            this.scheduleReconnect(url);
+        }
+    }
+    
+    private shouldReconnect(closeCode: number): boolean {
+        // 某些关闭代码不应该重连
+        const noReconnectCodes = [1000, 1001, 1005, 4000, 4001, 4002, 4003];
+        return !noReconnectCodes.includes(closeCode);
+    }
+    
+    private scheduleReconnect(url: string) {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('达到最大重连次数');
+            return;
+        }
+        
+        this.reconnectAttempts++;
+        
+        // 指数退避
+        const delay = Math.min(
+            this.baseReconnectDelay * 2 ** (this.reconnectAttempts - 1),
+            this.maxReconnectDelay,
+        );
+        
+        this.reconnectTimer = window.setTimeout(() => {
+            this.connect(url);
+        }, delay);
+    }
+}
+```
+
+---
+
+## 完整示例
+
+### 后端：实时通知处理器
+
+```typescript
+// src/handlers/NotificationHandler.ts
+import { ConnectionHandler, Context } from 'hydrooj';
+
+export class NotificationHandler extends ConnectionHandler {
+    private intervalId: NodeJS.Timeout | null = null;
+    
+    async prepare() {
+        // 验证用户登录
+        if (!this.user?._id) {
+            this.send({ type: 'error', message: '请先登录' });
+            this.close(4001, 'Unauthorized');
+            return;
+        }
+    }
+    
+    async message(payload: any) {
+        const { action, data } = payload;
+        
+        switch (action) {
+            case 'subscribe':
+                // 订阅通知
+                await this.subscribe(data);
+                break;
+            case 'unsubscribe':
+                // 取消订阅
+                await this.unsubscribe(data);
+                break;
+            default:
+                this.send({ type: 'error', message: '未知操作' });
+        }
+    }
+    
+    private async subscribe(data: any) {
+        // 开始推送通知
+        this.intervalId = setInterval(async () => {
+            const notifications = await this.fetchNotifications();
+            if (notifications.length > 0) {
+                this.send({
+                    type: 'notification',
+                    data: notifications,
+                });
+            }
+        }, 5000); // 每5秒检查一次
+        
+        this.send({ type: 'subscribed' });
+    }
+    
+    private async unsubscribe(data: any) {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+        this.send({ type: 'unsubscribed' });
+    }
+    
+    async cleanup() {
+        // 清理资源
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    }
+    
+    private async fetchNotifications() {
+        // 获取通知逻辑
+        return [];
+    }
+}
+```
+
+### 注册处理器
+
+```typescript
+// index.ts
+import { Context } from 'hydrooj';
+import { NotificationHandler } from './src/handlers/NotificationHandler';
+
+export default async function apply(ctx: Context) {
+    ctx.server.Connection(
+        'notification_ws',
+        '/ws/notification',
+        NotificationHandler,
+    );
+}
+```
+
+### 前端：连接和使用
+
+```typescript
+// frontend/notification.page.tsx
+class NotificationManager {
+    private ws: WebSocket | null = null;
+    
+    connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}${UiContext.ws_prefix || ''}/ws/notification`;
+        
+        this.ws = new WebSocket(wsUrl);
+        
+        this.ws.onopen = () => {
+            // 订阅通知
+            this.ws?.send(JSON.stringify({
+                action: 'subscribe',
+                data: {},
+            }));
+        };
+        
+        this.ws.onmessage = (event) => {
+            if (event.data === 'ping') {
+                this.ws?.send('pong');
+                return;
+            }
+            
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'notification') {
+                this.handleNotifications(msg.data);
+            }
+        };
+        
+        this.ws.onclose = () => {
+            // 处理重连
+        };
+    }
+    
+    disconnect() {
+        if (this.ws) {
+            this.ws.send(JSON.stringify({
+                action: 'unsubscribe',
+                data: {},
+            }));
+            this.ws.close();
+        }
+    }
+    
+    private handleNotifications(notifications: any[]) {
+        // 显示通知
+    }
+}
+```
+
+---
+
+## 高级特性
+
+### 1. 事件订阅
+
+使用 `__subscribe` 属性订阅框架事件：
+
+```typescript
+export class EventSubscriberHandler extends ConnectionHandler {
+    __subscribe = [
+        {
+            name: 'record/judge',
+            target: this.onRecordJudge,
+        },
+    ];
+    
+    onRecordJudge(rdoc: any) {
+        // 当有新的评测记录时触发
+        this.send({
+            type: 'record',
+            data: rdoc,
+        });
+    }
+}
+```
+
+### 2. 压缩支持
+
+框架自动处理压缩，当消息过多时会自动重置：
+
+```typescript
+// 框架会自动处理，无需手动操作
+// 但如果需要，可以手动重置
+this.resetCompression();
+```
+
+### 3. SSE 支持
+
+如果启用了 `enableSSE` 配置，WebSocket 路由也会支持 Server-Sent Events：
+
+```typescript
+// 配置中启用
+config: {
+    enableSSE: true,
+}
+
+// 前端可以使用 EventSource
+const eventSource = new EventSource('/ws/my-handler');
+eventSource.onmessage = (event) => {
+    console.log('收到消息:', event.data);
+};
+```
+
+### 4. 使用 API 系统的 Subscription
+
+Hydro 的 API 系统支持 Subscription 类型，可以自动处理 WebSocket：
+
+```typescript
+import { Subscription } from 'hydrooj';
+
+// 定义 Subscription API
+const apis = {
+    'my.subscription': Subscription(
+        Schema.object({
+            topic: Schema.string(),
+        }),
+        (context, { topic }, send) => {
+            // 发送数据
+            const interval = setInterval(() => {
+                send({ data: 'update' });
+            }, 1000);
+            
+            // 返回清理函数
+            return () => {
+                clearInterval(interval);
+            };
+        },
+    ),
+};
+
+// 注册 API
+ctx.inject(['api'], ({ api }) => {
+    api.provide(apis);
+});
+```
+
+前端连接：
+
+```typescript
+// 连接到 API WebSocket

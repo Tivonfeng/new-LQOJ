@@ -1,4 +1,4 @@
-import { Handler, ObjectId, PRIV } from 'hydrooj';
+import { Handler, ObjectId, PRIV, PERM } from 'hydrooj';
 import { TurtleTaskService, TurtleWorkService } from '../services';
 
 /**
@@ -13,7 +13,7 @@ export class TurtleGalleryHandler extends Handler {
         // 从查询参数获取页码
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const uid = this.user?._id;
-        const isAdmin = !!(this.user?.priv & PRIV.PRIV_EDIT_SYSTEM);
+        const hasEditPerm = this.user?.hasPerm(PERM.PERM_EDIT_DOMAIN) || false;
 
         // 获取公开作品
         const { works, total, totalPages } = await workService.getPublicWorks(
@@ -104,7 +104,7 @@ export class TurtleGalleryHandler extends Handler {
             udocs,
             udocsJSON: JSON.stringify(udocs, bigintReplacer),
             currentUserId: uid || null,
-            isAdmin,
+            hasEditPerm,
             page,
             total,
             totalPages,
