@@ -294,161 +294,174 @@ const ScoreHallApp: React.FC = () => {
         {/* Daily Check-in Card */}
         <Col xs={24} lg={8}>
           <Card className="game-card checkin-card" bordered={false}>
-            <Space direction="vertical" align="center" style={{ width: '100%' }} size="middle">
-              <div className="game-icon-wrapper checkin-icon">
-                <CalendarOutlined style={{ fontSize: 48, color: '#fff' }} />
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper checkin-icon">
+                  <CalendarOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">每日签到</Title>
+                  <Text className="game-card-subtitle">每日奖励</Text>
+                </div>
               </div>
-              <Title level={4} style={{ margin: 0, color: '#fff', textAlign: 'center' }}>
-                每日签到
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center', display: 'block' }}>
-                每日奖励
-              </Text>
-              <Space direction="vertical" size="small" style={{ width: '100%' }} align="center">
-                <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center' }}>
-                  每日可获得最多 30 积分
-                </Text>
-                <Space wrap>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    每日连击奖励
-                  </Tag>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    每日重置
-                  </Tag>
-                </Space>
-              </Space>
-              <Space direction="vertical" style={{ width: '100%' }} align="center">
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <DollarOutlined className="game-info-icon" />
+                    <Text className="game-info-text">每日可获得最多 30 积分</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">每日连击奖励</Tag>
+                  <Tag className="game-feature-tag">每日重置</Tag>
+                </div>
+              </div>
+              <div className="game-card-footer">
                 {hasCheckedIn ? (
-                  <Space direction="vertical" style={{ width: '100%' }} align="center">
-                      <Tag
-                        icon={<CheckCircleOutlined />}
-                        color="rgba(255,255,255,0.3)"
-                        style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)', padding: '8px 16px' }}
-                      >
-                        今日已签到
-                      </Tag>
-                      <Button
-                        type="default"
-                        icon={<AppstoreOutlined />}
-                        href={checkInUrl}
-                        className="game-action-btn"
-                        block
-                      >
-                        查看详情
-                      </Button>
-                  </Space>
+                  <>
+                    <Tag icon={<CheckCircleOutlined />} className="game-status-tag success">
+                      今日已签到
+                    </Tag>
+                    <Button
+                      type="default"
+                      icon={<AppstoreOutlined />}
+                      href={checkInUrl}
+                      className="game-action-btn"
+                      block
+                    >
+                      查看详情
+                    </Button>
+                  </>
                 ) : (
-                  <Space direction="vertical" style={{ width: '100%' }} align="center">
-                      <Button
-                        type="primary"
-                        icon={<GiftOutlined />}
-                        onClick={handleQuickCheckin}
-                        loading={checkingIn}
-                        className="game-action-btn checkin-btn"
-                        block
-                        size="large"
-                      >
-                        立即签到 +{hallData.nextReward}
-                      </Button>
-                      <Button
-                        type="default"
-                        icon={<AppstoreOutlined />}
-                        href={checkInUrl}
-                        className="game-action-btn"
-                        block
-                      >
-                        查看详情
-                      </Button>
-                  </Space>
+                  <>
+                    <Button
+                      type="primary"
+                      icon={<GiftOutlined />}
+                      onClick={handleQuickCheckin}
+                      loading={checkingIn}
+                      className="game-action-btn checkin-btn"
+                      block
+                      size="large"
+                    >
+                      立即签到 +{hallData.nextReward}
+                    </Button>
+                    <Button
+                      type="default"
+                      icon={<AppstoreOutlined />}
+                      href={checkInUrl}
+                      className="game-action-btn secondary"
+                      block
+                    >
+                      查看详情
+                    </Button>
+                  </>
                 )}
-              </Space>
-            </Space>
+              </div>
+            </div>
           </Card>
         </Col>
 
         {/* Dice Game Card */}
         <Col xs={24} lg={8}>
           <Card className="game-card dice-card" bordered={false}>
-            <Space direction="vertical" align="center" style={{ width: '100%' }} size="middle">
-              <div className="game-icon-wrapper dice-icon">
-                <AppstoreOutlined style={{ fontSize: 48, color: '#fff' }} />
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper dice-icon">
+                  <AppstoreOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">骰子游戏</Title>
+                  <Text className="game-card-subtitle">测试你的运气</Text>
+                </div>
               </div>
-              <Title level={4} style={{ margin: 0, color: '#fff', textAlign: 'center' }}>
-                骰子游戏
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center', display: 'block' }}>
-                测试你的运气
-              </Text>
-              <Space direction="vertical" size="small" style={{ width: '100%' }} align="center">
-                <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center' }}>猜大小</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>50% 胜率</Text>
-                <Space wrap>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    双倍或归零
-                  </Tag>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    即时结果
-                  </Tag>
-                </Space>
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <Text className="game-info-label">游戏模式</Text>
+                    <Text className="game-info-value">猜大小</Text>
+                  </div>
+                  <div className="game-info-item">
+                    <Text className="game-info-label">胜率</Text>
+                    <Text className="game-info-value">50%</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">双倍或归零</Tag>
+                  <Tag className="game-feature-tag">即时结果</Tag>
+                </div>
                 {hallData.isLoggedIn && (
-                  <Tag color="rgba(34, 197, 94, 0.8)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    剩余: {hallData.gameRemainingPlays.dice}/{hallData.maxDailyPlays}
-                  </Tag>
+                  <div className="game-card-remaining">
+                    <Text className="game-remaining-text">
+                      剩余: {hallData.gameRemainingPlays.dice}/{hallData.maxDailyPlays}
+                    </Text>
+                  </div>
                 )}
+              </div>
+              <div className="game-card-footer">
                 <Button
                   type="primary"
                   icon={<PlayCircleOutlined />}
                   href={diceGameUrl}
                   className="game-action-btn dice-btn"
                   block
+                  size="large"
                 >
                   开始游戏
                 </Button>
-              </Space>
-            </Space>
+              </div>
+            </div>
           </Card>
         </Col>
 
         {/* RPS Game Card */}
         <Col xs={24} lg={8}>
           <Card className="game-card rps-card" bordered={false}>
-            <Space direction="vertical" align="center" style={{ width: '100%' }} size="middle">
-              <div className="game-icon-wrapper rps-icon">
-                <RocketOutlined style={{ fontSize: 48, color: '#fff' }} />
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper rps-icon">
+                  <RocketOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">剪刀石头布</Title>
+                  <Text className="game-card-subtitle">挑战AI</Text>
+                </div>
               </div>
-              <Title level={4} style={{ margin: 0, color: '#fff', textAlign: 'center' }}>
-                剪刀石头布
-              </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center', display: 'block' }}>
-                挑战AI
-              </Text>
-              <Space direction="vertical" size="small" style={{ width: '100%' }} align="center">
-                <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center' }}>竞技场</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>快速策略游戏</Text>
-                <Space wrap>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    2倍奖励
-                  </Tag>
-                  <Tag color="rgba(255,255,255,0.3)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    连击奖励
-                  </Tag>
-                </Space>
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <Text className="game-info-label">游戏模式</Text>
+                    <Text className="game-info-value">竞技场</Text>
+                  </div>
+                  <div className="game-info-item">
+                    <Text className="game-info-label">类型</Text>
+                    <Text className="game-info-value">快速策略</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">2倍奖励</Tag>
+                  <Tag className="game-feature-tag">连击奖励</Tag>
+                </div>
                 {hallData.isLoggedIn && (
-                  <Tag color="rgba(34, 197, 94, 0.8)" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}>
-                    剩余: {hallData.gameRemainingPlays.rps}/{hallData.maxDailyPlays}
-                  </Tag>
+                  <div className="game-card-remaining">
+                    <Text className="game-remaining-text">
+                      剩余: {hallData.gameRemainingPlays.rps}/{hallData.maxDailyPlays}
+                    </Text>
+                  </div>
                 )}
+              </div>
+              <div className="game-card-footer">
                 <Button
                   type="primary"
                   icon={<PlayCircleOutlined />}
                   href={rpsGameUrl}
                   className="game-action-btn rps-btn"
                   block
+                  size="large"
                 >
                   开始对战
                 </Button>
-              </Space>
-            </Space>
+              </div>
+            </div>
           </Card>
         </Col>
       </Row>
