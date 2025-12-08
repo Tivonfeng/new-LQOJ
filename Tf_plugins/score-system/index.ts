@@ -391,7 +391,6 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
 
-
     // 掷骰子游戏路由
     ctx.Route('dice_game', '/score/dice', DiceGameHandler);
     ctx.Route('dice_status', '/score/dice/status', DiceStatusHandler);
