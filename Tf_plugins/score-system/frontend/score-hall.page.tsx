@@ -54,6 +54,7 @@ interface ScoreHallData {
     totalScore: number;
     acCount: number;
   }>;
+  rankingTotal?: number;
   todayTotalScore: number;
   todayActiveUsers: number;
   canManage: boolean;
@@ -77,6 +78,7 @@ const ScoreHallApp: React.FC = () => {
     userRank: '-',
     recentRecords: [],
     topUsers: [],
+    rankingTotal: 0,
     todayTotalScore: 0,
     todayActiveUsers: 0,
     canManage: false,
@@ -101,7 +103,7 @@ const ScoreHallApp: React.FC = () => {
   const [rankingPage, setRankingPage] = useState(1);
   const [rankingPageSize] = useState(10);
   const [allTopUsers, setAllTopUsers] = useState(hallData.topUsers);
-  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.topUsers.length);
+  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
 
   // 快速签到

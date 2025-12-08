@@ -91,8 +91,12 @@ export class ScoreHallHandler extends Handler {
             }),
         }));
 
-        // 获取积分排行榜前10
-        const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
+        // 获取积分排行榜前10，并获取总数
+        const { users: topUsers, total: rankingTotal } = await scoreService.getScoreRankingWithPagination(
+            this.domain._id,
+            1,
+            10,
+        );
 
         // 获取用户信息（包括排行榜和最近记录的用户）
         const rankingUids = topUsers.map((u) => u.uid);
@@ -123,6 +127,7 @@ export class ScoreHallHandler extends Handler {
             nextReward,
             gameRemainingPlays,
             maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
+            rankingTotal,
         };
 
         this.response.template = 'score_hall.html';
@@ -232,6 +237,41 @@ export class ScoreRecordsHandler extends Handler {
             totalPages,
             hasNext: page < totalPages,
             hasPrev: page > 1,
+        };
+    }
+}
+
+/**
+ * 积分排行榜处理器
+ * 路由: /score/ranking
+ * 功能: 全局排行榜分页
+ */
+export class ScoreRankingHandler extends Handler {
+    async get() {
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
+
+        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+        const { users, total, totalPages } = await scoreService.getScoreRankingWithPagination(
+            this.domain._id,
+            page,
+            limit,
+        );
+
+        const uids = users.map((u) => u.uid);
+        const UserModel = global.Hydro.model.user;
+        const udocs = await UserModel.getList(this.domain._id, uids);
+
+        this.response.type = 'application/json';
+        this.response.body = {
+            success: true,
+            users: serializeForJSON(users),
+            udocs: serializeForJSON(udocs),
+            page,
+            total,
+            totalPages,
+            limit,
         };
     }
 }

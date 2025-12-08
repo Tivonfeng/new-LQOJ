@@ -98,6 +98,33 @@ export class ScoreService {
     }
 
     /**
+     * 分页获取积分排行榜 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @param page 页码（从1开始）
+     * @param limit 每页数量
+     * @returns 排行榜分页结果
+     */
+    async getScoreRankingWithPagination(_domainId: string, page: number, limit: number): Promise<{
+        users: UserScore[];
+        total: number;
+        totalPages: number;
+    }> {
+        const skip = (page - 1) * limit;
+
+        const users = await this.ctx.db.collection('score.users' as any)
+            .find({})
+            .sort({ totalScore: -1, lastUpdated: 1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
+        const total = await this.ctx.db.collection('score.users' as any).countDocuments();
+        const totalPages = Math.ceil(total / limit);
+
+        return { users, total, totalPages };
+    }
+
+    /**
      * 获取用户积分记录 (全局)
      * @param _domainId 域ID (保留参数用于向后兼容)
      * @param uid 用户ID
