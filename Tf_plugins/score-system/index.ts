@@ -14,11 +14,6 @@ import {
     DiceHistoryHandler,
     DicePlayHandler,
     DiceStatusHandler,
-    LotteryAdminHandler,
-    LotteryClaimHandler,
-    LotteryDrawHandler,
-    LotteryHallHandler,
-    LotteryHistoryHandler,
     RPSAdminHandler,
     RPSGameHandler,
     RPSHistoryHandler,
@@ -36,8 +31,6 @@ import {
 import {
     type DailyCheckInRecord,
     type DiceGameRecord,
-    type LotteryPrize,
-    type LotteryRecord,
     type RPSGameRecord,
     type ScoreConfig,
     type ScoreRecord,
@@ -45,7 +38,6 @@ import {
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
-    type UserLotteryStats,
     type UserRPSStats,
     type UserScore,
 } from './src/services';
@@ -108,9 +100,6 @@ declare module 'hydrooj' {
     interface Collections {
         'score.records': ScoreRecord;
         'score.users': UserScore;
-        'lottery.prizes': LotteryPrize;
-        'lottery.records': LotteryRecord;
-        'lottery.stats': UserLotteryStats;
         'dice.records': DiceGameRecord;
         'dice.stats': UserDiceStats;
         'rps.records': RPSGameRecord;
@@ -404,14 +393,6 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
 
-    // 抽奖系统路由
-    ctx.Route('lottery_hall', '/score/lottery', LotteryHallHandler);
-    ctx.Route('lottery_draw', '/score/lottery/draw', LotteryDrawHandler);
-    ctx.Route('lottery_claim', '/score/lottery/claim', LotteryClaimHandler);
-    ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
-
-    // 管理员路由
-    ctx.Route('lottery_admin', '/score/lottery/admin', LotteryAdminHandler);
 
     // 掷骰子游戏路由
     ctx.Route('dice_game', '/score/dice', DiceGameHandler);

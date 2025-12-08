@@ -14,14 +14,6 @@ export {
     DiceStatusHandler,
 } from './DiceGameHandlers';
 
-// 抽奖相关处理器
-export {
-    LotteryAdminHandler,
-    LotteryClaimHandler,
-    LotteryDrawHandler,
-    LotteryHallHandler,
-    LotteryHistoryHandler,
-} from './LotteryHandlers';
 
 // 剪刀石头布游戏相关处理器
 export {

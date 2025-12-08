@@ -236,7 +236,7 @@ export class DiceHistoryHandler extends Handler {
 
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const diceService = new DiceGameService(this.ctx, scoreService);
@@ -262,41 +262,18 @@ export class DiceHistoryHandler extends Handler {
                 hour: '2-digit',
                 minute: '2-digit',
             }),
-            diceEmoji: this.getDiceEmoji(record.diceValue),
-            resultText: record.actualResult === 'big' ? '大' : '小',
-            guessText: record.guess === 'big' ? '大' : '小',
         }));
 
-        // 计算统计信息
-        const winRate = userStats && userStats.totalGames > 0
-            ? (userStats.totalWins / userStats.totalGames * 100).toFixed(1)
-            : '0.0';
-
-        this.response.template = 'dice_history.html';
+        // 始终返回 JSON 格式（前端通过 API 调用）
+        this.response.type = 'application/json';
         this.response.body = {
+            success: true,
             records: formattedRecords,
             page,
             total: historyData.total,
             totalPages: historyData.totalPages,
-            userStats: userStats || {
-                totalGames: 0,
-                totalWins: 0,
-                netProfit: 0,
-                winStreak: 0,
-                maxWinStreak: 0,
-            },
-            winRate,
+            limit,
         };
-    }
-
-    /**
-     * 根据骰子点数返回对应emoji
-     * @param value 骰子点数
-     * @returns 对应的emoji
-     */
-    private getDiceEmoji(value: number): string {
-        const diceEmojis = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        return diceEmojis[value] || '🎲';
     }
 }
 

@@ -1,13 +1,22 @@
 /* eslint-disable react-refresh/only-export-components */
+import './dice-game.page.css';
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
+  AimOutlined,
+  AppstoreOutlined,
+  ArrowDownOutlined,
   ArrowLeftOutlined,
+  ArrowUpOutlined,
+  BarChartOutlined,
+  CalendarOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   DollarOutlined,
   FireOutlined,
+  NumberOutlined,
   StarOutlined,
   TrophyOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import { animated, useSpring } from '@react-spring/web';
 import {
@@ -18,6 +27,7 @@ import {
   Col,
   List,
   message,
+  Pagination,
   Row,
   Space,
   Statistic,
@@ -28,6 +38,55 @@ import React, { useCallback, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
+
+// 骰子显示组件
+// 根据 avatar-settings 插件的实现，public 文件夹的文件可以通过根路径访问
+// 使用带前缀的文件名（dice_1.png）避免与其他插件的文件冲突
+// 骰子显示组件
+// 根据 avatar-settings 插件的实现，public 文件夹的文件可以通过根路径访问
+// 使用带前缀的文件名（dice_1.png）避免与其他插件的文件冲突
+interface DiceDisplayProps {
+  value: number;
+  size?: string | number;
+}
+
+const DiceDisplay: React.FC<DiceDisplayProps> = ({ value, size = '1em' }) => {
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    // 重置状态当 value 改变时
+    setImageError(false);
+  }, [value]);
+
+  const iconSize = typeof size === 'string' ? size : `${size}px`;
+
+  if (value === 0) {
+    return <AppstoreOutlined style={{ fontSize: iconSize }} />;
+  }
+
+  // 尝试使用根路径，与 avatar-settings 插件相同的方式
+  const imagePath = `/dice_${value}.png`;
+
+  // 如果图片加载失败，显示图标
+  if (imageError) {
+    return <AppstoreOutlined style={{ fontSize: iconSize }} />;
+  }
+
+  return (
+    <img
+      src={imagePath}
+      alt={`骰子 ${value}`}
+      className="dice-display-img"
+      style={{
+        width: iconSize,
+        height: iconSize,
+      }}
+      onError={() => {
+        setImageError(true);
+      }}
+    />
+  );
+};
 
 // 骰子游戏数据接口
 interface DiceGameData {
@@ -84,7 +143,7 @@ const DiceGameApp: React.FC = () => {
 
   const [selectedBetAmount, setSelectedBetAmount] = useState<number | null>(null);
   const [gameInProgress, setGameInProgress] = useState(false);
-  const [diceDisplay, setDiceDisplay] = useState('🎲');
+  const [diceDisplay, setDiceDisplay] = useState(0); // 0 表示未显示，1-6 表示点数
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   // 使用状态管理所有游戏数据，以便在不刷新页面的情况下更新
@@ -95,8 +154,12 @@ const DiceGameApp: React.FC = () => {
   const [dailyLimit, setDailyLimit] = useState(gameData.dailyLimit);
   const [availableBets, setAvailableBets] = useState(gameData.availableBets);
   const [canPlay, setCanPlay] = useState(gameData.canPlay);
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalGames, setTotalGames] = useState(0);
+  const [allGames, setAllGames] = useState(gameData.recentGames);
 
-  const diceEmojis = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
   const rollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 骰子动画 - 使用 react-spring
@@ -125,7 +188,6 @@ const DiceGameApp: React.FC = () => {
       });
 
       if (!response.ok) {
-        console.warn('Failed to refresh game data:', response.status);
         return;
       }
 
@@ -141,9 +203,54 @@ const DiceGameApp: React.FC = () => {
         setCanPlay(data.canPlay);
       }
     } catch (err) {
-      console.error('Failed to refresh game data:', err);
+      // Failed to refresh game data
     }
   }, []);
+
+  // 获取分页游戏历史
+  const fetchGameHistory = useCallback(async (page: number) => {
+    try {
+      const historyUrl = (window as any).diceHistoryUrl || '/score/dice/history';
+      const response = await fetch(`${historyUrl}?page=${page}&limit=${pageSize}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        if (result.success && result.records) {
+          // 转换数据格式以匹配前端期望的格式
+          const formattedRecords = result.records.map((record: any) => ({
+            diceValue: record.diceValue,
+            guess: record.guess,
+            won: record.won,
+            netGain: record.netGain,
+            gameTime: record.gameTime,
+          }));
+          setAllGames(formattedRecords);
+          setTotalGames(result.total || userStats.totalGames);
+        }
+      }
+    } catch (err) {
+      // Failed to fetch game history
+    }
+  }, [pageSize, userStats.totalGames]);
+
+  // 初始化游戏历史数据
+  React.useEffect(() => {
+    if (recentGames.length > 0 && userStats.totalGames > 0) {
+      setAllGames(recentGames);
+      setTotalGames(userStats.totalGames);
+    }
+  }, [recentGames, userStats.totalGames]);
 
   // 选择投注金额
   const handleSelectBetAmount = useCallback((betAmount: number) => {
@@ -196,7 +303,7 @@ const DiceGameApp: React.FC = () => {
 
     rollIntervalRef.current = setInterval(() => {
       const randomDice = Math.floor(Math.random() * 6) + 1;
-      setDiceDisplay(diceEmojis[randomDice]);
+      setDiceDisplay(randomDice);
       rollCount++;
 
       if (rollCount >= maxRolls) {
@@ -213,7 +320,7 @@ const DiceGameApp: React.FC = () => {
         });
       }
     }, duration / maxRolls);
-  }, [diceEmojis, diceApi, bounceApi]);
+  }, [diceApi, bounceApi, setDiceDisplay]);
 
   // 执行游戏
   const playGame = useCallback(async (guess: 'big' | 'small') => {
@@ -255,7 +362,7 @@ const DiceGameApp: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         const game: GameResult = result.result;
-        setDiceDisplay(diceEmojis[game.diceValue]);
+        setDiceDisplay(game.diceValue);
         setGameResult(game);
 
         // 停止旋转，显示最终结果
@@ -303,55 +410,24 @@ const DiceGameApp: React.FC = () => {
         message.error(result.message || '游戏失败');
       }
     } catch (err: any) {
-      console.error('Game error:', err);
       const errorMessage = err.message || '网络错误，请重试';
       setError(errorMessage);
       setGameInProgress(false);
       message.error(errorMessage);
     }
-  }, [gameInProgress, selectedBetAmount, showRollingAnimation, diceEmojis, refreshGameData]);
+  }, [gameInProgress, selectedBetAmount, showRollingAnimation, refreshGameData]);
 
   return (
-    <div className="dice-game-container" style={{ padding: '16px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="dice-game-container">
       {/* Hero Section */}
-      <Card
-        className="hero-card"
-        style={{
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
-          border: 'none',
-          marginBottom: '20px',
-          boxShadow: '0 10px 40px rgba(245, 158, 11, 0.3)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-        bodyStyle={{ padding: '32px 24px', position: 'relative', zIndex: 1 }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: '-50%',
-            right: '-10%',
-            width: '300px',
-            height: '300px',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-          }}
-        />
+      <Card className="hero-card" bodyStyle={{ padding: '32px 24px', position: 'relative', zIndex: 1 }}>
         <Row justify="space-between" align="middle">
           <Col>
             <Space direction="vertical" size="small">
-              <Title
-                level={1}
-                style={{
-                  color: 'white',
-                  margin: 0,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-                  fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
-                }}
-              >
-                🎲 掷骰子游戏
+              <Title level={1} className="hero-title">
+                <AppstoreOutlined style={{ marginRight: '8px' }} /> 掷骰子游戏
               </Title>
-              <Text style={{ color: 'rgba(255,255,255,0.95)', fontSize: 'clamp(14px, 2vw, 18px)', fontWeight: 500 }}>
+              <Text className="hero-subtitle">
                 测试你的运气，猜大小
               </Text>
             </Space>
@@ -362,15 +438,6 @@ const DiceGameApp: React.FC = () => {
               icon={<ArrowLeftOutlined />}
               href={(window as any).scoreHallUrl || '/score/hall'}
               className="hero-back-button"
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(10px)',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                color: 'white',
-                fontWeight: 600,
-                height: '40px',
-                padding: '0 20px',
-              }}
             >
               返回积分大厅
             </Button>
@@ -380,77 +447,103 @@ const DiceGameApp: React.FC = () => {
 
       {/* User Stats */}
       <Row gutter={[12, 12]} style={{ marginBottom: '20px' }}>
-        <Col xs={12} sm={12} md={6}>
-          <Card
-            className="stat-card-hover"
-            style={{
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.2)',
-            }}
-          >
+        <Col xs={12} sm={8} md={6}>
+          <Card className="stat-card-hover stat-card-current-coins">
             <Statistic
               title="当前积分"
               value={currentCoins}
-              prefix="🏴"
-              valueStyle={{ color: '#6366f1', fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: 700 }}
+              prefix={<WalletOutlined />}
+              valueStyle={{ color: '#6366f1', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
             />
           </Card>
         </Col>
-        <Col xs={12} sm={12} md={6}>
-          <Card
-            className="stat-card-hover"
-            style={{
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%)',
-              border: '1px solid rgba(139, 92, 246, 0.2)',
-            }}
-            bodyStyle={{ padding: '16px' }}
-          >
+        <Col xs={12} sm={8} md={6}>
+          <Card className="stat-card-hover stat-card-total-games">
             <Statistic
               title="总游戏数"
               value={userStats.totalGames}
-              prefix="🎲"
-              valueStyle={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: 700 }}
+              prefix={<AppstoreOutlined />}
+              valueStyle={{ color: '#8b5cf6', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
             />
           </Card>
         </Col>
-        <Col xs={12} sm={12} md={6}>
-          <Card
-            className="stat-card-hover"
-            style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-            }}
-          >
+        <Col xs={12} sm={8} md={6}>
+          <Card className="stat-card-hover stat-card-total-wins">
             <Statistic
               title="胜利次数"
               value={userStats.totalWins}
               prefix={<TrophyOutlined style={{ color: '#10b981' }} />}
-              valueStyle={{ color: '#10b981', fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: 700 }}
+              valueStyle={{ color: '#10b981', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            className="stat-card-hover"
-            style={{
-              background: userStats.netProfit >= 0
-                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%)'
-                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%)',
-              border: `1px solid ${userStats.netProfit >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-            }}
-          >
+        <Col xs={12} sm={8} md={6}>
+          <Card className={`stat-card-hover stat-card-net-profit ${userStats.netProfit < 0 ? 'negative' : ''}`}>
             <Statistic
               title="净收益"
               value={userStats.netProfit}
               prefix={<DollarOutlined />}
               valueStyle={{
                 color: userStats.netProfit >= 0 ? '#10b981' : '#ef4444',
-                fontSize: 'clamp(20px, 3vw, 24px)',
+                fontSize: 'clamp(18px, 2.5vw, 22px)',
                 fontWeight: 700,
               }}
             />
           </Card>
         </Col>
+        <Col xs={12} sm={8} md={6}>
+          <Card className="stat-card-hover stat-card-win-rate">
+            <Statistic
+              title="胜率"
+              value={winRate}
+              suffix="%"
+              prefix={<BarChartOutlined />}
+              valueStyle={{ color: '#3b82f6', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={8} md={6}>
+          <Card className="stat-card-hover stat-card-avg-profit">
+            <Statistic
+              title="平均收益"
+              value={
+                userStats.totalGames > 0
+                  ? (userStats.netProfit / userStats.totalGames).toFixed(1)
+                  : 0
+              }
+              prefix={<DollarOutlined />}
+              valueStyle={{
+                color: userStats.netProfit >= 0 ? '#ec4899' : '#ef4444',
+                fontSize: 'clamp(18px, 2.5vw, 22px)',
+                fontWeight: 700,
+              }}
+            />
+          </Card>
+        </Col>
+        {(userStats.winStreak > 0 || userStats.maxWinStreak > 0) && (
+          <>
+            <Col xs={12} sm={8} md={6}>
+              <Card className="stat-card-hover stat-card-win-streak">
+                <Statistic
+                  title="当前连胜"
+                  value={userStats.winStreak}
+                  prefix={<FireOutlined style={{ color: '#f59e0b' }} />}
+                  valueStyle={{ color: '#f59e0b', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <Card className="stat-card-hover stat-card-win-streak">
+                <Statistic
+                  title="最佳连胜"
+                  value={userStats.maxWinStreak}
+                  prefix={<StarOutlined style={{ color: '#f59e0b' }} />}
+                  valueStyle={{ color: '#f59e0b', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
+                />
+              </Card>
+            </Col>
+          </>
+        )}
       </Row>
 
       {/* Game Section */}
@@ -460,7 +553,7 @@ const DiceGameApp: React.FC = () => {
           <Card
             title={
               <Space>
-                <span style={{ fontSize: '24px' }}>🎲</span>
+                <AppstoreOutlined style={{ fontSize: '20px' }} />
                 <span style={{ fontSize: '20px', fontWeight: 600 }}>掷骰子</span>
                 <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>
                   猜大小
@@ -474,102 +567,89 @@ const DiceGameApp: React.FC = () => {
             }}
           >
             {/* Game Rules */}
-            <Card
-              size="small"
-              style={{
-                marginBottom: '20px',
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-              }}
-              bodyStyle={{ padding: '12px 16px' }}
-            >
+            <Card size="small" className="game-rules-card" bodyStyle={{ padding: '12px 16px' }}>
               <Row gutter={[12, 8]}>
-                <Col xs={24} sm={12} md={12}>
-                  <Space>
-                    <span style={{ fontSize: '18px' }}>💰</span>
-                    <Text strong style={{ fontSize: '14px' }}>投注: {gameData.gameConfig.availableBets.join('/')} 🏴</Text>
-                  </Space>
-            </Col>
-                <Col xs={24} sm={12} md={12}>
-                  <Space>
-                    <span style={{ fontSize: '18px' }}>🎯</span>
-                    <Text strong style={{ fontSize: '14px' }}>获胜: {gameData.gameConfig.winMultiplier}x 投注</Text>
-                  </Space>
+                <Col xs={12} sm={6} md={6}>
+                  <div className="info-card info-card-bet">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <DollarOutlined className="info-icon-bet" />
+                        <Text type="secondary" className="info-label">投注金额</Text>
+                      </Space>
+                      <Text strong className="info-value info-value-bet">
+                        {gameData.gameConfig.availableBets.join(' / ')} <WalletOutlined />
+                      </Text>
+                    </Space>
+                  </div>
                 </Col>
-                <Col xs={24} sm={12} md={12}>
-                  <Space>
-                    <span style={{ fontSize: '18px' }}>🔢</span>
-                    <Text strong style={{ fontSize: '14px' }}>大小: 1-3小, 4-6大</Text>
-                  </Space>
+                <Col xs={12} sm={6} md={6}>
+                  <div className="info-card info-card-win">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <AimOutlined className="info-icon-win" />
+                        <Text type="secondary" className="info-label">获胜倍数</Text>
+                      </Space>
+                      <Text strong className="info-value info-value-win">
+                        {gameData.gameConfig.winMultiplier}x 投注
+                      </Text>
+                    </Space>
+                  </div>
                 </Col>
-                <Col xs={24} sm={12} md={12}>
-              <Badge
-                count={`${dailyLimit.remainingPlays}/${dailyLimit.maxPlays}`}
-                showZero
-                style={{
-                  backgroundColor: '#22c55e',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                }}
-              >
-                <Space>
-                  <span style={{ fontSize: '20px' }}>📅</span>
-                  <Text strong>每日游戏</Text>
-                </Space>
-              </Badge>
-            </Col>
+                <Col xs={12} sm={6} md={6}>
+                  <div className="info-card info-card-size">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <NumberOutlined className="info-icon-size" />
+                        <Text type="secondary" className="info-label">大小规则</Text>
+                      </Space>
+                      <Text strong className="info-value info-value-size">
+                        1-3 小 / 4-6 大
+                      </Text>
+                    </Space>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6} md={6}>
+                  <div className="info-card info-card-daily">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <CalendarOutlined className="info-icon-daily" />
+                        <Text type="secondary" className="info-label">每日游戏</Text>
+                      </Space>
+                      <Text strong className="info-value info-value-daily">
+                        {dailyLimit.remainingPlays} / {dailyLimit.maxPlays}
+                      </Text>
+                    </Space>
+                  </div>
+                </Col>
           </Row>
         </Card>
 
             {/* Dice Game Area */}
-            <Card
-              style={{
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-              bodyStyle={{ padding: '32px 24px' }}
-            >
-              <div
-                className="dice-display-animation"
-                style={{
-                  fontSize: 'clamp(80px, 15vw, 120px)',
-                  lineHeight: 1,
-                  marginBottom: '16px',
-                  display: 'inline-block',
-                }}
-              >
-            {/* @ts-ignore - react-spring animated component type issue */}
-            <animated.div
-              style={{
-                display: 'inline-block',
-                transform: diceSpring.rotateX.to((x) => {
-                  const y = diceSpring.rotateY.get();
-                  const z = diceSpring.rotateZ.get();
-                  const scale = diceSpring.scale.get();
-                  const bounceY = bounceSpring.y.get();
-                  const bounceScale = bounceSpring.scale.get();
-                  return (
-                    `perspective(1000px) rotateX(${x}deg) rotateY(${y}deg) `
-                    + `rotateZ(${z}deg) scale(${scale * bounceScale}) translateY(${bounceY}px)`
-                  );
-                }) as any,
-              }}
-            >
-              {diceDisplay}
-            </animated.div>
-          </div>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: 'clamp(14px, 2vw, 18px)',
-                  display: 'block',
-                  marginBottom: '20px',
-                  fontWeight: 500,
-                }}
-              >
+            <Card className="dice-game-area" bodyStyle={{ padding: '32px 24px' }}>
+              <div className="dice-display-animation">
+                {/* @ts-ignore - react-spring animated component type issue */}
+                <animated.div
+                  style={{
+                    display: 'inline-block',
+                    transform: diceSpring.rotateX.to((x) => {
+                      const y = diceSpring.rotateY.get();
+                      const z = diceSpring.rotateZ.get();
+                      const scale = diceSpring.scale.get();
+                      const bounceY = bounceSpring.y.get();
+                      const bounceScale = bounceSpring.scale.get();
+                      return (
+                        `perspective(1000px) rotateX(${x}deg) rotateY(${y}deg) `
+                        + `rotateZ(${z}deg) scale(${scale * bounceScale}) translateY(${bounceY}px)`
+                      );
+                    }) as any,
+                  }}
+                >
+                  <div className="dice-display-inner">
+                    <DiceDisplay value={diceDisplay} key={`dice-${diceDisplay}`} />
+                  </div>
+                </animated.div>
+              </div>
+              <Text type="secondary" className="dice-instruction">
                 选择你的预测并开始游戏！
               </Text>
 
@@ -588,25 +668,17 @@ const DiceGameApp: React.FC = () => {
                       size="large"
                       disabled={gameInProgress}
                       onClick={() => handleSelectBetAmount(bet)}
-                      className="bet-amount-button"
-                      style={{
-                        minWidth: 'clamp(100px, 20vw, 140px)',
-                        height: 'clamp(60px, 12vw, 80px)',
-                        borderRadius: '12px',
-                        border: selectedBetAmount === bet ? '2px solid #6366f1' : '2px solid transparent',
-                        boxShadow:
-                          selectedBetAmount === bet
-                            ? '0 4px 12px rgba(99, 102, 241, 0.4)'
-                            : '0 2px 8px rgba(0,0,0,0.1)',
-                        transition: 'all 0.3s ease',
-                      }}
+                      className={`bet-amount-button ${selectedBetAmount === bet ? 'selected' : ''}`}
                     >
-                      <Space direction="vertical" size="small">
-                        <Text strong style={{ fontSize: 'clamp(18px, 3vw, 22px)', lineHeight: 1 }}>
-                          {bet} 🏴
+                      <Space direction="vertical" size="small" style={{ alignItems: 'center' }}>
+                        <Text strong className={`bet-amount-text ${selectedBetAmount === bet ? 'selected' : 'unselected'}`}>
+                          {bet} <WalletOutlined />
                         </Text>
-                        <Text type="secondary" style={{ fontSize: '11px', lineHeight: 1 }}>
-                          获胜: {bet * gameData.gameConfig.winMultiplier}
+                        <Text type="secondary" className={`bet-amount-subtext ${selectedBetAmount === bet ? 'selected' : 'unselected'}`}>
+                          获胜:{' '}
+                          <Text strong className="win-amount">
+                            {bet * gameData.gameConfig.winMultiplier}
+                          </Text>
                         </Text>
                       </Space>
                     </Button>
@@ -619,26 +691,17 @@ const DiceGameApp: React.FC = () => {
                 <Button
                   type="primary"
                   size="large"
-                  icon={<span style={{ fontSize: '18px' }}>🔽</span>}
+                  icon={<ArrowDownOutlined />}
                   disabled={!selectedBetAmount || gameInProgress}
                   loading={gameInProgress}
                   onClick={() => playGame('small')}
-                  className="bet-action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                    border: 'none',
-                    minWidth: 'clamp(120px, 25vw, 160px)',
-                    height: 'clamp(60px, 12vw, 70px)',
-                    borderRadius: '16px',
-                    boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
-                    transition: 'all 0.3s ease',
-                  }}
+                  className="bet-action-button bet-action-button-small"
                 >
                   <Space direction="vertical" size="small">
-                    <Text strong style={{ color: 'white', fontSize: 'clamp(16px, 3vw, 20px)' }}>
+                    <Text strong className="bet-action-text">
                       小
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '12px' }}>
+                    <Text className="bet-action-subtext">
                       (1-3)
                     </Text>
                   </Space>
@@ -646,26 +709,17 @@ const DiceGameApp: React.FC = () => {
                 <Button
                   type="primary"
                   size="large"
-                  icon={<span style={{ fontSize: '18px' }}>🔼</span>}
+                  icon={<ArrowUpOutlined />}
                   disabled={!selectedBetAmount || gameInProgress}
                   loading={gameInProgress}
                   onClick={() => playGame('big')}
-                  className="bet-action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                    border: 'none',
-                    minWidth: 'clamp(120px, 25vw, 160px)',
-                    height: 'clamp(60px, 12vw, 70px)',
-                    borderRadius: '16px',
-                    boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
-                    transition: 'all 0.3s ease',
-                  }}
+                  className="bet-action-button bet-action-button-big"
                 >
                   <Space direction="vertical" size="small">
-                    <Text strong style={{ color: 'white', fontSize: 'clamp(16px, 3vw, 20px)' }}>
+                    <Text strong className="bet-action-text">
                       大
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '12px' }}>
+                    <Text className="bet-action-subtext">
                       (4-6)
                     </Text>
                   </Space>
@@ -674,17 +728,43 @@ const DiceGameApp: React.FC = () => {
             </>
           ) : (
             <Alert
-              message="余额不足"
-              description="至少需要 20 🏴 才能游戏"
+              message={
+                availableBets.length === 0 && dailyLimit.remainingPlays === 0
+                  ? '余额不足且游戏次数已用完'
+                  : availableBets.length === 0
+                    ? '余额不足'
+                    : '今日游戏次数已用完'
+              }
+              description={
+                <>
+                  {availableBets.length === 0 && dailyLimit.remainingPlays === 0 ? (
+                    <>
+                      至少需要 {gameData.gameConfig.availableBets[0]} <WalletOutlined /> 才能游戏，
+                      且今日游戏次数已用完（{dailyLimit.remainingPlays}/{dailyLimit.maxPlays}）
+                    </>
+                  ) : availableBets.length === 0 ? (
+                    <>
+                      至少需要 {gameData.gameConfig.availableBets[0]} <WalletOutlined /> 才能游戏
+                    </>
+                  ) : (
+                    <>
+                      今日游戏次数已用完（{dailyLimit.remainingPlays}/{dailyLimit.maxPlays}），
+                      请明天再来
+                    </>
+                  )}
+                </>
+              }
               type="warning"
               showIcon
               action={
-                <Button
-                  size="small"
-                  href={(window as any).scoreHallUrl || '/score/hall'}
-                >
-                  赚取更多积分
-                </Button>
+                availableBets.length === 0 ? (
+                  <Button
+                    size="small"
+                    href={(window as any).scoreHallUrl || '/score/hall'}
+                  >
+                    赚取更多积分
+                  </Button>
+                ) : null
               }
             />
           )}
@@ -692,75 +772,73 @@ const DiceGameApp: React.FC = () => {
             {/* Game Result */}
             {gameResult && (
               <Card
-                className="game-result-card"
-                style={{
-                  marginTop: '24px',
-                border: `2px solid ${gameResult.won ? '#10b981' : '#ef4444'}`,
-                background: gameResult.won
-                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%)'
-                  : 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%)',
-                boxShadow: gameResult.won
-                  ? '0 8px 24px rgba(16, 185, 129, 0.2)'
-                  : '0 8px 24px rgba(239, 68, 68, 0.2)',
-                borderRadius: '16px',
-                position: 'relative',
-              }}
-              extra={
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => setGameResult(null)}
-                  style={{ color: '#666' }}
-                >
-                  关闭
-                </Button>
-              }
-            >
+                className={`game-result-card ${gameResult.won ? 'won' : 'lost'}`}
+                extra={
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={() => setGameResult(null)}
+                    style={{ color: '#666' }}
+                  >
+                    关闭
+                  </Button>
+                }
+              >
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <div style={{ textAlign: 'center' }}>
                   {gameResult.won ? (
-                    <CheckCircleOutlined style={{ fontSize: '48px', color: '#10b981' }} />
+                    <CheckCircleOutlined className="game-result-icon won" />
                   ) : (
-                    <CloseCircleOutlined style={{ fontSize: '48px', color: '#ef4444' }} />
+                    <CloseCircleOutlined className="game-result-icon lost" />
                   )}
-                  <Title level={3} style={{ marginTop: '8px' }}>
+                  <Title level={3} className="game-result-title">
                     {gameResult.won ? '恭喜！' : '下次好运'}
                   </Title>
                 </div>
-                <Row gutter={[16, 8]}>
-                  <Col span={12}>
-                    <Text type="secondary">骰子点数:</Text>
+                <Row gutter={[16, 16]}>
+                  <Col span={24}>
+                    <div className="result-dice-card">
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text type="secondary" className="result-dice-label">骰子点数</Text>
+                        <Space size="middle">
+                          <DiceDisplay value={gameResult.diceValue} size={40} />
+                          <Text strong className="result-dice-value">
+                            {gameResult.diceValue} ({gameResult.actualResult === 'big' ? '大' : '小'})
+                          </Text>
+                        </Space>
+                      </Space>
+                    </div>
                   </Col>
-                  <Col span={12} style={{ textAlign: 'right' }}>
-                    <Text strong>
-                      {gameResult.diceValue} ({gameResult.actualResult === 'big' ? '大' : '小'})
-                    </Text>
+                  <Col span={24}>
+                    <div className={`result-guess-card ${gameResult.won ? 'won' : 'lost'}`}>
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text type="secondary" className="result-guess-label">你的猜测</Text>
+                        <Text strong className={`result-guess-value ${gameResult.won ? 'won' : 'lost'}`}>
+                          {gameResult.guess === 'big' ? '大' : '小'}
+                          {gameResult.won ? (
+                            <CheckCircleOutlined style={{ marginLeft: '8px', color: '#10b981' }} />
+                          ) : (
+                            <CloseCircleOutlined style={{ marginLeft: '8px', color: '#ef4444' }} />
+                          )}
+                        </Text>
+                      </Space>
+                    </div>
                   </Col>
-                  <Col span={12}>
-                    <Text type="secondary">你的猜测:</Text>
-                  </Col>
-                  <Col span={12} style={{ textAlign: 'right' }}>
-                    <Text strong>{gameResult.guess === 'big' ? '大' : '小'}</Text>
-                  </Col>
-                  <Col span={12}>
-                    <Text type="secondary">收益:</Text>
-                  </Col>
-                  <Col span={12} style={{ textAlign: 'right' }}>
-                    <Text
-                      strong
-                      style={{
-                        fontSize: '18px',
-                        color: gameResult.netGain >= 0 ? '#10b981' : '#ef4444',
-                      }}
-                    >
-                      {gameResult.netGain > 0 ? '+' : ''}
-                      {gameResult.netGain} 🏴
-                    </Text>
+                  <Col span={24}>
+                    <div className={`result-gain-card ${gameResult.netGain >= 0 ? 'positive' : 'negative'}`}>
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text type="secondary" className="result-gain-label">本局收益</Text>
+                        <Text strong className={`result-gain-value ${gameResult.netGain >= 0 ? 'positive' : 'negative'}`}>
+                          {gameResult.netGain > 0 ? '+' : ''}
+                          {gameResult.netGain} <WalletOutlined />
+                        </Text>
+                      </Space>
+                    </div>
                   </Col>
                 </Row>
               </Space>
             </Card>
-          )}
+            )}
 
             {/* Error Display */}
             {error && (
@@ -777,117 +855,28 @@ const DiceGameApp: React.FC = () => {
           </Card>
         </Col>
 
-        {/* Stats Sidebar */}
+        {/* Game History with Pagination */}
         <Col xs={24} lg={8}>
           <Card
-            title="你的统计"
-            extra={
-              <Button
-                type="link"
-                size="small"
-                href={(window as any).diceHistoryUrl || '/score/dice/history'}
-                style={{ padding: 0 }}
-              >
-                查看历史 →
-              </Button>
+            className="game-history-card"
+            title={
+              <Space>
+                <span>游戏历史</span>
+                <Badge count={totalGames || userStats.totalGames} showZero />
+              </Space>
             }
-            style={{
-              marginBottom: '20px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            }}
           >
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <Card size="small" bodyStyle={{ padding: '12px' }}>
-                  <Statistic
-                    title="胜率"
-                    value={winRate}
-                    suffix="%"
-                    prefix="📊"
-                    valueStyle={{ fontSize: '18px', fontWeight: 600 }}
-                  />
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card size="small" bodyStyle={{ padding: '12px' }}>
-                  <Statistic
-                    title="平均收益"
-                    value={
-                      userStats.totalGames > 0
-                        ? (userStats.netProfit / userStats.totalGames).toFixed(1)
-                        : 0
-                    }
-                    prefix={<DollarOutlined />}
-                    valueStyle={{
-                      color: userStats.netProfit >= 0 ? '#10b981' : '#ef4444',
-                      fontSize: '18px',
-                      fontWeight: 600,
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-
-            {(userStats.winStreak > 0 || userStats.maxWinStreak > 0) && (
-              <Row gutter={12} style={{ marginTop: '12px' }}>
-                <Col span={12}>
-                  <Card size="small" style={{ background: '#fef3c7' }} bodyStyle={{ padding: '12px' }}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <FireOutlined style={{ fontSize: '20px', color: '#f59e0b' }} />
-                      <Statistic
-                        title="当前连胜"
-                        value={userStats.winStreak}
-                        valueStyle={{ color: '#f59e0b', fontSize: '16px' }}
-                      />
-                    </Space>
-                  </Card>
-                </Col>
-                <Col span={12}>
-                  <Card size="small" style={{ background: '#fef3c7' }} bodyStyle={{ padding: '12px' }}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <StarOutlined style={{ fontSize: '20px', color: '#f59e0b' }} />
-                      <Statistic
-                        title="最佳连胜"
-                        value={userStats.maxWinStreak}
-                        valueStyle={{ color: '#f59e0b', fontSize: '16px' }}
-                      />
-                    </Space>
-                  </Card>
-                </Col>
-              </Row>
-            )}
-          </Card>
-
-          {/* Recent Games */}
-          {recentGames.length > 0 && (
-            <Card
-              title="最近游戏"
-              extra={
-                <Space>
-                  <Badge count={recentGames.length} showZero />
-                  <Button
-                    type="link"
-                    size="small"
-                    href={(window as any).diceHistoryUrl || '/score/dice/history'}
-                    style={{ padding: 0 }}
-                  >
-                    查看全部历史 →
-                  </Button>
-                </Space>
-              }
-              style={{
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              }}
-            >
+            {allGames.length > 0 ? (
+              <>
               <List
-                dataSource={recentGames.slice(0, 5)}
+                  dataSource={allGames}
                 renderItem={(game) => (
-                  <List.Item style={{ padding: '8px 0' }}>
+                  <List.Item className="game-history-item">
                     <List.Item.Meta
                       avatar={
-                        <span style={{ fontSize: '24px' }}>
-                          {diceEmojis[game.diceValue] || '🎲'}
-                        </span>
+                          <div className="game-history-avatar">
+                            <DiceDisplay value={game.diceValue} />
+                          </div>
                       }
                       title={
                         <Space>
@@ -902,15 +891,37 @@ const DiceGameApp: React.FC = () => {
                       description={
                         <Text type="secondary" style={{ fontSize: '12px' }}>
                           {game.gameTime} · {game.netGain > 0 ? '+' : ''}
-                          {game.netGain} 🏴
+                            {game.netGain} <WalletOutlined />
                         </Text>
                       }
                     />
                   </List.Item>
                 )}
               />
-            </Card>
-          )}
+                {(totalGames || userStats.totalGames) > pageSize && (
+                  <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                    <Pagination
+                      current={currentPage}
+                      total={totalGames || userStats.totalGames}
+                      pageSize={pageSize}
+                      onChange={(page) => {
+                        setCurrentPage(page);
+                        fetchGameHistory(page);
+                      }}
+                      showSizeChanger={false}
+                      showQuickJumper
+                      showTotal={(total) => `共 ${total} 条记录`}
+                  size="small"
+                    />
+                        </div>
+                )}
+              </>
+            ) : (
+              <div className="game-history-empty">
+                <Text type="secondary">暂无游戏记录</Text>
+              </div>
+            )}
+          </Card>
         </Col>
       </Row>
     </div>
@@ -931,7 +942,7 @@ addPage(new NamedPage(['dice_game'], async () => {
       const root = createRoot(mountPoint);
       root.render(<DiceGameApp />);
     } catch (error) {
-      console.error('Failed to render React app:', error);
+      // Failed to render React app
     }
   }
 }));

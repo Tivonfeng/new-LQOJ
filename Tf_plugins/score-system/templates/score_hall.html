@@ -34,7 +34,7 @@
 <div class="main-container">
     <!-- Games Grid -->
     <div class="games-grid">
-        <!-- Row 1: Check-in + Lottery -->
+        <!-- Row 1: Check-in -->
         <div class="games-row">
             <!-- Daily Check-in Spotlight -->
             <div class="game-card checkin-spotlight">
@@ -92,44 +92,6 @@
                 </div>
             </div>
 
-            <!-- Lottery Spotlight -->
-            <div class="game-card lottery-spotlight">
-                <div class="spotlight-header">
-                    <div class="spotlight-title">
-                        <span class="title-icon">🎰</span>
-                        <h2>{{ _('Lottery Hall') }}</h2>
-                        <span class="subtitle">{{ _('Spend Your Coins') }}</span>
-                    </div>
-                </div>
-                
-                <div class="game-content">
-                    <div class="game-info">
-                        <div class="game-icon">🎲</div>
-                        <div class="game-text">
-                            <h3>{{ _('Basic Draw') }}</h3>
-                            <p>{{ _('Quick & Easy') }}</p>
-                        </div>
-                        <div class="game-reward">
-                            <span class="reward-amount">20</span>
-                            <span class="reward-unit">🏴</span>
-                        </div>
-                    </div>
-                    <div class="game-features">
-                        <span class="feature-tag">{{ _('Common Rewards') }}</span>
-                        {% if isLoggedIn %}
-                        <span class="plays-remaining">{{ _('Remaining:') }} {{ gameRemainingPlays.lottery }}/{{ maxDailyPlays }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <div class="game-cta">
-                    <a href="{{ url('lottery_hall') }}" class="cta-button primary">
-                        <span class="cta-icon">🎰</span>
-                        <span class="cta-text">{{ _('Start Drawing') }}</span>
-                        <span class="cta-arrow">→</span>
-                    </a>
-                </div>
-            </div>
         </div>
 
         <!-- Row 2: Dice + RPS -->
@@ -804,60 +766,6 @@
     transform: translateX(4px);
 }
 
-/* Lottery Spotlight */
-.lottery-spotlight {
-    background: linear-gradient(135deg, #dbeafe 0%, #60a5fa 100%);
-}
-
-.lottery-spotlight .spotlight-title h2 {
-    color: white;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.lottery-spotlight .subtitle {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.lottery-spotlight .game-icon {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.lottery-spotlight .game-text h3 {
-    color: white;
-}
-
-.lottery-spotlight .game-text p {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.lottery-spotlight .game-reward {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.lottery-spotlight .reward-amount {
-    color: white;
-}
-
-.lottery-spotlight .feature-tag {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.lottery-spotlight::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 120px;
-    height: 120px;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="60" fill="rgba(255,255,255,0.1)">🎰</text></svg>') no-repeat;
-    background-size: contain;
-    opacity: 0.3;
-}
 
 .cta-button.primary {
     background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
@@ -1073,9 +981,6 @@
         font-size: 2rem;
     }
     
-    .lottery-machines {
-        grid-template-columns: 1fr;
-    }
     
     .spotlight-header {
         flex-direction: column;
@@ -1087,9 +992,6 @@
         padding: 0 var(--spacing-4);
     }
     
-    .lottery-spotlight {
-        padding: var(--spacing-6);
-    }
 }
 
 @media (max-width: 640px) {
@@ -1105,7 +1007,7 @@
         padding: 0 var(--spacing-3);
     }
     
-    .lottery-spotlight, .leaderboard-section {
+    .leaderboard-section {
         padding: var(--spacing-4);
     }
     

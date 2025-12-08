@@ -6,7 +6,6 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
-    LotteryService,
     MigrationService,
     ScoreService,
     StatisticsService,
@@ -29,7 +28,7 @@ export class ScoreHallHandler extends Handler {
         let recentRecords: any[] = [];
         let hasCheckedInToday = false;
         let nextReward = 10;
-        let gameRemainingPlays = { lottery: 0, dice: 0, rps: 0 };
+        let gameRemainingPlays = { dice: 0, rps: 0 };
 
         if (uid) {
             // 获取用户积分信息
@@ -251,8 +250,7 @@ export class ScoreManageHandler extends Handler {
 
     async get() {
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
-        const statisticsService = new StatisticsService(this.ctx, scoreService, lotteryService);
+        const statisticsService = new StatisticsService(this.ctx, scoreService);
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
