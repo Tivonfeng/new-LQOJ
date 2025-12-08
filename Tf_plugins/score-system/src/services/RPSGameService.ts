@@ -165,13 +165,18 @@ export class RPSGameService {
 
             console.log(`[RPSGameService] Calculated reward: ${reward}, netGain: ${netGain}, streak: ${currentStreak}`);
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（石头剪刀布使用 -8000000 范围）
+            const timestamp = Date.now();
+            const uniquePidCost = -8000000 - timestamp;
+            const uniquePidReward = -8000000 - timestamp - 1;
+
             // 扣除基础费用并记录
             console.log(`[RPSGameService] Deducting base cost: ${RPSGameService.BASE_COST}`);
             await this.scoreService.updateUserScore(domainId, uid, -RPSGameService.BASE_COST);
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0, // 游戏类型记录，使用0表示非题目
+                pid: uniquePidCost,
                 recordId: null,
                 score: -RPSGameService.BASE_COST,
                 reason: '剪刀石头布游戏 - 游戏费用',
@@ -196,7 +201,7 @@ export class RPSGameService {
                 await this.scoreService.addScoreRecord({
                     uid,
                     domainId,
-                    pid: 0, // 游戏类型记录，使用0表示非题目
+                    pid: uniquePidReward,
                     recordId: null,
                     score: reward,
                     reason: rewardReason,

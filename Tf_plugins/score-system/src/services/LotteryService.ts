@@ -183,12 +183,15 @@ export class LotteryService {
         const drawnPrize = this.performDraw(availablePrizes, shouldGuaranteeWin, lotteryConfig.noPrizeChance);
         const won = drawnPrize !== null;
 
+        // 生成唯一的 pid 值，避免唯一索引冲突（抽奖使用 -9000000 范围）
+        const uniquePid = -9000000 - Date.now();
+
         // 扣除积分并记录
         await this.scoreService.updateUserScore(domainId, uid, -cost);
         await this.scoreService.addScoreRecord({
             uid,
             domainId,
-            pid: 0,
+            pid: uniquePid,
             recordId: null,
             score: -cost,
             reason: '普通抽奖消费',
@@ -414,12 +417,14 @@ export class LotteryService {
      */
     private async givePrize(domainId: string, uid: number, prize: LotteryPrize) {
         if (prize.type === 'coin') {
+            // 生成唯一的 pid 值，避免唯一索引冲突（抽奖奖励使用 -9000000 范围）
+            const uniquePid = -9000000 - Date.now();
             // 发放绿旗币
             await this.scoreService.updateUserScore(domainId, uid, prize.value);
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0,
+                pid: uniquePid,
                 recordId: null,
                 score: prize.value,
                 reason: `抽奖获得 ${prize.name}`,

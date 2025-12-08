@@ -108,10 +108,15 @@ export class TransferService {
                 transactionId,
             });
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（转账使用 -7000000 范围）
+            const timestamp = Date.now();
+            const uniquePidFrom = -7000000 - timestamp;
+            const uniquePidTo = -7000000 - timestamp - 1;
+
             await this.scoreService.addScoreRecord({
                 uid: fromUid,
                 domainId: 'system',
-                pid: 0,
+                pid: uniquePidFrom,
                 recordId: null,
                 score: -totalCost,
                 reason: `转账给 ${toUsername} (${amount}积分 + ${this.config.transferFee}手续费)`,
@@ -121,7 +126,7 @@ export class TransferService {
             await this.scoreService.addScoreRecord({
                 uid: toUser._id,
                 domainId: 'system',
-                pid: 0,
+                pid: uniquePidTo,
                 recordId: null,
                 score: amount,
                 reason: `收到来自用户的转账: ${reason || '无备注'}`,

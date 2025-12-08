@@ -313,11 +313,15 @@ export class ScoreManageHandler extends Handler {
                 // 更新用户积分
                 await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
 
+                // 生成唯一的 pid 值，避免唯一索引冲突
+                // 使用 -2000000 - timestamp 确保唯一性，区别于游戏操作（-1000000）
+                const uniquePid = -2000000 - Date.now();
+
                 // 添加积分记录
                 await scoreService.addScoreRecord({
                     uid: user._id,
                     domainId: this.domain._id,
-                    pid: 0, // 管理员操作使用0
+                    pid: uniquePid,
                     recordId: null,
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,

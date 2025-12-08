@@ -63,6 +63,7 @@ export class DiceGameService {
         message?: string;
         result?: DiceGameRecord;
     }> {
+        try {
         // 验证输入
         if (!['big', 'small'].includes(guess)) {
             return { success: false, message: '无效的猜测选项' };
@@ -89,15 +90,35 @@ export class DiceGameService {
         const reward = won ? betAmount * DiceGameService.WIN_MULTIPLIER : 0;
         const netGain = won ? betAmount : -betAmount;
 
-        console.log(`[DiceGame] User ${uid} - Dice: ${diceValue}, Guess: ${guess}, Result: ${actualResult}, Won: ${won}`);
+            // 先保存游戏记录，获取 _id 用于生成唯一的 pid
+            const gameRecord: Omit<DiceGameRecord, '_id'> = {
+                uid,
+                domainId,
+                bet: betAmount,
+                guess,
+                diceValue,
+                actualResult,
+                won,
+                reward,
+                netGain,
+                gameTime: new Date(),
+            };
+
+            const recordResult = await this.ctx.db.collection('dice.records' as any).insertOne(gameRecord);
+            const finalRecord = { ...gameRecord, _id: recordResult.insertedId };
+            const gameRecordId = recordResult.insertedId;
+
+            // 为每次游戏生成唯一的负数 pid，避免与题目ID冲突
+            const timestamp = Math.floor(Date.now() / 1000);
+            const uniquePid = -1000000 - (timestamp % 1000000);
 
         // 扣除投注积分
         await this.scoreService.updateUserScore(domainId, uid, -betAmount);
         await this.scoreService.addScoreRecord({
             uid,
             domainId,
-            pid: 0,
-            recordId: null,
+                pid: uniquePid,
+                recordId: gameRecordId,
             score: -betAmount,
             reason: `掷骰子游戏投注${betAmount}积分`,
             problemTitle: '掷骰子游戏',
@@ -109,37 +130,25 @@ export class DiceGameService {
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0,
-                recordId: null,
+                    pid: uniquePid - 1,
+                    recordId: gameRecordId,
                 score: reward,
                 reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
                 problemTitle: '掷骰子游戏',
             });
         }
 
-        // 保存游戏记录
-        const gameRecord: Omit<DiceGameRecord, '_id'> = {
-            uid,
-            domainId,
-            bet: betAmount,
-            guess,
-            diceValue,
-            actualResult,
-            won,
-            reward,
-            netGain,
-            gameTime: new Date(),
-        };
-
-        const recordResult = await this.ctx.db.collection('dice.records' as any).insertOne(gameRecord);
-        const finalRecord = { ...gameRecord, _id: recordResult.insertedId };
-
         // 更新用户统计
         await this.updateUserStats(domainId, uid, won, netGain, betAmount, reward);
 
-        console.log(`[DiceGame] ✅ User ${uid} game completed - Net: ${netGain}`);
-
         return { success: true, result: finalRecord };
+        } catch (error: any) {
+            console.error(`[DiceGame] Error playing game for user ${uid}:`, error);
+            return {
+                success: false,
+                message: `游戏执行失败: ${error.message || '未知错误'}`,
+            };
+        }
     }
 
     /**

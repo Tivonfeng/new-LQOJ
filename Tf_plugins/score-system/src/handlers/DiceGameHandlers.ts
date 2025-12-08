@@ -82,6 +82,80 @@ export class DiceGameHandler extends Handler {
 }
 
 /**
+ * 掷骰子游戏状态API处理器
+ * 路由: /score/dice/status
+ * 功能: 获取当前用户的游戏状态数据（JSON格式，用于前端刷新）
+ */
+export class DiceStatusHandler extends Handler {
+    async prepare() {
+        if (!this.user._id) throw new Error('未登录');
+    }
+
+    async get() {
+        const uid = this.user._id;
+        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+        const diceService = new DiceGameService(this.ctx, scoreService);
+
+        // 获取用户积分
+        const userScore = await scoreService.getUserScore(this.domain._id, uid);
+        const currentCoins = userScore?.totalScore || 0;
+
+        // 获取用户游戏统计
+        const userStats = await diceService.getUserDiceStats(this.domain._id, uid);
+
+        // 获取最近游戏记录
+        const recentGames = await diceService.getUserGameHistory(this.domain._id, uid, 10);
+
+        // 检查每日游戏次数限制
+        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const diceLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'dice');
+
+        // 获取游戏配置
+        const gameConfig = diceService.getGameConfig();
+
+        // 检查用户可以下注的最大金额
+        const availableBets = gameConfig.availableBets.filter((bet) => currentCoins >= bet);
+
+        // 格式化游戏记录时间
+        const formattedGames = recentGames.map((game) => ({
+            ...game,
+            gameTime: game.gameTime.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
+        // 计算胜率
+        const winRate = userStats && userStats.totalGames > 0
+            ? (userStats.totalWins / userStats.totalGames * 100).toFixed(1)
+            : '0.0';
+
+        this.response.type = 'application/json';
+        this.response.body = {
+            success: true,
+            data: {
+                currentCoins,
+                canPlay: availableBets.length > 0 && diceLimit.canPlay,
+                availableBets,
+                gameConfig,
+                userStats: userStats || {
+                    totalGames: 0,
+                    totalWins: 0,
+                    netProfit: 0,
+                    winStreak: 0,
+                    maxWinStreak: 0,
+                },
+                winRate,
+                recentGames: formattedGames,
+                dailyLimit: diceLimit,
+            },
+        };
+    }
+}
+
+/**
  * 掷骰子游戏执行处理器
  * 路由: /score/dice/play
  * 功能: 执行掷骰子游戏操作，返回游戏结果
@@ -92,16 +166,19 @@ export class DicePlayHandler extends Handler {
     }
 
     async post() {
+        try {
         const { guess, betAmount } = this.request.body;
 
-        if (!['big', 'small'].includes(guess)) {
+            if (!guess || !['big', 'small'].includes(guess)) {
             this.response.body = { success: false, message: '无效的猜测选项' };
+                this.response.type = 'application/json';
             return;
         }
 
         const betAmountNum = Number.parseInt(betAmount);
         if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
             this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
+                this.response.type = 'application/json';
             return;
         }
 
@@ -114,6 +191,7 @@ export class DicePlayHandler extends Handler {
                 success: false,
                 message: `今日骰子游戏次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
             };
+                this.response.type = 'application/json';
             return;
         }
 
@@ -133,6 +211,16 @@ export class DicePlayHandler extends Handler {
         }
 
         this.response.body = result;
+            this.response.type = 'application/json';
+        } catch (error: any) {
+            console.error('[DicePlayHandler] Error:', error);
+            this.response.body = {
+                success: false,
+                message: error.message || '游戏执行失败，请稍后重试',
+            };
+            this.response.type = 'application/json';
+            this.response.status = 500;
+        }
     }
 }
 
