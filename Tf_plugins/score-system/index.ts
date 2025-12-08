@@ -13,18 +13,13 @@ import {
     DiceGameHandler,
     DiceHistoryHandler,
     DicePlayHandler,
-    LotteryAdminHandler,
-    LotteryClaimHandler,
-    LotteryDrawHandler,
-    LotteryHallHandler,
-    LotteryHistoryHandler,
-    RPSAdminHandler,
+    DiceStatusHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
+    RPSStatusHandler,
     ScoreHallHandler,
     ScoreManageHandler,
-    ScoreRankingHandler,
     ScoreRecordsHandler,
     TransferAdminHandler,
     TransferCreateHandler,
@@ -35,8 +30,6 @@ import {
 import {
     type DailyCheckInRecord,
     type DiceGameRecord,
-    type LotteryPrize,
-    type LotteryRecord,
     type RPSGameRecord,
     type ScoreConfig,
     type ScoreRecord,
@@ -44,7 +37,6 @@ import {
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
-    type UserLotteryStats,
     type UserRPSStats,
     type UserScore,
 } from './src/services';
@@ -107,9 +99,6 @@ declare module 'hydrooj' {
     interface Collections {
         'score.records': ScoreRecord;
         'score.users': UserScore;
-        'lottery.prizes': LotteryPrize;
-        'lottery.records': LotteryRecord;
-        'lottery.stats': UserLotteryStats;
         'dice.records': DiceGameRecord;
         'dice.stats': UserDiceStats;
         'rps.records': RPSGameRecord;
@@ -265,10 +254,12 @@ export default async function apply(ctx: Context, config: any = {}) {
 
             const scoreToAdd = Math.round(data.weight * 10);
             await scoreService.updateUserScore(data.domainId, data.uid, scoreToAdd);
+            // 生成唯一的 pid 值，避免唯一索引冲突（证书积分使用 -3000000 范围）
+            const uniquePid = -3000000 - Date.now();
             await scoreService.addScoreRecord({
                 uid: data.uid,
                 domainId: data.domainId,
-                pid: 0, // 证书积分不使用pid
+                pid: uniquePid,
                 recordId: data.certificateId,
                 score: scoreToAdd,
                 reason: `获得证书 ${data.certificateName}，权重 ${data.weight}，获得积分 ${scoreToAdd}`,
@@ -286,10 +277,12 @@ export default async function apply(ctx: Context, config: any = {}) {
 
             const scoreToDeduct = Math.round(data.weight * 10);
             await scoreService.updateUserScore(data.domainId, data.uid, -scoreToDeduct);
+            // 生成唯一的 pid 值，避免唯一索引冲突（证书积分使用 -3000000 范围）
+            const uniquePid = -3000000 - Date.now();
             await scoreService.addScoreRecord({
                 uid: data.uid,
                 domainId: data.domainId,
-                pid: 0, // 证书积分不使用pid
+                pid: uniquePid,
                 recordId: data.certificateId,
                 score: -scoreToDeduct,
                 reason: `删除证书 ${data.certificateName}，权重 ${data.weight}，扣除积分 ${scoreToDeduct}`,
@@ -307,10 +300,12 @@ export default async function apply(ctx: Context, config: any = {}) {
             if (data.bonus <= 0) return;
 
             await scoreService.updateUserScore(data.domainId, data.uid, data.bonus);
+            // 生成唯一的 pid 值，避免唯一索引冲突（打字奖励使用 -4000000 范围）
+            const uniquePid = -4000000 - Date.now();
             await scoreService.addScoreRecord({
                 uid: data.uid,
                 domainId: data.domainId,
-                pid: 0, // 打字奖励不使用pid
+                pid: uniquePid,
                 recordId: data.recordId || null,
                 score: data.bonus,
                 reason: data.reason,
@@ -327,12 +322,17 @@ export default async function apply(ctx: Context, config: any = {}) {
             if (!finalConfig.enabled) return;
             if (data.amount <= 0) return;
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（作品投币使用 -5000000 范围）
+            const timestamp = Date.now();
+            const uniquePidFrom = -5000000 - timestamp;
+            const uniquePidTo = -5000000 - timestamp - 1;
+
             // 扣除投币者积分
             await scoreService.updateUserScore(data.domainId, data.fromUid, -data.amount);
             await scoreService.addScoreRecord({
                 uid: data.fromUid,
                 domainId: data.domainId,
-                pid: 0,
+                pid: uniquePidFrom,
                 recordId: data.workId,
                 score: -data.amount,
                 reason: `给作品「${data.workTitle}」投币`,
@@ -344,7 +344,7 @@ export default async function apply(ctx: Context, config: any = {}) {
             await scoreService.addScoreRecord({
                 uid: data.toUid,
                 domainId: data.domainId,
-                pid: 0,
+                pid: uniquePidTo,
                 recordId: data.workId,
                 score: data.amount,
                 reason: `收到作品「${data.workTitle}」的投币`,
@@ -365,12 +365,14 @@ export default async function apply(ctx: Context, config: any = {}) {
 
             const cost = Math.round(data.cost);
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（AI使用使用 -6000000 范围）
+            const uniquePid = -6000000 - Date.now();
             // 扣除用户积分
             await scoreService.updateUserScore(data.domainId, data.uid, -cost);
             await scoreService.addScoreRecord({
                 uid: data.uid,
                 domainId: data.domainId,
-                pid: 0, // AI 使用不绑定具体题目ID
+                pid: uniquePid,
                 recordId: null,
                 score: -cost,
                 reason: data.reason || `使用 AI 辅助解题，消耗积分 ${cost}`,
@@ -385,31 +387,23 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 注册路由
     ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
-    ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
     ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
 
-    // 抽奖系统路由
-    ctx.Route('lottery_hall', '/score/lottery', LotteryHallHandler);
-    ctx.Route('lottery_draw', '/score/lottery/draw', LotteryDrawHandler);
-    ctx.Route('lottery_claim', '/score/lottery/claim', LotteryClaimHandler);
-    ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
-
-    // 管理员路由
-    ctx.Route('lottery_admin', '/score/lottery/admin', LotteryAdminHandler);
 
     // 掷骰子游戏路由
     ctx.Route('dice_game', '/score/dice', DiceGameHandler);
+    ctx.Route('dice_status', '/score/dice/status', DiceStatusHandler);
     ctx.Route('dice_play', '/score/dice/play', DicePlayHandler);
     ctx.Route('dice_history', '/score/dice/history', DiceHistoryHandler);
     ctx.Route('dice_admin', '/score/dice/admin', DiceAdminHandler);
 
     // 剪刀石头布游戏路由
     ctx.Route('rock_paper_scissors', '/score/rps', RPSGameHandler);
+    ctx.Route('rps_status', '/score/rps/status', RPSStatusHandler);
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
-    ctx.Route('rps_admin', '/score/rps/admin', RPSAdminHandler);
 
     // 转账系统路由
     ctx.Route('transfer_exchange', '/score/transfer', TransferExchangeHandler);

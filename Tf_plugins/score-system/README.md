@@ -73,7 +73,6 @@ score-system:
 
 ## 权限要求
 
-- 查看积分排行榜：无需特殊权限
 - 查看个人积分：需要登录
 - 管理积分系统：需要 `PRIV_EDIT_SYSTEM` 权限
 
@@ -86,7 +85,6 @@ score-system/
 ├── index.ts              # 主逻辑文件
 ├── templates/            # HTML模板
 │   ├── score_manage.html
-│   ├── score_ranking.html
 │   └── user_score.html
 ├── locales/              # 国际化文件
 │   ├── en.yaml
@@ -98,7 +96,6 @@ score-system/
 
 - `ScoreService` - 积分计算和数据操作服务
 - `ScoreManageHandler` - 管理页面处理器
-- `ScoreRankingHandler` - 排行榜页面处理器
 - `UserScoreHandler` - 个人积分页面处理器
 
 ## 故障排除

@@ -8,6 +8,7 @@
 - 📢 滚动公告栏显示
 - 🏆 实时显示最近的AC记录
 - 🎨 美观的卡片式导航（针对system域）
+- 🎯 自定义 Logo 和 Favicon（通过 public/ 目录中的文件）
 
 ## 支持的域
 
@@ -32,6 +33,7 @@
 
 - `index.ts`: 插件主文件，定义了Handler和路由
 - `templates/partials/homepage/swiderpic.html`: 模板文件
+- `public/`: 静态文件目录（Logo 和 Favicon）
 - `package.json`: 插件配置文件
 
 ### 核心功能
@@ -60,6 +62,11 @@
 2. **公告内容**: 通过域的`bulletin`字段设置
 3. **样式**: 修改模板中的CSS样式
 4. **卡片导航**: 添加或修改system域的导航卡片
+5. **Logo 和 Favicon**: 
+   - 将自定义的 logo 文件放置在 `public/` 目录中
+   - 将 favicon 文件放置在 `public/` 目录中
+   - 插件会自动将这些文件复制到 `~/.hydro/static/` 目录
+   - 支持的文件包括：导航栏 logo、各种尺寸的 favicon、移动端图标等
 
 ## 开发说明
 
