@@ -21,15 +21,6 @@ export {
     type UserDiceStats,
 } from './DiceGameService';
 
-// 抽奖服务
-export {
-    LOTTERY_TYPES,
-    type LotteryPrize,
-    type LotteryRecord,
-    LotteryService,
-    PRIZE_RARITY,
-    type UserLotteryStats,
-} from './LotteryService';
 
 // 数据迁移服务
 export {
@@ -64,7 +55,3 @@ export {
     TransferService,
 } from './TransferService';
 
-// 权重计算服务
-export {
-    WeightCalculationService,
-} from './WeightCalculationService';

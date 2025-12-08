@@ -1,0 +1,108 @@
+{% extends "manage_base.html" %}
+
+{% block manage_content %}
+
+<div class="section">
+    <div class="section__header eui-enhanced-header">
+        <h1 class="section__title" data-heading>
+            <span class="eui-header-icon eui-icon-user-header"></span>
+            高级用户管理工具
+        </h1>
+        <div class="section__tools">
+            <div class="eui-stat-badges">
+                <div class="eui-stat-badge">
+                    <span class="eui-stat-icon eui-icon-mail"></span>
+                    <span class="eui-stat-text">默认邮箱: @{{ config.defaultEmailDomain | escape }}</span>
+                </div>
+                <div class="eui-stat-badge">
+                    <span class="eui-stat-icon eui-icon-key"></span>
+                    <span class="eui-stat-text">默认密码: {{ config.defaultPassword | escape }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="section__body eui-enhanced-body">
+        <div id="user-tools-app-mount-point">
+            <div class="eui-loading-container">
+                <div class="eui-loading-spinner">
+                    <div class="eui-spinner-icon eui-icon-user"></div>
+                    <div class="eui-loading-text">正在加载用户管理工具</div>
+                    <div class="eui-loading-progress">初始化组件中...</div>
+                </div>
+                
+                <!-- Loading skeleton -->
+                <div class="eui-loading-skeleton">
+                    <div class="eui-skeleton-header"></div>
+                    <div class="eui-skeleton-line"></div>
+                    <div class="eui-skeleton-line"></div>
+                    <div class="eui-skeleton-line short"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 将后端数据传递给前端React应用 -->
+<script>
+(function() {
+  'use strict';
+  
+  try {
+    // 初始化用户工具数据
+    window.UserToolsData = {
+      user: {
+        id: {{ user._id or 0 }},
+        username: "{{ (user.uname or 'Guest') | escape | safe }}"
+      },
+      domains: {{ domains | json | safe }},
+      currentDomain: "{{ currentDomain | escape | safe }}",
+      config: {{ config | json | safe }},
+      
+      // 元数据
+      meta: {
+        loadTime: Date.now(),
+        userAgent: navigator.userAgent,
+        language: navigator.language || 'zh-CN'
+      }
+    };
+    
+    console.log('User Tools Data loaded:', window.UserToolsData);
+    
+    // 标记数据已就绪
+    window.UserToolsDataReady = true;
+    document.dispatchEvent(new CustomEvent('userToolsDataReady'));
+    
+  } catch (error) {
+    console.error('Error initializing user tools data:', error);
+  }
+})();
+
+// 应用加载超时保护
+(function() {
+  let loadTimeout = setTimeout(() => {
+    const loadingContainer = document.querySelector('.eui-loading-container');
+    if (loadingContainer && loadingContainer.style.display !== 'none') {
+      console.error('User Tools app loading timeout');
+      loadingContainer.innerHTML = '<div style="text-align: center; padding: 20px;">加载超时，请刷新页面重试</div>';
+    }
+  }, 10000);
+  
+  // 监听应用成功挂载事件
+  document.addEventListener('userToolsAppMounted', function() {
+    clearTimeout(loadTimeout);
+    console.log('User Tools app mounted successfully');
+    
+    // 隐藏加载状态
+    const loadingContainer = document.querySelector('.eui-loading-container');
+    if (loadingContainer) {
+      loadingContainer.style.opacity = '0';
+      loadingContainer.style.transition = 'opacity 0.3s ease-out';
+      setTimeout(() => {
+        loadingContainer.style.display = 'none';
+      }, 300);
+    }
+  });
+})();
+</script>
+
+{% endblock %}

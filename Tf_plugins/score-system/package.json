@@ -9,7 +9,12 @@
     "cli": false
   },
   "dependencies": {
+    "@react-spring/web": "^9.7.3",
     "hydrooj": "workspace:^"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0"

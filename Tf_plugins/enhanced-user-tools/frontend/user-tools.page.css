@@ -1,0 +1,256 @@
+/* ========================================
+   用户管理工具 - 样式文件
+   ======================================== */
+
+/* ========================================
+   头部区域样式
+   ======================================== */
+.eui-enhanced-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 24px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.eui-enhanced-header .section__title {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eui-enhanced-header .section__title .eui-header-icon {
+  font-size: 28px;
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+}
+
+.eui-icon-user-header::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 64 896 896'%3E%3Cpath d='M858.5 763.6c-18.9-44.8-46.1-85-80.6-119.5a325.5 325.5 0 00-110.2-72.2c-17.6-7.3-36.1-13.1-55.1-17.3-19-4.2-38.6-6.3-58.5-6.3s-39.5 2.1-58.5 6.3c-19 4.2-37.5 10-55.1 17.3a325.5 325.5 0 00-110.2 72.2c-34.5 34.5-61.7 74.7-80.6 119.5C133.8 801.6 128 843.1 128 884.8v49.6c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32v-49.6c0-41.7-5.8-83.2-17.5-121.2zM512 556c79.5 0 144-64.5 144-144S591.5 268 512 268s-144 64.5-144 144 64.5 144 144 144zm0-200c30.9 0 56 25.1 56 56s-25.1 56-56 56-56-25.1-56-56 25.1-56 56-56z' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.eui-stat-badges {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.eui-stat-badge {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.eui-stat-badge:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.eui-stat-icon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 使用 SVG 图标 */
+.eui-icon-mail::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 64 896 896'%3E%3Cpath d='M928 160H96c-17.7 0-32 14.3-32 32v640c0 17.7 14.3 32 32 32h832c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32zm-40 110.8V792H136V270.8l-27.6-21.5 39.3-50.5 42.8 33.3h643.1l42.8-33.3 39.3 50.5-27.7 21.5zM833.6 232L512 482 190.4 232l-42.8-33.3-39.3 50.5 27.6 21.5 341.6 265.6a55.99 55.99 0 0069.6 0L888 270.8l27.6-21.5-39.3-50.5-42.7 33.2z' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.eui-icon-key::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 64 896 896'%3E%3Cpath d='M832 464h-68V240c0-70.7-57.3-128-128-128H388c-70.7 0-128 57.3-128 128v224h-68c-17.7 0-32 14.3-32 32v384c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32V496c0-17.7-14.3-32-32-32zM332 240c0-30.9 25.1-56 56-56h248c30.9 0 56 25.1 56 56v224H332V240zm460 600H232V536h560v304z' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.eui-icon-user::before {
+  content: '';
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='64 64 896 896'%3E%3Cpath d='M858.5 763.6c-18.9-44.8-46.1-85-80.6-119.5a325.5 325.5 0 00-110.2-72.2c-17.6-7.3-36.1-13.1-55.1-17.3-19-4.2-38.6-6.3-58.5-6.3s-39.5 2.1-58.5 6.3c-19 4.2-37.5 10-55.1 17.3a325.5 325.5 0 00-110.2 72.2c-34.5 34.5-61.7 74.7-80.6 119.5C133.8 801.6 128 843.1 128 884.8v49.6c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32v-49.6c0-41.7-5.8-83.2-17.5-121.2zM512 556c79.5 0 144-64.5 144-144S591.5 268 512 268s-144 64.5-144 144 64.5 144 144 144zm0-200c30.9 0 56 25.1 56 56s-25.1 56-56 56-56-25.1-56-56 25.1-56 56-56z' fill='%23666'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+}
+
+.eui-stat-text {
+  font-weight: 500;
+}
+
+/* ========================================
+   加载状态样式
+   ======================================== */
+.eui-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.eui-loading-spinner {
+  text-align: center;
+}
+
+.eui-spinner-icon {
+  font-size: 48px;
+  animation: pulse 2s ease-in-out infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.eui-loading-text {
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.eui-loading-progress {
+  font-size: 14px;
+  color: #999;
+}
+
+.eui-loading-skeleton {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+}
+
+.eui-skeleton-header {
+  height: 40px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.eui-skeleton-line {
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.eui-skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ========================================
+   用户选择输入框样式（原生 input，但保持 antd 外观）
+   ======================================== */
+input[type="text"].ant-input {
+  width: 100%;
+  padding: 4px 11px;
+  font-size: 14px;
+  line-height: 1.5715;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+input[type="text"].ant-input:hover {
+  border-color: #40a9ff;
+}
+
+input[type="text"].ant-input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* ========================================
+   响应式设计
+   ======================================== */
+@media (max-width: 768px) {
+  .eui-enhanced-header {
+    padding: 16px 20px;
+  }
+
+  .eui-enhanced-header .section__title {
+    font-size: 20px;
+  }
+
+  .eui-stat-badges {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .eui-stat-badge {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .eui-enhanced-header .section__title {
+    font-size: 18px;
+  }
+
+  .eui-enhanced-header .section__title .icon {
+    font-size: 24px;
+  }
+}

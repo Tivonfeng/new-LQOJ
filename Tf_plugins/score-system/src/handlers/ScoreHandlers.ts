@@ -6,13 +6,36 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
-    LotteryService,
     MigrationService,
     ScoreService,
     StatisticsService,
     type UserScore,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
+
+// 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
+function serializeForJSON(obj: any): any {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (obj instanceof Date) {
+        return obj.toISOString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(serializeForJSON);
+    }
+    if (typeof obj === 'object') {
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = serializeForJSON(value);
+        }
+        return result;
+    }
+    return obj;
+}
 
 /**
  * 积分大厅处理器
@@ -29,7 +52,7 @@ export class ScoreHallHandler extends Handler {
         let recentRecords: any[] = [];
         let hasCheckedInToday = false;
         let nextReward = 10;
-        let gameRemainingPlays = { lottery: 0, dice: 0, rps: 0 };
+        let gameRemainingPlays = { dice: 0, rps: 0 };
 
         if (uid) {
             // 获取用户积分信息
@@ -84,14 +107,14 @@ export class ScoreHallHandler extends Handler {
         // 检查是否有管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
-        this.response.template = 'score_hall.html';
-        this.response.body = {
+        // 准备传递给前端的数据对象
+        const scoreHallData = {
             userScore: userScore || { totalScore: 0, acCount: 0 },
             currentCoins: userScore?.totalScore || 0,
             userRank,
-            recentRecords,
-            topUsers,
-            udocs,
+            recentRecords: serializeForJSON(recentRecords),
+            topUsers: serializeForJSON(topUsers),
+            udocs: serializeForJSON(udocs),
             todayTotalScore: todayStats.totalScore,
             todayActiveUsers: todayStats.activeUsers,
             canManage,
@@ -101,58 +124,12 @@ export class ScoreHallHandler extends Handler {
             gameRemainingPlays,
             maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
         };
-    }
-}
 
-/**
- * 积分排行榜处理器
- * 路由: /score/ranking
- * 功能: 展示全站用户积分排名，支持分页
- */
-export class ScoreRankingHandler extends Handler {
-    async get() {
-        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 50;
-        const skip = (page - 1) * limit;
-
-        const users = await this.ctx.db.collection('score.users' as any)
-            .find({}) // 移除域限制，显示全局排行榜
-            .sort({ totalScore: -1, lastUpdated: 1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
-
-        const total = await this.ctx.db.collection('score.users' as any)
-            .countDocuments({}); // 移除域限制，统计全局用户数
-
-        // 获取用户信息
-        const uids = users.map((u) => u.uid);
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
-
-        // 检查是否有管理权限
-        const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
-
-        // 格式化日期
-        const formattedUsers = users.map((user) => ({
-            ...user,
-            lastUpdated: user.lastUpdated ? user.lastUpdated.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }) : null,
-        }));
-
-        this.response.template = 'score_ranking.html';
+        this.response.template = 'score_hall.html';
         this.response.body = {
-            users: formattedUsers,
-            udocs,
-            page,
-            total,
-            totalPages: Math.ceil(total / limit),
-            canManage,
+            ...scoreHallData,
+            allUids, // 传递所有 uid 列表，方便模板遍历
+            scoreHallDataJson: JSON.stringify(scoreHallData), // 预序列化的 JSON 字符串
         };
     }
 }
@@ -204,7 +181,7 @@ export class UserScoreHandler extends Handler {
 export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
@@ -220,8 +197,31 @@ export class ScoreRecordsHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
-        // 使用 service 方法格式化记录
-        const formattedRecords = scoreService.formatScoreRecords(records);
+        // 格式化记录
+        const formattedRecords = records.map((record) => ({
+            ...record,
+            createdAt: record.createdAt.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
+        // 如果请求 JSON 格式（前端 API 调用），返回 JSON
+        if (this.request.json || this.request.headers.accept?.includes('application/json')) {
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                records: formattedRecords,
+                udocs: serializeForJSON(udocs),
+                page,
+                total,
+                totalPages,
+                limit,
+            };
+            return;
+        }
 
         this.response.template = 'score_records.html';
         this.response.body = {
@@ -251,8 +251,7 @@ export class ScoreManageHandler extends Handler {
 
     async get() {
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
-        const statisticsService = new StatisticsService(this.ctx, scoreService, lotteryService);
+        const statisticsService = new StatisticsService(this.ctx, scoreService);
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
@@ -313,11 +312,15 @@ export class ScoreManageHandler extends Handler {
                 // 更新用户积分
                 await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
 
+                // 生成唯一的 pid 值，避免唯一索引冲突
+                // 使用 -2000000 - timestamp 确保唯一性，区别于游戏操作（-1000000）
+                const uniquePid = -2000000 - Date.now();
+
                 // 添加积分记录
                 await scoreService.addScoreRecord({
                     uid: user._id,
                     domainId: this.domain._id,
-                    pid: 0, // 管理员操作使用0
+                    pid: uniquePid,
                     recordId: null,
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,
