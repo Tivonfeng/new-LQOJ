@@ -6,7 +6,6 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
-    MigrationService,
     ScoreService,
     StatisticsService,
     type UserScore,
@@ -376,77 +375,6 @@ export class ScoreManageHandler extends Handler {
             } catch (error) {
                 console.error('[ScoreManage] Error adjusting score:', error);
                 this.response.body = { success: false, message: `操作失败：${error.message}` };
-            }
-        } else if (action === 'migrate_scores') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前迁移状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasDomainData) {
-                    this.response.body = { success: false, message: '没有需要迁移的分域数据' };
-                    return;
-                }
-
-                if (status.hasGlobalData) {
-                    this.response.body = { success: false, message: '已存在全局积分数据，请先清理或回滚' };
-                    return;
-                }
-
-                // 执行迁移
-                const result = await migrationService.mergeUserScores();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed score migration: ${result.mergedUsers} users merged`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功合并 ${result.mergedUsers} 个用户的积分数据（来自 ${result.totalRecords} 条域记录）`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during migration:', error);
-                this.response.body = { success: false, message: `迁移失败：${error.message}` };
-            }
-        } else if (action === 'rollback_migration') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasGlobalData) {
-                    this.response.body = { success: false, message: '没有需要回滚的全局数据' };
-                    return;
-                }
-
-                // 执行回滚
-                const result = await migrationService.rollbackMigration();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed migration rollback: ${result.rolledBackUsers} users`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功回滚 ${result.rolledBackUsers} 个用户的积分数据`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during rollback:', error);
-                this.response.body = { success: false, message: `回滚失败：${error.message}` };
-            }
-        } else if (action === 'get_migration_status') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-                const status = await migrationService.checkMigrationStatus();
-                const stats = await migrationService.getMigrationStats();
-
-                this.response.body = {
-                    success: true,
-                    data: { status, stats },
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error getting migration status:', error);
-                this.response.body = { success: false, message: `获取状态失败：${error.message}` };
             }
         } else {
             this.response.body = { success: false, message: '无效的操作' };
