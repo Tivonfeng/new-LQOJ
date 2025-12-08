@@ -11,6 +11,7 @@ export {
     DiceGameHandler,
     DiceHistoryHandler,
     DicePlayHandler,
+    DiceStatusHandler,
 } from './DiceGameHandlers';
 
 // 抽奖相关处理器
