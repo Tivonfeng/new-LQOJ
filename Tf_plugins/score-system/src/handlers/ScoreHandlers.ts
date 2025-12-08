@@ -13,6 +13,30 @@ import {
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
+// 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
+function serializeForJSON(obj: any): any {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (obj instanceof Date) {
+        return obj.toISOString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(serializeForJSON);
+    }
+    if (typeof obj === 'object') {
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = serializeForJSON(value);
+        }
+        return result;
+    }
+    return obj;
+}
+
 /**
  * 积分大厅处理器
  * 路由: /score/hall
@@ -83,14 +107,14 @@ export class ScoreHallHandler extends Handler {
         // 检查是否有管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
-        this.response.template = 'score_hall.html';
-        this.response.body = {
+        // 准备传递给前端的数据对象
+        const scoreHallData = {
             userScore: userScore || { totalScore: 0, acCount: 0 },
             currentCoins: userScore?.totalScore || 0,
             userRank,
-            recentRecords,
-            topUsers,
-            udocs,
+            recentRecords: serializeForJSON(recentRecords),
+            topUsers: serializeForJSON(topUsers),
+            udocs: serializeForJSON(udocs),
             todayTotalScore: todayStats.totalScore,
             todayActiveUsers: todayStats.activeUsers,
             canManage,
@@ -99,6 +123,13 @@ export class ScoreHallHandler extends Handler {
             nextReward,
             gameRemainingPlays,
             maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
+        };
+
+        this.response.template = 'score_hall.html';
+        this.response.body = {
+            ...scoreHallData,
+            allUids, // 传递所有 uid 列表，方便模板遍历
+            scoreHallDataJson: JSON.stringify(scoreHallData), // 预序列化的 JSON 字符串
         };
     }
 }
@@ -111,7 +142,7 @@ export class ScoreHallHandler extends Handler {
 export class ScoreRankingHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 50;
+        const limit = Number.parseInt(this.request.query.limit as string) || 10;
         const skip = (page - 1) * limit;
 
         const users = await this.ctx.db.collection('score.users' as any)
@@ -143,6 +174,21 @@ export class ScoreRankingHandler extends Handler {
                 minute: '2-digit',
             }) : null,
         }));
+
+        // 如果请求 JSON 格式（前端 API 调用），返回 JSON
+        if (this.request.json || this.request.headers.accept?.includes('application/json')) {
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                users: formattedUsers,
+                udocs: serializeForJSON(udocs),
+                page,
+                total,
+                totalPages: Math.ceil(total / limit),
+                limit,
+            };
+            return;
+        }
 
         this.response.template = 'score_ranking.html';
         this.response.body = {
@@ -203,7 +249,7 @@ export class UserScoreHandler extends Handler {
 export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
@@ -219,8 +265,31 @@ export class ScoreRecordsHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
-        // 使用 service 方法格式化记录
-        const formattedRecords = scoreService.formatScoreRecords(records);
+        // 格式化记录
+        const formattedRecords = records.map((record) => ({
+            ...record,
+            createdAt: record.createdAt.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
+        // 如果请求 JSON 格式（前端 API 调用），返回 JSON
+        if (this.request.json || this.request.headers.accept?.includes('application/json')) {
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                records: formattedRecords,
+                udocs: serializeForJSON(udocs),
+                page,
+                total,
+                totalPages,
+                limit,
+            };
+            return;
+        }
 
         this.response.template = 'score_records.html';
         this.response.body = {

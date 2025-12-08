@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import './dice-game.page.css';
+
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   AimOutlined,
@@ -39,12 +40,6 @@ import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
 
-// 骰子显示组件
-// 根据 avatar-settings 插件的实现，public 文件夹的文件可以通过根路径访问
-// 使用带前缀的文件名（dice_1.png）避免与其他插件的文件冲突
-// 骰子显示组件
-// 根据 avatar-settings 插件的实现，public 文件夹的文件可以通过根路径访问
-// 使用带前缀的文件名（dice_1.png）避免与其他插件的文件冲突
 interface DiceDisplayProps {
   value: number;
   size?: string | number;

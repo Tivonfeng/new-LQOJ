@@ -167,50 +167,50 @@ export class DicePlayHandler extends Handler {
 
     async post() {
         try {
-        const { guess, betAmount } = this.request.body;
+            const { guess, betAmount } = this.request.body;
 
             if (!guess || !['big', 'small'].includes(guess)) {
-            this.response.body = { success: false, message: '无效的猜测选项' };
+                this.response.body = { success: false, message: '无效的猜测选项' };
                 this.response.type = 'application/json';
-            return;
-        }
+                return;
+            }
 
-        const betAmountNum = Number.parseInt(betAmount);
-        if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
-            this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
+            const betAmountNum = Number.parseInt(betAmount);
+            if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
+                this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
                 this.response.type = 'application/json';
-            return;
-        }
+                return;
+            }
 
-        // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
-        const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'dice');
+            // 检查每日游戏次数限制
+            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'dice');
 
-        if (!limitCheck.canPlay) {
-            this.response.body = {
-                success: false,
-                message: `今日骰子游戏次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
-            };
+            if (!limitCheck.canPlay) {
+                this.response.body = {
+                    success: false,
+                    message: `今日骰子游戏次数已用完，请明天再来！(${limitCheck.totalPlays}/${limitCheck.maxPlays})`,
+                };
                 this.response.type = 'application/json';
-            return;
-        }
+                return;
+            }
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const diceService = new DiceGameService(this.ctx, scoreService);
+            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+            const diceService = new DiceGameService(this.ctx, scoreService);
 
-        const result = await diceService.playDiceGame(
-            this.domain._id,
-            this.user._id,
-            guess as 'big' | 'small',
-            betAmountNum,
-        );
+            const result = await diceService.playDiceGame(
+                this.domain._id,
+                this.user._id,
+                guess as 'big' | 'small',
+                betAmountNum,
+            );
 
-        // 如果游戏成功，记录游戏次数
-        if (result.success) {
-            await dailyLimitService.recordPlay(this.domain._id, this.user._id, 'dice');
-        }
+            // 如果游戏成功，记录游戏次数
+            if (result.success) {
+                await dailyLimitService.recordPlay(this.domain._id, this.user._id, 'dice');
+            }
 
-        this.response.body = result;
+            this.response.body = result;
             this.response.type = 'application/json';
         } catch (error: any) {
             console.error('[DicePlayHandler] Error:', error);
@@ -250,7 +250,6 @@ export class DiceHistoryHandler extends Handler {
         );
 
         // 获取用户统计
-        const userStats = await diceService.getUserDiceStats(this.domain._id, this.user._id);
 
         // 格式化游戏记录时间
         const formattedRecords = historyData.records.map((record) => ({

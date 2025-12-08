@@ -92,6 +92,7 @@ export class RPSGameService {
         playerChoice?: string;
         aiChoice?: string;
         reward?: number;
+        netGain?: number;
         newBalance?: number;
         streak?: number;
         streakBonus?: number;
@@ -240,7 +241,8 @@ export class RPSGameService {
                 result: gameResult,
                 playerChoice,
                 aiChoice,
-                reward: netGain, // 返回净收益
+                reward, // 总奖励（包括连胜奖励）
+                netGain, // 净收益
                 newBalance: updatedScore?.totalScore || 0,
                 streak: currentStreak,
                 streakBonus,

@@ -14,10 +14,10 @@ import {
     DiceHistoryHandler,
     DicePlayHandler,
     DiceStatusHandler,
-    RPSAdminHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
+    RPSStatusHandler,
     ScoreHallHandler,
     ScoreManageHandler,
     ScoreRankingHandler,
@@ -403,9 +403,9 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 剪刀石头布游戏路由
     ctx.Route('rock_paper_scissors', '/score/rps', RPSGameHandler);
+    ctx.Route('rps_status', '/score/rps/status', RPSStatusHandler);
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
-    ctx.Route('rps_admin', '/score/rps/admin', RPSAdminHandler);
 
     // 转账系统路由
     ctx.Route('transfer_exchange', '/score/transfer', TransferExchangeHandler);

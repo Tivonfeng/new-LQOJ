@@ -1,0 +1,327 @@
+/* Score Hall Page Styles */
+
+.score-hall-container {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.hero-card {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+  border: none;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card .ant-card-body {
+  padding: 32px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.hero-title {
+  color: white;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+}
+
+.hero-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  height: 36px;
+  padding: 0 16px;
+}
+
+.hero-action-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+}
+
+/* Game Cards */
+.game-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.game-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Check-in Card */
+.checkin-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  border: none;
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+}
+
+.checkin-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.game-action-btn {
+  height: 40px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.checkin-btn {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+}
+
+.checkin-btn:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+}
+
+/* Dice Card */
+.dice-card {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+  border: none;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+}
+
+.dice-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dice-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.dice-btn:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
+}
+
+/* RPS Card */
+.rps-card {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  border: none;
+  box-shadow: 0 10px 40px rgba(139, 92, 246, 0.3);
+}
+
+.rps-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rps-btn {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.rps-btn:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+}
+
+/* Content Cards */
+.content-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.content-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Record Items */
+.record-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.record-item:hover {
+  background: #f9fafb;
+  transform: translateX(4px);
+}
+
+.record-item.positive:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.record-item.negative:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.record-item.current-user {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.record-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.badge-positive {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-negative {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.record-score {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Leaderboard Items */
+.leaderboard-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.leaderboard-item:hover {
+  background: #f9fafb;
+  transform: translateX(4px);
+}
+
+.leaderboard-item.current-user {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.rank-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.rank-1,
+.rank-2,
+.rank-3 {
+  font-size: 24px;
+}
+
+.rank-other {
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.player-score {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .score-hall-container {
+    padding: 12px;
+  }
+
+  .hero-card .ant-card-body {
+    padding: 24px 16px;
+  }
+
+  .game-icon-wrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .game-card .ant-card-body {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  .game-card {
+    margin-bottom: 16px;
+  }
+}
+

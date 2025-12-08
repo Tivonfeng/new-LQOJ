@@ -14,13 +14,12 @@ export {
     DiceStatusHandler,
 } from './DiceGameHandlers';
 
-
 // 剪刀石头布游戏相关处理器
 export {
-    RPSAdminHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
+    RPSStatusHandler,
 } from './RPSHandlers';
 
 // 积分相关处理器
