@@ -411,6 +411,12 @@
   flex-shrink: 0;
 }
 
+.record-score-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Leaderboard Items */
 .leaderboard-item {
   transition: all 0.3s ease;

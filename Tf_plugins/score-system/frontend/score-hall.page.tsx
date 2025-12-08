@@ -270,7 +270,7 @@ const ScoreHallApp: React.FC = () => {
                     href={transferUrl}
                     className="hero-action-btn"
                   >
-                    兑换
+                    积分交易所
                   </Button>
                   {hallData.canManage && (
                     <Button
@@ -279,7 +279,7 @@ const ScoreHallApp: React.FC = () => {
                       href={scoreManageUrl}
                       className="hero-action-btn"
                     >
-                      管理
+                      积分管理
                     </Button>
                   )}
                 </Space>
@@ -497,15 +497,38 @@ const ScoreHallApp: React.FC = () => {
                           </div>
                         }
                         title={
-                          <Space>
-                            <Text strong>
-                              {user?.uname || `User ${record.uid}`}
-                              {user?.displayName && (
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  ({user.displayName})
-                                </Text>
-                              )}
-                            </Text>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Space>
+                              <Text strong>
+                                {user?.uname || `User ${record.uid}`}
+                                {user?.displayName && (
+                                  <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                    ({user.displayName})
+                                  </Text>
+                                )}
+                              </Text>
+                            </Space>
+                            <div className="record-score-inline">
+                              <Text
+                                strong
+                                style={{
+                                  fontSize: 18,
+                                  color: record.score > 0 ? '#10b981' : '#ef4444',
+                                }}
+                              >
+                                {record.score > 0 ? '+' : ''}{record.score}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                pts
+                              </Text>
+                            </div>
+                          </div>
+                        }
+                        description={
+                          <Space wrap>
+                            <Tag color="default" style={{ fontSize: 11 }}>
+                              {record.reason || '积分调整'}
+                            </Tag>
                             <Tag
                               color={record.pid === 0 || record.problemTitle === '管理员操作' ? 'orange' : 'blue'}
                               style={{ fontSize: 11 }}
@@ -514,33 +537,12 @@ const ScoreHallApp: React.FC = () => {
                                 ? '管理员操作'
                                 : record.problemTitle || `Problem ${record.pid}`}
                             </Tag>
-                          </Space>
-                        }
-                        description={
-                          <Space>
-                            <Tag color="default" style={{ fontSize: 11 }}>
-                              {record.reason || '积分调整'}
-                            </Tag>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               {record.createdAt}
                             </Text>
                           </Space>
                         }
                       />
-                      <div className="record-score">
-                        <Text
-                          strong
-                          style={{
-                            fontSize: 18,
-                            color: record.score > 0 ? '#10b981' : '#ef4444',
-                          }}
-                        >
-                          {record.score > 0 ? '+' : ''}{record.score}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                          pts
-                        </Text>
-                      </div>
                     </List.Item>
                     );
                   }}

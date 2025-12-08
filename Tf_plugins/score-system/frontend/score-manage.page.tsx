@@ -1,8 +1,42 @@
 /* eslint-disable react-refresh/only-export-components */
+import './score-manage.page.css';
+
 import { addPage, NamedPage, UserSelectAutoComplete } from '@hydrooj/ui-default';
+import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  DollarOutlined,
+  EditOutlined,
+  ReloadOutlined,
+  ThunderboltOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Input,
+  Space,
+  Typography,
+} from 'antd';
 import $ from 'jquery';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+
+const { Title, Text } = Typography;
+
+interface ScoreRecord {
+  uid: string;
+  score: number;
+  pid: number;
+  problemTitle?: string;
+  reason?: string;
+  createdAt?: string;
+}
+
+interface UserMap { [key: string]: { uname?: string, displayName?: string } }
 
 // 积分管理React组件
 const ScoreManageApp: React.FC = () => {
@@ -12,6 +46,16 @@ const ScoreManageApp: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean, message: string } | null>(null);
   const [recentUsers, setRecentUsers] = useState<string[]>([]);
+  const [records] = useState<ScoreRecord[]>(() => {
+    const raw = (window as any).ScoreManageRecentRecords?.records;
+    return Array.isArray(raw) ? raw : [];
+  });
+  const [userMap] = useState<UserMap>(() => {
+    const raw = (window as any).ScoreManageRecentRecords?.users;
+    return raw && typeof raw === 'object' ? raw : {};
+  });
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
   const [, forceUpdate] = useState({});
 
   const userInputRef = useRef<HTMLInputElement>(null);
@@ -84,18 +128,125 @@ const ScoreManageApp: React.FC = () => {
     };
   }, []);
 
-  // 快捷操作
-  const handleQuickAction = useCallback((score: number, reasonText: string) => {
+  // 快捷积分选项
+  const scoreOptions = {
+    positive: [
+      { score: 10, label: '+10', icon: <DollarOutlined /> },
+      { score: 20, label: '+20', icon: <DollarOutlined /> },
+      { score: 30, label: '+30', icon: <DollarOutlined /> },
+      { score: 50, label: '+50', icon: <DollarOutlined /> },
+      { score: 100, label: '+100', icon: <DollarOutlined /> },
+    ],
+    negative: [
+      { score: -10, label: '-10', icon: <CloseCircleOutlined /> },
+      { score: -20, label: '-20', icon: <CloseCircleOutlined /> },
+      { score: -30, label: '-30', icon: <CloseCircleOutlined /> },
+      { score: -50, label: '-50', icon: <CloseCircleOutlined /> },
+      { score: -100, label: '-100', icon: <CloseCircleOutlined /> },
+    ],
+  };
+
+  // 快捷原因选项
+  const reasonOptions = {
+    positive: [
+      '小小奖励',
+      '大大奖励',
+      '超级奖励',
+      '巨大奖励',
+      '特殊奖励',
+      '活动奖励',
+      '完成任务',
+    ],
+    negative: [
+      '轻微违纪',
+      '严重违纪',
+      '重大违纪',
+      '上课玩游戏',
+      '系统惩罚',
+    ],
+  };
+
+  // 快捷操作 - 选择积分
+  const handleQuickScore = useCallback((score: number) => {
     // 清除之前的结果消息
     setResult(null);
     setScoreChange(score.toString());
-    setReason(reasonText);
 
     // 如果用户名为空，聚焦到用户输入框
     if (!username.trim() && userInputRef.current) {
       userInputRef.current.focus();
     }
   }, [username]);
+
+  // 快捷操作 - 选择原因
+  const handleQuickReason = useCallback((reasonText: string) => {
+    setReason(reasonText);
+    setResult(null);
+  }, []);
+
+  // 积分下拉菜单项
+  const scoreMenuItems: MenuProps['items'] = [
+    {
+      key: 'positive-group',
+      label: <Text strong style={{ color: '#10b981' }}>奖励</Text>,
+      type: 'group',
+    },
+    ...scoreOptions.positive.map((option) => ({
+      key: `positive-${option.score}`,
+      label: (
+        <Space>
+          {option.icon}
+          <span>{option.label}</span>
+        </Space>
+      ),
+      onClick: () => handleQuickScore(option.score),
+    })),
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'negative-group',
+      label: <Text strong style={{ color: '#ef4444' }}>扣分</Text>,
+      type: 'group',
+    },
+    ...scoreOptions.negative.map((option) => ({
+      key: `negative-${option.score}`,
+      label: (
+        <Space>
+          {option.icon}
+          <span>{option.label}</span>
+        </Space>
+      ),
+      onClick: () => handleQuickScore(option.score),
+    })),
+  ];
+
+  // 原因下拉菜单项
+  const reasonMenuItems: MenuProps['items'] = [
+    {
+      key: 'positive-reason-group',
+      label: <Text strong style={{ color: '#10b981' }}>奖励原因</Text>,
+      type: 'group',
+    },
+    ...reasonOptions.positive.map((reasonText) => ({
+      key: `positive-reason-${reasonText}`,
+      label: reasonText,
+      onClick: () => handleQuickReason(reasonText),
+    })),
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'negative-reason-group',
+      label: <Text strong style={{ color: '#ef4444' }}>扣分原因</Text>,
+      type: 'group',
+    },
+    ...reasonOptions.negative.map((reasonText) => ({
+      key: `negative-reason-${reasonText}`,
+      label: reasonText,
+      onClick: () => handleQuickReason(reasonText),
+    })),
+  ];
 
   // 处理用户名输入变化
   const handleUsernameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,245 +390,275 @@ const ScoreManageApp: React.FC = () => {
     }
   }, [username, scoreChange, reason]);
 
-  // 重置表单
-  const handleReset = useCallback(() => {
-    setUsername('');
-    setScoreChange('');
-    setReason('');
-    setResult(null);
-
-    // 清理UserSelectAutoComplete
-    if (userSelectComponentRef.current) {
-      userSelectComponentRef.current.clear();
-    }
+  // 返回积分大厅
+  const handleGoToHall = useCallback(() => {
+    const url = (window as any).scoreHallUrl || '/score/hall';
+    window.location.href = url;
   }, []);
 
-  return (
-    <div className="score-manage-react-app">
-      {/* 快捷操作区域 - 左右布局 */}
-      <div className="quick-actions-section">
-        <div className="quick-actions-header">
-          <h4>快捷操作</h4>
-          <p className="quick-actions-subtitle">先选择用户，再选择积分调整</p>
+  // 侧边栏记录渲染
+  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+  const pageSafe = Math.min(totalPages, Math.max(1, page));
+  const pageRecords = records.slice((pageSafe - 1) * pageSize, pageSafe * pageSize);
+
+  const formatTime = useCallback((value?: string) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) {
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${m}/${day} ${hh}:${mm}`;
+    }
+    return value;
+  }, []);
+
+  const renderRecord = useCallback((record: ScoreRecord) => {
+    const user = userMap?.[record.uid];
+    const displayName = user?.displayName || user?.uname || record.uid;
+    const positive = record.score > 0;
+    const isAdmin = record.pid === 0 || record.problemTitle === '管理员操作';
+    return (
+      <div className={`record-item ${positive ? 'positive' : 'negative'}`} key={`${record.uid}-${record.createdAt}-${record.reason}`}>
+        <div className="record-main">
+          <div className="record-user">
+            <span className={`record-dot ${positive ? 'up' : 'down'}`} />
+            <span className="record-name">{displayName}</span>
+            <span className="record-meta">{isAdmin ? '管理员操作' : (record.problemTitle || record.pid)}</span>
+          </div>
+          <div className={`record-score ${positive ? 'pos' : 'neg'}`}>
+            {positive ? '+' : ''}
+            {Math.abs(record.score)} pts
+          </div>
         </div>
+        <div className="record-footer">
+          <span className="record-reason">{record.reason || '无原因'}</span>
+          <span className="record-time">{formatTime(record.createdAt)}</span>
+        </div>
+      </div>
+    );
+  }, [formatTime, userMap]);
 
-        <div className="quick-actions-layout">
-          {/* 左侧：用户选择 */}
-          <div className="quick-users-panel">
-            <div className="panel-header">
-              <div className="panel-header-content">
-                <span className="panel-icon">👥</span>
-                <div>
-                  <div className="panel-title">最近操作的用户</div>
-                  <div className="panel-subtitle">从最近操作中快速选择</div>
-                </div>
+  return (
+    <div className="score-manage-container">
+      <div className="score-manage-grid-react">
+        <div className="main-column">
+          {/* Hero Section */}
+          <Card className="hero-card" bordered={false}>
+            <div className="hero-content">
+              <div className="hero-text">
+                <Title level={2} className="hero-title">
+                  积分管理
+                </Title>
+                <Text className="hero-subtitle">管理员积分调整工具</Text>
               </div>
-              <div className="panel-badge">Step 1</div>
+              <div className="hero-actions">
+                <Space>
+                  <Button
+                    type="default"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={handleGoToHall}
+                    className="hero-action-btn"
+                  >
+                    返回积分大厅
+                  </Button>
+                </Space>
+              </div>
             </div>
+          </Card>
 
-            <div className="panel-content">
-              {recentUsers.length > 0 && (
-                <div className="recent-users-quick">
-                  <div className="users-grid">
-                    {recentUsers.map((user, index) => (
-                      <button
-                        key={`${user}-${index}`}
-                        type="button"
-                        className={`user-quick-btn ${username === user ? 'active' : ''}`}
-                        onClick={() => handleSelectRecentUser(user)}
-                        aria-label={`选择用户: ${user}`}
-                      >
-                        <span className="user-icon">👤</span>
-                        <span className="user-name">{user}</span>
-                      </button>
-                    ))}
+          {/* 积分调整表单 */}
+          <Card
+            className="section-card manual-form-card"
+            title={
+              <Space>
+                <EditOutlined />
+                <span>积分调整</span>
+              </Space>
+            }
+          >
+              <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
+                选择用户并调整积分
+              </Text>
+              <form onSubmit={handleSubmit} className="adjustment-form">
+                <div className="form-grid two-rows">
+                  <div className="form-group">
+                    <label className="form-label">
+                      <UserOutlined />
+                      <span>用户名</span>
+                    </label>
+                    <input
+                      ref={userInputRef}
+                      type="text"
+                      name="username"
+                      value={username}
+                      onChange={handleUsernameChange}
+                      className="ant-input ant-input-lg"
+                      placeholder="搜索并选择用户..."
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d9d9d9' }}
+                    />
+                    <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                      输入用户名进行搜索
+                    </Text>
                   </div>
+
+                  <div className="form-group recent-users-column">
+                    <label className="form-label">
+                      <UserOutlined />
+                      <span>最近操作的用户</span>
+                    </label>
+                    {recentUsers.length > 0 ? (
+                      <div className="recent-users-inline">
+                        <Space wrap size={[8, 8]}>
+                          {recentUsers.map((user, index) => (
+                            <Button
+                              key={`${user}-${index}`}
+                              type={username === user ? 'primary' : 'default'}
+                              icon={<UserOutlined />}
+                              size="small"
+                              className={`user-quick-btn-inline ${username === user ? 'active' : ''}`}
+                              onClick={() => handleSelectRecentUser(user)}
+                            >
+                              {user}
+                            </Button>
+                          ))}
+                        </Space>
+                      </div>
+                    ) : (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        暂无最近记录
+                      </Text>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      <DollarOutlined />
+                      <span>积分变化</span>
+                    </label>
+                    <Input.Group compact style={{ display: 'flex' }}>
+                      <Input
+                        type="number"
+                        name="scoreChange"
+                        value={scoreChange}
+                        onChange={(e) => setScoreChange(e.target.value)}
+                        placeholder="±1000"
+                        min="-10000"
+                        max="10000"
+                        size="large"
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <Dropdown
+                        menu={{ items: scoreMenuItems }}
+                        placement="bottomRight"
+                        trigger={['click']}
+                      >
+                        <Button
+                          type="default"
+                          icon={<ThunderboltOutlined />}
+                          size="large"
+                          className="score-quick-select-btn"
+                        >
+                          快捷选择
+                        </Button>
+                      </Dropdown>
+                    </Input.Group>
+                    <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                      范围：-10000 到 +10000，或使用快捷选择
+                    </Text>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      <EditOutlined />
+                      <span>调整原因</span>
+                    </label>
+                    <Input.Group compact style={{ display: 'flex' }}>
+                      <Input
+                        type="text"
+                        name="reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="请说明此次调整的原因..."
+                        size="large"
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <Dropdown
+                        menu={{ items: reasonMenuItems }}
+                        placement="bottomRight"
+                        trigger={['click']}
+                      >
+                        <Button
+                          type="default"
+                          icon={<ThunderboltOutlined />}
+                          size="large"
+                          className="reason-quick-select-btn"
+                        >
+                          快捷选择
+                        </Button>
+                      </Dropdown>
+                    </Input.Group>
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <Button
+                    type="primary"
+                    icon={isSubmitting ? <ReloadOutlined spin /> : <ThunderboltOutlined />}
+                    htmlType="submit"
+                    size="large"
+                    loading={isSubmitting}
+                    className="submit-btn"
+                  >
+                    {isSubmitting ? '处理中...' : '应用调整'}
+                  </Button>
+                </div>
+              </form>
+
+              {/* 结果显示 */}
+              {result && (
+                <div className={`result-message ${result.success ? 'success' : 'error'}`}>
+                  {result.success ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                  <span>{result.message}</span>
                 </div>
               )}
-
-              <div className="manual-input-hint">
-                <span className="hint-icon">💡</span>
-                <span className="hint-text">也可在下方表单中手动输入用户名</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 右侧：积分选择 */}
-          <div className="quick-scores-panel">
-            <div className="panel-header">
-              <div className="panel-header-content">
-                <span className="panel-icon">⚡</span>
-                <div>
-                  <div className="panel-title">积分调整</div>
-                  <div className="panel-subtitle">选择奖励或扣分操作</div>
-                </div>
-              </div>
-              <div className="panel-badge">Step 2</div>
-            </div>
-
-            <div className="panel-content">
-              <div className="scores-grid">
-                <div className="scores-group positive">
-                  <div className="group-label">奖励</div>
-                  <div className="scores-row">
-                    <button
-                      type="button"
-                      className="quick-action-btn positive compact"
-                      onClick={() => handleQuickAction(10, '小小奖励')}
-                    >
-                      <span className="action-icon">🙋</span>
-                      <span className="action-score">+10</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="quick-action-btn positive compact"
-                      onClick={() => handleQuickAction(20, '大大奖励')}
-                    >
-                      <span className="action-icon">📝</span>
-                      <span className="action-score">+20</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="quick-action-btn positive compact"
-                      onClick={() => handleQuickAction(50, '超级奖励')}
-                    >
-                      <span className="action-icon">🏆</span>
-                      <span className="action-score">+50</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="scores-group negative">
-                  <div className="group-label">扣分</div>
-                  <div className="scores-row">
-                    <button
-                      type="button"
-                      className="quick-action-btn negative compact"
-                      onClick={() => handleQuickAction(-10, '轻微违纪')}
-                    >
-                      <span className="action-icon">⏰</span>
-                      <span className="action-score">-10</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="quick-action-btn negative compact"
-                      onClick={() => handleQuickAction(-50, '严重违纪')}
-                    >
-                      <span className="action-icon">❌</span>
-                      <span className="action-score">-50</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="quick-action-btn negative compact"
-                      onClick={() => handleQuickAction(-100, '重大违纪')}
-                    >
-                      <span className="action-icon">📅</span>
-                      <span className="action-score">-100</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </Card>
         </div>
 
-        {/* 手动调整表单 */}
-        <div className="manual-form-section">
-          <div className="section-header">
-            <div className="section-header-content">
-              <span className="section-icon">✏️</span>
-              <div>
-                <div className="section-title">手动调整</div>
-                <div className="section-subtitle">自定义用户名、积分和原因</div>
-              </div>
+        <div className="sidebar-column">
+          <Card className="records-card" title="最近积分记录">
+            <div className="records-list">
+              {pageRecords.length === 0 && (
+                <div className="empty-panel">
+                  <div className="empty-icon">📋</div>
+                  <p className="empty-text">暂无记录</p>
+                </div>
+              )}
+              {pageRecords.map(renderRecord)}
             </div>
-            <div className="section-badge">Alternative</div>
-          </div>
-
-          <div className="section-content">
-            <form onSubmit={handleSubmit} className="adjustment-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">
-                    <span className="label-icon">👤</span>
-                    用户名
-                  </label>
-                  <input
-                    ref={userInputRef}
-                    type="text"
-                    name="username"
-                    value={username}
-                    onChange={handleUsernameChange}
-                    className="form-input"
-                    placeholder="搜索并选择用户..."
-                  />
-                  <div className="form-hint">输入用户名进行搜索</div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    <span className="label-icon">💰</span>
-                    积分变化
-                  </label>
-                  <input
-                    type="number"
-                    name="scoreChange"
-                    value={scoreChange}
-                    onChange={(e) => setScoreChange(e.target.value)}
-                    className="form-input"
-                    placeholder="±1000"
-                    min="-10000"
-                    max="10000"
-                    required
-                  />
-                  <div className="form-hint">范围：-10000 到 +10000</div>
-                </div>
+            <div className="records-pagination">
+              <Button
+                className="pagination-btn"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pageSafe <= 1}
+              >
+                上一页
+              </Button>
+              <div className="pagination-info">
+                <span className="current-page">{pageSafe}</span> / <span className="total-pages">{totalPages}</span>
               </div>
-
-              <div className="form-group full-width">
-                <label className="form-label">
-                  <span className="label-icon">📝</span>
-                  调整原因
-                </label>
-                <input
-                  type="text"
-                  name="reason"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="form-input"
-                  placeholder="请说明此次调整的原因..."
-                  required
-                />
-              </div>
-
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  className="submit-btn"
-                  disabled={isSubmitting}
-                >
-                  <span className="btn-icon">{isSubmitting ? '⏳' : '⚡'}</span>
-                  <span className="btn-text">{isSubmitting ? '处理中...' : '应用调整'}</span>
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={handleReset}
-                  disabled={isSubmitting}
-                >
-                  <span className="btn-icon">🔄</span>
-                  <span className="btn-text">重置</span>
-                </button>
-              </div>
-            </form>
-
-            {/* 结果显示 */}
-            {result && (
-              <div className={`result-message ${result.success ? 'success' : 'error'}`}>
-                {result.message}
-              </div>
-            )}
-          </div>
+              <Button
+                className="pagination-btn"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={pageSafe >= totalPages}
+              >
+                下一页
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -496,14 +677,6 @@ addPage(new NamedPage(['score_manage'], async () => {
     console.log('Score Manage React app mounted successfully');
   } else {
     console.error('Mount point not found: score-manage-react-app');
-  }
-
-  // 初始化迁移管理组件
-  try {
-    const { initMigrationComponent } = await import('./migration-manage.component');
-    initMigrationComponent();
-  } catch (error) {
-    console.error('Failed to load migration component:', error);
   }
 
   // 通知应用已挂载成功

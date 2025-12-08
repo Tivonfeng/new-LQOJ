@@ -1,160 +1,7 @@
 {% extends "layout/basic.html" %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="hero-section">
-    <div class="hero-content">
-        <div class="hero-text">
-            <h1 class="hero-title">⚙️ {{ _('Score System Management') }}</h1>
-            <p class="hero-subtitle">{{ _('Manage') }} {{ _('Score') }}</p>
-        </div>
-        <div class="hero-nav">
-            <a href="{{ url('score_hall') }}" class="nav-button">{{ _('Score Hall') }}</a>
-        </div>
-    </div>
-</div>
-
-<!-- Main Container -->
-<div class="main-container">
-    <!-- Simplified Grid Layout -->
-    <div class="score-manage-grid">
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <!-- React App Mount Point -->
-            <div id="score-manage-react-app"></div>
-        </div>
-        
-        <!-- Right Sidebar Area -->
-        <div class="sidebar-area">
-            <!-- Recent Records Panel -->
-            <div class="records-section">
-                <div class="records-panel">
-                    <div class="panel-header">
-                        <div class="panel-title">
-                            <div class="panel-icon">📋</div>
-                            <h3>{{ _('Recent Score Records') }}</h3>
-                        </div>
-                        <a href="{{ url('score_records') }}" class="more-records-btn">
-                            <span class="btn-icon">📋</span>
-                            <span class="btn-text">{{ _('More Records') }}</span>
-                        </a>
-                    </div>
-                    
-                    <div class="panel-content">
-                        {% if recentRecords and recentRecords|length > 0 %}
-                        <div class="records-list">
-                            {% for record in recentRecords %}
-                            <div class="record-item {{ 'positive' if record.score > 0 else 'negative' }}">
-                                <div class="record-info">
-                                    <div class="record-header">
-                                        <div class="user-info">
-                                            <span class="user-icon">👤</span>
-                                            <span class="user-name">
-                                                {% set user = udocs[record.uid] %}
-                                                {% if user %}
-                                                    {{ user.displayName or user.uname or record.uid }}
-                                                {% else %}
-                                                    {{ record.uid }}
-                                                {% endif %}
-                                            </span>
-                                        </div>
-                                        <div class="score-badge {{ 'positive' if record.score > 0 else 'negative' }}">
-                                            <span class="score-sign">{{ '+' if record.score > 0 else '' }}</span>
-                                            <span class="score-number">{{ record.score | abs }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="record-details">
-                                        <div class="problem-info">
-                                            {% if record.pid == 0 or record.problemTitle == '管理员操作' %}
-                                                <span class="problem-icon">⚙️</span>
-                                                <span class="problem-title">{{ record.reason }}</span>
-                                            {% else %}
-                                                <span class="problem-icon">📝</span>
-                                                <span class="problem-title">{{ record.problemTitle or record.pid }}</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="time-info">
-                                            {% if record.createdAt %}
-                                                {% if record.createdAt.strftime %}
-                                                {{ record.createdAt.strftime('%m/%d %H:%M') }}
-                                                {% elif record.createdAt|string %}
-                                                {{ record.createdAt|string }}
-                                                {% else %}
-                                                {{ _('Recent') }}
-                                                {% endif %}
-                                            {% else %}
-                                            {{ _('N/A') }}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <div class="empty-panel">
-                            <div class="empty-icon">📋</div>
-                            <p class="empty-text">{{ _('No recent records found.') }}</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Migration Management Section -->
-            <div class="migration-section">
-                <div id="migration-manage-component"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <!-- Management Actions -->
-    {# <div class="actions-section">
-        <div class="section-header">
-            <h2>🔧 {{ _('Management Tools') }}</h2>
-        </div>
-        
-        <div class="actions-grid">
-            <a href="{{ url('score_ranking') }}" class="action-card primary">
-                <div class="card-icon">🏆</div>
-                <div class="card-content">
-                    <h3>{{ _('View Full Ranking') }}</h3>
-                    <p>{{ _('Rankings') }} {{ _('View All') }}</p>
-                    <div class="card-meta">
-                        <span class="meta-tag">{{ _('View Details') }}</span>
-                    </div>
-                </div>
-                <div class="card-arrow">→</div>
-            </a>
-            
-            <a href="{{ url('user_score') }}" class="action-card">
-                <div class="card-icon">👤</div>
-                <div class="card-content">
-                    <h3>{{ _('My Score') }}</h3>
-                    <p>{{ _('Your Progress') }}</p>
-                    <div class="card-meta">
-                        <span class="meta-tag">{{ _('Personal') }}</span>
-                    </div>
-                </div>
-                <div class="card-arrow">→</div>
-            </a>
-            
-            
-            <a href="{{ url('score_hall') }}" class="action-card success">
-                <div class="card-icon">🏛️</div>
-                <div class="card-content">
-                    <h3>{{ _('Score Hall') }}</h3>
-                    <p>{{ _('Quick Actions') }}</p>
-                    <div class="card-meta">
-                        <span class="meta-tag">{{ _('Overview') }}</span>
-                    </div>
-                </div>
-                <div class="card-arrow">→</div>
-            </a>
-        </div>
-    </div> #}
-</div>
+<div id="score-manage-react-app"></div>
 
 <style>
 /* Design System Variables */
@@ -206,89 +53,6 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-/* Hero Section */
-.hero-section {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: white;
-    padding: var(--spacing-10) 0 var(--spacing-8) 0;
-    margin-bottom: var(--spacing-8);
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-    position: relative;
-    overflow: hidden;
-}
-
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="0,0 1000,80 1000,100 0,100"/></svg>') no-repeat bottom;
-    background-size: cover;
-}
-
-.hero-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-6);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    z-index: 1;
-}
-
-.hero-title {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: var(--spacing-2);
-    background: linear-gradient(45deg, #ffffff, #e0e7ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.hero-subtitle {
-    font-size: 1.125rem;
-    opacity: 0.9;
-    font-weight: 500;
-}
-
-.hero-nav {
-    display: flex;
-    gap: var(--spacing-4);
-}
-
-.nav-button {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-3) var(--spacing-4);
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.nav-button:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
-    text-decoration: none;
-    color: white;
-}
-
-.nav-button.primary {
-    background: rgba(255, 255, 255, 0.95);
-    color: var(--primary-color);
-}
-
-.nav-button.primary:hover {
-    background: rgba(255, 255, 255, 1);
-    color: var(--primary-dark);
 }
 
 /* Main Container */
@@ -698,6 +462,44 @@
     gap: var(--spacing-3);
     max-height: 450px;
     overflow-y: auto;
+}
+
+.records-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-3);
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-2) var(--spacing-4);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .record-item {
@@ -1755,15 +1557,7 @@
 }
 
 /* 迁移管理区域 */
-.migration-section {
-    background: var(--bg-primary);
-    border: 2px solid var(--primary-color);
-    border-radius: var(--radius-xl);
-    padding: 0;
-    margin-bottom: var(--spacing-8);
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-}
+/* Migration section removed */
 
 .migration-header {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -1989,16 +1783,6 @@
 }
 
 @media (max-width: 768px) {
-    .hero-content {
-        flex-direction: column;
-        gap: var(--spacing-6);
-        text-align: center;
-    }
-    
-    .hero-title {
-        font-size: 2rem;
-    }
-    
     .main-container {
         padding: 0 var(--spacing-4);
     }
@@ -2048,13 +1832,6 @@
 }
 
 @media (max-width: 640px) {
-    .hero-section {
-        padding: var(--spacing-8) 0 var(--spacing-6) 0;
-    }
-    
-    .hero-content {
-        padding: 0 var(--spacing-4);
-    }
     
     .main-container {
         padding: 0 var(--spacing-3);
@@ -2104,6 +1881,34 @@ window.ScoreSystemConfig = {
   submitUrl: '{{ url("score_manage") }}',
   currentPath: '{{ handler.request.path }}',
   domainId: '{{ handler.domain._id }}'
+};
+
+{# 安全回退 #}
+{% set recent = recentRecords or [] %}
+// 最近积分记录数据（前端分页）
+window.ScoreManageRecentRecords = {
+  records: [
+    {% for record in recent %}
+    {
+      uid: '{{ record.uid|escape }}',
+      score: {{ record.score or 0 }},
+      pid: {{ record.pid or 0 }},
+      problemTitle: '{{ record.problemTitle|default("", true)|escape }}',
+      reason: '{{ record.reason|default("", true)|escape }}',
+      createdAt: '{{ record.createdAt|string|escape }}'
+    }{{ "," if not loop.last else "" }}
+    {% endfor %}
+  ],
+  users: {
+    {% if udocs %}
+      {% for uid, user in udocs %}
+      '{{ uid|escape }}': {
+        uname: '{{ user.uname|default("", true)|escape }}',
+        displayName: '{{ user.displayName|default("", true)|escape }}'
+      }{{ "," if not loop.last else "" }}
+      {% endfor %}
+    {% endif %}
+  }
 };
 
 </script>
