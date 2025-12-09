@@ -106,13 +106,17 @@ export class ScoreHallHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const rawUdocs = await UserModel.getList(this.domain._id, allUids);
 
-        // 为每个用户生成 avatarUrl
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
         const udocs: Record<string, any> = {};
         for (const userId in rawUdocs) {
             const user = rawUdocs[userId];
-            udocs[userId] = {
+            const uidKey = String(userId); // 确保 key 是字符串
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
+            udocs[uidKey] = {
                 ...user,
                 avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
             };
         }
 
@@ -274,14 +278,17 @@ export class ScoreRankingHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const rawUdocs = await UserModel.getList(this.domain._id, uids);
 
-        // 为每个用户生成 avatarUrl，确保 key 是字符串类型
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
         const udocs: Record<string, any> = {};
         for (const userId in rawUdocs) {
             const user = rawUdocs[userId];
             const uidKey = String(userId); // 确保 key 是字符串
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
             udocs[uidKey] = {
                 ...user,
                 avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
             };
         }
 

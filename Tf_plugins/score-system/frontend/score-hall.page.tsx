@@ -684,9 +684,27 @@ const ScoreHallApp: React.FC = () => {
                             </Text>
                           }
                           description={
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {user.acCount} AC
-                            </Text>
+                            userDoc?.bio ? (
+                              <Text
+                                type="secondary"
+                                style={{
+                                  fontSize: 12,
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  lineHeight: '1.4',
+                                }}
+                                title={userDoc.bio}
+                              >
+                                {userDoc.bio.replace(/[#*`_~[\]()]/g, '').trim()}
+                              </Text>
+                            ) : (
+                              <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                                暂无简介
+                              </Text>
+                            )
                           }
                         />
                         <div className="player-score">
