@@ -47,7 +47,8 @@ interface ScoreHallData {
     reason: string;
     createdAt: string;
     pid: number;
-    problemTitle?: string;
+    category?: string;
+    title?: string;
   }>;
   topUsers: Array<{
     uid: string;
@@ -99,6 +100,8 @@ const ScoreHallApp: React.FC = () => {
   const [allRecords, setAllRecords] = useState(hallData.recentRecords);
   const [totalRecords, setTotalRecords] = useState(hallData.recentRecords.length);
   const [recordsUdocs, setRecordsUdocs] = useState(hallData.udocs);
+  // 分类筛选状态
+  const [selectedCategory, setSelectedCategory] = useState<string>('AC题目');
   // 分页相关状态 - 排行榜
   const [rankingPage, setRankingPage] = useState(1);
   const [rankingPageSize] = useState(10);
@@ -207,6 +210,17 @@ const ScoreHallApp: React.FC = () => {
       // Failed to fetch ranking
     }
   }, [scoreRankingUrl, rankingPageSize]);
+
+  // 当筛选分类变化时，如果当前页数超过筛选后的总页数，重置到第一页
+  React.useEffect(() => {
+    const filteredRecords = selectedCategory === '全部'
+      ? allRecords
+      : allRecords.filter((record) => record.category === selectedCategory);
+    const maxPage = Math.ceil(filteredRecords.length / recordsPageSize);
+    if (recordsPage > maxPage && maxPage > 0) {
+      setRecordsPage(1);
+    }
+  }, [selectedCategory, allRecords, recordsPageSize]);
 
   // 初始化记录数据
   React.useEffect(() => {
@@ -474,17 +488,50 @@ const ScoreHallApp: React.FC = () => {
         <Col xs={24} lg={16}>
           <Card
             title={
-              <Space>
-                <AppstoreOutlined />
-                <span>最近积分记录</span>
-              </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <Space>
+                  <AppstoreOutlined />
+                  <span>最近积分记录</span>
+                </Space>
+                <Space wrap size={[4, 4]}>
+                  {['全部', 'AC题目', '游戏娱乐', '打字挑战', '作品互动', 'AI辅助', '积分转账', '每日签到', '证书奖励', '管理员操作'].map((category) => (
+                    <Tag
+                      key={category}
+                      color={selectedCategory === category ? 'blue' : 'default'}
+                      style={{
+                        cursor: 'pointer',
+                        margin: 0,
+                        padding: '2px 8px',
+                        fontSize: 12,
+                      }}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setRecordsPage(1); // 重置到第一页
+                      }}
+                    >
+                      {category}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
             }
             className="content-card"
           >
-            {allRecords && allRecords.length > 0 ? (
-              <>
-                <List
-                  dataSource={allRecords}
+            {(() => {
+              // 根据选中的分类筛选记录
+              const filteredRecords = selectedCategory === '全部'
+                ? allRecords
+                : allRecords.filter((record) => record.category === selectedCategory);
+              
+              // 分页处理
+              const startIndex = (recordsPage - 1) * recordsPageSize;
+              const endIndex = startIndex + recordsPageSize;
+              const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
+              
+              return filteredRecords.length > 0 ? (
+                <>
+                  <List
+                    dataSource={paginatedRecords}
                   renderItem={(record) => {
                     const user = recordsUdocs[record.uid];
                     const isCurrentUser = hallData.isLoggedIn && record.uid === (window as any).currentUserId;
@@ -532,12 +579,12 @@ const ScoreHallApp: React.FC = () => {
                               {record.reason || '积分调整'}
                             </Tag>
                             <Tag
-                              color={record.pid === 0 || record.problemTitle === '管理员操作' ? 'orange' : 'blue'}
+                              color={record.pid === 0 || record.category === '管理员操作' ? 'orange' : 'blue'}
                               style={{ fontSize: 11 }}
                             >
-                              {record.pid === 0 || record.problemTitle === '管理员操作'
+                              {record.pid === 0 || record.category === '管理员操作'
                                 ? '管理员操作'
-                                : record.problemTitle || `Problem ${record.pid}`}
+                                : record.category || record.title || `Problem ${record.pid}`}
                             </Tag>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               {record.createdAt}
@@ -549,15 +596,14 @@ const ScoreHallApp: React.FC = () => {
                     );
                   }}
                 />
-                {totalRecords > recordsPageSize && (
+                {filteredRecords.length > recordsPageSize && (
                   <div style={{ marginTop: 16, textAlign: 'right' }}>
                     <Pagination
                       current={recordsPage}
-                      total={totalRecords}
+                      total={filteredRecords.length}
                       pageSize={recordsPageSize}
                       onChange={(page) => {
                         setRecordsPage(page);
-                        fetchRecords(page);
                       }}
                       showSizeChanger={false}
                       showQuickJumper
@@ -566,12 +612,15 @@ const ScoreHallApp: React.FC = () => {
                     />
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="empty-state">
-                <Text type="secondary">暂无记录</Text>
-              </div>
-            )}
+                </>
+              ) : (
+                <div className="empty-state">
+                  <Text type="secondary">
+                    {selectedCategory === '全部' ? '暂无记录' : `暂无${selectedCategory}相关记录`}
+                  </Text>
+                </div>
+              );
+            })()}
           </Card>
         </Col>
 

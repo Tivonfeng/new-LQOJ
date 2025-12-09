@@ -85,7 +85,7 @@
                                 <div class="problem-icon">📝</div>
                                 <div class="problem-details">
                                     <a href="{{ url('problem_detail', pid=record.pid) }}" class="problem-link">
-                                        {{ record.problemTitle or ('P' + record.pid|string) }}
+                                        {{ record.category or record.title or ('P' + record.pid|string) }}
                                     </a>
                                     <div class="problem-id">ID: {{ record.pid }}</div>
                                 </div>

@@ -2,6 +2,21 @@ import {
     Context,
 } from 'hydrooj';
 
+// 积分操作分类常量
+export const ScoreCategory = {
+    AC_PROBLEM: 'AC题目',
+    GAME_ENTERTAINMENT: '游戏娱乐',
+    TYPING_CHALLENGE: '打字挑战',
+    WORK_INTERACTION: '作品互动',
+    AI_ASSISTANT: 'AI辅助',
+    TRANSFER: '积分转账',
+    DAILY_CHECKIN: '每日签到',
+    CERTIFICATE: '证书奖励',
+    ADMIN_OPERATION: '管理员操作',
+} as const;
+
+export type ScoreCategoryType = typeof ScoreCategory[keyof typeof ScoreCategory];
+
 // 积分记录接口
 export interface ScoreRecord {
     _id?: any;
@@ -12,7 +27,8 @@ export interface ScoreRecord {
     score: number;
     reason: string;
     createdAt: Date;
-    problemTitle?: string;
+    category?: ScoreCategoryType; // 操作分类
+    title?: string; // 具体标题/名称（题目标题、作品名称等）
 }
 
 // 用户积分统计接口

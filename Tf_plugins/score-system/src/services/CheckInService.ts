@@ -1,7 +1,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 每日签到记录接口
 export interface DailyCheckInRecord {
@@ -96,7 +96,7 @@ export class CheckInService {
                 recordId: null,
                 score,
                 reason: `每日签到奖励 (连续${newStreak}天)`,
-                problemTitle: '每日签到',
+                category: ScoreCategory.DAILY_CHECKIN,
             });
 
             // 更新用户总积分

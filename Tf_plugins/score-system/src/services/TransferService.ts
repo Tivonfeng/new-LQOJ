@@ -1,7 +1,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 export interface TransferRecord {
     _id?: any;
@@ -120,7 +120,7 @@ export class TransferService {
                 recordId: null,
                 score: -totalCost,
                 reason: `转账给 ${toUsername} (${amount}积分 + ${this.config.transferFee}手续费)`,
-                problemTitle: '积分转账',
+                category: ScoreCategory.TRANSFER,
             });
 
             await this.scoreService.addScoreRecord({
@@ -130,7 +130,7 @@ export class TransferService {
                 recordId: null,
                 score: amount,
                 reason: `收到来自用户的转账: ${reason || '无备注'}`,
-                problemTitle: '积分转账',
+                category: ScoreCategory.TRANSFER,
             });
 
             return {

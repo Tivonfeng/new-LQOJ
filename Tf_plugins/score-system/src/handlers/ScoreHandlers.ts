@@ -6,6 +6,7 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
+    ScoreCategory,
     ScoreService,
     StatisticsService,
     type UserScore,
@@ -363,7 +364,7 @@ export class ScoreManageHandler extends Handler {
                     recordId: null,
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,
-                    problemTitle: '管理员操作',
+                    category: ScoreCategory.ADMIN_OPERATION,
                 });
 
                 console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);

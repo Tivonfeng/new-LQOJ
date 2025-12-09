@@ -3,7 +3,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 剪刀石头布游戏记录接口
 export interface RPSGameRecord {
@@ -181,7 +181,8 @@ export class RPSGameService {
                 recordId: null,
                 score: -RPSGameService.BASE_COST,
                 reason: '剪刀石头布游戏 - 游戏费用',
-                problemTitle: '剪刀石头布',
+                category: ScoreCategory.GAME_ENTERTAINMENT,
+                title: '剪刀石头布',
             });
 
             // 发放奖励（如果有）并记录
@@ -206,7 +207,8 @@ export class RPSGameService {
                     recordId: null,
                     score: reward,
                     reason: rewardReason,
-                    problemTitle: '剪刀石头布',
+                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    title: '剪刀石头布',
                 });
             }
 

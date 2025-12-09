@@ -33,6 +33,8 @@ export {
 // 积分服务
 export {
     type ScoreConfig,
+    ScoreCategory,
+    type ScoreCategoryType,
     type ScoreRecord,
     ScoreService,
     type UserScore,
