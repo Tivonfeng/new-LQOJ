@@ -1,4 +1,5 @@
 import {
+    avatar,
     Handler,
     PERM,
     PRIV,
@@ -103,7 +104,17 @@ export class ScoreHallHandler extends Handler {
         const recentRecordUids = recentRecords.map((r) => r.uid);
         const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        const rawUdocs = await UserModel.getList(this.domain._id, allUids);
+
+        // 为每个用户生成 avatarUrl
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            udocs[userId] = {
+                ...user,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+            };
+        }
 
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
@@ -261,7 +272,18 @@ export class ScoreRankingHandler extends Handler {
 
         const uids = users.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const rawUdocs = await UserModel.getList(this.domain._id, uids);
+
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId); // 确保 key 是字符串
+            udocs[uidKey] = {
+                ...user,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+            };
+        }
 
         this.response.type = 'application/json';
         this.response.body = {

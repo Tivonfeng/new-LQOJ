@@ -98,7 +98,7 @@ const ScoreHallApp: React.FC = () => {
   const [recordsPage, setRecordsPage] = useState(1);
   const [recordsPageSize] = useState(10);
   const [allRecords, setAllRecords] = useState(hallData.recentRecords);
-  const [totalRecords, setTotalRecords] = useState(hallData.recentRecords.length);
+  const [, setTotalRecords] = useState(hallData.recentRecords.length);
   const [recordsUdocs, setRecordsUdocs] = useState(hallData.udocs);
   // 分类筛选状态
   const [selectedCategory, setSelectedCategory] = useState<string>('AC题目');
@@ -522,12 +522,12 @@ const ScoreHallApp: React.FC = () => {
               const filteredRecords = selectedCategory === '全部'
                 ? allRecords
                 : allRecords.filter((record) => record.category === selectedCategory);
-              
+
               // 分页处理
               const startIndex = (recordsPage - 1) * recordsPageSize;
               const endIndex = startIndex + recordsPageSize;
               const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
-              
+
               return filteredRecords.length > 0 ? (
                 <>
                   <List
@@ -640,7 +640,9 @@ const ScoreHallApp: React.FC = () => {
                 <List
                   dataSource={allTopUsers}
                   renderItem={(user, index) => {
-                    const userDoc = rankingUdocs[user.uid];
+                    // 确保 uid 类型匹配（可能是 number 或 string）
+                    const uidKey = String(user.uid);
+                    const userDoc = rankingUdocs[uidKey] || rankingUdocs[user.uid];
                     const isCurrentUser = hallData.isLoggedIn && user.uid === (window as any).currentUserId;
                     const rank = (rankingPage - 1) * rankingPageSize + index + 1;
                     const getRankIcon = (rankNum: number) => {
@@ -655,9 +657,21 @@ const ScoreHallApp: React.FC = () => {
                       >
                         <List.Item.Meta
                           avatar={
-                            <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
-                              {getRankIcon(rank)}
-                            </div>
+                            <>
+                              <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
+                                {getRankIcon(rank)}
+                              </div>
+                              {userDoc?.avatarUrl ? (
+                                <img
+                                  src={userDoc.avatarUrl}
+                                  alt={userDoc?.uname || userDoc?.displayName || `User ${user.uid}`}
+                                  onError={(e) => {
+                                    // 如果头像加载失败，隐藏图片
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : null}
+                            </>
                           }
                           title={
                             <Text strong>

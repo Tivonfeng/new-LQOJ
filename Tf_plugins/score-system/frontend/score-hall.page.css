@@ -452,6 +452,21 @@
   flex-shrink: 0;
 }
 
+.leaderboard-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-item .ant-list-item-meta-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
 .rank-1,
 .rank-2,
 .rank-3 {
