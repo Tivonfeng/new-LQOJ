@@ -21,6 +21,7 @@ import {
   Button,
   Card,
   Col,
+  Input,
   List,
   Pagination,
   Row,
@@ -106,8 +107,8 @@ const ScoreHallApp: React.FC = () => {
   const [rankingPage, setRankingPage] = useState(1);
   const [rankingPageSize] = useState(10);
   const [allTopUsers, setAllTopUsers] = useState(hallData.topUsers);
-  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
+  const [rankingSearch, setRankingSearch] = useState('');
 
   // 快速签到
   const handleQuickCheckin = useCallback(async () => {
@@ -201,7 +202,6 @@ const ScoreHallApp: React.FC = () => {
         const result = await response.json();
         if (result.success && result.users) {
           setAllTopUsers(result.users);
-          setTotalRankingUsers(result.total || 0);
           setRankingUdocs(result.udocs || {});
           setRankingPage(page);
         }
@@ -628,17 +628,60 @@ const ScoreHallApp: React.FC = () => {
         <Col xs={24} lg={8}>
           <Card
             title={
-              <Space>
-                <TrophyOutlined />
-                <span>排行榜</span>
-              </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <Space>
+                  <TrophyOutlined />
+                  <span>排行榜</span>
+                </Space>
+                <Input
+                  allowClear
+                  size="small"
+                  placeholder="搜索用户"
+                  className="leaderboard-search-input"
+                  style={{
+                    width: 180,
+                    height: 32,
+                    paddingInline: 10,
+                  }}
+                  value={rankingSearch}
+                  onChange={(e) => {
+                    setRankingSearch(e.target.value);
+                    setRankingPage(1);
+                  }}
+                />
+              </div>
             }
             className="content-card"
           >
             {allTopUsers && allTopUsers.length > 0 ? (
               <>
-                <List
-                  dataSource={allTopUsers}
+                {(() => {
+                  const keyword = rankingSearch.trim().toLowerCase();
+                  const filteredTopUsers = keyword
+                    ? allTopUsers.filter((user) => {
+                      const uidKey = String(user.uid);
+                      const userDoc = rankingUdocs[uidKey] || rankingUdocs[user.uid];
+                      const uname = (userDoc?.uname || '').toLowerCase();
+                      const displayName = (userDoc?.displayName || '').toLowerCase();
+                      const uidStr = String(user.uid);
+                      return (
+                        uname.includes(keyword)
+                        || displayName.includes(keyword)
+                        || uidStr.includes(keyword)
+                      );
+                    })
+                    : allTopUsers;
+
+                  const startIndex = (rankingPage - 1) * rankingPageSize;
+                  const endIndex = startIndex + rankingPageSize;
+                  const pageUsers = filteredTopUsers.slice(startIndex, endIndex);
+
+                  const showPagination = filteredTopUsers.length > rankingPageSize;
+
+                  return (
+                    <>
+                      <List
+                        dataSource={pageUsers}
                   renderItem={(user, index) => {
                     // 确保 uid 类型匹配（可能是 number 或 string）
                     const uidKey = String(user.uid);
@@ -717,24 +760,29 @@ const ScoreHallApp: React.FC = () => {
                       </List.Item>
                     );
                   }}
-                />
-                {totalRankingUsers > rankingPageSize && (
-                  <div style={{ marginTop: 16, textAlign: 'right' }}>
-                    <Pagination
-                      current={rankingPage}
-                      total={totalRankingUsers}
-                      pageSize={rankingPageSize}
-                      onChange={(page) => {
-                        setRankingPage(page);
-                        fetchRanking(page);
-                      }}
-                      showSizeChanger={false}
-                      showQuickJumper
-                      showTotal={(total) => `共 ${total} 人`}
-                      size="small"
-                    />
-                  </div>
-                )}
+                      />
+                      {showPagination && (
+                        <div style={{ marginTop: 16, textAlign: 'right' }}>
+                          <Pagination
+                            current={rankingPage}
+                            total={filteredTopUsers.length}
+                            pageSize={rankingPageSize}
+                            onChange={(page) => {
+                              setRankingPage(page);
+                              if (!keyword) {
+                                fetchRanking(page);
+                              }
+                            }}
+                            showSizeChanger={false}
+                            showQuickJumper
+                            showTotal={(total) => `共 ${total} 人`}
+                            size="small"
+                          />
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             ) : (
               <div className="empty-state">
