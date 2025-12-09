@@ -689,12 +689,11 @@ const ScoreHallApp: React.FC = () => {
                                 type="secondary"
                                 style={{
                                   fontSize: 12,
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
+                                  display: 'block',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  lineHeight: '1.4',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '100%',
                                 }}
                                 title={userDoc.bio}
                               >
