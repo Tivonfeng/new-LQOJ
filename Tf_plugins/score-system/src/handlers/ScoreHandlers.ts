@@ -1,4 +1,5 @@
 import {
+    avatar,
     Handler,
     PERM,
     PRIV,
@@ -6,7 +7,7 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
-    MigrationService,
+    ScoreCategory,
     ScoreService,
     StatisticsService,
     type UserScore,
@@ -91,15 +92,33 @@ export class ScoreHallHandler extends Handler {
             }),
         }));
 
-        // 获取积分排行榜前10
-        const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
+        // 获取积分排行榜前10，并获取总数
+        const { users: topUsers, total: rankingTotal } = await scoreService.getScoreRankingWithPagination(
+            this.domain._id,
+            1,
+            10,
+        );
 
         // 获取用户信息（包括排行榜和最近记录的用户）
         const rankingUids = topUsers.map((u) => u.uid);
         const recentRecordUids = recentRecords.map((r) => r.uid);
         const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        const rawUdocs = await UserModel.getList(this.domain._id, allUids);
+
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId); // 确保 key 是字符串
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
+            udocs[uidKey] = {
+                ...user,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
+            };
+        }
 
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
@@ -123,6 +142,7 @@ export class ScoreHallHandler extends Handler {
             nextReward,
             gameRemainingPlays,
             maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
+            rankingTotal,
         };
 
         this.response.template = 'score_hall.html';
@@ -182,6 +202,7 @@ export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const category = (this.request.query.category as string || '').trim();
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
@@ -190,6 +211,7 @@ export class ScoreRecordsHandler extends Handler {
             this.domain._id,
             page,
             limit,
+            category || undefined,
         );
 
         // 获取涉及的用户信息
@@ -232,6 +254,80 @@ export class ScoreRecordsHandler extends Handler {
             totalPages,
             hasNext: page < totalPages,
             hasPrev: page > 1,
+        };
+    }
+}
+
+/**
+ * 积分排行榜处理器
+ * 路由: /score/ranking
+ * 功能: 全局排行榜分页
+ */
+export class ScoreRankingHandler extends Handler {
+    async get() {
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const search = (this.request.query.search as string || '').trim();
+
+        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+        const UserModel = global.Hydro.model.user;
+        let users: any[] = [];
+        let total = 0;
+        let totalPages = 0;
+        let uids: number[] = [];
+
+        if (search) {
+            // 基于用户搜索结果的排行榜
+            const matchedUsers = await UserModel.getPrefixList(this.domain._id, search, 200);
+            uids = matchedUsers.map((u: any) => u._id);
+            total = uids.length;
+            totalPages = Math.ceil(total / limit);
+            const skip = (page - 1) * limit;
+            users = await this.ctx.db.collection('score.users' as any)
+                .find({ uid: { $in: uids } })
+                .sort({ totalScore: -1, lastUpdated: 1 })
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+        } else {
+            // 全局排行榜
+            const result = await scoreService.getScoreRankingWithPagination(
+                this.domain._id,
+                page,
+                limit,
+            );
+            users = result.users;
+            total = result.total;
+            totalPages = result.totalPages;
+            uids = users.map((u) => u.uid);
+        }
+
+        const rawUdocs = await UserModel.getList(this.domain._id, uids);
+
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId); // 确保 key 是字符串
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
+            udocs[uidKey] = {
+                ...user,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
+            };
+        }
+
+        this.response.type = 'application/json';
+        this.response.body = {
+            success: true,
+            users: serializeForJSON(users),
+            udocs: serializeForJSON(udocs),
+            page,
+            total,
+            totalPages,
+            limit,
         };
     }
 }
@@ -324,7 +420,7 @@ export class ScoreManageHandler extends Handler {
                     recordId: null,
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,
-                    problemTitle: '管理员操作',
+                    category: ScoreCategory.ADMIN_OPERATION,
                 });
 
                 console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
@@ -336,77 +432,6 @@ export class ScoreManageHandler extends Handler {
             } catch (error) {
                 console.error('[ScoreManage] Error adjusting score:', error);
                 this.response.body = { success: false, message: `操作失败：${error.message}` };
-            }
-        } else if (action === 'migrate_scores') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前迁移状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasDomainData) {
-                    this.response.body = { success: false, message: '没有需要迁移的分域数据' };
-                    return;
-                }
-
-                if (status.hasGlobalData) {
-                    this.response.body = { success: false, message: '已存在全局积分数据，请先清理或回滚' };
-                    return;
-                }
-
-                // 执行迁移
-                const result = await migrationService.mergeUserScores();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed score migration: ${result.mergedUsers} users merged`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功合并 ${result.mergedUsers} 个用户的积分数据（来自 ${result.totalRecords} 条域记录）`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during migration:', error);
-                this.response.body = { success: false, message: `迁移失败：${error.message}` };
-            }
-        } else if (action === 'rollback_migration') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasGlobalData) {
-                    this.response.body = { success: false, message: '没有需要回滚的全局数据' };
-                    return;
-                }
-
-                // 执行回滚
-                const result = await migrationService.rollbackMigration();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed migration rollback: ${result.rolledBackUsers} users`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功回滚 ${result.rolledBackUsers} 个用户的积分数据`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during rollback:', error);
-                this.response.body = { success: false, message: `回滚失败：${error.message}` };
-            }
-        } else if (action === 'get_migration_status') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-                const status = await migrationService.checkMigrationStatus();
-                const stats = await migrationService.getMigrationStats();
-
-                this.response.body = {
-                    success: true,
-                    data: { status, stats },
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error getting migration status:', error);
-                this.response.body = { success: false, message: `获取状态失败：${error.message}` };
             }
         } else {
             this.response.body = { success: false, message: '无效的操作' };

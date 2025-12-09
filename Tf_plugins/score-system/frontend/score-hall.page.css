@@ -385,6 +385,16 @@
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
+.record-item .ant-list-item-meta {
+  align-items: center;
+}
+
+.record-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .record-badge {
   width: 40px;
   height: 40px;
@@ -404,11 +414,6 @@
 .badge-negative {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
   border: 2px solid rgba(239, 68, 68, 0.3);
-}
-
-.record-score {
-  text-align: right;
-  flex-shrink: 0;
 }
 
 .record-score-inline {
@@ -445,6 +450,92 @@
   font-weight: 700;
   font-size: 18px;
   flex-shrink: 0;
+}
+
+.leaderboard-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-item .ant-list-item-meta-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+/* Leaderboard search input */
+.leaderboard-search-input.ant-input-affix-wrapper {
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0 10px !important;
+  height: 32px !important;
+  background: #fff !important;
+}
+
+.leaderboard-search-input.ant-input-affix-wrapper:hover,
+.leaderboard-search-input.ant-input-affix-wrapper:focus,
+.leaderboard-search-input.ant-input-affix-wrapper:focus-within {
+  border-color: #bfbfbf !important;
+  box-shadow: none !important;
+}
+
+.leaderboard-search-input .ant-input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  height: 30px !important;
+}
+
+/* Rules card */
+.rules-card .ant-collapse-header {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.rule-item {
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+}
+
+.rule-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rule-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa 0%, #6366f1 100%);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.rule-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.rule-desc {
+  color: #374151;
+  line-height: 1.6;
+  font-size: 13px;
 }
 
 .rank-1,

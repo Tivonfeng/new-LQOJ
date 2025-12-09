@@ -31,7 +31,8 @@ interface ScoreRecord {
   uid: string;
   score: number;
   pid: number;
-  problemTitle?: string;
+  category?: string;
+  title?: string;
   reason?: string;
   createdAt?: string;
 }
@@ -418,14 +419,14 @@ const ScoreManageApp: React.FC = () => {
     const user = userMap?.[record.uid];
     const displayName = user?.displayName || user?.uname || record.uid;
     const positive = record.score > 0;
-    const isAdmin = record.pid === 0 || record.problemTitle === '管理员操作';
+    const isAdmin = record.pid === 0 || record.category === '管理员操作';
     return (
       <div className={`record-item ${positive ? 'positive' : 'negative'}`} key={`${record.uid}-${record.createdAt}-${record.reason}`}>
         <div className="record-main">
           <div className="record-user">
             <span className={`record-dot ${positive ? 'up' : 'down'}`} />
             <span className="record-name">{displayName}</span>
-            <span className="record-meta">{isAdmin ? '管理员操作' : (record.problemTitle || record.pid)}</span>
+            <span className="record-meta">{isAdmin ? '管理员操作' : (record.category || record.title || record.pid)}</span>
           </div>
           <div className={`record-score ${positive ? 'pos' : 'neg'}`}>
             {positive ? '+' : ''}

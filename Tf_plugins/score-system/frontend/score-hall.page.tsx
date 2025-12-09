@@ -21,6 +21,8 @@ import {
   Button,
   Card,
   Col,
+  Collapse,
+  Input,
   List,
   Pagination,
   Row,
@@ -47,13 +49,15 @@ interface ScoreHallData {
     reason: string;
     createdAt: string;
     pid: number;
-    problemTitle?: string;
+    category?: string;
+    title?: string;
   }>;
   topUsers: Array<{
     uid: string;
     totalScore: number;
     acCount: number;
   }>;
+  rankingTotal?: number;
   todayTotalScore: number;
   todayActiveUsers: number;
   canManage: boolean;
@@ -77,6 +81,7 @@ const ScoreHallApp: React.FC = () => {
     userRank: '-',
     recentRecords: [],
     topUsers: [],
+    rankingTotal: 0,
     todayTotalScore: 0,
     todayActiveUsers: 0,
     canManage: false,
@@ -97,12 +102,27 @@ const ScoreHallApp: React.FC = () => {
   const [allRecords, setAllRecords] = useState(hallData.recentRecords);
   const [totalRecords, setTotalRecords] = useState(hallData.recentRecords.length);
   const [recordsUdocs, setRecordsUdocs] = useState(hallData.udocs);
+  // 分类筛选状态
+  const [selectedCategory, setSelectedCategory] = useState<string>('AC题目');
   // 分页相关状态 - 排行榜
   const [rankingPage, setRankingPage] = useState(1);
   const [rankingPageSize] = useState(10);
   const [allTopUsers, setAllTopUsers] = useState(hallData.topUsers);
-  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.topUsers.length);
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
+  const [rankingSearch, setRankingSearch] = useState('');
+  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
+
+  const ruleItems = [
+    { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
+    { title: '每日签到', desc: '连续签到递增奖励，周/双周额外奖励' },
+    { title: '证书', desc: '积分 = 证书权重 × 10，删除证书反向扣除' },
+    { title: '打字挑战', desc: '进度 / 等级 / 超越奖励发放对应积分' },
+    { title: '作品投币', desc: '投币者扣除积分，作者获得同等积分' },
+    { title: 'AI 辅助', desc: '按使用次数扣除设定的积分' },
+    { title: '积分转账', desc: '收款加分，付款扣除转账额及手续费' },
+    { title: '掷骰子 / 剪刀石头布', desc: '下注消耗积分，胜利获得奖励' },
+    { title: '管理员操作', desc: '手动增减积分（橙色标记）' },
+  ];
 
   // 快速签到
   const handleQuickCheckin = useCallback(async () => {
@@ -147,9 +167,17 @@ const ScoreHallApp: React.FC = () => {
   const scoreRankingUrl = (window as any).scoreRankingUrl || '/score/ranking';
 
   // 获取分页积分记录
-  const fetchRecords = useCallback(async (page: number) => {
+  const fetchRecords = useCallback(async (page: number, category?: string) => {
     try {
-      const response = await fetch(`${scoreRecordsUrl}?page=${page}&limit=${recordsPageSize}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(recordsPageSize),
+      });
+      if (category && category !== '全部') {
+        params.set('category', category);
+      }
+
+      const response = await fetch(`${scoreRecordsUrl}?${params.toString()}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -166,7 +194,7 @@ const ScoreHallApp: React.FC = () => {
         const result = await response.json();
         if (result.success && result.records) {
           setAllRecords(result.records);
-          setTotalRecords(result.total || 0);
+          setTotalRecords(result.total || result.records.length || 0);
           setRecordsUdocs(result.udocs || {});
           setRecordsPage(page);
         }
@@ -177,9 +205,17 @@ const ScoreHallApp: React.FC = () => {
   }, [scoreRecordsUrl, recordsPageSize]);
 
   // 获取分页排行榜数据
-  const fetchRanking = useCallback(async (page: number) => {
+  const fetchRanking = useCallback(async (page: number, searchKeyword: string = '') => {
     try {
-      const response = await fetch(`${scoreRankingUrl}?page=${page}&limit=${rankingPageSize}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(rankingPageSize),
+      });
+      if (searchKeyword.trim()) {
+        params.set('search', searchKeyword.trim());
+      }
+
+      const response = await fetch(`${scoreRankingUrl}?${params.toString()}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -196,8 +232,8 @@ const ScoreHallApp: React.FC = () => {
         const result = await response.json();
         if (result.success && result.users) {
           setAllTopUsers(result.users);
-          setTotalRankingUsers(result.total || 0);
           setRankingUdocs(result.udocs || {});
+          setTotalRankingUsers(result.total || result.users.length || 0);
           setRankingPage(page);
         }
       }
@@ -206,16 +242,17 @@ const ScoreHallApp: React.FC = () => {
     }
   }, [scoreRankingUrl, rankingPageSize]);
 
+  // 当筛选分类变化时，如果当前页数超过筛选后的总页数，重置到第一页
+  React.useEffect(() => {
+    // 切换标签时，回到第1页并重新请求
+    setRecordsPage(1);
+    fetchRecords(1, selectedCategory);
+  }, [selectedCategory, fetchRecords]);
+
   // 初始化记录数据
   React.useEffect(() => {
-    if (hallData.recentRecords.length > 0 && hallData.recentRecords.length >= recordsPageSize) {
-      // 如果初始记录数达到分页大小，可能需要获取更多数据
-      fetchRecords(1);
-    }
-    if (hallData.topUsers.length > 0 && hallData.topUsers.length >= rankingPageSize) {
-      // 如果初始排行榜数据达到分页大小，可能需要获取更多数据
-      fetchRanking(1);
-    }
+    fetchRecords(1, selectedCategory);
+    fetchRanking(1);
   }, []);
 
   return (
@@ -288,6 +325,32 @@ const ScoreHallApp: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* 积分规则说明（可折叠） */}
+      <Collapse
+        className="content-card rules-card"
+        defaultActiveKey={[]}
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'rules',
+            label: '积分规则说明',
+            children: (
+              <div className="rules-grid">
+                {ruleItems.map((item) => (
+                  <div className="rule-item" key={item.title}>
+                    <div className="rule-item-header">
+                      <span className="rule-dot" />
+                      <span className="rule-title">{item.title}</span>
+                    </div>
+                    <div className="rule-desc">{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Games Section */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -472,17 +535,41 @@ const ScoreHallApp: React.FC = () => {
         <Col xs={24} lg={16}>
           <Card
             title={
-              <Space>
-                <AppstoreOutlined />
-                <span>最近积分记录</span>
-              </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <Space>
+                  <AppstoreOutlined />
+                  <span>最近积分记录</span>
+                </Space>
+                <Space wrap size={[4, 4]}>
+                  {['全部', 'AC题目', '游戏娱乐', '打字挑战', '作品互动', 'AI辅助', '积分转账', '每日签到', '证书奖励', '管理员操作'].map((category) => (
+                    <Tag
+                      key={category}
+                      color={selectedCategory === category ? 'blue' : 'default'}
+                      style={{
+                        cursor: 'pointer',
+                        margin: 0,
+                        padding: '2px 8px',
+                        fontSize: 12,
+                      }}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setRecordsPage(1); // 重置到第一页
+                      }}
+                    >
+                      {category}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
             }
             className="content-card"
           >
-            {allRecords && allRecords.length > 0 ? (
-              <>
-                <List
-                  dataSource={allRecords}
+            {(() => {
+              // 根据选中的分类筛选记录
+              return allRecords.length > 0 ? (
+                <>
+                  <List
+                    dataSource={allRecords}
                   renderItem={(record) => {
                     const user = recordsUdocs[record.uid];
                     const isCurrentUser = hallData.isLoggedIn && record.uid === (window as any).currentUserId;
@@ -530,12 +617,12 @@ const ScoreHallApp: React.FC = () => {
                               {record.reason || '积分调整'}
                             </Tag>
                             <Tag
-                              color={record.pid === 0 || record.problemTitle === '管理员操作' ? 'orange' : 'blue'}
+                              color={record.pid === 0 || record.category === '管理员操作' ? 'orange' : 'blue'}
                               style={{ fontSize: 11 }}
                             >
-                              {record.pid === 0 || record.problemTitle === '管理员操作'
+                              {record.pid === 0 || record.category === '管理员操作'
                                 ? '管理员操作'
-                                : record.problemTitle || `Problem ${record.pid}`}
+                                : record.category || record.title || `Problem ${record.pid}`}
                             </Tag>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               {record.createdAt}
@@ -555,7 +642,7 @@ const ScoreHallApp: React.FC = () => {
                       pageSize={recordsPageSize}
                       onChange={(page) => {
                         setRecordsPage(page);
-                        fetchRecords(page);
+                        fetchRecords(page, selectedCategory);
                       }}
                       showSizeChanger={false}
                       showQuickJumper
@@ -564,12 +651,15 @@ const ScoreHallApp: React.FC = () => {
                     />
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="empty-state">
-                <Text type="secondary">暂无记录</Text>
-              </div>
-            )}
+                </>
+              ) : (
+                <div className="empty-state">
+                  <Text type="secondary">
+                    {selectedCategory === '全部' ? '暂无记录' : `暂无${selectedCategory}相关记录`}
+                  </Text>
+                </div>
+              );
+            })()}
           </Card>
         </Col>
 
@@ -577,10 +667,31 @@ const ScoreHallApp: React.FC = () => {
         <Col xs={24} lg={8}>
           <Card
             title={
-              <Space>
-                <TrophyOutlined />
-                <span>排行榜</span>
-              </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <Space>
+                  <TrophyOutlined />
+                  <span>排行榜</span>
+                </Space>
+                <Input
+                  allowClear
+                  size="small"
+                  placeholder="搜索用户"
+                  className="leaderboard-search-input"
+                  style={{
+                    width: 180,
+                    height: 32,
+                    paddingInline: 10,
+                  }}
+                  value={rankingSearch}
+                  onChange={(e) => {
+                    const keyword = e.target.value;
+                    setRankingSearch(keyword);
+                    setRankingPage(1);
+                    fetchRanking(1, keyword);
+                  }}
+                  onPressEnter={() => fetchRanking(1, rankingSearch)}
+                />
+              </div>
             }
             className="content-card"
           >
@@ -589,7 +700,9 @@ const ScoreHallApp: React.FC = () => {
                 <List
                   dataSource={allTopUsers}
                   renderItem={(user, index) => {
-                    const userDoc = rankingUdocs[user.uid];
+                    // 确保 uid 类型匹配（可能是 number 或 string）
+                    const uidKey = String(user.uid);
+                    const userDoc = rankingUdocs[uidKey] || rankingUdocs[user.uid];
                     const isCurrentUser = hallData.isLoggedIn && user.uid === (window as any).currentUserId;
                     const rank = (rankingPage - 1) * rankingPageSize + index + 1;
                     const getRankIcon = (rankNum: number) => {
@@ -604,9 +717,21 @@ const ScoreHallApp: React.FC = () => {
                       >
                         <List.Item.Meta
                           avatar={
-                            <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
-                              {getRankIcon(rank)}
-                            </div>
+                            <>
+                              <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
+                                {getRankIcon(rank)}
+                              </div>
+                              {userDoc?.avatarUrl ? (
+                                <img
+                                  src={userDoc.avatarUrl}
+                                  alt={userDoc?.uname || userDoc?.displayName || `User ${user.uid}`}
+                                  onError={(e) => {
+                                    // 如果头像加载失败，隐藏图片
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : null}
+                            </>
                           }
                           title={
                             <Text strong>
@@ -619,9 +744,26 @@ const ScoreHallApp: React.FC = () => {
                             </Text>
                           }
                           description={
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {user.acCount} AC
-                            </Text>
+                            userDoc?.bio ? (
+                              <Text
+                                type="secondary"
+                                style={{
+                                  fontSize: 12,
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '100%',
+                                }}
+                                title={userDoc.bio}
+                              >
+                                {userDoc.bio.replace(/[#*`_~[\]()]/g, '').trim()}
+                              </Text>
+                            ) : (
+                              <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                                暂无简介
+                              </Text>
+                            )
                           }
                         />
                         <div className="player-score">
@@ -644,7 +786,7 @@ const ScoreHallApp: React.FC = () => {
                       pageSize={rankingPageSize}
                       onChange={(page) => {
                         setRankingPage(page);
-                        fetchRanking(page);
+                        fetchRanking(page, rankingSearch);
                       }}
                       showSizeChanger={false}
                       showQuickJumper

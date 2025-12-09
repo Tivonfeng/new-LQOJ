@@ -2,6 +2,21 @@ import {
     Context,
 } from 'hydrooj';
 
+// 积分操作分类常量
+export const ScoreCategory = {
+    AC_PROBLEM: 'AC题目',
+    GAME_ENTERTAINMENT: '游戏娱乐',
+    TYPING_CHALLENGE: '打字挑战',
+    WORK_INTERACTION: '作品互动',
+    AI_ASSISTANT: 'AI辅助',
+    TRANSFER: '积分转账',
+    DAILY_CHECKIN: '每日签到',
+    CERTIFICATE: '证书奖励',
+    ADMIN_OPERATION: '管理员操作',
+} as const;
+
+export type ScoreCategoryType = typeof ScoreCategory[keyof typeof ScoreCategory];
+
 // 积分记录接口
 export interface ScoreRecord {
     _id?: any;
@@ -12,7 +27,8 @@ export interface ScoreRecord {
     score: number;
     reason: string;
     createdAt: Date;
-    problemTitle?: string;
+    category?: ScoreCategoryType; // 操作分类
+    title?: string; // 具体标题/名称（题目标题、作品名称等）
 }
 
 // 用户积分统计接口
@@ -98,6 +114,33 @@ export class ScoreService {
     }
 
     /**
+     * 分页获取积分排行榜 (全局)
+     * @param _domainId 域ID (保留参数用于向后兼容)
+     * @param page 页码（从1开始）
+     * @param limit 每页数量
+     * @returns 排行榜分页结果
+     */
+    async getScoreRankingWithPagination(_domainId: string, page: number, limit: number): Promise<{
+        users: UserScore[];
+        total: number;
+        totalPages: number;
+    }> {
+        const skip = (page - 1) * limit;
+
+        const users = await this.ctx.db.collection('score.users' as any)
+            .find({})
+            .sort({ totalScore: -1, lastUpdated: 1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
+        const total = await this.ctx.db.collection('score.users' as any).countDocuments();
+        const totalPages = Math.ceil(total / limit);
+
+        return { users, total, totalPages };
+    }
+
+    /**
      * 获取用户积分记录 (全局)
      * @param _domainId 域ID (保留参数用于向后兼容)
      * @param uid 用户ID
@@ -161,16 +204,20 @@ export class ScoreService {
      * @param limit 每页数量
      * @returns 分页的积分记录
      */
-    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number): Promise<{
+    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number, category?: string): Promise<{
         records: ScoreRecord[];
         total: number;
         totalPages: number;
     }> {
         const skip = (page - 1) * limit;
 
-        // 获取积分记录
+        const query: any = {};
+        if (category) {
+            query.category = category;
+        }
+
         const records = await this.ctx.db.collection('score.records' as any)
-            .find()
+            .find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -178,7 +225,7 @@ export class ScoreService {
 
         // 获取总记录数
         const total = await this.ctx.db.collection('score.records' as any)
-            .countDocuments();
+            .countDocuments(query);
 
         const totalPages = Math.ceil(total / limit);
 

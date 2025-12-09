@@ -1,7 +1,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 掷骰子游戏记录接口
 export interface DiceGameRecord {
@@ -121,7 +121,8 @@ export class DiceGameService {
                 recordId: gameRecordId,
                 score: -betAmount,
                 reason: `掷骰子游戏投注${betAmount}积分`,
-                problemTitle: '掷骰子游戏',
+                category: ScoreCategory.GAME_ENTERTAINMENT,
+                title: '掷骰子游戏',
             });
 
             // 如果获胜，发放奖励
@@ -134,7 +135,8 @@ export class DiceGameService {
                     recordId: gameRecordId,
                     score: reward,
                     reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
-                    problemTitle: '掷骰子游戏',
+                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    title: '掷骰子游戏',
                 });
             }
 
