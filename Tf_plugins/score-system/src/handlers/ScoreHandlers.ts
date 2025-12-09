@@ -202,6 +202,7 @@ export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const category = (this.request.query.category as string || '').trim();
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
@@ -210,6 +211,7 @@ export class ScoreRecordsHandler extends Handler {
             this.domain._id,
             page,
             limit,
+            category || undefined,
         );
 
         // 获取涉及的用户信息
@@ -265,17 +267,42 @@ export class ScoreRankingHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const search = (this.request.query.search as string || '').trim();
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
-        const { users, total, totalPages } = await scoreService.getScoreRankingWithPagination(
-            this.domain._id,
-            page,
-            limit,
-        );
-
-        const uids = users.map((u) => u.uid);
         const UserModel = global.Hydro.model.user;
+        let users: any[] = [];
+        let total = 0;
+        let totalPages = 0;
+        let uids: number[] = [];
+
+        if (search) {
+            // 基于用户搜索结果的排行榜
+            const matchedUsers = await UserModel.getPrefixList(this.domain._id, search, 200);
+            uids = matchedUsers.map((u: any) => u._id);
+            total = uids.length;
+            totalPages = Math.ceil(total / limit);
+            const skip = (page - 1) * limit;
+            users = await this.ctx.db.collection('score.users' as any)
+                .find({ uid: { $in: uids } })
+                .sort({ totalScore: -1, lastUpdated: 1 })
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+        } else {
+            // 全局排行榜
+            const result = await scoreService.getScoreRankingWithPagination(
+                this.domain._id,
+                page,
+                limit,
+            );
+            users = result.users;
+            total = result.total;
+            totalPages = result.totalPages;
+            uids = users.map((u) => u.uid);
+        }
+
         const rawUdocs = await UserModel.getList(this.domain._id, uids);
 
         // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段

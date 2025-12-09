@@ -211,7 +211,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                     domainId: rdoc.domainId,
                     pid: rdoc.pid,
                     recordId: rdoc._id,
-                    score: 10,
+                    score: 20,
                     reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
                     category: ScoreCategory.AC_PROBLEM,
                     title: pdoc.title,
@@ -219,7 +219,7 @@ export default async function apply(ctx: Context, config: any = {}) {
 
                 // 插入成功，说明是首次AC
                 isFirstAC = true;
-                score = 10;
+                score = 20;
 
                 await scoreService.updateUserScore(rdoc.domainId, rdoc.uid, score);
                 console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${score} points`);

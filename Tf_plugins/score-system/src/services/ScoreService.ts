@@ -204,16 +204,20 @@ export class ScoreService {
      * @param limit 每页数量
      * @returns 分页的积分记录
      */
-    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number): Promise<{
+    async getScoreRecordsWithPagination(domainId: string, page: number, limit: number, category?: string): Promise<{
         records: ScoreRecord[];
         total: number;
         totalPages: number;
     }> {
         const skip = (page - 1) * limit;
 
-        // 获取积分记录
+        const query: any = {};
+        if (category) {
+            query.category = category;
+        }
+
         const records = await this.ctx.db.collection('score.records' as any)
-            .find()
+            .find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -221,7 +225,7 @@ export class ScoreService {
 
         // 获取总记录数
         const total = await this.ctx.db.collection('score.records' as any)
-            .countDocuments();
+            .countDocuments(query);
 
         const totalPages = Math.ceil(total / limit);
 

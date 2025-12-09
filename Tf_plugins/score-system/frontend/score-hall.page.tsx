@@ -21,6 +21,7 @@ import {
   Button,
   Card,
   Col,
+  Collapse,
   Input,
   List,
   Pagination,
@@ -99,7 +100,7 @@ const ScoreHallApp: React.FC = () => {
   const [recordsPage, setRecordsPage] = useState(1);
   const [recordsPageSize] = useState(10);
   const [allRecords, setAllRecords] = useState(hallData.recentRecords);
-  const [, setTotalRecords] = useState(hallData.recentRecords.length);
+  const [totalRecords, setTotalRecords] = useState(hallData.recentRecords.length);
   const [recordsUdocs, setRecordsUdocs] = useState(hallData.udocs);
   // 分类筛选状态
   const [selectedCategory, setSelectedCategory] = useState<string>('AC题目');
@@ -109,6 +110,19 @@ const ScoreHallApp: React.FC = () => {
   const [allTopUsers, setAllTopUsers] = useState(hallData.topUsers);
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
   const [rankingSearch, setRankingSearch] = useState('');
+  const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
+
+  const ruleItems = [
+    { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
+    { title: '每日签到', desc: '连续签到递增奖励，周/双周额外奖励' },
+    { title: '证书', desc: '积分 = 证书权重 × 10，删除证书反向扣除' },
+    { title: '打字挑战', desc: '进度 / 等级 / 超越奖励发放对应积分' },
+    { title: '作品投币', desc: '投币者扣除积分，作者获得同等积分' },
+    { title: 'AI 辅助', desc: '按使用次数扣除设定的积分' },
+    { title: '积分转账', desc: '收款加分，付款扣除转账额及手续费' },
+    { title: '掷骰子 / 剪刀石头布', desc: '下注消耗积分，胜利获得奖励' },
+    { title: '管理员操作', desc: '手动增减积分（橙色标记）' },
+  ];
 
   // 快速签到
   const handleQuickCheckin = useCallback(async () => {
@@ -153,9 +167,17 @@ const ScoreHallApp: React.FC = () => {
   const scoreRankingUrl = (window as any).scoreRankingUrl || '/score/ranking';
 
   // 获取分页积分记录
-  const fetchRecords = useCallback(async (page: number) => {
+  const fetchRecords = useCallback(async (page: number, category?: string) => {
     try {
-      const response = await fetch(`${scoreRecordsUrl}?page=${page}&limit=${recordsPageSize}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(recordsPageSize),
+      });
+      if (category && category !== '全部') {
+        params.set('category', category);
+      }
+
+      const response = await fetch(`${scoreRecordsUrl}?${params.toString()}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -172,7 +194,7 @@ const ScoreHallApp: React.FC = () => {
         const result = await response.json();
         if (result.success && result.records) {
           setAllRecords(result.records);
-          setTotalRecords(result.total || 0);
+          setTotalRecords(result.total || result.records.length || 0);
           setRecordsUdocs(result.udocs || {});
           setRecordsPage(page);
         }
@@ -183,9 +205,17 @@ const ScoreHallApp: React.FC = () => {
   }, [scoreRecordsUrl, recordsPageSize]);
 
   // 获取分页排行榜数据
-  const fetchRanking = useCallback(async (page: number) => {
+  const fetchRanking = useCallback(async (page: number, searchKeyword: string = '') => {
     try {
-      const response = await fetch(`${scoreRankingUrl}?page=${page}&limit=${rankingPageSize}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(rankingPageSize),
+      });
+      if (searchKeyword.trim()) {
+        params.set('search', searchKeyword.trim());
+      }
+
+      const response = await fetch(`${scoreRankingUrl}?${params.toString()}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -203,6 +233,7 @@ const ScoreHallApp: React.FC = () => {
         if (result.success && result.users) {
           setAllTopUsers(result.users);
           setRankingUdocs(result.udocs || {});
+          setTotalRankingUsers(result.total || result.users.length || 0);
           setRankingPage(page);
         }
       }
@@ -213,25 +244,15 @@ const ScoreHallApp: React.FC = () => {
 
   // 当筛选分类变化时，如果当前页数超过筛选后的总页数，重置到第一页
   React.useEffect(() => {
-    const filteredRecords = selectedCategory === '全部'
-      ? allRecords
-      : allRecords.filter((record) => record.category === selectedCategory);
-    const maxPage = Math.ceil(filteredRecords.length / recordsPageSize);
-    if (recordsPage > maxPage && maxPage > 0) {
-      setRecordsPage(1);
-    }
-  }, [selectedCategory, allRecords, recordsPageSize]);
+    // 切换标签时，回到第1页并重新请求
+    setRecordsPage(1);
+    fetchRecords(1, selectedCategory);
+  }, [selectedCategory, fetchRecords]);
 
   // 初始化记录数据
   React.useEffect(() => {
-    if (hallData.recentRecords.length > 0 && hallData.recentRecords.length >= recordsPageSize) {
-      // 如果初始记录数达到分页大小，可能需要获取更多数据
-      fetchRecords(1);
-    }
-    if (hallData.topUsers.length > 0 && hallData.topUsers.length >= rankingPageSize) {
-      // 如果初始排行榜数据达到分页大小，可能需要获取更多数据
-      fetchRanking(1);
-    }
+    fetchRecords(1, selectedCategory);
+    fetchRanking(1);
   }, []);
 
   return (
@@ -304,6 +325,32 @@ const ScoreHallApp: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* 积分规则说明（可折叠） */}
+      <Collapse
+        className="content-card rules-card"
+        defaultActiveKey={[]}
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'rules',
+            label: '积分规则说明',
+            children: (
+              <div className="rules-grid">
+                {ruleItems.map((item) => (
+                  <div className="rule-item" key={item.title}>
+                    <div className="rule-item-header">
+                      <span className="rule-dot" />
+                      <span className="rule-title">{item.title}</span>
+                    </div>
+                    <div className="rule-desc">{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Games Section */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -519,19 +566,10 @@ const ScoreHallApp: React.FC = () => {
           >
             {(() => {
               // 根据选中的分类筛选记录
-              const filteredRecords = selectedCategory === '全部'
-                ? allRecords
-                : allRecords.filter((record) => record.category === selectedCategory);
-
-              // 分页处理
-              const startIndex = (recordsPage - 1) * recordsPageSize;
-              const endIndex = startIndex + recordsPageSize;
-              const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
-
-              return filteredRecords.length > 0 ? (
+              return allRecords.length > 0 ? (
                 <>
                   <List
-                    dataSource={paginatedRecords}
+                    dataSource={allRecords}
                   renderItem={(record) => {
                     const user = recordsUdocs[record.uid];
                     const isCurrentUser = hallData.isLoggedIn && record.uid === (window as any).currentUserId;
@@ -596,14 +634,15 @@ const ScoreHallApp: React.FC = () => {
                     );
                   }}
                 />
-                {filteredRecords.length > recordsPageSize && (
+                {totalRecords > recordsPageSize && (
                   <div style={{ marginTop: 16, textAlign: 'right' }}>
                     <Pagination
                       current={recordsPage}
-                      total={filteredRecords.length}
+                      total={totalRecords}
                       pageSize={recordsPageSize}
                       onChange={(page) => {
                         setRecordsPage(page);
+                        fetchRecords(page, selectedCategory);
                       }}
                       showSizeChanger={false}
                       showQuickJumper
@@ -645,9 +684,12 @@ const ScoreHallApp: React.FC = () => {
                   }}
                   value={rankingSearch}
                   onChange={(e) => {
-                    setRankingSearch(e.target.value);
+                    const keyword = e.target.value;
+                    setRankingSearch(keyword);
                     setRankingPage(1);
+                    fetchRanking(1, keyword);
                   }}
+                  onPressEnter={() => fetchRanking(1, rankingSearch)}
                 />
               </div>
             }
@@ -655,33 +697,8 @@ const ScoreHallApp: React.FC = () => {
           >
             {allTopUsers && allTopUsers.length > 0 ? (
               <>
-                {(() => {
-                  const keyword = rankingSearch.trim().toLowerCase();
-                  const filteredTopUsers = keyword
-                    ? allTopUsers.filter((user) => {
-                      const uidKey = String(user.uid);
-                      const userDoc = rankingUdocs[uidKey] || rankingUdocs[user.uid];
-                      const uname = (userDoc?.uname || '').toLowerCase();
-                      const displayName = (userDoc?.displayName || '').toLowerCase();
-                      const uidStr = String(user.uid);
-                      return (
-                        uname.includes(keyword)
-                        || displayName.includes(keyword)
-                        || uidStr.includes(keyword)
-                      );
-                    })
-                    : allTopUsers;
-
-                  const startIndex = (rankingPage - 1) * rankingPageSize;
-                  const endIndex = startIndex + rankingPageSize;
-                  const pageUsers = filteredTopUsers.slice(startIndex, endIndex);
-
-                  const showPagination = filteredTopUsers.length > rankingPageSize;
-
-                  return (
-                    <>
-                      <List
-                        dataSource={pageUsers}
+                <List
+                  dataSource={allTopUsers}
                   renderItem={(user, index) => {
                     // 确保 uid 类型匹配（可能是 number 或 string）
                     const uidKey = String(user.uid);
@@ -760,29 +777,24 @@ const ScoreHallApp: React.FC = () => {
                       </List.Item>
                     );
                   }}
-                      />
-                      {showPagination && (
-                        <div style={{ marginTop: 16, textAlign: 'right' }}>
-                          <Pagination
-                            current={rankingPage}
-                            total={filteredTopUsers.length}
-                            pageSize={rankingPageSize}
-                            onChange={(page) => {
-                              setRankingPage(page);
-                              if (!keyword) {
-                                fetchRanking(page);
-                              }
-                            }}
-                            showSizeChanger={false}
-                            showQuickJumper
-                            showTotal={(total) => `共 ${total} 人`}
-                            size="small"
-                          />
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                />
+                {totalRankingUsers > rankingPageSize && (
+                  <div style={{ marginTop: 16, textAlign: 'right' }}>
+                    <Pagination
+                      current={rankingPage}
+                      total={totalRankingUsers}
+                      pageSize={rankingPageSize}
+                      onChange={(page) => {
+                        setRankingPage(page);
+                        fetchRanking(page, rankingSearch);
+                      }}
+                      showSizeChanger={false}
+                      showQuickJumper
+                      showTotal={(total) => `共 ${total} 人`}
+                      size="small"
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <div className="empty-state">
