@@ -7,7 +7,7 @@ import { Handler, PRIV } from 'hydrooj';
 export class WechatTemplateTestHandler extends Handler {
     async get() {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
-        
+
         const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -502,9 +502,8 @@ export class WechatTemplateTestHandler extends Handler {
     </script>
 </body>
 </html>`;
-        
+
         this.response.body = html;
         this.response.type = 'text/html';
     }
 }
-

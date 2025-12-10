@@ -18,12 +18,14 @@ import {
 } from '../types/wechat';
 
 const logger = new Logger('wechat-service');
+const TEMPLATE_CACHE_TTL = 5 * 60 * 1000; // 5 分钟缓存模板列表，减少频繁调用
 
 export class WechatService {
     private tokenCache: WechatToken | null = null;
     private ticketCache: WechatTicket | null = null;
     private tokenPromise: Promise<string> | null = null;
     private ticketPromise: Promise<string> | null = null;
+    private templateCache: { list: TemplateItem[], expiresAt: number } | null = null;
     private config: WechatConfig;
     private tokenCacheService: TokenCacheService | null = null;
     private apiLimiter: WechatApiLimiter | null = null;
@@ -595,6 +597,17 @@ export class WechatService {
         }
     }
 
+    private extractRid(errmsg?: string, headers?: Record<string, any>): string | null {
+        if (errmsg) {
+            const ridMatch = errmsg.match(/rid:\s*([a-f0-9-]+)/i);
+            if (ridMatch) return ridMatch[1];
+        }
+        const ridHeader = headers?.['x-request-id'] || headers?.['X-Request-Id'];
+        if (Array.isArray(ridHeader)) return ridHeader[0];
+        if (typeof ridHeader === 'string') return ridHeader;
+        return null;
+    }
+
     // ========== 模板消息功能相关 ==========
 
     /**
@@ -627,9 +640,7 @@ export class WechatService {
             if (response.data.errcode !== 0) {
                 const errorCode = response.data.errcode as WechatErrorCode;
                 const errmsg = response.data.errmsg || '未知错误';
-                // 提取 rid（请求ID）如果存在
-                const ridMatch = errmsg.match(/rid:\s*([a-f0-9-]+)/i);
-                const rid = ridMatch ? ridMatch[1] : null;
+                const rid = this.extractRid(errmsg, response.headers);
 
                 logger.error(`[WechatService] 发送模板消息失败: ${errorCode} - ${errmsg}`);
                 if (rid) {
@@ -665,8 +676,13 @@ export class WechatService {
      * 获取模板列表
      * @returns 模板列表
      */
-    async getTemplateList(): Promise<TemplateItem[]> {
+    async getTemplateList(forceRefresh = false): Promise<TemplateItem[]> {
         logger.info('[WechatService] 获取模板列表');
+
+        if (!forceRefresh && this.templateCache && this.templateCache.expiresAt > Date.now()) {
+            logger.info(`[WechatService] 使用模板列表缓存, 剩余 ${(this.templateCache.expiresAt - Date.now()) / 1000}s`);
+            return this.templateCache.list;
+        }
 
         // 检查接口调用限制
         if (this.apiLimiter) {
@@ -721,6 +737,10 @@ export class WechatService {
             }
 
             logger.info(`[WechatService] 成功获取模板列表, 共 ${response.data.template_list.length} 个模板`);
+            this.templateCache = {
+                list: response.data.template_list,
+                expiresAt: Date.now() + TEMPLATE_CACHE_TTL,
+            };
             return response.data.template_list;
         } catch (error: any) {
             // 处理 axios 错误
@@ -729,7 +749,11 @@ export class WechatService {
                 const data = error.response.data as any;
                 const errcode = data?.errcode;
                 const errmsg = data?.errmsg || error.message || '未知错误';
+                const rid = this.extractRid(errmsg, error.response.headers);
                 logger.error(`[WechatService] 获取模板列表失败 (HTTP ${error.response.status}): ${errcode !== undefined ? errcode : 'N/A'} - ${errmsg}`);
+                if (rid) {
+                    logger.error(`[WechatService] 微信请求ID (rid): ${rid}`);
+                }
                 if (errcode !== undefined && errcode !== null) {
                     this.handleWechatError(errcode as WechatErrorCode, errmsg);
                     throw new Error(`获取模板列表失败: ${errcode} - ${errmsg}`);
@@ -795,6 +819,7 @@ export class WechatService {
             }
 
             logger.info('[WechatService] 模板删除成功');
+            this.templateCache = null;
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             logger.error(`[WechatService] 删除模板失败: ${message}`);
