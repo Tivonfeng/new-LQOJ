@@ -19,6 +19,7 @@ import {
   TrophyOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 import { animated, useSpring } from '@react-spring/web';
 import {
   Alert,
@@ -414,6 +415,26 @@ const DiceGameApp: React.FC = () => {
 
   return (
     <div className="dice-game-container">
+      {/* 个人钱包悬浮球 */}
+      {(() => {
+        const currentUserId = String((window as any).currentUserId || '');
+        const udocs = (window as any).diceGameData?.udocs || {};
+        const currentUser = udocs[currentUserId];
+        const isLoggedIn = !!(window as any).currentUserId;
+        return (
+          <WalletFloatingBall
+            currentCoins={currentCoins}
+            userInfo={{
+              uid: currentUserId,
+              avatarUrl: currentUser?.avatarUrl,
+              uname: currentUser?.uname,
+              displayName: currentUser?.displayName,
+            }}
+            walletUrl={(window as any).transferUrl || '/score/transfer'}
+            isLoggedIn={isLoggedIn}
+          />
+        );
+      })()}
       {/* Hero Section */}
       <Card className="hero-card" bodyStyle={{ padding: '32px 24px', position: 'relative', zIndex: 1 }}>
         <Row justify="space-between" align="middle">

@@ -50,6 +50,12 @@
     window.rpsStatusUrl = '{{ url("rps_status") }}';
     window.scoreHallUrl = '{{ url("score_hall") }}';
     window.rpsHistoryUrl = '{{ url("rps_history") }}';
+    window.transferUrl = '{{ url("wallet") }}';
+    {% if handler.user._id %}
+    window.currentUserId = '{{ handler.user._id }}';
+    {% endif %}
+    // 传递用户信息
+    window.rpsGameData.udocs = {{ udocsJson|safe }};
 </script>
 
 {% endblock %}

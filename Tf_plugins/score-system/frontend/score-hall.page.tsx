@@ -10,14 +10,13 @@ import {
   CheckCircleOutlined,
   DollarOutlined,
   GiftOutlined,
-  MoneyCollectOutlined,
   PlayCircleOutlined,
   RocketOutlined,
   SettingOutlined,
   TrophyOutlined,
   UserOutlined,
-  WalletOutlined,
 } from '@ant-design/icons';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 import {
   Button,
   Card,
@@ -111,27 +110,6 @@ const ScoreHallApp: React.FC = () => {
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
   const [rankingSearch, setRankingSearch] = useState('');
   const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
-  // 悬浮球状态
-  const [walletExpanded, setWalletExpanded] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const walletBallRef = useRef<HTMLDivElement>(null);
-
-  // 点击外部区域关闭悬浮球
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (walletBallRef.current && !walletBallRef.current.contains(event.target as Node)) {
-        setWalletExpanded(false);
-      }
-    };
-
-    if (walletExpanded) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [walletExpanded]);
 
   const ruleItems = [
     { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
@@ -281,97 +259,18 @@ const ScoreHallApp: React.FC = () => {
       {hallData.isLoggedIn && (() => {
         const currentUserId = String((window as any).currentUserId || '');
         const currentUser = hallData.udocs[currentUserId];
-        const userAvatar = currentUser?.avatarUrl;
-        const userName = currentUser?.uname || currentUser?.displayName || '用户';
-
         return (
-          <div ref={walletBallRef} className={`wallet-floating-ball ${walletExpanded ? 'expanded' : ''}`}>
-            <div className="wallet-ball-wrapper">
-              <div className="wallet-ball-main" onClick={() => setWalletExpanded(!walletExpanded)}>
-                {/* 钱包装饰背景 */}
-                <div className="wallet-pattern"></div>
-
-                {/* 顶部区域 - 头像和用户名 */}
-                <div className="wallet-header">
-                  <div className="wallet-avatar-wrapper">
-                    {userAvatar ? (
-                      <img
-                        src={userAvatar}
-                        alt={userName}
-                        className="wallet-avatar"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                    ) : null}
-                    <div className={`wallet-avatar-fallback ${userAvatar ? 'hidden' : ''}`}>
-                      <UserOutlined />
-                    </div>
-                    <div className="wallet-avatar-ring"></div>
-                  </div>
-                  <div className="wallet-user-name">{userName}</div>
-                </div>
-
-                {/* 中间区域 - 余额信息 */}
-                <div className="wallet-body">
-                  <div className="wallet-balance-main">
-                    <MoneyCollectOutlined className="wallet-balance-icon" />
-                    <span className="wallet-balance">{currentCoins}</span>
-                  </div>
-                </div>
-
-                {/* 底部区域 - 钱包标签 */}
-                <div className="wallet-footer">
-                  <WalletOutlined className="wallet-footer-icon" />
-                  <span className="wallet-label">我的钱包</span>
-                </div>
-              </div>
-            </div>
-          {walletExpanded && (
-            <div className="wallet-ball-content">
-              <div className="wallet-content-header">
-                <Text strong style={{ fontSize: 16, color: '#fff' }}>我的钱包</Text>
-              </div>
-              <div className="wallet-content-body">
-                <div className="wallet-balance-detail">
-                  <Text type="secondary" style={{ fontSize: 13 }}>当前余额</Text>
-                  <div className="wallet-balance-value">
-                    <DollarOutlined />
-                    <Text strong style={{ fontSize: 24, color: '#10b981', marginLeft: 8 }}>
-                      {currentCoins}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 14, marginLeft: 4 }}>积分</Text>
-                  </div>
-                </div>
-                <div className="wallet-content-divider" />
-                <div className="wallet-actions">
-                  <Button
-                    type="primary"
-                    icon={<DollarOutlined />}
-                    block
-                    size="small"
-                    className="wallet-action-btn"
-                    loading={isNavigating}
-                    disabled={isNavigating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isNavigating) return;
-                      setIsNavigating(true);
-                      setWalletExpanded(false);
-                      // 等待关闭动画完成后再跳转
-                      setTimeout(() => {
-                        window.location.href = transferUrl;
-                      }, 250);
-                    }}
-                  >
-                    我的钱包
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          <WalletFloatingBall
+            currentCoins={currentCoins}
+            userInfo={{
+              uid: currentUserId,
+              avatarUrl: currentUser?.avatarUrl,
+              uname: currentUser?.uname,
+              displayName: currentUser?.displayName,
+            }}
+            walletUrl={transferUrl}
+            isLoggedIn={hallData.isLoggedIn}
+          />
         );
       })()}
       {/* Hero Section */}

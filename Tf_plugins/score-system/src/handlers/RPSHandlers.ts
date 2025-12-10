@@ -1,4 +1,5 @@
 import {
+    avatar,
     Handler,
 } from 'hydrooj';
 import {
@@ -7,6 +8,33 @@ import {
     ScoreService,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
+
+/**
+ * 序列化对象为 JSON 兼容格式
+ * 处理 BigInt 和 Date 对象
+ */
+function serializeForJSON(obj: any): any {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (obj instanceof Date) {
+        return obj.toISOString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(serializeForJSON);
+    }
+    if (typeof obj === 'object') {
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = serializeForJSON(value);
+        }
+        return result;
+    }
+    return obj;
+}
 
 /**
  * 剪刀石头布游戏大厅处理器
@@ -58,6 +86,22 @@ export class RPSGameHandler extends Handler {
             aiChoiceIcon: this.getChoiceIcon(game.aiChoice),
         }));
 
+        // 获取当前用户信息
+        const UserModel = global.Hydro.model.user;
+        const currentUser = await UserModel.getById(this.domain._id, uid);
+        const udocs: Record<string, any> = {};
+        if (currentUser) {
+            const uidKey = String(uid);
+            udocs[uidKey] = {
+                ...currentUser,
+                avatarUrl: avatar(currentUser.avatar || `gravatar:${currentUser.mail}`, 40),
+            };
+        }
+
+        // 序列化 udocs 为 JSON 字符串（处理 BigInt）
+        const serializedUdocs = serializeForJSON(udocs);
+        const udocsJson = JSON.stringify(serializedUdocs);
+
         this.response.template = 'rock_paper_scissors.html';
         this.response.body = {
             currentCoins,
@@ -74,6 +118,7 @@ export class RPSGameHandler extends Handler {
             },
             recentGames: formattedGames,
             dailyLimit: rpsLimit,
+            udocsJson,
         };
     }
 

@@ -13,6 +13,7 @@ import {
   ThunderboltOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 import {
   Button,
   Card,
@@ -530,6 +531,26 @@ const WalletApp: React.FC = () => {
 
   return (
     <div className="wallet-container">
+      {/* 个人钱包悬浮球 */}
+      {(() => {
+        const currentUserId = String((window as any).currentUserId || '');
+        const udocs = (window as any).walletData?.udocs || {};
+        const currentUser = udocs[currentUserId];
+        const isLoggedIn = !!(window as any).currentUserId;
+        return (
+          <WalletFloatingBall
+            currentCoins={balance}
+            userInfo={{
+              uid: currentUserId,
+              avatarUrl: currentUser?.avatarUrl,
+              uname: currentUser?.uname,
+              displayName: currentUser?.displayName,
+            }}
+            walletUrl={(window as any).transferUrl || '/score/transfer'}
+            isLoggedIn={isLoggedIn}
+          />
+        );
+      })()}
       <Card className="wallet-hero-card" bordered={false}>
         <div className="wallet-hero-content">
           <div className="wallet-hero-text">
