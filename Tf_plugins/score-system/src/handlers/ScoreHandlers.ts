@@ -184,11 +184,13 @@ export class UserScoreHandler extends Handler {
             ? (userScoreData.totalScore / userScoreData.acCount).toFixed(1)
             : '0';
 
-        this.response.template = 'user_score.html';
+        // 始终返回 JSON 格式
+        this.response.type = 'application/json';
         this.response.body = {
-            userScore: userScoreData,
+            success: true,
+            userScore: serializeForJSON(userScoreData),
             averageScore,
-            recentRecords: formattedRecords,
+            recentRecords: serializeForJSON(formattedRecords),
         };
     }
 }

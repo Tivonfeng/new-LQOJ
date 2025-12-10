@@ -10,7 +10,7 @@ import {
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
 
-export class TransferExchangeHandler extends Handler {
+export class WalletHandler extends Handler {
     async prepare() {
         this.checkPerm(PERM.PERM_VIEW);
         if (!this.user._id) throw new Error('需要登录');
@@ -59,7 +59,7 @@ export class TransferExchangeHandler extends Handler {
             }));
         };
 
-        this.response.template = 'transfer_exchange.html';
+        this.response.template = 'wallet.html';
         this.response.body = {
             userScore: userScore || { totalScore: 0, acCount: 0 },
             myTransfers: formatTransfers(myTransfers),
@@ -119,14 +119,20 @@ export class TransferHistoryHandler extends Handler {
     async get() {
         const uid = this.user._id;
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
+        const requestedLimit = Number.parseInt(this.request.query.limit as string) || 20;
+        const limit = Math.min(requestedLimit, 10000); // 最大10000条
         const skip = (page - 1) * limit;
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
         const transferService = new TransferService(this.ctx, scoreService);
 
-        const allTransfers = await transferService.getUserTransferHistory(uid, 100);
-        const transfers = allTransfers.slice(skip, skip + limit);
+        // 如果请求JSON格式且limit很大，返回所有记录
+        const isJsonRequest = this.request.json || this.request.headers.accept?.includes('application/json');
+        const fetchLimit = (isJsonRequest && requestedLimit >= 1000) ? 10000 : 100;
+
+        const allTransfers = await transferService.getUserTransferHistory(uid, fetchLimit);
+        // 如果是JSON请求且limit很大，返回所有记录；否则分页
+        const transfers = (isJsonRequest && requestedLimit >= 1000) ? allTransfers : allTransfers.slice(skip, skip + limit);
         const total = allTransfers.length;
 
         const uids = new Set<number>();
@@ -156,10 +162,36 @@ export class TransferHistoryHandler extends Handler {
             }) : null,
         }));
 
-        this.response.template = 'transfer_history.html';
+        // 自定义 JSON 序列化函数
+        const serializeForJSON = (obj: any): any => {
+            if (obj === null || obj === undefined) {
+                return obj;
+            }
+            if (typeof obj === 'bigint') {
+                return obj.toString();
+            }
+            if (obj instanceof Date) {
+                return obj.toISOString();
+            }
+            if (Array.isArray(obj)) {
+                return obj.map(serializeForJSON);
+            }
+            if (typeof obj === 'object') {
+                const result: any = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    result[key] = serializeForJSON(value);
+                }
+                return result;
+            }
+            return obj;
+        };
+
+        // 始终返回 JSON 格式
+        this.response.type = 'application/json';
         this.response.body = {
-            transfers: formattedTransfers,
-            udocs,
+            success: true,
+            transfers: serializeForJSON(formattedTransfers),
+            udocs: serializeForJSON(udocs),
             page,
             total,
             totalPages: Math.ceil(total / limit),
@@ -202,11 +234,37 @@ export class TransferAdminHandler extends Handler {
             }),
         }));
 
-        this.response.template = 'transfer_admin.html';
+        // 自定义 JSON 序列化函数
+        const serializeForJSON = (obj: any): any => {
+            if (obj === null || obj === undefined) {
+                return obj;
+            }
+            if (typeof obj === 'bigint') {
+                return obj.toString();
+            }
+            if (obj instanceof Date) {
+                return obj.toISOString();
+            }
+            if (Array.isArray(obj)) {
+                return obj.map(serializeForJSON);
+            }
+            if (typeof obj === 'object') {
+                const result: any = {};
+                for (const [key, value] of Object.entries(obj)) {
+                    result[key] = serializeForJSON(value);
+                }
+                return result;
+            }
+            return obj;
+        };
+
+        // 始终返回 JSON 格式
+        this.response.type = 'application/json';
         this.response.body = {
-            transfers: formattedTransfers,
-            udocs,
-            transferStats,
+            success: true,
+            transfers: serializeForJSON(formattedTransfers),
+            udocs: serializeForJSON(udocs),
+            transferStats: serializeForJSON(transferStats),
         };
     }
 }

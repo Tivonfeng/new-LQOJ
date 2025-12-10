@@ -10,6 +10,7 @@ import {
   CheckCircleOutlined,
   DollarOutlined,
   GiftOutlined,
+  MoneyCollectOutlined,
   PlayCircleOutlined,
   RocketOutlined,
   SettingOutlined,
@@ -27,11 +28,10 @@ import {
   Pagination,
   Row,
   Space,
-  Statistic,
   Tag,
   Typography,
 } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
@@ -111,6 +111,27 @@ const ScoreHallApp: React.FC = () => {
   const [rankingUdocs, setRankingUdocs] = useState(hallData.udocs);
   const [rankingSearch, setRankingSearch] = useState('');
   const [totalRankingUsers, setTotalRankingUsers] = useState(hallData.rankingTotal ?? hallData.topUsers.length);
+  // 悬浮球状态
+  const [walletExpanded, setWalletExpanded] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const walletBallRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部区域关闭悬浮球
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (walletBallRef.current && !walletBallRef.current.contains(event.target as Node)) {
+        setWalletExpanded(false);
+      }
+    };
+
+    if (walletExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [walletExpanded]);
 
   const ruleItems = [
     { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
@@ -160,7 +181,6 @@ const ScoreHallApp: React.FC = () => {
   const checkInUrl = (window as any).checkInUrl || '/score/checkin';
   const diceGameUrl = (window as any).diceGameUrl || '/score/dice';
   const rpsGameUrl = (window as any).rpsGameUrl || '/score/rps';
-  const userScoreUrl = (window as any).userScoreUrl || '/score/me';
   const transferUrl = (window as any).transferUrl || '/score/transfer';
   const scoreManageUrl = (window as any).scoreManageUrl || '/score/manage';
   const scoreRecordsUrl = (window as any).scoreRecordsUrl || '/score/records';
@@ -257,73 +277,138 @@ const ScoreHallApp: React.FC = () => {
 
   return (
     <div className="score-hall-container">
+      {/* 个人钱包悬浮球 */}
+      {hallData.isLoggedIn && (() => {
+        const currentUserId = String((window as any).currentUserId || '');
+        const currentUser = hallData.udocs[currentUserId];
+        const userAvatar = currentUser?.avatarUrl;
+        const userName = currentUser?.uname || currentUser?.displayName || '用户';
+
+        return (
+          <div ref={walletBallRef} className={`wallet-floating-ball ${walletExpanded ? 'expanded' : ''}`}>
+            <div className="wallet-ball-wrapper">
+              <div className="wallet-ball-main" onClick={() => setWalletExpanded(!walletExpanded)}>
+                {/* 钱包装饰背景 */}
+                <div className="wallet-pattern"></div>
+
+                {/* 顶部区域 - 头像和用户名 */}
+                <div className="wallet-header">
+                  <div className="wallet-avatar-wrapper">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="wallet-avatar"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`wallet-avatar-fallback ${userAvatar ? 'hidden' : ''}`}>
+                      <UserOutlined />
+                    </div>
+                    <div className="wallet-avatar-ring"></div>
+                  </div>
+                  <div className="wallet-user-name">{userName}</div>
+                </div>
+
+                {/* 中间区域 - 余额信息 */}
+                <div className="wallet-body">
+                  <div className="wallet-balance-main">
+                    <MoneyCollectOutlined className="wallet-balance-icon" />
+                    <span className="wallet-balance">{currentCoins}</span>
+                  </div>
+                </div>
+
+                {/* 底部区域 - 钱包标签 */}
+                <div className="wallet-footer">
+                  <WalletOutlined className="wallet-footer-icon" />
+                  <span className="wallet-label">我的钱包</span>
+                </div>
+              </div>
+            </div>
+          {walletExpanded && (
+            <div className="wallet-ball-content">
+              <div className="wallet-content-header">
+                <Text strong style={{ fontSize: 16, color: '#fff' }}>我的钱包</Text>
+              </div>
+              <div className="wallet-content-body">
+                <div className="wallet-balance-detail">
+                  <Text type="secondary" style={{ fontSize: 13 }}>当前余额</Text>
+                  <div className="wallet-balance-value">
+                    <DollarOutlined />
+                    <Text strong style={{ fontSize: 24, color: '#10b981', marginLeft: 8 }}>
+                      {currentCoins}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 14, marginLeft: 4 }}>积分</Text>
+                  </div>
+                </div>
+                <div className="wallet-content-divider" />
+                <div className="wallet-actions">
+                  <Button
+                    type="primary"
+                    icon={<DollarOutlined />}
+                    block
+                    size="small"
+                    className="wallet-action-btn"
+                    loading={isNavigating}
+                    disabled={isNavigating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isNavigating) return;
+                      setIsNavigating(true);
+                      setWalletExpanded(false);
+                      // 等待关闭动画完成后再跳转
+                      setTimeout(() => {
+                        window.location.href = transferUrl;
+                      }, 250);
+                    }}
+                  >
+                    我的钱包
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        );
+      })()}
       {/* Hero Section */}
       <Card className="hero-card" bordered={false}>
-        <Row justify="space-between" align="middle" wrap>
-          <Col xs={24} sm={24} md={14}>
-            <Space direction="vertical" size="small">
+        <div className="hero-content-wrapper">
+          <div className="hero-main-content">
+            <div className="hero-text-section">
               <Title level={2} className="hero-title">
                 积分大厅
               </Title>
               <Text className="hero-subtitle">将你的成就转化为奖励</Text>
-            </Space>
-          </Col>
-          <Col xs={24} sm={24} md={10}>
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Row gutter={[12, 12]}>
-                <Col span={12}>
-                  <Statistic
-                    title="今日活跃"
-                    value={hallData.todayActiveUsers}
-                    prefix={<UserOutlined />}
-                    valueStyle={{ color: '#fff', fontSize: '20px' }}
-                  />
-                </Col>
-                {hallData.isLoggedIn && (
-                  <Col span={12}>
-                    <Statistic
-                      title="我的余额"
-                      value={currentCoins}
-                      prefix={<WalletOutlined />}
-                      suffix={<DollarOutlined />}
-                      valueStyle={{ color: '#fff', fontSize: '20px' }}
-                    />
-                  </Col>
-                )}
-              </Row>
-              {hallData.isLoggedIn && (
-                <Space wrap>
-                  <Button
-                    type="default"
-                    icon={<AppstoreOutlined />}
-                    href={userScoreUrl}
-                    className="hero-action-btn"
-                  >
-                    积分记录
-                  </Button>
-                  <Button
-                    type="default"
-                    icon={<DollarOutlined />}
-                    href={transferUrl}
-                    className="hero-action-btn"
-                  >
-                    积分交易所
-                  </Button>
-                  {hallData.canManage && (
-                    <Button
-                      type="default"
-                      icon={<SettingOutlined />}
-                      href={scoreManageUrl}
-                      className="hero-action-btn"
-                    >
-                      积分管理
-                    </Button>
-                  )}
-                </Space>
-              )}
-            </Space>
-          </Col>
-        </Row>
+            </div>
+            <div className="hero-stats-section">
+              <div className="hero-stat-item">
+                <div className="hero-stat-icon">
+                  <UserOutlined />
+                </div>
+                <div className="hero-stat-content">
+                  <div className="hero-stat-value">{hallData.todayActiveUsers}</div>
+                  <div className="hero-stat-label">今日活跃</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {hallData.isLoggedIn && hallData.canManage && (
+            <div className="hero-actions-section">
+              <Button
+                type="default"
+                icon={<SettingOutlined />}
+                href={scoreManageUrl}
+                className="hero-action-btn"
+              >
+                积分管理
+              </Button>
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* 积分规则说明（可折叠） */}

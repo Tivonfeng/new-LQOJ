@@ -35,6 +35,6 @@ export {
 export {
     TransferAdminHandler,
     TransferCreateHandler,
-    TransferExchangeHandler,
+    WalletHandler,
     TransferHistoryHandler,
-} from './TransferHandlers';
+} from './WalletHandlers';

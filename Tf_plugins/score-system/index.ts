@@ -24,7 +24,7 @@ import {
     ScoreRecordsHandler,
     TransferAdminHandler,
     TransferCreateHandler,
-    TransferExchangeHandler,
+    WalletHandler,
     TransferHistoryHandler,
     UserScoreHandler } from './src/handlers';
 // 导入服务层
@@ -418,7 +418,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
 
     // 转账系统路由
-    ctx.Route('transfer_exchange', '/score/transfer', TransferExchangeHandler);
+    ctx.Route('wallet', '/score/transfer', WalletHandler);
     ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
     ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
     ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler);
