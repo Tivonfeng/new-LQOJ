@@ -196,7 +196,7 @@ body {
     border-color: rgba(255, 255, 255, 0.3);
     color: white;
     font-weight: 600;
-    height: 36px;
+    height: 40px;
     padding: 0 16px;
 }
 
@@ -204,6 +204,21 @@ body {
     background: rgba(255, 255, 255, 0.3);
     border-color: rgba(255, 255, 255, 0.4);
     color: white;
+}
+
+.hero-action-btn.ant-btn-primary {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.95) !important;
+    color: #6366f1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hero-action-btn.ant-btn-primary:hover {
+    background: white !important;
+    border-color: white !important;
+    color: #4f46e5 !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
 }
 
 
@@ -921,49 +936,181 @@ body {
 }
 
 /* 规则卡片样式 - 参考积分大厅 */
+.rules-card {
+    background: var(--bg-primary);
+    border: 1px solid #e5e7eb;
+}
+
 .rules-card .ant-collapse-header {
     font-weight: 700;
     font-size: 15px;
+    background: transparent !important;
+    border: none !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    transition: all 0.3s ease;
 }
 
-.rules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.rules-card .ant-collapse-header:hover {
+    background: rgba(59, 130, 246, 0.04) !important;
+}
+
+.rules-card .ant-collapse-item {
+    border: none !important;
+    background: transparent !important;
+}
+
+.rules-card .ant-collapse-item-active .ant-collapse-header {
+    background: rgba(59, 130, 246, 0.06) !important;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.1) !important;
+}
+
+.rules-card .ant-collapse-content {
+    background: transparent !important;
+    border: none !important;
+}
+
+.rules-card .ant-collapse-content-box {
+    padding: 20px !important;
+}
+
+/* 奖励系统列表 - 紧凑布局 */
+.bonus-list {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 
-.rule-item {
-    padding: 12px;
+.bonus-item-card {
     border-radius: 12px;
-    background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
     border: 1px solid #e5e7eb;
-    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 0;
 }
 
-.rule-item-header {
+.bonus-item-card:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+.bonus-item-card .ant-card-body {
+    padding: 16px;
+}
+
+.bonus-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bonus-item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.bonus-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary-color);
+    border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
-.rule-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #a78bfa 0%, #6366f1 100%);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+.bonus-item-title-section {
+    flex: 1;
+    min-width: 0;
 }
 
-.rule-title {
-    font-weight: 700;
-    color: #111827;
+.bonus-item-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 4px !important;
+    line-height: 1.4 !important;
 }
 
-.rule-desc {
-    color: #374151;
-    line-height: 1.6;
+.bonus-item-desc {
     font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    display: block;
+}
+
+.bonus-points-badge {
+    flex-shrink: 0;
+}
+
+.bonus-points-tag {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 4px 12px;
+    margin: 0;
+    border-radius: 8px;
+}
+
+/* 奖励详情网格 - 紧凑布局 */
+.bonus-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.bonus-detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.bonus-detail-item:hover {
+    background: var(--bg-tertiary);
+    border-color: rgba(59, 130, 246, 0.2);
+    transform: translateX(2px);
+}
+
+.bonus-detail-level {
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+}
+
+.bonus-detail-points {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+
+/* 奖励示例说明 */
+.bonus-example {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.bonus-example-text {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 
@@ -1088,11 +1235,11 @@ body {
     border: 2px solid transparent;
 }
 
-/* 练习卡片 - 参考积分大厅的checkin-card样式 */
+/* 练习卡片 - 与页面风格一致的蓝色系配色 */
 .practice-card {
-    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
     border: none;
-    box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
 }
 
 .practice-card::before {
@@ -1111,18 +1258,95 @@ body {
 }
 
 .practice-btn {
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%) !important;
     border: 2px solid rgba(255, 255, 255, 0.3) !important;
     color: white !important;
-    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
 }
 
 .practice-btn:hover {
-    background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
     border-color: rgba(255, 255, 255, 0.5) !important;
     color: white !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+/* 周趋势图表卡片样式 */
+.trend-card {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+    border: none;
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+}
+
+.trend-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.trend-card .game-card-title {
+    color: white !important;
+}
+
+.trend-card .game-card-subtitle {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 趋势图表控制按钮 */
+.trend-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.trend-tab-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.trend-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+}
+
+.trend-tab-btn.active {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.95);
+    color: #6366f1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 周趋势图表样式 */
+.trend-chart {
+    position: relative;
+    height: 250px;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.trend-chart canvas {
+    max-width: 100%;
+    height: 100% !important;
 }
 
 
@@ -1170,8 +1394,18 @@ body {
         gap: 6px;
     }
 
-    .rules-grid {
+    .bonus-details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .bonus-item-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .bonus-icon-wrapper {
+        width: 36px;
+        height: 36px;
     }
 
 

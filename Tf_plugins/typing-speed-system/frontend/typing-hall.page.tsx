@@ -581,147 +581,69 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
   );
 };
 
-// 奖励说明组件
-const BonusExplanation: React.FC = () => {
-  const bonuses = [
-    {
-      title: '打字进步分',
-      icon: <RiseOutlined style={{ fontSize: 18 }} />,
-      description: '每次打字速度超过个人历史最高速度时，奖励',
-      points: '+20分',
-      pointsColor: '#3b82f6',
-      example: '当你的最高速度从50 WPM突破到51 WPM时获得',
-    },
-    {
-      title: '打字目标分',
-      icon: <AimOutlined style={{ fontSize: 18 }} />,
-      description: '达到新等级时，根据等级奖励对应积分',
-      details: [
-        { level: '打字小匠 (20-50 WPM)', points: '+100分' },
-        { level: '键速高手 (50-80 WPM)', points: '+200分' },
-        { level: '键速闪电 (80-110 WPM)', points: '+300分' },
-        { level: '键速狂人 (110-140 WPM)', points: '+400分' },
-        { level: '键速王者 (140-170 WPM)', points: '+500分' },
-        { level: '键速狂魔 (170-200 WPM)', points: '+600分' },
-        { level: '终极之神 (200+ WPM)', points: '+700分' },
-      ],
-      example: '首次达到80 WPM时获得该等级的积分奖励',
-    },
-    {
-      title: '超越对手奖',
-      icon: <TrophyOutlined style={{ fontSize: 18 }} />,
-      description: '超越排行榜中你前一名的对手时获得',
-      points: '+20分',
-      pointsColor: '#ef4444',
-      example: '你的最高速度从85 WPM提升到95 WPM，正好超过前一名的对手时获得',
-    },
-  ];
-
-  return (
-    <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-      {/* 奖励系统说明卡片 */}
-      <Col xs={24} lg={16}>
-        <Collapse
-          className="content-card rules-card"
-          defaultActiveKey={['bonus']}
-          items={[
-            {
-              key: 'bonus',
-              label: (
-                <span>
-                  <GiftOutlined style={{ marginRight: 8 }} />
-                  奖励系统说明
-                </span>
-              ),
-              children: (
-                <div className="rules-grid">
-                  {bonuses.map((bonus, index) => (
-                    <div key={index} className="rule-item">
-                      <div className="rule-item-header">
-                        <span className="rule-dot" />
-                        <span className="rule-title">
-                          <span style={{ marginRight: 8, display: 'inline-flex', alignItems: 'center' }}>{bonus.icon}</span>
-                          {bonus.title}
-                        </span>
-                      </div>
-                      <div className="rule-desc">{bonus.description}</div>
-                      {bonus.details ? (
-                        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {bonus.details.map((detail, idx) => (
-                            <Tag key={idx} color="blue" style={{ margin: 0 }}>
-                              {detail.level}: <strong>{detail.points}</strong>
-                            </Tag>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 8 }}>
-                          <Tag color={bonus.pointsColor === '#3b82f6' ? 'blue' : 'red'} style={{ fontSize: 16, padding: '4px 12px' }}>
-                            <strong>{bonus.points}</strong>
-                          </Tag>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ),
-            },
-          ]}
-        />
-      </Col>
-
-      {/* 开始练习卡片 */}
-      <Col xs={24} lg={8}>
-        <Card className="game-card practice-card" bordered={false}>
-          <div className="game-card-content">
-            <div className="game-card-header">
-              <div className="game-icon-wrapper practice-icon">
-                <PlayCircleOutlined style={{ fontSize: 40, color: '#fff' }} />
-              </div>
-              <div className="game-card-title-section">
-                <Title level={4} className="game-card-title">开始练习</Title>
-                <Text className="game-card-subtitle">提升打字速度</Text>
-              </div>
-            </div>
-            <div className="game-card-body">
-              <div className="game-card-info">
-                <div className="game-info-item">
-                  <Text className="game-info-text">在打字练习网站上坚持训练，当有进步成绩时，请汇报给老师录入数据</Text>
-                </div>
-              </div>
-            </div>
-            <div className="game-card-footer">
-              <Button
-                type="primary"
-                icon={<PlayCircleOutlined />}
-                href="https://dazi.91xjr.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="game-action-btn practice-btn"
-                block
-                size="large"
-              >
-                前往练习网站
-                <ArrowRightOutlined style={{ marginLeft: 8 }} />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </Col>
-    </Row>
-  );
-};
-
-// 周趋势图表组件
-interface WeeklyTrendChartProps {
+// 趋势图表组件（支持周趋势和月趋势）
+interface TrendChartProps {
   weeklyTrend: TrendData[];
 }
 
-const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
+type TrendType = 'week' | 'month';
+
+const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const chartRef = React.useRef<Chart | null>(null);
+  const [trendType, setTrendType] = useState<TrendType>('week');
+
+  // 计算月趋势数据
+  const monthlyTrend = useMemo(() => {
+    if (!weeklyTrend || weeklyTrend.length === 0) return [];
+
+    // 按月份分组
+    const monthMap = new Map<string, { total: number, count: number }>();
+
+    weeklyTrend.forEach((item) => {
+      // 从周字符串中提取年月（格式：2024-W01）
+      const match = item.week.match(/^(\d{4})-W/);
+      if (match) {
+        const year = match[1];
+        // 计算该周属于哪个月
+        // 简化处理：使用周字符串的第一个日期来确定月份
+        const weekNum = Number.parseInt(item.week.split('-W')[1], 10);
+        const yearNum = Number.parseInt(year, 10);
+        // 计算该年的第一周日期
+        const firstDay = new Date(yearNum, 0, 1);
+        const firstWeekStart = new Date(firstDay);
+        firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
+        const weekStart = new Date(firstWeekStart);
+        weekStart.setDate(firstWeekStart.getDate() + (weekNum - 1) * 7);
+        const month = `${year}-${String(weekStart.getMonth() + 1).padStart(2, '0')}`;
+
+        if (!monthMap.has(month)) {
+          monthMap.set(month, { total: 0, count: 0 });
+        }
+        const monthData = monthMap.get(month)!;
+        monthData.total += item.avgWpm;
+        monthData.count += 1;
+      }
+    });
+
+    // 转换为数组并计算平均值
+    const monthlyData: TrendData[] = Array.from(monthMap.entries())
+      .map(([month, data]) => ({
+        week: month,
+        avgWpm: data.count > 0 ? Math.round(data.total / data.count) : 0,
+      }))
+      .sort((a, b) => a.week.localeCompare(b.week));
+
+    return monthlyData;
+  }, [weeklyTrend]);
+
+  // 根据趋势类型获取数据
+  const currentTrendData = useMemo(() => {
+    return trendType === 'week' ? weeklyTrend : monthlyTrend;
+  }, [trendType, weeklyTrend, monthlyTrend]);
 
   useEffect(() => {
-    if (!canvasRef.current || !weeklyTrend || weeklyTrend.length === 0) {
+    if (!canvasRef.current || !currentTrendData || currentTrendData.length === 0) {
       return () => {
         // 清理函数：如果条件不满足，确保清理已存在的图表
         if (chartRef.current) {
@@ -747,19 +669,37 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
       chartRef.current.destroy();
     }
 
+    // 格式化标签
+    const formatLabel = (label: string) => {
+      if (trendType === 'week') {
+        return label; // 周趋势直接显示
+      } else {
+        // 月趋势格式化为 "YYYY年MM月"
+        const match = label.match(/^(\d{4})-(\d{2})$/);
+        if (match) {
+          return `${match[1]}年${Number.parseInt(match[2], 10)}月`;
+        }
+        return label;
+      }
+    };
+
     // 创建新图表
     chartRef.current = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: weeklyTrend.map((d) => d.week),
+        labels: currentTrendData.map((d) => formatLabel(d.week)),
         datasets: [
           {
             label: '平均 WPM',
-            data: weeklyTrend.map((d) => d.avgWpm),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            data: currentTrendData.map((d) => d.avgWpm),
+            borderColor: '#ffffff',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
             tension: 0.4,
             fill: true,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
           },
         ],
       },
@@ -774,6 +714,20 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
         scales: {
           y: {
             beginAtZero: true,
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.8)',
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)',
+            },
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.8)',
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)',
+            },
           },
         },
       },
@@ -785,15 +739,222 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
         chartRef.current = null;
       }
     };
-  }, [weeklyTrend]);
+  }, [currentTrendData, trendType]);
 
   return (
-    <div className="chart-section">
-      <h3>周趋势</h3>
-      <div className="trend-chart">
-        <canvas ref={canvasRef} width="400" height="250"></canvas>
+    <Card className="game-card trend-card" bordered={false}>
+      <div className="game-card-content">
+        <div className="game-card-header">
+          <div className="game-icon-wrapper">
+            <BarChartOutlined style={{ fontSize: 40, color: '#fff' }} />
+          </div>
+          <div className="game-card-title-section">
+            <Title level={4} className="game-card-title">趋势分析</Title>
+            <Text className="game-card-subtitle">平均速度变化</Text>
+          </div>
+        </div>
+        <div className="trend-controls">
+          <button
+            className={`trend-tab-btn ${trendType === 'week' ? 'active' : ''}`}
+            onClick={() => setTrendType('week')}
+          >
+            周趋势
+          </button>
+          <button
+            className={`trend-tab-btn ${trendType === 'month' ? 'active' : ''}`}
+            onClick={() => setTrendType('month')}
+          >
+            月趋势
+          </button>
+        </div>
+        <div className="game-card-body">
+          <div className="trend-chart">
+            <canvas ref={canvasRef} width="400" height="250"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
+    </Card>
+  );
+};
+
+// 奖励说明组件
+interface BonusExplanationProps {
+  weeklyTrend: TrendData[];
+}
+
+const BonusExplanation: React.FC<BonusExplanationProps> = ({ weeklyTrend }) => {
+  const bonuses = [
+    {
+      title: '打字进步分',
+      icon: <RiseOutlined style={{ fontSize: 18 }} />,
+      description: '每次打字速度超过个人历史最高速度奖励',
+      points: '+20分',
+      pointsColor: '#3b82f6',
+      example: '当你的最高速度从50WPM突破到51WPM时获得',
+    },
+    {
+      title: '打字目标分',
+      icon: <AimOutlined style={{ fontSize: 18 }} />,
+      description: '达到新等级时，根据等级奖励对应积分',
+      details: [
+        { level: '打字小匠 (20-50WPM)', points: '+100分' },
+        { level: '键速高手 (50-80WPM)', points: '+200分' },
+        { level: '键速闪电 (80-110WPM)', points: '+300分' },
+        { level: '键速狂人 (110-140WPM)', points: '+400分' },
+        { level: '键速王者 (140-170WPM)', points: '+500分' },
+        { level: '键速狂魔 (170-200WPM)', points: '+600分' },
+        { level: '终极之神 (200+WPM)', points: '+700分' },
+      ],
+      example: '首次达到80WPM时获得该等级的积分奖励',
+    },
+    {
+      title: '超越对手奖',
+      icon: <TrophyOutlined style={{ fontSize: 18 }} />,
+      description: '超越排行榜中你前一名的对手获得',
+      points: '+20分',
+      pointsColor: '#ef4444',
+      example: '你的最高速度从85WPM提升到95WPM，超过前一名的对手时获得',
+    },
+  ];
+
+  return (
+    <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      {/* 奖励系统说明卡片 */}
+      <Col xs={24} lg={16}>
+        <Collapse
+          className="content-card rules-card"
+          defaultActiveKey={['bonus']}
+          items={[
+            {
+              key: 'bonus',
+              label: (
+                <span>
+                  <GiftOutlined style={{ marginRight: 8 }} />
+                  奖励系统说明
+                </span>
+              ),
+              children: (
+                <div className="bonus-list">
+                  <Row gutter={[12, 12]}>
+                    {/* 第一行：打字进步分和超越对手奖 */}
+                    <Col xs={24} sm={12}>
+                      <Card className="bonus-item-card" bordered={false}>
+                        <div className="bonus-item-content">
+                          <div className="bonus-item-header">
+                            <div className="bonus-icon-wrapper">
+                              {bonuses[0].icon}
+                            </div>
+                            <div className="bonus-item-title-section">
+                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                                {bonuses[0].title}
+                              </Title>
+                              <Text type="secondary" className="bonus-item-desc">
+                                {bonuses[0].description}
+                              </Text>
+                            </div>
+                            <div className="bonus-points-badge">
+                              <Tag
+                                color={bonuses[0].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                                className="bonus-points-tag"
+                              >
+                                {bonuses[0].points}
+                              </Tag>
+                            </div>
+                          </div>
+                          <div className="bonus-example">
+                            <Text type="secondary" className="bonus-example-text">
+                              {bonuses[0].example}
+                            </Text>
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Card className="bonus-item-card" bordered={false}>
+                        <div className="bonus-item-content">
+                          <div className="bonus-item-header">
+                            <div className="bonus-icon-wrapper">
+                              {bonuses[2].icon}
+                            </div>
+                            <div className="bonus-item-title-section">
+                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                                {bonuses[2].title}
+                              </Title>
+                              <Text type="secondary" className="bonus-item-desc">
+                                {bonuses[2].description}
+                              </Text>
+                            </div>
+                            <div className="bonus-points-badge">
+                              <Tag
+                                color={bonuses[2].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                                className="bonus-points-tag"
+                              >
+                                {bonuses[2].points}
+                              </Tag>
+                            </div>
+                          </div>
+                          <div className="bonus-example">
+                            <Text type="secondary" className="bonus-example-text">
+                              {bonuses[2].example}
+                            </Text>
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                  </Row>
+                  {/* 第二行：打字目标分 */}
+                  <Row gutter={[12, 12]} style={{ marginTop: 12 }}>
+                    <Col xs={24}>
+                      <Card className="bonus-item-card" bordered={false}>
+                        <div className="bonus-item-content">
+                          <div className="bonus-item-header">
+                            <div className="bonus-icon-wrapper">
+                              {bonuses[1].icon}
+                            </div>
+                            <div className="bonus-item-title-section">
+                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                                {bonuses[1].title}
+                              </Title>
+                              <Text type="secondary" className="bonus-item-desc">
+                                {bonuses[1].description}
+                              </Text>
+                            </div>
+                          </div>
+                          {bonuses[1].details && (
+                            <div className="bonus-details-grid">
+                              {bonuses[1].details.map((detail, idx) => (
+                                <div key={idx} className="bonus-detail-item">
+                                  <Text type="secondary" className="bonus-detail-level">
+                                    {detail.level}
+                                  </Text>
+                                  <Tag color="blue" className="bonus-detail-points">
+                                    {detail.points}
+                                  </Tag>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="bonus-example">
+                            <Text type="secondary" className="bonus-example-text">
+                              {bonuses[1].example}
+                            </Text>
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                  </Row>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </Col>
+
+      {/* 周趋势图表 */}
+      <Col xs={24} lg={8}>
+        <TrendChart weeklyTrend={weeklyTrend} />
+      </Col>
+    </Row>
   );
 };
 
@@ -997,8 +1158,20 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
               </div>
             </div>
           </div>
-          {isLoggedIn && canManage && (
-            <div className="hero-actions-section">
+          <div className="hero-actions-section">
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              href="https://dazi.91xjr.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-action-btn"
+              size="large"
+            >
+              前往练习网站
+              <ArrowRightOutlined style={{ marginLeft: 8 }} />
+            </Button>
+            {isLoggedIn && canManage && (
               <Button
                 type="default"
                 icon={<SettingOutlined />}
@@ -1007,13 +1180,13 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
               >
                 管理面板
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Card>
 
       {/* 奖励系统说明 */}
-      <BonusExplanation />
+      <BonusExplanation weeklyTrend={weeklyTrend} />
 
       {/* 天梯图 */}
       <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
@@ -1036,11 +1209,6 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
         </div>
       </div>
 
-      {/* 图表区域 */}
-      <div className="content-grid">
-        {/* 周趋势 */}
-        <WeeklyTrendChart weeklyTrend={weeklyTrend} />
-      </div>
     </div>
   );
 };
