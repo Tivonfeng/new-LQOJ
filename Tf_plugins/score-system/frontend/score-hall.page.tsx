@@ -563,9 +563,21 @@ const ScoreHallApp: React.FC = () => {
                     >
                       <List.Item.Meta
                         avatar={
-                          <div className={`record-badge ${record.score > 0 ? 'badge-positive' : 'badge-negative'}`}>
-                            {record.score > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                          </div>
+                          user?.avatarUrl ? (
+                            <img
+                              src={user.avatarUrl}
+                              alt={user?.uname || user?.displayName || `User ${record.uid}`}
+                              className="record-avatar"
+                              onError={(e) => {
+                                // 如果头像加载失败，隐藏图片
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className={`record-badge ${record.score > 0 ? 'badge-positive' : 'badge-negative'}`}>
+                              {record.score > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                            </div>
+                          )
                         }
                         title={
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -297,7 +297,7 @@ export class ScoreRecordsHandler extends Handler {
             this.domain._id,
         );
 
-        // 补充跨域查询的 displayName
+        // 补充跨域查询的 displayName 和生成 avatarUrl
         const udocs: Record<string, any> = {};
         for (const userId in rawUdocs) {
             const user = rawUdocs[userId];
@@ -308,6 +308,7 @@ export class ScoreRecordsHandler extends Handler {
             udocs[uidKey] = {
                 ...user,
                 displayName: finalDisplayName,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
             };
         }
 
