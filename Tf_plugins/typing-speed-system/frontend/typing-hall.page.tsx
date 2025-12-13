@@ -3,10 +3,17 @@ import './typing-hall.page.css';
 
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
+  AimOutlined,
   ArrowRightOutlined,
+  BarChartOutlined,
+  CrownOutlined,
+  FireOutlined,
   GiftOutlined,
+  LaptopOutlined,
   PlayCircleOutlined,
+  RiseOutlined,
   SettingOutlined,
+  StarOutlined,
   ThunderboltOutlined,
   TrophyOutlined,
   UserOutlined,
@@ -94,7 +101,7 @@ interface TrendData {
 
 interface LadderRange {
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   range: string;
   min: number;
   max: number;
@@ -106,7 +113,7 @@ interface LadderRange {
 const LADDER_RANGES: LadderRange[] = [
   {
     label: '终极之神',
-    icon: '👑',
+    icon: <CrownOutlined style={{ fontSize: 20 }} />,
     range: '200+',
     min: 200,
     max: Infinity,
@@ -115,7 +122,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速狂魔',
-    icon: '💻',
+    icon: <LaptopOutlined style={{ fontSize: 20 }} />,
     range: '170-200',
     min: 170,
     max: 200,
@@ -124,7 +131,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速王者',
-    icon: '⚔️',
+    icon: <TrophyOutlined style={{ fontSize: 20 }} />,
     range: '140-170',
     min: 140,
     max: 170,
@@ -133,7 +140,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速狂人',
-    icon: '🔥',
+    icon: <FireOutlined style={{ fontSize: 20 }} />,
     range: '110-140',
     min: 110,
     max: 140,
@@ -142,7 +149,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速闪电',
-    icon: '⚡',
+    icon: <ThunderboltOutlined style={{ fontSize: 20 }} />,
     range: '80-110',
     min: 80,
     max: 110,
@@ -151,7 +158,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速高手',
-    icon: '⭐',
+    icon: <StarOutlined style={{ fontSize: 20 }} />,
     range: '50-80',
     min: 50,
     max: 80,
@@ -160,7 +167,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '打字小匠',
-    icon: '✨',
+    icon: <StarOutlined style={{ fontSize: 20 }} />,
     range: '20-50',
     min: 20,
     max: 50,
@@ -169,7 +176,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '打字萌新',
-    icon: '🌱',
+    icon: <UserOutlined style={{ fontSize: 20 }} />,
     range: '0-20',
     min: 0,
     max: 20,
@@ -217,34 +224,49 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
   };
 
   return (
-    <div className="ladder-section">
-      <div className="section-header">
-        <h3>速度天梯分布</h3>
+    <Card
+      className="content-card ladder-section-card"
+      bordered={false}
+      title={
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Space>
+            <ThunderboltOutlined style={{ fontSize: 20, color: '#3b82f6' }} />
+            <Title level={4} style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+              速度天梯分布
+            </Title>
+          </Space>
+          <Text type="secondary" style={{ fontSize: '0.875rem', display: 'block', marginLeft: 28 }}>
+            查看不同速度区间的用户分布情况，悬停头像查看详细信息
+          </Text>
+        </Space>
+      }
+      extra={
         <div className="ladder-controls">
           <div className="ladder-tabs">
             <button
               className={`ladder-tab-btn ${speedType === 'avg' ? 'active' : ''}`}
               onClick={() => setSpeedType('avg')}
             >
-              <span className="tab-icon">📊</span>
+              <BarChartOutlined className="tab-icon" />
               <span>平均速度</span>
             </button>
             <button
               className={`ladder-tab-btn ${speedType === 'max' ? 'active' : ''}`}
               onClick={() => setSpeedType('max')}
             >
-              <span className="tab-icon">🏆</span>
+              <TrophyOutlined className="tab-icon" />
               <span>最高速度</span>
             </button>
           </div>
           <div className="ladder-legend">
             <span className="legend-item">
-              <span className="legend-icon">🎯</span>
+              <AimOutlined className="legend-icon" />
               <span>悬停查看详情</span>
             </span>
           </div>
         </div>
-      </div>
+      }
+    >
       <div className="ladder-chart">
         {ladderData.map(({ range, users, actualMax }, index) => {
           const mid = Math.round((range.min + actualMax) / 2);
@@ -309,7 +331,7 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -564,7 +586,7 @@ const BonusExplanation: React.FC = () => {
   const bonuses = [
     {
       title: '打字进步分',
-      icon: '📈',
+      icon: <RiseOutlined style={{ fontSize: 18 }} />,
       description: '每次打字速度超过个人历史最高速度时，奖励',
       points: '+20分',
       pointsColor: '#3b82f6',
@@ -572,7 +594,7 @@ const BonusExplanation: React.FC = () => {
     },
     {
       title: '打字目标分',
-      icon: '🎯',
+      icon: <AimOutlined style={{ fontSize: 18 }} />,
       description: '达到新等级时，根据等级奖励对应积分',
       details: [
         { level: '打字小匠 (20-50 WPM)', points: '+100分' },
@@ -587,7 +609,7 @@ const BonusExplanation: React.FC = () => {
     },
     {
       title: '超越对手奖',
-      icon: '⚔️',
+      icon: <TrophyOutlined style={{ fontSize: 18 }} />,
       description: '超越排行榜中你前一名的对手时获得',
       points: '+20分',
       pointsColor: '#ef4444',
@@ -618,7 +640,7 @@ const BonusExplanation: React.FC = () => {
                       <div className="rule-item-header">
                         <span className="rule-dot" />
                         <span className="rule-title">
-                          <span style={{ marginRight: 8 }}>{bonus.icon}</span>
+                          <span style={{ marginRight: 8, display: 'inline-flex', alignItems: 'center' }}>{bonus.icon}</span>
                           {bonus.title}
                         </span>
                       </div>

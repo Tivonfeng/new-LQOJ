@@ -4,6 +4,7 @@ import './typing-profile.page.css';
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   ArrowLeftOutlined,
+  FileTextOutlined,
   LineChartOutlined,
   ThunderboltOutlined,
   TrophyOutlined,
@@ -343,7 +344,7 @@ const TypingProfileApp: React.FC<TypingProfileAppProps> = ({
               </>
             ) : (
               <div className="empty-state">
-                <div className="empty-icon">📋</div>
+                <FileTextOutlined className="empty-icon" style={{ fontSize: 48, color: '#9ca3af', opacity: 0.5 }} />
                 <Text type="secondary">暂无记录</Text>
               </div>
             )}

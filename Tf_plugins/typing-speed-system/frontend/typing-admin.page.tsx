@@ -8,6 +8,7 @@ import {
   CloseCircleOutlined,
   DeleteOutlined,
   EditOutlined,
+  FileTextOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   UserOutlined,
@@ -528,7 +529,7 @@ const TypingAdminApp: React.FC = () => {
             <div className="records-list">
               {pageRecords.length === 0 && (
                 <div className="empty-panel">
-                  <div className="empty-icon">📋</div>
+                  <FileTextOutlined className="empty-icon" style={{ fontSize: 48, color: '#9ca3af', opacity: 0.5 }} />
                   <p className="empty-text">暂无记录</p>
                 </div>
               )}

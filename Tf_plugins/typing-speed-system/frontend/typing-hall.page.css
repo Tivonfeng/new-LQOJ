@@ -219,9 +219,9 @@ body {
 .section-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 20px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 16px;
 }
 
@@ -230,6 +230,29 @@ body {
     font-weight: 700;
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+.ladder-section-card {
+    margin-bottom: 32px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.ladder-section-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.ladder-section-card .ant-card-body {
+    padding: 24px;
+}
+
+.ladder-section-card .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 24px;
+}
+
+.ladder-section-card .ant-card-head-title {
+    padding: 0;
 }
 
 .tab-btn {
@@ -464,6 +487,8 @@ body {
 
 .tab-icon {
     font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
 }
 
 .ladder-legend {
@@ -491,7 +516,9 @@ body {
 .legend-icon {
     font-size: 1.15rem;
     flex-shrink: 0;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    display: inline-flex;
+    align-items: center;
+    color: var(--primary-color);
 }
 
 .ladder-chart {
@@ -575,7 +602,7 @@ body {
 }
 
 .ladder-label {
-    width: 130px;
+    width: 160px;
     flex-shrink: 0;
     padding-right: 12px;
 }
@@ -584,28 +611,30 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
+    padding: 12px 16px;
     border-radius: 12px;
-    background: var(--bg-secondary);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-    border: 1px solid transparent;
-    min-height: 50px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(59, 130, 246, 0.02) 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    min-height: 56px;
     width: 100%;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .level-badge:hover {
-    background: var(--bg-tertiary);
-    border-color: rgba(59, 130, 246, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border-color: rgba(59, 130, 246, 0.25);
+    transform: translateY(-2px) translateX(2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 .level-icon {
-    font-size: 1.3rem;
     flex-shrink: 0;
     width: 28px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
 }
 
 .level-text {
