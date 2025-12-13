@@ -39,6 +39,64 @@ function serializeForJSON(obj: any): any {
 }
 
 /**
+ * 跨域查询用户的 displayName
+ * 由于积分是全域统一的，但 displayName 是每个域都可以设置的，
+ * 所以需要跨域查询，找到任意一个域有设置的就使用
+ *
+ * @param ctx - Handler 的上下文对象
+ * @param uids - 用户ID数组
+ * @param currentDomainId - 当前域ID（优先使用当前域的 displayName）
+ * @returns 返回一个 Map，key 是 uid（数字），value 是 displayName（如果有的话）
+ */
+async function getCrossDomainDisplayNames(
+    ctx: any,
+    uids: number[],
+    currentDomainId: string,
+): Promise<Map<number, string>> {
+    const displayNameMap = new Map<number, string>();
+
+    if (!uids || uids.length === 0) {
+        return displayNameMap;
+    }
+
+    try {
+        const domainUserCollection = ctx.db.collection('domain.user');
+
+        // 优先查询当前域的用户 displayName
+        const currentDomainUsers = await domainUserCollection.find({
+            domainId: currentDomainId,
+            uid: { $in: uids },
+            displayName: { $exists: true, $ne: null, $nin: [null, ''] },
+        }).toArray() as any[];
+
+        for (const domainUser of currentDomainUsers) {
+            if (domainUser?.displayName && !displayNameMap.has(domainUser.uid)) {
+                displayNameMap.set(domainUser.uid, domainUser.displayName);
+            }
+        }
+
+        // 对于还没有 displayName 的用户，查询其他域
+        const remainingUids = uids.filter((userId) => !displayNameMap.has(userId));
+        if (remainingUids.length > 0) {
+            const allDomainUsers = await domainUserCollection.find({
+                uid: { $in: remainingUids },
+                displayName: { $exists: true, $ne: null, $nin: [null, ''] },
+            }).toArray() as any[];
+
+            for (const domainUser of allDomainUsers) {
+                if (domainUser?.displayName && !displayNameMap.has(domainUser.uid)) {
+                    displayNameMap.set(domainUser.uid, domainUser.displayName);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('[ScoreSystem] getCrossDomainDisplayNames failed', { uids, error: (error as any)?.message });
+    }
+
+    return displayNameMap;
+}
+
+/**
  * 积分大厅处理器
  * 路由: /score/hall
  * 功能: 积分系统总入口，展示用户积分概览、排行榜、今日统计
@@ -106,15 +164,26 @@ export class ScoreHallHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const rawUdocs = await UserModel.getList(this.domain._id, allUids);
 
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            allUids,
+            this.domain._id,
+        );
+
         // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
         const udocs: Record<string, any> = {};
         for (const userId in rawUdocs) {
             const user = rawUdocs[userId];
             const uidKey = String(userId); // 确保 key 是字符串
+            const userIdNum = Number(userId);
             // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
             const bio = (user as any).bio || null;
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
             udocs[uidKey] = {
                 ...user,
+                displayName: finalDisplayName, // 使用跨域查询的 displayName（如果当前域没有）
                 avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
                 bio, // 用户简介
             };
@@ -219,7 +288,28 @@ export class ScoreRecordsHandler extends Handler {
         // 获取涉及的用户信息
         const uids = [...new Set(records.map((r) => r.uid))];
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const rawUdocs = await UserModel.getList(this.domain._id, uids);
+
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            uids,
+            this.domain._id,
+        );
+
+        // 补充跨域查询的 displayName
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId);
+            const userIdNum = Number(userId);
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
+            udocs[uidKey] = {
+                ...user,
+                displayName: finalDisplayName,
+            };
+        }
 
         // 格式化记录
         const formattedRecords = records.map((record) => ({
@@ -307,15 +397,26 @@ export class ScoreRankingHandler extends Handler {
 
         const rawUdocs = await UserModel.getList(this.domain._id, uids);
 
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            uids,
+            this.domain._id,
+        );
+
         // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
         const udocs: Record<string, any> = {};
         for (const userId in rawUdocs) {
             const user = rawUdocs[userId];
             const uidKey = String(userId); // 确保 key 是字符串
+            const userIdNum = Number(userId);
             // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
             const bio = (user as any).bio || null;
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
             udocs[uidKey] = {
                 ...user,
+                displayName: finalDisplayName, // 使用跨域查询的 displayName（如果当前域没有）
                 avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
                 bio, // 用户简介
             };

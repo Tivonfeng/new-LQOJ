@@ -465,10 +465,26 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
   const chartRef = React.useRef<Chart | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || !weeklyTrend || weeklyTrend.length === 0) return;
+    if (!canvasRef.current || !weeklyTrend || weeklyTrend.length === 0) {
+      return () => {
+        // 清理函数：如果条件不满足，确保清理已存在的图表
+        if (chartRef.current) {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+      };
+    }
 
     const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return () => {
+        // 清理函数：如果无法获取上下文，确保清理已存在的图表
+        if (chartRef.current) {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+      };
+    }
 
     // 销毁旧图表
     if (chartRef.current) {
@@ -510,6 +526,7 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
     return () => {
       if (chartRef.current) {
         chartRef.current.destroy();
+        chartRef.current = null;
       }
     };
   }, [weeklyTrend]);
