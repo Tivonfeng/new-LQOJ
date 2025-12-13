@@ -142,7 +142,8 @@ export class ScoreHallHandler extends Handler {
 
         recentRecords = rawRecords.map((record) => ({
             ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
+            createdAt: record.createdAt.toISOString(), // 返回ISO字符串，前端可以解析
+            createdAtFormatted: record.createdAt.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
@@ -312,10 +313,11 @@ export class ScoreRecordsHandler extends Handler {
             };
         }
 
-        // 格式化记录
+        // 格式化记录，同时保留原始时间戳用于前端计算相对时间
         const formattedRecords = records.map((record) => ({
             ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
+            createdAt: record.createdAt.toISOString(), // 返回ISO字符串，前端可以解析
+            createdAtFormatted: record.createdAt.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',

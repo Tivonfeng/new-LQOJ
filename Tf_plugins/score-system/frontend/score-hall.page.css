@@ -454,11 +454,15 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+.content-card .ant-card-body {
+  padding: 20px;
+}
+
 /* Record Items */
 .record-item {
   transition: all 0.3s ease;
   border-radius: 8px;
-  padding: 12px;
+  padding: 12px 16px;
   margin-bottom: 8px;
 }
 

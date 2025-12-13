@@ -35,6 +35,44 @@ import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
 
+/**
+ * 计算相对时间显示
+ * 24小时内显示相对时间（如"2小时前"），超过24小时显示格式化时间
+ */
+function formatRelativeTime(isoString: string, formattedTime?: string): string {
+  try {
+    const recordTime = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - recordTime.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    // 如果超过24小时，返回格式化时间
+    if (diffHours >= 24) {
+      return formattedTime || recordTime.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    // 计算相对时间
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      if (diffMinutes < 1) {
+        return '刚刚';
+      }
+      return `${diffMinutes}分钟前`;
+    } else {
+      const hours = Math.floor(diffHours);
+      return `${hours}小时前`;
+    }
+  } catch (error) {
+    // 如果解析失败，返回格式化时间或原始字符串
+    return formattedTime || isoString;
+  }
+}
+
 interface ScoreHallData {
   userScore: {
     totalScore: number;
@@ -47,6 +85,7 @@ interface ScoreHallData {
     score: number;
     reason: string;
     createdAt: string;
+    createdAtFormatted?: string;
     pid: number;
     category?: string;
     title?: string;
@@ -620,7 +659,7 @@ const ScoreHallApp: React.FC = () => {
                               </Tag>
                             </div>
                             <Text type="secondary" className="record-time">
-                              {record.createdAt}
+                              {formatRelativeTime(record.createdAt, record.createdAtFormatted)}
                             </Text>
                           </div>
                         }
