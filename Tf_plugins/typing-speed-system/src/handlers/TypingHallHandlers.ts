@@ -110,11 +110,9 @@ export class TypingHallHandler extends Handler {
     }
 }
 
-/**
- * 完整排行榜处理器
- * 路由: /typing/ranking
- * 功能: 显示完整的排行榜，支持分页和多种排序方式
- */
+// 排行榜功能已集成到打字大厅页面，不再需要单独的排行榜页面
+// 如需恢复，可以取消下面的注释
+/*
 export class TypingRankingHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
@@ -160,3 +158,4 @@ export class TypingRankingHandler extends Handler {
         };
     }
 }
+*/

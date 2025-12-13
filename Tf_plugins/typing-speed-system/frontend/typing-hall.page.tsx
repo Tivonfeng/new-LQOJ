@@ -1,11 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
+import './typing-hall.page.css';
+
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   ArrowRightOutlined,
   GiftOutlined,
   PlayCircleOutlined,
+  SettingOutlined,
   ThunderboltOutlined,
   TrophyOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { Button, Card, Col, Collapse, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
 import { Chart, registerables } from 'chart.js';
@@ -462,11 +466,6 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
         </div>
       }
       className="content-card"
-      extra={
-        <a href="/typing/ranking" style={{ fontSize: 12 }}>
-          查看全部 →
-        </a>
-      }
     >
       {filteredRanking && filteredRanking.length > 0 ? (
         <>
@@ -916,6 +915,7 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
   userSpeedPoints,
   weeklyTrend,
   udocs,
+  canManage,
   isLoggedIn,
   currentUserId,
 }) => {
@@ -943,6 +943,52 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
           isLoggedIn={isLoggedIn}
         />
       )}
+
+      {/* Hero Section - 参考积分大厅设计 */}
+      <Card className="hero-card" bordered={false}>
+        <div className="hero-content-wrapper">
+          <div className="hero-main-content">
+            <div className="hero-text-section">
+              <Title level={2} className="hero-title">
+                打字大厅
+              </Title>
+              <Text className="hero-subtitle">追踪你的打字进步</Text>
+            </div>
+            <div className="hero-stats-section">
+              <div className="hero-stat-item">
+                <div className="hero-stat-icon">
+                  <ThunderboltOutlined />
+                </div>
+                <div className="hero-stat-content">
+                  <div className="hero-stat-value">{_globalStats?.maxWpm || 0}</div>
+                  <div className="hero-stat-label">最高速度</div>
+                </div>
+              </div>
+              <div className="hero-stat-item">
+                <div className="hero-stat-icon">
+                  <UserOutlined />
+                </div>
+                <div className="hero-stat-content">
+                  <div className="hero-stat-value">{_globalStats?.totalUsers || 0}</div>
+                  <div className="hero-stat-label">总用户数</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {isLoggedIn && canManage && (
+            <div className="hero-actions-section">
+              <Button
+                type="default"
+                icon={<SettingOutlined />}
+                href="/typing/admin"
+                className="hero-action-btn"
+              >
+                管理面板
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* 奖励系统说明 */}
       <BonusExplanation />

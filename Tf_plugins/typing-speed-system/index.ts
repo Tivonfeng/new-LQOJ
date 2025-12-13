@@ -3,7 +3,6 @@ import {
     TypingAdminHandler,
     TypingHallHandler,
     TypingProfileHandler,
-    TypingRankingHandler,
 } from './src/handlers';
 import type {
     TypingRecord,
@@ -160,7 +159,6 @@ export default async function apply(ctx: Context, config: any = {}) {
     // 注册路由
     ctx.Route('typing_hall', '/typing/hall', TypingHallHandler);
     ctx.Route('typing_profile', '/typing/me', TypingProfileHandler);
-    ctx.Route('typing_ranking', '/typing/ranking', TypingRankingHandler);
     ctx.Route('typing_admin', '/typing/admin', TypingAdminHandler);
 
     // 注入导航栏
