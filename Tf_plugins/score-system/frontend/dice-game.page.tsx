@@ -19,7 +19,6 @@ import {
   TrophyOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
-import { WalletFloatingBall } from './components/WalletFloatingBall';
 import { animated, useSpring } from '@react-spring/web';
 import {
   Alert,
@@ -38,6 +37,7 @@ import {
 } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 
 const { Title, Text } = Typography;
 
@@ -130,7 +130,7 @@ const DiceGameApp: React.FC = () => {
     currentCoins: 0,
     canPlay: false,
     availableBets: [],
-    gameConfig: { winMultiplier: 2, availableBets: [20, 50, 100] },
+    gameConfig: { winMultiplier: 2, availableBets: [10, 20, 50] },
     userStats: { totalGames: 0, totalWins: 0, netProfit: 0, winStreak: 0, maxWinStreak: 0 },
     winRate: '0.0',
     recentGames: [],

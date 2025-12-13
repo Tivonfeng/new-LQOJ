@@ -221,8 +221,8 @@ export class DicePlayHandler extends Handler {
             }
 
             const betAmountNum = Number.parseInt(betAmount);
-            if (!betAmountNum || ![20, 50, 100].includes(betAmountNum)) {
-                this.response.body = { success: false, message: '无效的投注金额，请选择20、50或100积分' };
+            if (!betAmountNum || ![10, 20, 50].includes(betAmountNum)) {
+                this.response.body = { success: false, message: '无效的投注金额，请选择10、20或50积分' };
                 this.response.type = 'application/json';
                 return;
             }
