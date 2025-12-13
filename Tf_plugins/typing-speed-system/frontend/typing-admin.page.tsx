@@ -1,19 +1,65 @@
 /* eslint-disable react-refresh/only-export-components */
+import './typing-admin.page.css';
+
 import { addPage, NamedPage, UserSelectAutoComplete } from '@hydrooj/ui-default';
+import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  ReloadOutlined,
+  ThunderboltOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Input,
+  Space,
+  Typography,
+} from 'antd';
 import $ from 'jquery';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+
+const { Title, Text } = Typography;
+
+interface TypingRecord {
+  _id: string;
+  uid: string;
+  wpm: number;
+  note?: string;
+  createdAt: string;
+}
+
+interface UserMap {
+  [key: string]: {
+    uname?: string;
+    displayName?: string;
+  };
+}
 
 // 打字速度管理React组件
 const TypingAdminApp: React.FC = () => {
   const [username, setUsername] = useState('');
   const [wpm, setWpm] = useState('');
   const [note, setNote] = useState('');
-  const [csvData, setCsvData] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addRecordMessage, setAddRecordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [recentUsers, setRecentUsers] = useState<string[]>([]);
+
+  // 从全局变量获取最近记录数据
+  const [records] = useState<TypingRecord[]>(() => {
+    const raw = (window as any).TypingAdminRecentRecords?.records;
+    return Array.isArray(raw) ? raw : [];
+  });
+  const [userMap] = useState<UserMap>(() => {
+    const raw = (window as any).TypingAdminRecentRecords?.users;
+    return raw && typeof raw === 'object' ? raw : {};
+  });
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
@@ -193,23 +239,18 @@ const TypingAdminApp: React.FC = () => {
     }
   }, [username, wpm, note, addToRecentUsers]);
 
-  // 提交批量导入
-  const handleImportCSV = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setImportMessage(null);
+  // 返回打字大厅
+  const handleGoToHall = useCallback(() => {
+    const url = (window as any).typingHallUrl || '/typing/hall';
+    window.location.href = url;
+  }, []);
 
-    if (!csvData.trim()) {
-      setImportMessage({ type: 'error', text: 'CSV数据为空' });
+  // 删除记录
+  const handleDeleteRecord = useCallback(async (recordId: string, userName: string) => {
+    // eslint-disable-next-line no-alert
+    if (!confirm(`确认删除 ${userName} 的记录？`)) {
       return;
     }
-
-    // 前端调试信息
-    const lines = csvData.trim().split('\n');
-    console.log('[Typing Admin] CSV Import - Total lines:', lines.length);
-    console.log('[Typing Admin] CSV Import - First line:', lines[0]);
-    console.log('[Typing Admin] CSV Import - Data preview:', csvData.substring(0, 200));
-
-    setIsSubmitting(true);
 
     try {
       const response = await fetch(window.location.pathname, {
@@ -218,179 +259,311 @@ const TypingAdminApp: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'import_csv',
-          csvData,
+          action: 'delete_record',
+          recordId,
         }),
       });
 
       const result = await response.json();
-      console.log('[Typing Admin] CSV Import - Server response:', result);
-
       if (result.success) {
-        let message = result.message;
-        if (result.data && result.data.errors && result.data.errors.length > 0) {
-          message += `\n\n错误:\n${result.data.errors.slice(0, 5).join('\n')}`;
-          if (result.data.errors.length > 5) {
-            message += `\n...(和 ${result.data.errors.length - 5} 更多)`;
-          }
-        }
-        setImportMessage({ type: 'success', text: message });
-        setCsvData('');
-
-        // 只有在成功导入了至少1条记录时才刷新
-        if (result.data && result.data.success > 0) {
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        }
+        window.location.reload();
       } else {
-        setImportMessage({ type: 'error', text: result.message });
+        // eslint-disable-next-line no-alert
+        alert(`删除失败: ${result.message}`);
       }
     } catch (error) {
-      console.error('[Typing Admin] Import CSV error:', error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      setImportMessage({ type: 'error', text: `网络错误: ${errorMsg}` });
-    } finally {
-      setIsSubmitting(false);
+      console.error('[Typing Admin] Delete error:', error);
+      // eslint-disable-next-line no-alert
+      alert('网络错误');
     }
-  }, [csvData]);
-
-  // 下载模板
-  const handleDownloadTemplate = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const csvContent = 'username,wpm,note\nstudent1,45,Class test\nstudent2,62,\nstudent3,38,Practice';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'typing_import_template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
   }, []);
 
+  // 重新计算统计
+  const handleRecalculateStats = useCallback(async () => {
+    // eslint-disable-next-line no-alert
+    if (!confirm('这将重新计算所有用户的统计数据。继续吗？')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'recalculate_stats',
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // eslint-disable-next-line no-alert
+        alert(result.message);
+        window.location.reload();
+      } else {
+        // eslint-disable-next-line no-alert
+        alert(`错误: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('[Typing Admin] Recalculate error:', error);
+      // eslint-disable-next-line no-alert
+      alert('网络错误');
+    }
+  }, []);
+
+  // 格式化时间
+  const formatTime = useCallback((value?: string) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) {
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${m}/${day} ${hh}:${mm}`;
+    }
+    return value;
+  }, []);
+
+  // 侧边栏记录渲染
+  const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+  const pageSafe = Math.min(totalPages, Math.max(1, page));
+  const pageRecords = records.slice((pageSafe - 1) * pageSize, pageSafe * pageSize);
+
+  const renderRecord = useCallback((record: TypingRecord) => {
+    const user = userMap?.[record.uid];
+    const displayName = user?.displayName || user?.uname || record.uid;
+    return (
+      <div className="record-item" key={record._id}>
+        <div className="record-main">
+          <div className="record-user">
+            <span className="record-name">{displayName}</span>
+          </div>
+          <div className="record-wpm">{record.wpm} WPM</div>
+        </div>
+        <div className="record-footer">
+          <span className="record-note">{record.note || '-'}</span>
+          <span className="record-time">{formatTime(record.createdAt)}</span>
+        </div>
+        <div className="record-actions">
+          <Button
+            type="text"
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            className="delete-record-btn"
+            onClick={() => handleDeleteRecord(record._id, displayName)}
+          >
+            删除
+          </Button>
+        </div>
+      </div>
+    );
+  }, [formatTime, userMap, handleDeleteRecord]);
+
   return (
-    <div className="typing-admin-react-app">
-      <div className="admin-grid">
-        {/* 添加单条记录 */}
-        <div className="admin-card">
-          <h2>添加单条记录</h2>
-
-          {/* 最近用户快捷选择 */}
-          {recentUsers.length > 0 && (
-            <div className="recent-users-section">
-              <div className="recent-users-header">
-                <span className="recent-icon">👥</span>
-                <span className="recent-title">最近用户</span>
+    <div className="typing-admin-container">
+      <div className="typing-admin-grid">
+        <div className="main-column">
+          {/* Hero Section */}
+          <Card className="hero-card" bordered={false}>
+            <div className="hero-content">
+              <div className="hero-text">
+                <Title level={2} className="hero-title">
+                  打字速度管理
+                </Title>
+                <Text className="hero-subtitle">管理员打字速度记录工具</Text>
               </div>
-              <div className="recent-users-list">
-                {recentUsers.map((user, index) => (
-                  <button
-                    key={`${user}-${index}`}
-                    type="button"
-                    className={`recent-user-btn ${username === user ? 'active' : ''}`}
-                    onClick={() => handleSelectRecentUser(user)}
+              <div className="hero-actions">
+                <Space>
+                  <Button
+                    type="default"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={handleGoToHall}
+                    className="hero-action-btn"
                   >
-                    <span className="user-btn-icon">👤</span>
-                    <span>{user}</span>
-                  </button>
-                ))}
+                    返回打字大厅
+                  </Button>
+                </Space>
               </div>
             </div>
-          )}
+          </Card>
 
-          <form onSubmit={handleAddRecord} noValidate>
-            <div className="form-group">
-              <label>用户名 <span className="required-mark">*</span></label>
-              <input
-                ref={usernameInputRef}
-                type="text"
-                name="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="form-input"
-                placeholder="输入用户名"
-                autoComplete="off"
-              />
-              <div className="form-hint">开始输入以搜索用户</div>
-            </div>
+          {/* 添加单条记录 */}
+          <Card
+            className="section-card add-record-card"
+            title={
+              <Space>
+                <EditOutlined />
+                <span>添加单条记录</span>
+              </Space>
+            }
+          >
+            <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
+              选择用户并添加打字速度记录
+            </Text>
+            <form onSubmit={handleAddRecord} className="typing-form">
+              <div className="form-grid two-rows">
+                <div className="form-group">
+                  <label className="form-label">
+                    <UserOutlined />
+                    <span>用户名</span>
+                  </label>
+                  <input
+                    ref={usernameInputRef}
+                    type="text"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="ant-input ant-input-lg"
+                    placeholder="搜索并选择用户..."
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d9d9d9' }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                    输入用户名进行搜索
+                  </Text>
+                </div>
 
-            <div className="form-group">
-              <label>WPM (每分钟字数) <span className="required-mark">*</span></label>
-              <input
-                type="number"
-                name="wpm"
-                value={wpm}
-                onChange={(e) => setWpm(e.target.value)}
-                className="form-input"
-                placeholder="0-300"
-                min="0"
-                max="300"
-              />
-            </div>
+                <div className="form-group recent-users-column">
+                  <label className="form-label">
+                    <UserOutlined />
+                    <span>最近操作的用户</span>
+                  </label>
+                  {recentUsers.length > 0 ? (
+                    <div className="recent-users-inline">
+                      <Space wrap size={[8, 8]}>
+                        {recentUsers.map((user, index) => (
+                          <Button
+                            key={`${user}-${index}`}
+                            type={username === user ? 'primary' : 'default'}
+                            icon={<UserOutlined />}
+                            size="small"
+                            className={`user-quick-btn-inline ${username === user ? 'active' : ''}`}
+                            onClick={() => handleSelectRecentUser(user)}
+                          >
+                            {user}
+                          </Button>
+                        ))}
+                      </Space>
+                    </div>
+                  ) : (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      暂无最近记录
+                    </Text>
+                  )}
+                </div>
 
-            <div className="form-group">
-              <label>备注 (可选)</label>
-              <input
-                type="text"
-                name="note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="form-input"
-                placeholder="例如: 课堂测试"
-              />
-            </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    <ThunderboltOutlined />
+                    <span>WPM (每分钟字数)</span>
+                  </label>
+                  <Input
+                    type="number"
+                    name="wpm"
+                    value={wpm}
+                    onChange={(e) => setWpm(e.target.value)}
+                    placeholder="0-300"
+                    min="0"
+                    max="300"
+                    size="large"
+                    required
+                  />
+                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                    范围：0-300 WPM
+                  </Text>
+                </div>
 
-            <button type="submit" className="submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? '添加中...' : '添加记录'}
-            </button>
+                <div className="form-group">
+                  <label className="form-label">
+                    <EditOutlined />
+                    <span>备注 (可选)</span>
+                  </label>
+                  <Input
+                    type="text"
+                    name="note"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="例如: 课堂测试"
+                    size="large"
+                  />
+                </div>
+              </div>
 
+              <div className="form-actions">
+                <Button
+                  type="primary"
+                  icon={isSubmitting ? <ReloadOutlined spin /> : <ThunderboltOutlined />}
+                  htmlType="submit"
+                  size="large"
+                  loading={isSubmitting}
+                  className="submit-btn"
+                >
+                  {isSubmitting ? '添加中...' : '添加记录'}
+                </Button>
+              </div>
+            </form>
+
+            {/* 结果显示 */}
             {addRecordMessage && (
-              <div className={`message ${addRecordMessage.type}`}>
-                {addRecordMessage.text}
+              <div className={`result-message ${addRecordMessage.type === 'success' ? 'success' : 'error'}`}>
+                {addRecordMessage.type === 'success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                <span>{addRecordMessage.text}</span>
               </div>
             )}
-          </form>
+          </Card>
         </div>
 
-        {/* 批量导入 */}
-        <div className="admin-card">
-          <h2>批量导入 (CSV)</h2>
-          <div className="import-info">
-            <p>CSV格式:</p>
-            <code>
-              username,wpm,note<br />
-              student1,45,课堂测试<br />
-              student2,62,<br />
-              student3,38,练习
-            </code>
-            <a href="#" onClick={handleDownloadTemplate} className="download-link">
-              下载模板
-            </a>
-          </div>
-
-          <form onSubmit={handleImportCSV} noValidate>
-            <div className="form-group">
-              <label>CSV数据 <span className="required-mark">*</span></label>
-              <textarea
-                name="csvData"
-                value={csvData}
-                onChange={(e) => setCsvData(e.target.value)}
-                className="form-textarea"
-                rows={10}
-                placeholder="在此粘贴CSV数据..."
-              />
+        <div className="sidebar-column">
+          <Card
+            className="section-card records-card"
+            title={
+              <Space>
+                <ThunderboltOutlined />
+                <span>最近记录</span>
+              </Space>
+            }
+          >
+            <div className="records-list">
+              {pageRecords.length === 0 && (
+                <div className="empty-panel">
+                  <div className="empty-icon">📋</div>
+                  <p className="empty-text">暂无记录</p>
+                </div>
+              )}
+              {pageRecords.map(renderRecord)}
             </div>
-
-            <button type="submit" className="submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? '导入中...' : '导入记录'}
-            </button>
-
-            {importMessage && (
-              <div className={`message ${importMessage.type}`}>
-                {importMessage.text}
+            {records.length > pageSize && (
+              <div className="records-pagination">
+                <Button
+                  className="pagination-btn"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pageSafe <= 1}
+                >
+                  上一页
+                </Button>
+                <div className="pagination-info">
+                  <span className="current-page">{pageSafe}</span> / <span className="total-pages">{totalPages}</span>
+                </div>
+                <Button
+                  className="pagination-btn"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={pageSafe >= totalPages}
+                >
+                  下一页
+                </Button>
               </div>
             )}
-          </form>
+            <Button
+              type="default"
+              icon={<ReloadOutlined />}
+              onClick={handleRecalculateStats}
+              className="recalculate-btn"
+            >
+              重新计算统计
+            </Button>
+          </Card>
         </div>
       </div>
     </div>
