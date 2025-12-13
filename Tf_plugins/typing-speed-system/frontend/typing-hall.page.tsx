@@ -18,7 +18,7 @@ import {
   TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Collapse, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
+import { Button, Card, Col, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
 import { Chart, registerables } from 'chart.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -584,11 +584,15 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
 // 趋势图表组件（支持周趋势和月趋势）
 interface TrendChartProps {
   weeklyTrend: TrendData[];
+  globalStats?: {
+    maxWpm?: number;
+    avgWpm?: number;
+  };
 }
 
 type TrendType = 'week' | 'month';
 
-const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend }) => {
+const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend, globalStats }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const chartRef = React.useRef<Chart | null>(null);
   const [trendType, setTrendType] = useState<TrendType>('week');
@@ -749,7 +753,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend }) => {
             <BarChartOutlined style={{ fontSize: 40, color: '#fff' }} />
           </div>
           <div className="game-card-title-section">
-            <Title level={4} className="game-card-title">趋势分析</Title>
+            <Title level={4} className="game-card-title">全校打字速度趋势分析</Title>
             <Text className="game-card-subtitle">平均速度变化</Text>
           </div>
         </div>
@@ -769,9 +773,32 @@ const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend }) => {
         </div>
         <div className="game-card-body">
           <div className="trend-chart">
-            <canvas ref={canvasRef} width="400" height="250"></canvas>
+            <canvas ref={canvasRef} width="400" height="180"></canvas>
           </div>
         </div>
+        {/* 统计信息 */}
+        {globalStats && (
+          <div className="trend-stats">
+            <div className="trend-stat-item">
+              <div className="trend-stat-icon">
+                <ThunderboltOutlined />
+              </div>
+              <div className="trend-stat-content">
+                <div className="trend-stat-value">{globalStats.maxWpm || 0} WPM</div>
+                <div className="trend-stat-label">全校最高速度</div>
+              </div>
+            </div>
+            <div className="trend-stat-item">
+              <div className="trend-stat-icon">
+                <BarChartOutlined />
+              </div>
+              <div className="trend-stat-content">
+                <div className="trend-stat-value">{globalStats.avgWpm || 0} WPM</div>
+                <div className="trend-stat-label">全校平均速度</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -780,9 +807,13 @@ const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend }) => {
 // 奖励说明组件
 interface BonusExplanationProps {
   weeklyTrend: TrendData[];
+  globalStats?: {
+    maxWpm?: number;
+    avgWpm?: number;
+  };
 }
 
-const BonusExplanation: React.FC<BonusExplanationProps> = ({ weeklyTrend }) => {
+const BonusExplanation: React.FC<BonusExplanationProps> = ({ weeklyTrend, globalStats }) => {
   const bonuses = [
     {
       title: '打字进步分',
@@ -821,138 +852,131 @@ const BonusExplanation: React.FC<BonusExplanationProps> = ({ weeklyTrend }) => {
     <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
       {/* 奖励系统说明卡片 */}
       <Col xs={24} lg={16}>
-        <Collapse
-          className="content-card rules-card"
-          defaultActiveKey={['bonus']}
-          items={[
-            {
-              key: 'bonus',
-              label: (
-                <span>
-                  <GiftOutlined style={{ marginRight: 8 }} />
-                  奖励系统说明
-                </span>
-              ),
-              children: (
-                <div className="bonus-list">
-                  <Row gutter={[12, 12]}>
-                    {/* 第一行：打字进步分和超越对手奖 */}
-                    <Col xs={24} sm={12}>
-                      <Card className="bonus-item-card" bordered={false}>
-                        <div className="bonus-item-content">
-                          <div className="bonus-item-header">
-                            <div className="bonus-icon-wrapper">
-                              {bonuses[0].icon}
-                            </div>
-                            <div className="bonus-item-title-section">
-                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
-                                {bonuses[0].title}
-                              </Title>
-                              <Text type="secondary" className="bonus-item-desc">
-                                {bonuses[0].description}
-                              </Text>
-                            </div>
-                            <div className="bonus-points-badge">
-                              <Tag
-                                color={bonuses[0].pointsColor === '#3b82f6' ? 'blue' : 'red'}
-                                className="bonus-points-tag"
-                              >
-                                {bonuses[0].points}
-                              </Tag>
-                            </div>
-                          </div>
-                          <div className="bonus-example">
-                            <Text type="secondary" className="bonus-example-text">
-                              {bonuses[0].example}
+        <Card
+          className="content-card"
+          title={
+            <Space>
+              <GiftOutlined />
+              奖励系统说明
+            </Space>
+          }
+        >
+          <div className="bonus-list">
+            <Row gutter={[12, 12]}>
+              {/* 第一行：打字进步分和超越对手奖 */}
+              <Col xs={24} sm={12}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[0].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[0].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[0].description}
+                        </Text>
+                      </div>
+                      <div className="bonus-points-badge">
+                        <Tag
+                          color={bonuses[0].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                          className="bonus-points-tag"
+                        >
+                          {bonuses[0].points}
+                        </Tag>
+                      </div>
+                    </div>
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[0].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[2].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[2].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[2].description}
+                        </Text>
+                      </div>
+                      <div className="bonus-points-badge">
+                        <Tag
+                          color={bonuses[2].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                          className="bonus-points-tag"
+                        >
+                          {bonuses[2].points}
+                        </Tag>
+                      </div>
+                    </div>
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[2].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+            {/* 第二行：打字目标分 */}
+            <Row gutter={[12, 12]} style={{ marginTop: 12 }}>
+              <Col xs={24}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[1].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[1].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[1].description}
+                        </Text>
+                      </div>
+                    </div>
+                    {bonuses[1].details && (
+                      <div className="bonus-details-grid">
+                        {bonuses[1].details.map((detail, idx) => (
+                          <div key={idx} className="bonus-detail-item">
+                            <Text type="secondary" className="bonus-detail-level">
+                              {detail.level}
                             </Text>
+                            <Tag color="blue" className="bonus-detail-points">
+                              {detail.points}
+                            </Tag>
                           </div>
-                        </div>
-                      </Card>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Card className="bonus-item-card" bordered={false}>
-                        <div className="bonus-item-content">
-                          <div className="bonus-item-header">
-                            <div className="bonus-icon-wrapper">
-                              {bonuses[2].icon}
-                            </div>
-                            <div className="bonus-item-title-section">
-                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
-                                {bonuses[2].title}
-                              </Title>
-                              <Text type="secondary" className="bonus-item-desc">
-                                {bonuses[2].description}
-                              </Text>
-                            </div>
-                            <div className="bonus-points-badge">
-                              <Tag
-                                color={bonuses[2].pointsColor === '#3b82f6' ? 'blue' : 'red'}
-                                className="bonus-points-tag"
-                              >
-                                {bonuses[2].points}
-                              </Tag>
-                            </div>
-                          </div>
-                          <div className="bonus-example">
-                            <Text type="secondary" className="bonus-example-text">
-                              {bonuses[2].example}
-                            </Text>
-                          </div>
-                        </div>
-                      </Card>
-                    </Col>
-                  </Row>
-                  {/* 第二行：打字目标分 */}
-                  <Row gutter={[12, 12]} style={{ marginTop: 12 }}>
-                    <Col xs={24}>
-                      <Card className="bonus-item-card" bordered={false}>
-                        <div className="bonus-item-content">
-                          <div className="bonus-item-header">
-                            <div className="bonus-icon-wrapper">
-                              {bonuses[1].icon}
-                            </div>
-                            <div className="bonus-item-title-section">
-                              <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
-                                {bonuses[1].title}
-                              </Title>
-                              <Text type="secondary" className="bonus-item-desc">
-                                {bonuses[1].description}
-                              </Text>
-                            </div>
-                          </div>
-                          {bonuses[1].details && (
-                            <div className="bonus-details-grid">
-                              {bonuses[1].details.map((detail, idx) => (
-                                <div key={idx} className="bonus-detail-item">
-                                  <Text type="secondary" className="bonus-detail-level">
-                                    {detail.level}
-                                  </Text>
-                                  <Tag color="blue" className="bonus-detail-points">
-                                    {detail.points}
-                                  </Tag>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <div className="bonus-example">
-                            <Text type="secondary" className="bonus-example-text">
-                              {bonuses[1].example}
-                            </Text>
-                          </div>
-                        </div>
-                      </Card>
-                    </Col>
-                  </Row>
-                </div>
-              ),
-            },
-          ]}
-        />
+                        ))}
+                      </div>
+                    )}
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[1].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </div>
+        </Card>
       </Col>
 
       {/* 周趋势图表 */}
       <Col xs={24} lg={8}>
-        <TrendChart weeklyTrend={weeklyTrend} />
+        <TrendChart weeklyTrend={weeklyTrend} globalStats={globalStats} />
       </Col>
     </Row>
   );
@@ -1137,26 +1161,6 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
               </Title>
               <Text className="hero-subtitle">追踪你的打字进步</Text>
             </div>
-            <div className="hero-stats-section">
-              <div className="hero-stat-item">
-                <div className="hero-stat-icon">
-                  <ThunderboltOutlined />
-                </div>
-                <div className="hero-stat-content">
-                  <div className="hero-stat-value">{_globalStats?.maxWpm || 0}</div>
-                  <div className="hero-stat-label">最高速度</div>
-                </div>
-              </div>
-              <div className="hero-stat-item">
-                <div className="hero-stat-icon">
-                  <UserOutlined />
-                </div>
-                <div className="hero-stat-content">
-                  <div className="hero-stat-value">{_globalStats?.totalUsers || 0}</div>
-                  <div className="hero-stat-label">总用户数</div>
-                </div>
-              </div>
-            </div>
           </div>
           <div className="hero-actions-section">
             <Button
@@ -1186,7 +1190,7 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
       </Card>
 
       {/* 奖励系统说明 */}
-      <BonusExplanation weeklyTrend={weeklyTrend} />
+      <BonusExplanation weeklyTrend={weeklyTrend} globalStats={_globalStats} />
 
       {/* 天梯图 */}
       <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
