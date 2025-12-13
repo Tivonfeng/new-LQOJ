@@ -483,18 +483,19 @@
 }
 
 .record-item .ant-list-item-meta {
-  align-items: center;
+  align-items: flex-start;
 }
 
 .record-item .ant-list-item-meta-avatar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 2px;
 }
 
 .record-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e5e7eb;
@@ -505,11 +506,12 @@
 .record-avatar:hover {
   border-color: #6366f1;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transform: scale(1.05);
 }
 
 .record-badge {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -528,10 +530,109 @@
   border: 2px solid rgba(239, 68, 68, 0.3);
 }
 
-.record-score-inline {
+/* 记录头部布局优化 */
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.record-user-info {
   display: flex;
   align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.record-username {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.record-displayname {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* 积分徽章优化 */
+.record-score-badge {
+  display: inline-flex;
+  align-items: baseline;
   gap: 4px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.record-score-badge.score-positive {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.record-score-badge.score-negative {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.record-score-value {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.record-score-value.score-positive {
+  color: #10b981;
+}
+
+.record-score-value.score-negative {
+  color: #ef4444;
+}
+
+.record-score-unit {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+/* 描述区域优化 */
+.record-description {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.record-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.record-reason-tag,
+.record-category-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  margin: 0;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.record-time {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Leaderboard Items */

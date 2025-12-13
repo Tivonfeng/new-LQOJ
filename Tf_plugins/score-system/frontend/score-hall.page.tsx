@@ -580,50 +580,49 @@ const ScoreHallApp: React.FC = () => {
                           )
                         }
                         title={
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Space>
-                              <Text strong>
+                          <div className="record-header">
+                            <div className="record-user-info">
+                              <Text strong className="record-username">
                                 {user?.uname || `User ${record.uid}`}
-                                {user?.displayName && (
-                                  <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                    ({user.displayName})
-                                  </Text>
-                                )}
                               </Text>
-                            </Space>
-                            <div className="record-score-inline">
+                              {user?.displayName && (
+                                <Text type="secondary" className="record-displayname">
+                                  ({user.displayName})
+                                </Text>
+                              )}
+                            </div>
+                            <div className={`record-score-badge ${record.score > 0 ? 'score-positive' : 'score-negative'}`}>
                               <Text
                                 strong
-                                style={{
-                                  fontSize: 18,
-                                  color: record.score > 0 ? '#10b981' : '#ef4444',
-                                }}
+                                className={`record-score-value ${record.score > 0 ? 'score-positive' : 'score-negative'}`}
                               >
                                 {record.score > 0 ? '+' : ''}{record.score}
                               </Text>
-                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                              <Text type="secondary" className="record-score-unit">
                                 pts
                               </Text>
                             </div>
                           </div>
                         }
                         description={
-                          <Space wrap>
-                            <Tag color="default" style={{ fontSize: 11 }}>
-                              {record.reason || '积分调整'}
-                            </Tag>
-                            <Tag
-                              color={record.pid === 0 || record.category === '管理员操作' ? 'orange' : 'blue'}
-                              style={{ fontSize: 11 }}
-                            >
-                              {record.pid === 0 || record.category === '管理员操作'
-                                ? '管理员操作'
-                                : record.category || record.title || `Problem ${record.pid}`}
-                            </Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
+                          <div className="record-description">
+                            <div className="record-tags">
+                              <Tag color="default" className="record-reason-tag">
+                                {record.reason || '积分调整'}
+                              </Tag>
+                              <Tag
+                                color={record.pid === 0 || record.category === '管理员操作' ? 'orange' : 'blue'}
+                                className="record-category-tag"
+                              >
+                                {record.pid === 0 || record.category === '管理员操作'
+                                  ? '管理员操作'
+                                  : record.category || record.title || `Problem ${record.pid}`}
+                              </Tag>
+                            </div>
+                            <Text type="secondary" className="record-time">
                               {record.createdAt}
                             </Text>
-                          </Space>
+                          </div>
                         }
                       />
                     </List.Item>
