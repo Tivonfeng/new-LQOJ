@@ -1234,45 +1234,63 @@ body {
     color: var(--text-muted);
 }
 
-/* 奖励系统包装容器 - 侧边布局 */
-.bonus-system-wrapper {
+/* 奖励系统包装容器 - 使用 Ant Design Row/Col 布局，移除自定义 grid */
+
+
+/* 奖励系统说明 - 使用 Ant Design Collapse 组件，样式在 rules-card 中定义 */
+
+
+/* 规则卡片样式 - 参考积分大厅 */
+.rules-card .ant-collapse-header {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.rules-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 28px;
-    margin-bottom: 40px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
 }
 
-
-/* 奖励系统说明 */
-.bonus-section {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
-    border-radius: 24px;
-    padding: 16px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    animation: fadeInScale 0.6s ease-out;
-    transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.rule-item {
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
 }
 
-
-.bonus-section .section-header {
-    margin-bottom: 12px;
+.rule-item-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: 16px;
-    transition: margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.rule-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa 0%, #6366f1 100%);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.rule-title {
+    font-weight: 700;
+    color: #111827;
+}
+
+.rule-desc {
+    color: #374151;
+    line-height: 1.6;
+    font-size: 13px;
 }
 
 
 .bonus-section .section-header h2 {
-    font-size: 1.75rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
     margin: 0;
     white-space: nowrap;
     flex-shrink: 0;
@@ -1340,11 +1358,11 @@ body {
 }
 
 .bonus-card {
-    background: var(--bg-primary);
-    border-radius: 18px;
-    padding: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+    border: 1px solid #e5e7eb;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: visible;
@@ -1353,26 +1371,10 @@ body {
     min-height: auto;
 }
 
-.bonus-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-light), var(--primary-color));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.bonus-card:hover::before {
-    opacity: 1;
-}
-
 .bonus-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .bonus-header {
@@ -1471,87 +1473,166 @@ body {
 }
 
 
-/* 练习提示部分 */
-.bonus-practice-section {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
-    border-radius: 24px;
-    padding: 28px;
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    animation: fadeInScale 0.6s ease-out 0.1s backwards;
-    opacity: 1;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+/* Game Cards - 参考积分大厅样式 */
+.game-card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    height: 100%;
+    min-height: 280px;
 }
 
+.game-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
 
-.practice-content {
+.game-card .ant-card-body {
+    padding: 0;
+    height: 100%;
+}
+
+.game-card-content {
     display: flex;
     flex-direction: column;
+    height: 100%;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.game-card-header {
+    display: flex;
     align-items: center;
     gap: 16px;
-    text-align: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 20px;
 }
 
-.practice-content:hover {
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
-    transform: translateY(-2px);
-    border-color: rgba(34, 197, 94, 0.3);
-}
-
-.practice-icon {
-    font-size: 2.5rem;
+.game-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(12px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     flex-shrink: 0;
-    animation: float 3s ease-in-out infinite;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.practice-text {
+.game-card-title-section {
     flex: 1;
     min-width: 0;
 }
 
-.practice-text h3 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 8px;
+.game-card-title {
+    color: #fff !important;
+    margin: 0 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.practice-text p {
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin: 0;
+.game-card-subtitle {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 14px;
+    font-weight: 500;
+    display: block;
+    margin-top: 4px;
+}
+
+.game-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.game-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.game-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.game-info-text {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.game-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+}
+
+.game-action-btn {
+    height: 44px;
+    font-weight: 600;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+}
+
+/* 练习卡片 - 参考积分大厅的checkin-card样式 */
+.practice-card {
+    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    border: none;
+    box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+}
+
+.practice-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.practice-icon {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .practice-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    flex-shrink: 0;
-    white-space: nowrap;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
 }
 
 .practice-btn:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    color: white !important;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
 }
 
-.practice-btn:active {
-    transform: translateY(0);
-}
+
+/* practice-content 样式已由 game-card-content 继承 */
+
+/* practice-btn 样式已在上方定义 */
 
 .btn-icon {
     font-size: 1.1rem;
@@ -1589,6 +1670,44 @@ body {
     .content-grid {
         grid-template-columns: 1fr;
         gap: 24px;
+    }
+
+    .game-card {
+        min-height: auto;
+    }
+
+    .game-card-content {
+        padding: 20px;
+    }
+
+    .game-card-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .game-icon-wrapper {
+        width: 56px;
+        height: 56px;
+    }
+
+    .game-card-title {
+        font-size: 18px !important;
+    }
+
+    .game-card-subtitle {
+        font-size: 13px;
+    }
+
+    .game-info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .rules-grid {
+        grid-template-columns: 1fr;
     }
 
     .bonus-grid {

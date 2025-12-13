@@ -1,8 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
+import { ArrowRightOutlined, GiftOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Collapse, Row, Tag, Typography } from 'antd';
 import { Chart, registerables } from 'chart.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+
+const { Title, Text } = Typography;
 
 // 注册 Chart.js 组件
 Chart.register(...registerables);
@@ -355,8 +359,6 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
 
 // 奖励说明组件
 const BonusExplanation: React.FC = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
   const bonuses = [
     {
       title: '打字进步分',
@@ -392,66 +394,96 @@ const BonusExplanation: React.FC = () => {
   ];
 
   return (
-    <>
-      <div className={`bonus-system-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
-        <div className={`bonus-section ${isCollapsed ? 'collapsed' : ''}`}>
-          <div className="section-header">
-            <h2>🎁 奖励系统说明</h2>
-            <button
-              className={`bonus-collapse-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              aria-label={isCollapsed ? '展开奖励说明' : '折叠奖励说明'}
-            >
-              <span className="collapse-icon">{isCollapsed ? '▼' : '▲'}</span>
-            </button>
-          </div>
-
-          <div className={`bonus-grid ${isCollapsed ? 'hidden' : ''}`}>
-            {bonuses.map((bonus, index) => (
-              <div key={index} className="bonus-card">
-                <div className="bonus-header">
-                  <div className="bonus-icon">{bonus.icon}</div>
-                  <div className="bonus-header-content">
-                    <div className="bonus-title">{bonus.title}</div>
-                    <div className="bonus-description">{bonus.description}</div>
-                  </div>
-                </div>
-
-                {bonus.details ? (
-                  <div className="bonus-details">
-                    {bonus.details.map((detail, idx) => (
-                      <div key={idx} className="detail-item">
-                        <span className="detail-level">{detail.level}</span>
-                        <span className="detail-points">{detail.points}</span>
+    <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      {/* 奖励系统说明卡片 */}
+      <Col xs={24} lg={16}>
+        <Collapse
+          className="content-card rules-card"
+          defaultActiveKey={['bonus']}
+          items={[
+            {
+              key: 'bonus',
+              label: (
+                <span>
+                  <GiftOutlined style={{ marginRight: 8 }} />
+                  奖励系统说明
+                </span>
+              ),
+              children: (
+                <div className="rules-grid">
+                  {bonuses.map((bonus, index) => (
+                    <div key={index} className="rule-item">
+                      <div className="rule-item-header">
+                        <span className="rule-dot" />
+                        <span className="rule-title">
+                          <span style={{ marginRight: 8 }}>{bonus.icon}</span>
+                          {bonus.title}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bonus-points" style={{ color: bonus.pointsColor }}>
-                    {bonus.points}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                      <div className="rule-desc">{bonus.description}</div>
+                      {bonus.details ? (
+                        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {bonus.details.map((detail, idx) => (
+                            <Tag key={idx} color="blue" style={{ margin: 0 }}>
+                              {detail.level}: <strong>{detail.points}</strong>
+                            </Tag>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 8 }}>
+                          <Tag color={bonus.pointsColor === '#3b82f6' ? 'blue' : 'red'} style={{ fontSize: 16, padding: '4px 12px' }}>
+                            <strong>{bonus.points}</strong>
+                          </Tag>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ),
+            },
+          ]}
+        />
+      </Col>
 
-        {/* 练习提示部分 - 在奖励系统外面，同行显示 */}
-        <div className="bonus-practice-section">
-          <div className="practice-content">
-            <div className="practice-icon">🎮</div>
-            <div className="practice-text">
-              <h3>开始练习</h3>
-              <p>在打字练习网站上坚持训练，当有进步成绩时，请汇报给老师录入数据</p>
+      {/* 开始练习卡片 */}
+      <Col xs={24} lg={8}>
+        <Card className="game-card practice-card" bordered={false}>
+          <div className="game-card-content">
+            <div className="game-card-header">
+              <div className="game-icon-wrapper practice-icon">
+                <PlayCircleOutlined style={{ fontSize: 40, color: '#fff' }} />
+              </div>
+              <div className="game-card-title-section">
+                <Title level={4} className="game-card-title">开始练习</Title>
+                <Text className="game-card-subtitle">提升打字速度</Text>
+              </div>
             </div>
-            <a href="https://dazi.91xjr.com/" target="_blank" rel="noopener noreferrer" className="practice-btn">
-              前往练习网站
-              <span className="btn-icon">→</span>
-            </a>
+            <div className="game-card-body">
+              <div className="game-card-info">
+                <div className="game-info-item">
+                  <Text className="game-info-text">在打字练习网站上坚持训练，当有进步成绩时，请汇报给老师录入数据</Text>
+                </div>
+              </div>
+            </div>
+            <div className="game-card-footer">
+              <Button
+                type="primary"
+                icon={<PlayCircleOutlined />}
+                href="https://dazi.91xjr.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="game-action-btn practice-btn"
+                block
+                size="large"
+              >
+                前往练习网站
+                <ArrowRightOutlined style={{ marginLeft: 8 }} />
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-    </>
+        </Card>
+      </Col>
+    </Row>
   );
 };
 
