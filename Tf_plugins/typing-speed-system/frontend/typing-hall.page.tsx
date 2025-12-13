@@ -1,12 +1,57 @@
 /* eslint-disable react-refresh/only-export-components */
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { ArrowRightOutlined, GiftOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Collapse, Row, Tag, Typography } from 'antd';
+import {
+  ArrowRightOutlined,
+  GiftOutlined,
+  PlayCircleOutlined,
+  ThunderboltOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons';
+import { Button, Card, Col, Collapse, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
 import { Chart, registerables } from 'chart.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { TypingStatsFloatingBall } from './components/TypingStatsFloatingBall';
 
 const { Title, Text } = Typography;
+
+/**
+ * 计算相对时间显示
+ * 24小时内显示相对时间（如"2小时前"），超过24小时显示格式化时间
+ */
+function formatRelativeTime(isoString: string, formattedTime?: string): string {
+  try {
+    const recordTime = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - recordTime.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    // 如果超过24小时，返回格式化时间
+    if (diffHours >= 24) {
+      return formattedTime || recordTime.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    // 计算相对时间
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      if (diffMinutes < 1) {
+        return '刚刚';
+      }
+      return `${diffMinutes}分钟前`;
+    } else {
+      const hours = Math.floor(diffHours);
+      return `${hours}小时前`;
+    }
+  } catch (error) {
+    // 如果解析失败，返回格式化时间或原始字符串
+    return formattedTime || isoString;
+  }
+}
 
 // 注册 Chart.js 组件
 Chart.register(...registerables);
@@ -281,79 +326,237 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
   currentUserId,
 }) => {
   const [activeTab, setActiveTab] = useState<'max-wpm' | 'avg-wpm' | 'improvement'>('max-wpm');
+  const [rankingSearch, setRankingSearch] = useState('');
+  const [rankingPage, setRankingPage] = useState(1);
+  const [rankingPageSize] = useState(10);
 
-  const getMedal = (index: number): string => {
-    const medals = ['🥇', '🥈', '🥉'];
-    return index < 3 ? medals[index] : `${index + 1}`;
+  const getRankIcon = (rankNum: number) => {
+    if (rankNum === 1) return <TrophyOutlined style={{ color: '#FFD700' }} />;
+    if (rankNum === 2) return <TrophyOutlined style={{ color: '#C0C0C0' }} />;
+    if (rankNum === 3) return <TrophyOutlined style={{ color: '#CD7F32' }} />;
+    return rankNum;
   };
 
-  const renderRanking = (ranking: UserStats[], showImprovement: boolean = false) => (
-    <div className="ranking-list">
-      {ranking.length > 0 ? (
-        ranking.map((user, index) => {
-          const userDoc = udocs[user.uid];
-          const isCurrentUser = currentUserId === user.uid;
-          return (
-            <div key={user.uid} className={`ranking-item ${isCurrentUser ? 'current-user' : ''}`}>
-              <div className={`rank-badge rank-${index < 3 ? index + 1 : 'other'}`}>{getMedal(index)}</div>
-              <div className="user-info">
-                <div className="user-name">{userDoc?.uname || `User ${user.uid}`}</div>
-                <div className="user-meta">
-                  {showImprovement ? `本周平均: ${user.avgWpm} WPM` : `${user.totalRecords} 条记录`}
-                </div>
-              </div>
-              <div className={`score-value ${showImprovement ? 'improvement' : ''}`}>
-                {showImprovement && '+'}
-                {showImprovement ? user.improvement : activeTab === 'max-wpm' ? user.maxWpm : user.avgWpm}{' '}
-                <span className="unit">WPM</span>
-              </div>
-            </div>
-          );
-        })
-      ) : (
-        <div className="empty-state">
-          <p>暂无数据</p>
-        </div>
-      )}
-    </div>
-  );
+  const getCurrentRanking = () => {
+    switch (activeTab) {
+      case 'max-wpm':
+        return maxWpmRanking;
+      case 'avg-wpm':
+        return avgWpmRanking;
+      case 'improvement':
+        return improvementRanking;
+      default:
+        return maxWpmRanking;
+    }
+  };
+
+  const getRankingValue = (user: UserStats) => {
+    switch (activeTab) {
+      case 'max-wpm':
+        return user.maxWpm;
+      case 'avg-wpm':
+        return user.avgWpm;
+      case 'improvement':
+        return user.improvement || 0;
+      default:
+        return user.maxWpm;
+    }
+  };
+
+  const filteredRanking = useMemo(() => {
+    const ranking = getCurrentRanking();
+    if (!rankingSearch.trim()) {
+      return ranking;
+    }
+    const keyword = rankingSearch.trim().toLowerCase();
+    return ranking.filter((user) => {
+      const userDoc = udocs[user.uid];
+      const uname = userDoc?.uname?.toLowerCase() || '';
+      const displayName = userDoc?.displayName?.toLowerCase() || '';
+      return uname.includes(keyword) || displayName.includes(keyword);
+    });
+  }, [activeTab, rankingSearch, maxWpmRanking, avgWpmRanking, improvementRanking, udocs]);
+
+  // 分页后的排行榜数据
+  const paginatedRanking = useMemo(() => {
+    const start = (rankingPage - 1) * rankingPageSize;
+    const end = start + rankingPageSize;
+    return filteredRanking.slice(start, end);
+  }, [filteredRanking, rankingPage, rankingPageSize]);
+
+  // 当搜索或标签页切换时，重置到第一页
+  useEffect(() => {
+    setRankingPage(1);
+  }, [activeTab, rankingSearch]);
 
   return (
-    <div className="rankings-section">
-      <div className="section-header">
-        <h2>排行榜</h2>
-        <a href="/typing/ranking" className="view-all-link">
+    <Card
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <Space>
+            <TrophyOutlined />
+            <span>排行榜</span>
+          </Space>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Space size={[4, 4]}>
+              <button
+                className={`tab-btn ${activeTab === 'max-wpm' ? 'active' : ''}`}
+                onClick={() => setActiveTab('max-wpm')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'max-wpm' ? '#1890ff' : '#fff',
+                  color: activeTab === 'max-wpm' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                最高速度
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'avg-wpm' ? 'active' : ''}`}
+                onClick={() => setActiveTab('avg-wpm')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'avg-wpm' ? '#1890ff' : '#fff',
+                  color: activeTab === 'avg-wpm' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                平均速度
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'improvement' ? 'active' : ''}`}
+                onClick={() => setActiveTab('improvement')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'improvement' ? '#1890ff' : '#fff',
+                  color: activeTab === 'improvement' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                进步最快
+              </button>
+            </Space>
+            <Input
+              allowClear
+              size="small"
+              placeholder="搜索用户"
+              className="leaderboard-search-input"
+              style={{
+                width: 180,
+                height: 32,
+                paddingInline: 10,
+              }}
+              value={rankingSearch}
+              onChange={(e) => setRankingSearch(e.target.value)}
+            />
+          </div>
+        </div>
+      }
+      className="content-card"
+      extra={
+        <a href="/typing/ranking" style={{ fontSize: 12 }}>
           查看全部 →
         </a>
-      </div>
+      }
+    >
+      {filteredRanking && filteredRanking.length > 0 ? (
+        <>
+          <List
+            dataSource={paginatedRanking}
+            renderItem={(user, index) => {
+              const userDoc = udocs[user.uid];
+              const isCurrentUser = currentUserId === user.uid;
+              const rank = (rankingPage - 1) * rankingPageSize + index + 1;
+              const value = getRankingValue(user);
+              const showImprovement = activeTab === 'improvement';
 
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'max-wpm' ? 'active' : ''}`}
-          onClick={() => setActiveTab('max-wpm')}
-        >
-          最高速度
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'avg-wpm' ? 'active' : ''}`}
-          onClick={() => setActiveTab('avg-wpm')}
-        >
-          平均速度
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'improvement' ? 'active' : ''}`}
-          onClick={() => setActiveTab('improvement')}
-        >
-          进步最快
-        </button>
-      </div>
-
-      <div className="tab-content active">
-        {activeTab === 'max-wpm' && renderRanking(maxWpmRanking)}
-        {activeTab === 'avg-wpm' && renderRanking(avgWpmRanking)}
-        {activeTab === 'improvement' && renderRanking(improvementRanking, true)}
-      </div>
-    </div>
+              return (
+                <List.Item className={`leaderboard-item ${isCurrentUser ? 'current-user' : ''}`}>
+                  <List.Item.Meta
+                    avatar={
+                      <>
+                        <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
+                          {getRankIcon(rank)}
+                        </div>
+                        {userDoc?.avatarUrl ? (
+                          <img
+                            src={userDoc.avatarUrl}
+                            alt={userDoc?.uname || userDoc?.displayName || `User ${user.uid}`}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid #e5e7eb',
+                            }}
+                          />
+                        ) : null}
+                      </>
+                    }
+                    title={
+                      <Text strong>
+                        {userDoc?.uname || `User ${user.uid}`}
+                        {userDoc?.displayName && (
+                          <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                            ({userDoc.displayName})
+                          </Text>
+                        )}
+                      </Text>
+                    }
+                    description={
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {showImprovement
+                          ? `本周平均: ${user.avgWpm} WPM`
+                          : `${user.totalRecords} 条记录`}
+                      </Text>
+                    }
+                  />
+                  <div className="player-score">
+                    <Text strong style={{ fontSize: 16, color: showImprovement ? '#10b981' : '#3b82f6' }}>
+                      {showImprovement && '+'}
+                      {value}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                      WPM
+                    </Text>
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
+          {filteredRanking.length > rankingPageSize && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Pagination
+                current={rankingPage}
+                total={filteredRanking.length}
+                pageSize={rankingPageSize}
+                onChange={(page) => setRankingPage(page)}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total) => `共 ${total} 人`}
+                size="small"
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="empty-state">
+          <Text type="secondary">暂无排名</Text>
+        </div>
+      )}
+    </Card>
   );
 };
 
@@ -581,36 +784,105 @@ interface RecentRecordsProps {
 }
 
 const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs, currentUserId }) => {
+  const [recordsPage, setRecordsPage] = useState(1);
+  const [recordsPageSize] = useState(10);
+
+  // 分页后的记录数据
+  const paginatedRecords = useMemo(() => {
+    const start = (recordsPage - 1) * recordsPageSize;
+    const end = start + recordsPageSize;
+    return recentRecords.slice(start, end);
+  }, [recentRecords, recordsPage, recordsPageSize]);
+
   return (
-    <div className="recent-section">
-      <div className="section-header">
-        <h3>最近记录</h3>
-      </div>
-      <div className="records-list">
-        {recentRecords.length > 0 ? (
-          recentRecords.map((record, index) => {
-            const user = udocs[record.uid];
-            const isCurrentUser = currentUserId === record.uid;
-            return (
-              <div key={index} className={`record-item ${isCurrentUser ? 'current-user' : ''}`}>
-                <div className="record-icon">⌨️</div>
-                <div className="record-info">
-                  <div className="record-user">{user?.uname || `User ${record.uid}`}</div>
-                  <div className="record-time">{record.createdAt}</div>
-                </div>
-                <div className="record-wpm">
-                  {record.wpm} <span className="unit">WPM</span>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="empty-state">
-            <p>暂无记录</p>
-          </div>
-        )}
-      </div>
-    </div>
+    <Card
+      title={
+        <Space>
+          <ThunderboltOutlined />
+          <span>最近记录</span>
+        </Space>
+      }
+      className="content-card"
+    >
+      {recentRecords.length > 0 ? (
+        <>
+          <List
+            dataSource={paginatedRecords}
+            renderItem={(record) => {
+              const user = udocs[record.uid];
+              const isCurrentUser = currentUserId === record.uid;
+              return (
+                <List.Item className={`record-item ${isCurrentUser ? 'current-user' : ''}`}>
+                  <List.Item.Meta
+                    avatar={
+                      user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user?.uname || user?.displayName || `User ${record.uid}`}
+                          className="record-avatar"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="record-badge badge-positive">
+                          <ThunderboltOutlined />
+                        </div>
+                      )
+                    }
+                    title={
+                      <div className="record-header">
+                        <div className="record-user-info">
+                          <Text strong className="record-username">
+                            {user?.uname || `User ${record.uid}`}
+                          </Text>
+                          {user?.displayName && (
+                            <Text type="secondary" className="record-displayname">
+                              ({user.displayName})
+                            </Text>
+                          )}
+                        </div>
+                        <div className="record-score-badge score-positive">
+                          <Text strong className="record-score-value score-positive">
+                            {record.wpm}
+                          </Text>
+                          <Text type="secondary" className="record-score-unit">
+                            WPM
+                          </Text>
+                        </div>
+                      </div>
+                    }
+                    description={
+                      <Text type="secondary" className="record-time">
+                        {formatRelativeTime(record.createdAt)}
+                      </Text>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+          {recentRecords.length > recordsPageSize && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Pagination
+                current={recordsPage}
+                total={recentRecords.length}
+                pageSize={recordsPageSize}
+                onChange={(page) => setRecordsPage(page)}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total) => `共 ${total} 条记录`}
+                size="small"
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="empty-state">
+          <Text type="secondary">暂无记录</Text>
+        </div>
+      )}
+    </Card>
   );
 };
 
@@ -633,7 +905,7 @@ interface TypingHallAppProps {
 }
 
 const TypingHallApp: React.FC<TypingHallAppProps> = ({
-  globalStats,
+  globalStats: _globalStats,
   userStats,
   userMaxRank,
   userAvgRank,
@@ -648,7 +920,30 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
   currentUserId,
 }) => {
   return (
-    <div className="typing-hall-react-app">
+    <div className="typing-hall-container">
+      {/* 打字统计悬浮球 */}
+      {isLoggedIn && (
+        <TypingStatsFloatingBall
+          userStats={userStats}
+          userRank={{
+            maxRank: userMaxRank,
+            avgRank: userAvgRank,
+          }}
+          userInfo={
+            currentUserId
+              ? {
+                uid: currentUserId,
+                avatarUrl: udocs[currentUserId]?.avatarUrl,
+                uname: udocs[currentUserId]?.uname,
+                displayName: udocs[currentUserId]?.displayName,
+              }
+              : undefined
+          }
+          detailUrl="/typing/me"
+          isLoggedIn={isLoggedIn}
+        />
+      )}
+
       {/* 奖励系统说明 */}
       <BonusExplanation />
 
@@ -668,38 +963,6 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
 
         {/* 右侧栏 */}
         <div className="right-column">
-          {/* 用户统计卡片 */}
-          {isLoggedIn && (
-            <div className="user-overview-card-compact">
-              <div className="overview-header">
-                <h2>我的打字统计</h2>
-                <a href="/typing/me" className="view-details-link">
-                  查看详情 →
-                </a>
-              </div>
-              <div className="overview-stats-compact">
-                <div className="stat-item">
-                  <div className="stat-label">最高速度</div>
-                  <div className="stat-value">
-                    {userStats.maxWpm} <span className="unit">WPM</span>
-                  </div>
-                  {userMaxRank && <div className="stat-rank">排名 #{userMaxRank}</div>}
-                </div>
-                <div className="stat-item">
-                  <div className="stat-label">平均速度</div>
-                  <div className="stat-value">
-                    {userStats.avgWpm} <span className="unit">WPM</span>
-                  </div>
-                  {userAvgRank && <div className="stat-rank">排名 #{userAvgRank}</div>}
-                </div>
-                <div className="stat-item">
-                  <div className="stat-label">总记录数</div>
-                  <div className="stat-value">{userStats.totalRecords}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* 最近记录 */}
           <RecentRecords recentRecords={recentRecords} udocs={udocs} currentUserId={currentUserId} />
         </div>
@@ -709,28 +972,6 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
       <div className="content-grid">
         {/* 周趋势 */}
         <WeeklyTrendChart weeklyTrend={weeklyTrend} />
-
-        {/* 活动概览 */}
-        <div className="chart-section">
-          <h3>活动概览</h3>
-          <div className="activity-stats">
-            <div className="activity-item">
-              <div className="activity-icon">👥</div>
-              <div className="activity-value">{globalStats.totalUsers}</div>
-              <div className="activity-label">总用户数</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-icon">⚡</div>
-              <div className="activity-value">{globalStats.maxWpm}</div>
-              <div className="activity-label">最高速度</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-icon">📈</div>
-              <div className="activity-value">{globalStats.avgWpm}</div>
-              <div className="activity-label">平均速度</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

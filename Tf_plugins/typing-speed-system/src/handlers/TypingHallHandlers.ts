@@ -32,13 +32,13 @@ export class TypingHallHandler extends Handler {
             }
         }
 
-        // 获取排行榜 Top 10（暂不使用 domainId 过滤，与其他查询保持一致）
-        const maxWpmRanking = await statsService.getMaxWpmRanking(10);
-        const avgWpmRanking = await statsService.getAvgWpmRanking(10);
-        const improvementRanking = await statsService.getImprovementRanking(10);
+        // 获取排行榜数据（返回足够多的数据以支持前端分页）
+        const maxWpmRanking = await statsService.getMaxWpmRanking(100);
+        const avgWpmRanking = await statsService.getAvgWpmRanking(100);
+        const improvementRanking = await statsService.getImprovementRanking(100);
 
-        // 获取最近记录
-        const recentRecords = await recordService.getRecentRecords(10);
+        // 获取最近记录（返回足够多的数据以支持前端分页）
+        const recentRecords = await recordService.getRecentRecords(100);
 
         // 获取速度分布
         const speedDistribution = await analyticsService.getSpeedDistribution();
