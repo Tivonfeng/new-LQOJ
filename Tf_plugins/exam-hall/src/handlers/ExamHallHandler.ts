@@ -18,9 +18,10 @@ export class ExamHallHandler extends Handler {
             const certService = new CertificateService(this.ctx);
 
             // 获取最近一个季度的证书
-            const [recentCompetitions, recentCertifications] = await Promise.all([
+            const [recentCompetitions, recentCertifications, recentCertificates] = await Promise.all([
                 certService.getRecentQuarterCertificates('competition', 20, { includeAllDomains: true }),
                 certService.getRecentQuarterCertificates('certification', 20, { includeAllDomains: true }),
+                certService.getRecentCertificates(10, { includeAllDomains: true }),
             ]);
 
             // 处理证书数据（统一处理逻辑）
@@ -39,10 +40,60 @@ export class ExamHallHandler extends Handler {
                 };
             };
 
-            const [processedCompetitions, processedCertifications] = await Promise.all([
+            // 处理最近证书记录（包含创建时间）
+            const processRecentRecord = async (cert: any) => {
+                const username = await this.lookupUsername(cert.uid, this.normalizeDomainId(cert.domainId)) || '优秀学员';
+                return {
+                    _id: cert._id?.toString(),
+                    uid: cert.uid,
+                    username,
+                    certificateName: cert.certificateName,
+                    certifyingBody: cert.certifyingBody,
+                    category: cert.category,
+                    level: cert.level,
+                    issueDate: cert.issueDate,
+                    examType: cert.examType,
+                    competitionName: cert.competitionName,
+                    certificationSeries: cert.certificationSeries,
+                    createdAt: cert.createdAt?.toISOString(),
+                    createdAtFormatted: cert.createdAt?.toLocaleString('zh-CN', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    }),
+                };
+            };
+
+            const [processedCompetitions, processedCertifications, processedRecentRecords] = await Promise.all([
                 Promise.all(recentCompetitions.map((cert) => processCert(cert, 'competitionName'))),
                 Promise.all(recentCertifications.map((cert) => processCert(cert, 'certificationSeries'))),
+                Promise.all(recentCertificates.map((cert) => processRecentRecord(cert))),
             ]);
+
+            // 获取用户信息（用于最近记录显示）
+            const UserModel = (global as any).Hydro.model.user;
+            const recentRecordUids = [...new Set(processedRecentRecords.map((r) => r.uid))];
+            const rawUdocs = await UserModel.getList(this.domain._id, recentRecordUids);
+
+            // 为每个用户生成 avatarUrl，确保 key 是字符串类型
+            const udocs: Record<string, any> = {};
+            for (const userId in rawUdocs) {
+                const user = rawUdocs[userId];
+                if (user) {
+                    // 处理头像 URL，移除可能的 "url:" 前缀
+                    let avatarUrl = user.avatar || user.avatarUrl || '';
+                    if (avatarUrl && avatarUrl.startsWith('url:')) {
+                        avatarUrl = avatarUrl.substring(4); // 移除 "url:" 前缀
+                    }
+                    udocs[String(userId)] = {
+                        uname: user.uname || '',
+                        displayName: user.displayName || user.uname || '',
+                        avatarUrl,
+                        bio: user.bio || '',
+                    };
+                }
+            }
 
             const examHallData = {
                 isLoggedIn: !!uid,
@@ -50,6 +101,8 @@ export class ExamHallHandler extends Handler {
                 managementUrl: '/exam/admin/manage',
                 recentCompetitions: processedCompetitions,
                 recentCertifications: processedCertifications,
+                recentRecords: processedRecentRecords,
+                udocs,
             };
 
             this.response.template = 'exam_hall.html';

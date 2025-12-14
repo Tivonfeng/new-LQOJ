@@ -320,7 +320,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             // 触发证书创建事件，由积分系统处理积分增加
             if (finalWeight > 0) {
                 try {
-                    this.ctx.emit('certificate/created', {
+                    (this.ctx.emit as any)('certificate/created', {
                         uid: targetUid,
                         domainId: this.ctx.domain!._id.toString(),
                         certificateId: certificate._id,
@@ -671,7 +671,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             // 触发证书删除事件，由积分系统处理积分减少
             if (weight > 0) {
                 try {
-                    this.ctx.emit('certificate/deleted', {
+                    (this.ctx.emit as any)('certificate/deleted', {
                         uid: certificate.uid,
                         domainId: this.ctx.domain!._id.toString(),
                         certificateId: new ObjectId(id),
@@ -751,9 +751,12 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
                     const domainId = this.ctx.domain!._id.toString();
                     // 为每个证书触发删除事件
                     for (const cert of certificates) {
+                        // 确保证书ID存在
+                        if (!cert._id) continue;
+
                         const weight = cert.calculatedWeight || cert.weight || 0;
                         if (weight > 0) {
-                            this.ctx.emit('certificate/deleted', {
+                            (this.ctx.emit as any)('certificate/deleted', {
                                 uid: cert.uid,
                                 domainId,
                                 certificateId: cert._id,

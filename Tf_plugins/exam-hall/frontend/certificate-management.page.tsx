@@ -2,13 +2,18 @@ import './certificate-management.page.css';
 
 import { UserSelectAutoComplete } from '@hydrooj/ui-default';
 import {
+  ArrowLeftOutlined,
+  CalendarOutlined,
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   FileAddOutlined,
+  FileTextOutlined,
   PlusOutlined,
   SearchOutlined,
   TrophyOutlined,
+  UploadOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import {
@@ -39,6 +44,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import $ from 'jquery';
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -256,10 +262,16 @@ const CertificateManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'certificates' | 'exams'>('certificates');
   const [showAddExamForm, setShowAddExamForm] = useState(false);
 
-  const [certificates, setCertificates] = useState<CertificateInfo[]>([]);
-  const [presets, setPresets] = useState<CertificatePreset[]>([]);
-  const [allPresets, setAllPresets] = useState<CertificatePreset[]>([]);
-  const [loading, setLoading] = useState(false);
+  // 从后端传递的初始数据获取
+  const initialData = (window as any).certificateManagementData || {
+    certificates: [],
+    presets: [],
+    examHallUrl: '/exam/hall',
+  };
+
+  const [certificates, setCertificates] = useState<CertificateInfo[]>(initialData.certificates || []);
+  const [presets, setPresets] = useState<CertificatePreset[]>(initialData.presets || []);
+  const [allPresets, setAllPresets] = useState<CertificatePreset[]>(initialData.presets || []);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -287,7 +299,6 @@ const CertificateManagement: React.FC = () => {
   });
   const [isPresetSubmitting, setIsPresetSubmitting] = useState(false);
   const [previewingCertId, setPreviewingCertId] = useState<string | null>(null);
-  const [arePresetsLoading, setArePresetsLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRows, setSelectedRows] = useState<CertificateTableRecord[]>([]);
   const selectedPreset = useMemo(
@@ -374,52 +385,95 @@ const CertificateManagement: React.FC = () => {
   const userInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
 
-  // 初始化UserSelectAutoComplete组件
-  useEffect(() => {
-    if (userInputRef.current) {
-      try {
-        const $input = $(userInputRef.current);
-        userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
-          multi: false,
-          freeSolo: false,
-          onChange: (value: any) => {
-            if (value && typeof value === 'object' && (value.uid || value._id)) {
-              const rawUid = value.uid || value._id;
-              const username = value.uname || value.username || '';
-              const numericUid = Number(rawUid);
-              setFormData((prev) => ({
-                ...prev,
-                username,
-                uid: Number.isNaN(numericUid) ? '' : numericUid,
-              }));
-            } else if (value === null || value === undefined || value === '') {
-              setFormData((prev) => ({
-                ...prev,
-                username: '',
-                uid: '',
-              }));
-            }
-          },
-        });
-      } catch (error) {
-        console.error('Failed to initialize UserSelectAutoComplete:', error);
-      }
+  // 初始化UserSelectAutoComplete组件的函数（参考积分管理页面）
+  const initializeUserSelect = useCallback(() => {
+    if (!userInputRef.current) {
+      console.warn('UserSelectAutoComplete: userInputRef.current is null');
+      return;
     }
 
-    // 清理函数
-    return () => {
+    // 检查元素是否在 DOM 中且可见
+    if (!userInputRef.current.offsetParent && userInputRef.current.getBoundingClientRect().width === 0) {
+      console.warn('UserSelectAutoComplete: input element is not visible');
+      return;
+    }
+
+    try {
+      // 如果已经初始化，先清理
       if (userSelectComponentRef.current) {
         try {
           userSelectComponentRef.current.detach?.();
         } catch (error) {
-          console.warn('Failed to detach UserSelectAutoComplete:', error);
+          console.warn('Failed to detach existing UserSelectAutoComplete:', error);
         }
       }
-    };
+
+      const $input = $(userInputRef.current);
+      if (!$input.length) {
+        console.warn('UserSelectAutoComplete: jQuery element is empty');
+        return;
+      }
+
+      userSelectComponentRef.current = (UserSelectAutoComplete as any).getOrConstruct($input, {
+        multi: false,
+        freeSolo: true,
+        freeSoloConverter: (input: string) => input,
+        onChange: (value: any) => {
+          if (value && typeof value === 'object' && (value.uid || value._id)) {
+            const rawUid = value.uid || value._id;
+            const username = value.uname || value.username || '';
+            const numericUid = Number(rawUid);
+            setFormData((prev) => ({
+              ...prev,
+              username,
+              uid: Number.isNaN(numericUid) ? '' : numericUid,
+            }));
+            // 清除用户名错误
+            setFormErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors.username;
+              return newErrors;
+            });
+          } else if (typeof value === 'string') {
+            setFormData((prev) => ({
+              ...prev,
+              username: value,
+              uid: '',
+            }));
+            // 清除用户名错误
+            setFormErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors.username;
+              return newErrors;
+            });
+          } else if (value === null || value === undefined || value === '') {
+            setFormData((prev) => ({
+              ...prev,
+              username: '',
+              uid: '',
+            }));
+          }
+        },
+      });
+    } catch (error) {
+      console.error('Failed to initialize UserSelectAutoComplete:', error);
+    }
   }, []);
 
-  const fetchCertificates = async (uid?: string) => {
-    setLoading(true);
+  // 当弹窗关闭时清理UserSelectAutoComplete组件
+  useEffect(() => {
+    if (!showAddCertificateModal && userSelectComponentRef.current) {
+      // 弹窗关闭时清理
+      try {
+        userSelectComponentRef.current.detach?.();
+        userSelectComponentRef.current = null;
+      } catch (error) {
+        console.warn('Failed to detach UserSelectAutoComplete:', error);
+      }
+    }
+  }, [showAddCertificateModal]);
+
+  const fetchCertificates = useCallback(async (uid?: string) => {
     try {
       const url = uid ? `/exam/admin/certificates-list?uid=${uid}` : '/exam/admin/certificates-list';
       const response = await fetch(url);
@@ -431,12 +485,10 @@ const CertificateManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('获取证书列表失败:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPresets = async (type?: string) => {
+  const fetchPresets = useCallback(async (type?: string) => {
     try {
       const url = type && type !== 'all' ? `/exam/admin/presets?type=${type}` : '/exam/admin/presets';
       const response = await fetch(url);
@@ -449,10 +501,9 @@ const CertificateManagement: React.FC = () => {
     } catch (error) {
       console.error('获取预设列表失败:', error);
     }
-  };
+  }, []);
 
-  const fetchAllPresets = async () => {
-    setArePresetsLoading(true);
+  const fetchAllPresets = useCallback(async () => {
     try {
       const response = await fetch('/exam/admin/presets');
       const data = await response.json();
@@ -463,10 +514,8 @@ const CertificateManagement: React.FC = () => {
       }
     } catch (error) {
       console.error('获取全部预设失败:', error);
-    } finally {
-      setArePresetsLoading(false);
     }
-  };
+  }, []);
 
   const validatePresetForm = (): boolean => {
     const warn = (text: string) => {
@@ -565,6 +614,12 @@ const CertificateManagement: React.FC = () => {
     }
   };
 
+  // 返回赛考大厅
+  const handleGoToHall = useCallback(() => {
+    const url = initialData.examHallUrl || (window as any).examHallUrl || '/exam/hall';
+    window.location.href = url;
+  }, [initialData.examHallUrl]);
+
   const handlePresetDelete = (id: string) => {
     if (!id) return;
     modalApi.confirm({
@@ -609,25 +664,30 @@ const CertificateManagement: React.FC = () => {
     setShowAddExamForm(true);
   };
 
-  // 初始化加载
+  // 初始化加载 - 如果后端已传递初始数据，则不需要立即请求
   useEffect(() => {
-    fetchCertificates();
-    fetchPresets();
-    fetchAllPresets();
-  }, []);
-
-  // 当打开Modal时加载数据
-  useEffect(() => {
-    if (showAddCertificateModal) {
-      fetchPresets();
+    // 如果初始数据为空，才通过 API 获取
+    if (initialData.certificates.length === 0) {
+      fetchCertificates();
     }
-  }, [showAddCertificateModal]);
-
-  useEffect(() => {
-    if (activeTab === 'exams') {
+    if (initialData.presets.length === 0) {
+      fetchPresets();
       fetchAllPresets();
     }
-  }, [activeTab]);
+  }, []);
+
+  // 当打开Modal时加载数据（如果预设列表为空才加载）
+  useEffect(() => {
+    if (showAddCertificateModal && presets.length === 0) {
+      fetchPresets();
+    }
+  }, [showAddCertificateModal, presets.length, fetchPresets]);
+
+  useEffect(() => {
+    if (activeTab === 'exams' && allPresets.length === 0) {
+      fetchAllPresets();
+    }
+  }, [activeTab, allPresets.length, fetchAllPresets]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -639,24 +699,34 @@ const CertificateManagement: React.FC = () => {
     }));
   };
 
-  const handlePresetSelect = (preset: CertificatePreset) => {
+  // 清除字段错误
+  const clearFieldError = useCallback((fieldName: string) => {
+    setFormErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+  }, []);
+
+  // 更新表单字段并清除错误
+  const updateFormField = useCallback((field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    clearFieldError(field);
+  }, [clearFieldError]);
+
+  const handlePresetSelect = useCallback((preset: CertificatePreset) => {
     setFormData((prev) => ({
       ...prev,
       presetId: preset._id || '',
       presetName: preset.name,
       certifyingBody: preset.certifyingBody,
       event: '',
-      // 根据预设类型清空等级选择
       level: preset.type === 'certification' ? '通过' : '',
       examType: preset.type,
-      competitionName: preset.type === 'competition'
-        ? preset.name
-        : '',
-      certificationSeries: preset.type === 'certification'
-        ? preset.name
-        : '',
+      competitionName: preset.type === 'competition' ? preset.name : '',
+      certificationSeries: preset.type === 'certification' ? preset.name : '',
     }));
-  };
+  }, []);
 
   const uploadCertificateFile = (file: File) => new Promise<{
     url: string;
@@ -755,27 +825,27 @@ const CertificateManagement: React.FC = () => {
     if (fieldName) {
       switch (fieldName) {
         case 'username':
-    if (!formData.username.trim()) {
+          if (!formData.username.trim()) {
             errors.username = '请选择用户';
-    }
+          }
           break;
         case 'presetId':
-    if (!formData.presetId) {
+          if (!formData.presetId) {
             errors.presetId = '请选择赛考预设';
-    }
+          }
           break;
         case 'event':
-    if (!formData.event.trim()) {
+          if (!formData.event.trim()) {
             errors.event = '请选择赛项';
-    }
+          }
           break;
         case 'level':
-    if (!formData.level.trim()) {
+          if (!formData.level.trim()) {
             errors.level = '请选择证书等级';
-    }
+          }
           break;
         case 'issueDate':
-    if (!formData.issueDate) {
+          if (!formData.issueDate) {
             errors.issueDate = '请选择颁发日期';
           } else {
             const issueDate = new Date(formData.issueDate);
@@ -785,17 +855,32 @@ const CertificateManagement: React.FC = () => {
           }
           break;
         case 'certificateImage':
-    if (!formData.certificateImageUrl && !pendingCertificateFile) {
+          if (!formData.certificateImageUrl && !pendingCertificateFile) {
             errors.certificateImage = '请上传证书材料';
           }
           break;
-    }
+      }
       setFormErrors((prev) => ({ ...prev, ...errors }));
       return Object.keys(errors).length === 0;
     }
 
     // 验证所有字段
-    if (!formData.username.trim()) {
+    // 从 UserSelectAutoComplete 组件获取最终用户名（如果存在）
+    let finalUsername = formData.username.trim();
+    if (userSelectComponentRef.current && userSelectComponentRef.current.value) {
+      try {
+        const selectedUser = userSelectComponentRef.current.value();
+        if (selectedUser && typeof selectedUser === 'object' && selectedUser.uname) {
+          finalUsername = selectedUser.uname;
+        } else if (typeof selectedUser === 'string' && selectedUser.trim()) {
+          finalUsername = selectedUser.trim();
+        }
+      } catch (error) {
+        console.warn('验证时获取用户选择失败:', error);
+      }
+    }
+
+    if (!finalUsername) {
       errors.username = '请选择用户';
     }
     if (!formData.presetId) {
@@ -810,8 +895,8 @@ const CertificateManagement: React.FC = () => {
     if (!formData.issueDate) {
       errors.issueDate = '请选择颁发日期';
     } else {
-    const issueDate = new Date(formData.issueDate);
-    if (issueDate > new Date()) {
+      const issueDate = new Date(formData.issueDate);
+      if (issueDate > new Date()) {
         errors.issueDate = '颁发日期不能是未来日期';
       }
     }
@@ -879,12 +964,29 @@ const CertificateManagement: React.FC = () => {
 
     // 提交证书数据
     try {
+      // 获取最终用户名（参考积分管理页面）
+      let finalUsername = formData.username.trim();
+      if (userSelectComponentRef.current && userSelectComponentRef.current.value) {
+        try {
+          const selectedUser = userSelectComponentRef.current.value();
+          if (selectedUser && typeof selectedUser === 'object' && selectedUser.uname) {
+            finalUsername = selectedUser.uname;
+          } else if (typeof selectedUser === 'string' && selectedUser.trim()) {
+            finalUsername = selectedUser.trim();
+          }
+        } catch (error) {
+          console.warn('获取用户选择失败，使用输入框值:', error);
+        }
+      }
+      // 确保用户名不为空
+      finalUsername ||= formData.username.trim();
+
       const endpoint = editingId ? `/exam/admin/certificates/${editingId}` : '/exam/admin/certificates';
       const method = editingId ? 'PUT' : 'POST';
 
       const requestBody = {
         uid: typeof formData.uid === 'number' ? formData.uid : undefined,
-        username: formData.username.trim(),
+        username: finalUsername,
         presetId: formData.presetId || undefined,
         certificateName: formData.presetName,
         certifyingBody: formData.certifyingBody,
@@ -948,7 +1050,7 @@ const CertificateManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     if (!id) return;
     modalApi.confirm({
       title: '确定要删除这个证书吗？',
@@ -965,7 +1067,6 @@ const CertificateManagement: React.FC = () => {
           if (data.success) {
             await fetchCertificates();
             messageApi.success('证书已删除');
-            // 清除选中状态
             setSelectedRowKeys([]);
             setSelectedRows([]);
           } else {
@@ -979,9 +1080,9 @@ const CertificateManagement: React.FC = () => {
         }
       },
     });
-  };
+  }, [modalApi, messageApi, fetchCertificates]);
 
-  const handleBatchDelete = () => {
+  const handleBatchDelete = useCallback(() => {
     if (selectedRowKeys.length === 0) {
       messageApi.warning('请先选择要删除的证书');
       return;
@@ -995,7 +1096,6 @@ const CertificateManagement: React.FC = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          setLoading(true);
           const deletePromises = selectedRows.map((row) => {
             const id = row._id;
             if (!id) return Promise.resolve({ success: false });
@@ -1021,27 +1121,24 @@ const CertificateManagement: React.FC = () => {
             messageApi.error('批量删除失败，请稍后重试');
           }
 
-          // 清除选中状态
           setSelectedRowKeys([]);
           setSelectedRows([]);
-      } catch (error) {
+        } catch (error) {
           console.error('批量删除失败:', error);
           messageApi.error('批量删除失败，请稍后重试');
-        } finally {
-          setLoading(false);
-    }
+        }
       },
     });
-  };
+  }, [selectedRowKeys.length, selectedRows, modalApi, messageApi, fetchCertificates]);
 
-  const handleEdit = (cert: CertificateInfo) => {
+  const handleEdit = useCallback((cert: CertificateInfo) => {
     setFormData({
       username: cert.username || '',
       uid: cert.uid,
       presetId: cert.presetId || '',
       presetName: cert.certificateName,
       certifyingBody: cert.certifyingBody,
-      event: cert.category || '', // 从 category 加载赛项
+      event: cert.category || '',
       level: cert.level || '',
       issueDate: cert.issueDate ? dayjs(cert.issueDate).format('YYYY-MM-DD') : '',
       certificateImageUrl: cert.certificateImageUrl || '',
@@ -1069,17 +1166,16 @@ const CertificateManagement: React.FC = () => {
     setPendingCertificateFile(null);
     setFileUploadProgress(0);
     setIsFileUploading(false);
-  };
+  }, []);
 
   // 下载证书图片
-  const handleDownloadCertificate = (cert: CertificateInfo) => {
+  const handleDownloadCertificate = useCallback((cert: CertificateInfo) => {
     if (!cert.certificateImageUrl) {
       messageApi.warning('证书图片不存在');
       return;
     }
 
     try {
-      // 创建一个临时链接来下载图片
       const link = document.createElement('a');
       link.href = cert.certificateImageUrl;
       const fileExtension = cert.certificateImageUrl.split('.').pop()?.split('?')[0] || 'jpg';
@@ -1094,7 +1190,7 @@ const CertificateManagement: React.FC = () => {
       console.error('下载证书失败:', error);
       messageApi.error('下载证书失败，请稍后重试');
     }
-  };
+  }, [messageApi]);
 
   const certificateColumns = useMemo<ColumnsType<CertificateTableRecord>>(() => [
     {
@@ -1205,6 +1301,7 @@ const CertificateManagement: React.FC = () => {
           alt={record.certificateName}
           preview={false}
           className="certificate-thumbnail"
+          loading="lazy"
           onClick={() => setPreviewingCertId(record._id || '')}
         />
       ) : (
@@ -1233,12 +1330,15 @@ const CertificateManagement: React.FC = () => {
     },
   ], [handleDelete, handleEdit]);
 
-  // 更新分页总数
+  // 更新分页总数（避免不必要的更新）
   useEffect(() => {
-    setPagination((prev) => ({
-      ...prev,
-      total: filteredCertificates.length,
-    }));
+    setPagination((prev) => {
+      if (prev.total === filteredCertificates.length) return prev;
+      return {
+        ...prev,
+        total: filteredCertificates.length,
+      };
+    });
   }, [filteredCertificates.length]);
 
   // 分页后的证书数据
@@ -1299,7 +1399,6 @@ const CertificateManagement: React.FC = () => {
               danger
               icon={<DeleteOutlined />}
               onClick={handleBatchDelete}
-              disabled={loading}
             >
               批量删除 ({selectedRowKeys.length})
             </Button>
@@ -1397,7 +1496,6 @@ const CertificateManagement: React.FC = () => {
               setSelectedRows([]);
             },
           }}
-          loading={loading}
           scroll={{ x: 960 }}
           locale={{ emptyText: <Empty description="暂无证书数据" /> }}
           onChange={(paginationConfig, tableFilters, sorter) => {
@@ -1453,11 +1551,7 @@ const CertificateManagement: React.FC = () => {
           </Col>
         </Row>
 
-        {arePresetsLoading ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <Spin tip="加载赛考预设..." />
-          </div>
-        ) : filteredPresets.length === 0 ? (
+        {filteredPresets.length === 0 ? (
           <Empty description="暂无匹配的赛考，试着调整筛选条件" />
         ) : (
                     <Row gutter={[12, 12]}>
@@ -1544,12 +1638,31 @@ const CertificateManagement: React.FC = () => {
   ];
 
   return (
-    <>
+    <div className="certificate-management-container">
       {contextHolder}
       {modalContextHolder}
-      <div className="dashboard-hero" role="banner">
-        <Title level={4}>📋 证书&赛考管理</Title>
-      </div>
+      <Card className="dashboard-hero" role="banner">
+        <div className="hero-content">
+          <div className="hero-text">
+            <Title level={2} className="hero-title">
+              📋 证书&赛考管理
+            </Title>
+            <Text className="hero-subtitle">管理员证书与赛考管理工具</Text>
+          </div>
+          <div className="hero-actions">
+            <Space>
+              <Button
+                type="default"
+                icon={<ArrowLeftOutlined />}
+                onClick={handleGoToHall}
+                className="hero-action-btn"
+              >
+                返回赛考大厅
+              </Button>
+            </Space>
+          </div>
+        </div>
+      </Card>
 
       <Tabs
         className="management-tabs"
@@ -1567,136 +1680,134 @@ const CertificateManagement: React.FC = () => {
             setShowAddCertificateModal(false);
           }
         }}
+        afterOpenChange={(open) => {
+          if (open) {
+            setTimeout(() => initializeUserSelect(), 300);
+          } else if (userSelectComponentRef.current) {
+            try {
+              userSelectComponentRef.current.detach?.();
+              userSelectComponentRef.current = null;
+            } catch (error) {
+              console.warn('Failed to detach UserSelectAutoComplete:', error);
+            }
+          }
+        }}
         title={editingId ? '✏️ 编辑证书' : '➕ 添加证书'}
         width={520}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         maskClosable={!isSubmitting && !isFileUploading}
-        className="compact-certificate-modal ultra-compact"
+        className="compact-certificate-modal"
       >
         <form id="certificate-form" onSubmit={handleSubmit} className="certificate-form compact-form" noValidate>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div className="form-field">
-                      <label>选择赛考 *</label>
-                      <Select
-                        value={formData.presetId || undefined}
-                        placeholder="请选择赛考预设"
-                        disabled={isSubmitting}
-                        showSearch
-                        optionFilterProp="label"
-                status={formErrors.presetId ? 'error' : undefined}
-                        options={presetOptions}
-                dropdownMatchSelectWidth={false}
-                dropdownStyle={{ minWidth: '400px', maxWidth: '500px' }}
-                listHeight={300}
-                        onChange={(value) => {
-                          const matchedPreset = presets.find((p) => p._id === value);
-                          if (matchedPreset) {
-                            handlePresetSelect(matchedPreset);
-                          } else {
-                            setFormData((prev) => ({
-                              ...prev,
-                              presetId: '',
-                              presetName: '',
-                              certifyingBody: '',
-                              event: '',
-                              examType: '',
-                              competitionName: '',
-                              certificationSeries: '',
-                            }));
-                          }
-                  if (formErrors.presetId) {
-                    setFormErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.presetId;
-                      return newErrors;
-                    });
-                  }
-                }}
-              />
-              {formErrors.presetId && (
-                <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                  {formErrors.presetId}
-                          </div>
-                        )}
-                          </div>
+          <div className="form-fields-container">
+            <Row gutter={12}>
+              <Col span={12}>
+                <div className="form-field">
+                  <label>
+                    <TrophyOutlined />
+                    <span>选择赛考 *</span>
+                  </label>
+                  <Select
+                    value={formData.presetId || undefined}
+                    placeholder="请选择赛考预设"
+                    disabled={isSubmitting}
+                    showSearch
+                    optionFilterProp="label"
+                    status={formErrors.presetId ? 'error' : undefined}
+                    options={presetOptions}
+                    popupMatchSelectWidth={false}
+                    styles={{ popup: { root: { minWidth: '400px', maxWidth: '500px' } } }}
+                    listHeight={300}
+                    onChange={(value) => {
+                      const matchedPreset = presets.find((p) => p._id === value);
+                      if (matchedPreset) {
+                        handlePresetSelect(matchedPreset);
+                      } else {
+                        setFormData((prev) => ({
+                          ...prev,
+                          presetId: '',
+                          presetName: '',
+                          certifyingBody: '',
+                          event: '',
+                          examType: '',
+                          competitionName: '',
+                          certificationSeries: '',
+                        }));
+                      }
+                      clearFieldError('presetId');
+                    }}
+                  />
+                  <Text type="secondary" className="form-hint">
+                    选择赛考预设以自动填充相关信息
+                  </Text>
+                  {formErrors.presetId && (
+                    <div className="form-field-error">
+                      <span>{formErrors.presetId}</span>
+                    </div>
+                  )}
+                </div>
+              </Col>
+              <Col span={12}>
+                <div className="form-field">
+                  <label>
+                    <UserOutlined />
+                    <span>选择用户 *</span>
+                  </label>
+                  <input
+                    ref={userInputRef}
+                    type="text"
+                    name="username"
+                    className={`ant-input ant-input-lg ${formErrors.username ? 'error' : ''}`}
+                    placeholder="搜索并选择用户..."
+                    value={formData.username}
+                    onChange={(e) => updateFormField('username', e.target.value)}
+                    disabled={isSubmitting}
+                    autoComplete="off"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d9d9d9' }}
+                  />
+                  <Text type="secondary" className="form-hint">
+                    输入用户名进行搜索
+                  </Text>
+                  {formErrors.username && (
+                    <div className="form-field-error">
+                      <span>{formErrors.username}</span>
+                    </div>
+                  )}
+                </div>
+              </Col>
+            </Row>
 
             {selectedPreset && (
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                flexWrap: 'wrap',
-                marginBottom: '8px',
-                padding: '6px 8px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '4px',
-                fontSize: '12px',
-              }}>
-                <span style={{ color: '#666' }}>认证机构：</span>
-                <span style={{ fontWeight: 500 }}>{formData.certifyingBody}</span>
-                <span style={{ color: '#999', margin: '0 4px' }}>|</span>
-                <span style={{ color: '#666' }}>类型：</span>
-                <Tag
-                  color={formData.examType === 'competition' ? 'gold' : 'purple'}
-                  style={{
-                    margin: 0,
-                    fontSize: '11px',
-                    lineHeight: '18px',
-                    padding: '0 6px',
-                  }}
-                >
-                  {formData.examType === 'competition' ? '竞赛' : '考级'}
-                                  </Tag>
-                <span style={{ color: '#999', margin: '0 4px' }}>|</span>
-                <span style={{ color: '#666' }}>级别：</span>
-                <Tag
-                  color="blue"
-                  style={{
-                    margin: 0,
-                    fontSize: '11px',
-                    lineHeight: '18px',
-                    padding: '0 6px',
-                  }}
-                >
-                  {getLevelText(selectedPreset.level)}
-                </Tag>
-                          </div>
-                        )}
-
-                    <div className="form-field">
-                      <label>选择用户 *</label>
-                      <input
-                        ref={userInputRef}
-                        type="text"
-                className={`eui-form-control ${formErrors.username ? 'error' : ''}`}
-                        placeholder="搜索用户名..."
-                        value={formData.username}
-                        onChange={(e) => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            username: e.target.value,
-                          }));
-                  if (formErrors.username) {
-                    setFormErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.username;
-                      return newErrors;
-                    });
-                  }
-                        }}
-                        disabled={isSubmitting}
-                      />
-              {formErrors.username && (
-                <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                  {formErrors.username}
-                </div>
-              )}
-                    </div>
+              <div className="preset-info-card">
+                <span>
+                  <span className="preset-info-label">认证机构：</span>
+                  <span className="preset-info-value">{formData.certifyingBody}</span>
+                </span>
+                <span className="preset-info-separator">|</span>
+                <span>
+                  <span className="preset-info-label">类型：</span>
+                  <Tag color={formData.examType === 'competition' ? 'gold' : 'purple'} className="preset-info-tag">
+                    {formData.examType === 'competition' ? '竞赛' : '考级'}
+                  </Tag>
+                </span>
+                <span className="preset-info-separator">|</span>
+                <span>
+                  <span className="preset-info-label">级别：</span>
+                  <Tag color="blue" className="preset-info-tag">
+                    {getLevelText(selectedPreset.level)}
+                  </Tag>
+                </span>
+              </div>
+            )}
 
                     <Row gutter={6}>
                       <Col span={12}>
                         <div className="form-field">
-                          <label>赛项 *</label>
+                          <label>
+                            <TrophyOutlined />
+                            <span>赛项 *</span>
+                          </label>
                           <Select
                             placeholder={selectedPreset ? '请选择赛项' : '请先选择赛考预设'}
                             value={formData.event || undefined}
@@ -1708,57 +1819,36 @@ const CertificateManagement: React.FC = () => {
                             }
                     status={formErrors.event ? 'error' : undefined}
                             options={eventOptions}
-                    dropdownMatchSelectWidth={false}
-                    dropdownStyle={{ minWidth: '250px' }}
-                            onChange={(value) => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                event: value,
-                              }));
-                      if (formErrors.event) {
-                        setFormErrors((prev) => {
-                          const newErrors = { ...prev };
-                          delete newErrors.event;
-                          return newErrors;
-                        });
-                      }
-                            }}
+                    popupMatchSelectWidth={false}
+                    styles={{ popup: { root: { minWidth: '250px' } } }}
+                            onChange={(value) => updateFormField('event', value)}
                           />
                   {formErrors.event && (
-                    <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                      {formErrors.event}
+                    <div className="form-field-error">
+                      <span>{formErrors.event}</span>
                     </div>
                   )}
                         </div>
                       </Col>
                       <Col span={12}>
                         <div className="form-field">
-                          <label>证书等级 *</label>
+                          <label>
+                            <TrophyOutlined />
+                            <span>证书等级 *</span>
+                          </label>
                           <Select
                             placeholder="请选择等级"
                             value={formData.level || undefined}
                             disabled={isSubmitting}
                     status={formErrors.level ? 'error' : undefined}
                             options={levelOptions}
-                    dropdownMatchSelectWidth={false}
-                    dropdownStyle={{ minWidth: '200px' }}
-                            onChange={(value) => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                level: value,
-                              }));
-                      if (formErrors.level) {
-                        setFormErrors((prev) => {
-                          const newErrors = { ...prev };
-                          delete newErrors.level;
-                          return newErrors;
-                        });
-                      }
-                            }}
+                    popupMatchSelectWidth={false}
+                    styles={{ popup: { root: { minWidth: '200px' } } }}
+                            onChange={(value) => updateFormField('level', value)}
                           />
                   {formErrors.level && (
-                    <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                      {formErrors.level}
+                    <div className="form-field-error">
+                      <span>{formErrors.level}</span>
                     </div>
                   )}
                         </div>
@@ -1766,36 +1856,30 @@ const CertificateManagement: React.FC = () => {
                     </Row>
 
                     <div className="form-field">
-                      <label>颁发日期 *</label>
+                      <label>
+                        <CalendarOutlined />
+                        <span>颁发日期 *</span>
+                      </label>
                       <DatePicker
                         style={{ width: '100%' }}
                         format="YYYY-MM-DD"
                         value={formData.issueDate ? dayjs(formData.issueDate) : null}
                         disabled={isSubmitting}
                 status={formErrors.issueDate ? 'error' : undefined}
-                        onChange={(date) => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            issueDate: date ? date.format('YYYY-MM-DD') : '',
-                          }));
-                  if (formErrors.issueDate) {
-                    setFormErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.issueDate;
-                      return newErrors;
-                    });
-                  }
-                        }}
+                        onChange={(date) => updateFormField('issueDate', date ? date.format('YYYY-MM-DD') : '')}
                       />
               {formErrors.issueDate && (
-                <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-                  {formErrors.issueDate}
+                <div className="form-field-error">
+                  <span>{formErrors.issueDate}</span>
                 </div>
               )}
                     </div>
 
                     <div className="form-field">
-                      <label>证书材料 *</label>
+                      <label>
+                        <UploadOutlined />
+                        <span>证书材料 *</span>
+                      </label>
                       <CertificateUploader
                         value={formData.certificateImageUrl}
                         onFileSelected={(file) => {
@@ -1805,13 +1889,7 @@ const CertificateManagement: React.FC = () => {
                             certificateImageUrl: '',
                             certificateImageKey: '',
                           }));
-                  if (formErrors.certificateImage) {
-                    setFormErrors((prev) => {
-                      const newErrors = { ...prev };
-                      delete newErrors.certificateImage;
-                      return newErrors;
-                    });
-                  }
+                          clearFieldError('certificateImage');
                         }}
                         onUploadError={handleUploadError}
                         disabled={isSubmitting || isFileUploading}
@@ -1819,23 +1897,30 @@ const CertificateManagement: React.FC = () => {
                         uploadProgress={fileUploadProgress}
                         pendingUpload={Boolean(pendingCertificateFile)}
                       />
+                      <Text type="secondary" className="form-hint">
+                        JPG/PNG/PDF，最大 10MB
+                      </Text>
               {formErrors.certificateImage && (
-                <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '8px' }}>
-                  {formErrors.certificateImage}
-                    </div>
+                <div className="form-field-error">
+                  <span>{formErrors.certificateImage}</span>
+                </div>
               )}
-            </div>
+                    </div>
 
             <div className="form-field">
-              <label>备注</label>
+              <label>
+                <FileTextOutlined />
+                <span>备注</span>
+              </label>
                   <TextArea
                     id="notes"
                     name="notes"
                     value={formData.notes}
                     placeholder="输入备注信息（可选）"
-                rows={2}
+                rows={3}
                     disabled={isSubmitting}
                     onChange={(e) => handleInputChange(e as any)}
+                    style={{ borderRadius: '8px' }}
                   />
             </div>
           </div>
@@ -1844,9 +1929,9 @@ const CertificateManagement: React.FC = () => {
               <Button
                 onClick={() => {
                   if (!isSubmitting && !isFileUploading) {
-                  resetFormAndUser();
+                    resetFormAndUser();
                     setEditingId(null);
-                  setShowAddCertificateModal(false);
+                    setShowAddCertificateModal(false);
                   }
                 }}
                 disabled={isSubmitting || isFileUploading}
@@ -2112,7 +2197,7 @@ const CertificateManagement: React.FC = () => {
           );
         })()}
       </Modal>
-    </>
+    </div>
   );
 };
 

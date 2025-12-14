@@ -555,6 +555,35 @@ export class CertificateService {
     }
 
     /**
+     * 获取最近证书记录（按创建时间排序）
+     * @param limit 返回数量限制，默认10
+     * @param options 可选参数
+     * @param options.includeAllDomains 是否包含所有域的证书，默认false（仅当前域）
+     */
+    async getRecentCertificates(
+        limit = 10,
+        options?: {
+            includeAllDomains?: boolean;
+        },
+    ): Promise<Certificate[]> {
+        const collection = this.ctx.db.collection('exam.certificates' as any);
+
+        const query: any = {
+            status: 'active',
+        };
+
+        if (!options?.includeAllDomains) {
+            query.domainId = this.ctx.domain!._id;
+        }
+
+        return (await collection
+            .find(query)
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .toArray()) as Certificate[];
+    }
+
+    /**
      * 更新用户证书统计
      * 支持竞赛/考级的多维度统计
      * 优化：使用投影只查询需要的字段，减少数据传输
