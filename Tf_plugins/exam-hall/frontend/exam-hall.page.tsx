@@ -241,10 +241,22 @@ const ExamHallApp: React.FC = () => {
                             竞赛×1.0
                           </Tag>
                         </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            考级
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            ×0.5
+                          </Tag>
+                        </div>
                       </div>
                       <div className="bonus-example">
                         <Text type="secondary" className="bonus-example-text">
                           示例：国家级一等奖 = 10 × 4.0 × 2.0 × 1.0 = 80分
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="bonus-example-text">
+                          示例：国家级考级通过 = 10 × 4.0 × 1.2 × 0.5 = 24分
                         </Text>
                       </div>
                     </div>
