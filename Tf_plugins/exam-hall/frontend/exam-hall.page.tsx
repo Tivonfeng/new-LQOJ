@@ -562,7 +562,7 @@ const ExamHallApp: React.FC = () => {
                           title={
                             <Text strong>
                               {user?.uname || item.username || `User ${item.uid}`}
-                              {user?.displayName && (
+                              {user?.displayName && user.displayName !== user?.uname && (
                                 <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
                                   ({user.displayName})
                                 </Text>

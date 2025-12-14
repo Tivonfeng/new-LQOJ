@@ -78,10 +78,13 @@ export class ExamHallHandler extends Handler {
             const recentRecordUids = [...new Set(processedRecentRecords.map((r) => r.uid))];
             const leaderboardUids = leaderboard.map((item) => item.uid);
             const allUids = [...new Set([...recentRecordUids, ...leaderboardUids])];
-            const rawUdocs = await UserModel.getList(this.domain._id, allUids);
 
-            // 为每个用户生成 avatarUrl，确保 key 是字符串类型
+            // 查询多个域中的用户信息，优先获取 displayName
             const udocs: Record<string, any> = {};
+            const domainUserCollection = this.ctx.db.collection('domain.user');
+
+            // 先查询当前域的用户信息
+            const rawUdocs = await UserModel.getList(this.domain._id, allUids);
             for (const userId in rawUdocs) {
                 const user = rawUdocs[userId];
                 if (user) {
@@ -96,6 +99,46 @@ export class ExamHallHandler extends Handler {
                         avatarUrl,
                         bio: user.bio || '',
                     };
+                }
+            }
+
+            // 对于没有 displayName 的用户，查询所有域中的 displayName
+            const uidsWithoutDisplayName = allUids.filter((userId) => {
+                const user = udocs[String(userId)];
+                return !user || !user.displayName || user.displayName === user.uname;
+            });
+
+            if (uidsWithoutDisplayName.length > 0) {
+                const allDomainUsers = await domainUserCollection
+                    .find({ uid: { $in: uidsWithoutDisplayName } })
+                    .toArray() as any[];
+
+                for (const domainUser of allDomainUsers) {
+                    const userIdStr = String(domainUser.uid);
+                    const hasDisplayName = domainUser?.displayName;
+                    const userDoc = udocs[userIdStr];
+                    const needsDisplayName = !userDoc
+                        || !userDoc.displayName
+                        || userDoc.displayName === userDoc.uname;
+                    if (hasDisplayName && needsDisplayName) {
+                        if (!udocs[userIdStr]) {
+                            // 如果用户不存在，创建基本结构
+                            const user = rawUdocs[domainUser.uid];
+                            let avatarUrl = user?.avatar || user?.avatarUrl || '';
+                            if (avatarUrl && avatarUrl.startsWith('url:')) {
+                                avatarUrl = avatarUrl.substring(4);
+                            }
+                            udocs[userIdStr] = {
+                                uname: user?.uname || '',
+                                displayName: domainUser.displayName,
+                                avatarUrl,
+                                bio: user?.bio || '',
+                            };
+                        } else {
+                            // 更新 displayName
+                            udocs[userIdStr].displayName = domainUser.displayName;
+                        }
+                    }
                 }
             }
 
