@@ -14,6 +14,10 @@ import {
     DiceHistoryHandler,
     DicePlayHandler,
     DiceStatusHandler,
+    LotteryGameHandler,
+    LotteryHistoryHandler,
+    LotteryPlayHandler,
+    LotteryStatusHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
@@ -104,6 +108,8 @@ declare module 'hydrooj' {
         'score.users': UserScore;
         'dice.records': DiceGameRecord;
         'dice.stats': UserDiceStats;
+        'lottery.records': LotteryGameRecord;
+        'lottery.stats': UserLotteryStats;
         'rps.records': RPSGameRecord;
         'rps.stats': UserRPSStats;
         'transfer.records': TransferRecord;
@@ -416,6 +422,12 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('rps_status', '/score/rps/status', RPSStatusHandler);
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
+
+    // 九宫格抽奖游戏路由
+    ctx.Route('lottery_game', '/score/lottery', LotteryGameHandler);
+    ctx.Route('lottery_status', '/score/lottery/status', LotteryStatusHandler);
+    ctx.Route('lottery_play', '/score/lottery/play', LotteryPlayHandler);
+    ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
 
     // 转账系统路由
     ctx.Route('wallet', '/score/transfer', WalletHandler);

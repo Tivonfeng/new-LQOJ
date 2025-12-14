@@ -9,6 +9,7 @@
     "cli": false
   },
   "dependencies": {
+    "@lucky-canvas/react": "0.1.13",
     "@react-spring/web": "^9.7.3",
     "hydrooj": "workspace:^"
   },

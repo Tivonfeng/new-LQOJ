@@ -22,6 +22,14 @@ export {
     RPSStatusHandler,
 } from './RPSHandlers';
 
+// 九宫格抽奖游戏相关处理器
+export {
+    LotteryGameHandler,
+    LotteryHistoryHandler,
+    LotteryPlayHandler,
+    LotteryStatusHandler,
+} from './LotteryHandlers';
+
 // 积分相关处理器
 export {
     ScoreHallHandler,

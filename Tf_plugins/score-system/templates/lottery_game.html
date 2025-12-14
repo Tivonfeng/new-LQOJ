@@ -1,0 +1,42 @@
+{% set page_name = "lottery_game" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- React App Mount Point -->
+<div id="lottery-game-react-app"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.lotteryGameData = {
+        currentCoins: {{ currentCoins or 0 }},
+        canPlay: {{ 'true' if canPlay else 'false' }},
+        gameConfig: {{ gameConfigJson|safe }},
+        userStats: {
+            totalGames: {{ userStats.totalGames or 0 }},
+            totalWins: {{ userStats.totalWins or 0 }},
+            netProfit: {{ userStats.netProfit or 0 }}
+        },
+        winRate: '{{ winRate }}',
+        recentGames: {{ recentGamesJson|safe }},
+        dailyLimit: {
+            remainingPlays: {{ dailyLimit.remainingPlays }},
+            maxPlays: {{ dailyLimit.maxPlays }}
+        }
+    };
+
+    // 传递URL
+    window.lotteryPlayUrl = '{{ url("lottery_play") }}';
+    window.lotteryStatusUrl = '{{ url("lottery_status") }}';
+    window.scoreHallUrl = '{{ url("score_hall") }}';
+    window.lotteryHistoryUrl = '{{ url("lottery_history") }}';
+    window.transferUrl = '{{ url("wallet") }}';
+    {% if handler.user._id %}
+    window.currentUserId = '{{ handler.user._id }}';
+    {% endif %}
+    // 传递用户信息
+    window.lotteryGameData.udocs = {{ udocsJson|safe }};
+</script>
+
+{% endblock %}
+

@@ -30,6 +30,13 @@ export {
     type UserRPSStats,
 } from './RPSGameService';
 
+// 九宫格抽奖游戏服务
+export {
+    type LotteryGameRecord,
+    LotteryService,
+    type UserLotteryStats,
+} from './LotteryService';
+
 // 积分服务
 export {
     type ScoreConfig,
