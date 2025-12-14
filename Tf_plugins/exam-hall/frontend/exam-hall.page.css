@@ -770,3 +770,141 @@
   align-items: baseline;
   flex-shrink: 0;
 }
+
+/* ========================================
+   奖励系统说明样式（参考打字大厅）
+   ======================================== */
+.bonus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bonus-item-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+}
+
+.bonus-item-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+.bonus-item-card .ant-card-body {
+  padding: 16px;
+}
+
+.bonus-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bonus-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bonus-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.bonus-item-title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.bonus-item-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin-bottom: 4px !important;
+  line-height: 1.4 !important;
+}
+
+.bonus-item-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
+  display: block;
+}
+
+.bonus-points-badge {
+  flex-shrink: 0;
+}
+
+.bonus-points-tag {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 12px;
+  margin: 0;
+  border-radius: 8px;
+}
+
+/* 奖励详情网格 - 紧凑布局 */
+.bonus-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bonus-detail-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.bonus-detail-item:hover {
+  background: #f3f4f6;
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateX(2px);
+}
+
+.bonus-detail-level {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.bonus-detail-points {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.bonus-example {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bonus-example-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6b7280;
+}

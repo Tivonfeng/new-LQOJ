@@ -1,6 +1,6 @@
 import './exam-hall.page.css';
 
-import { FileTextOutlined, SettingOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons';
+import { FileTextOutlined, GiftOutlined, InfoCircleOutlined, SettingOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons';
 import {
   Button,
   Card,
@@ -144,6 +144,159 @@ const ExamHallApp: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* 奖励系统说明 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24}>
+          <Card
+            className="content-card"
+            title={
+              <Space>
+                <GiftOutlined />
+                奖励系统说明
+              </Space>
+            }
+          >
+            <div className="bonus-list">
+              <Row gutter={[12, 12]}>
+                {/* 权重计算说明 */}
+                <Col xs={24} sm={12}>
+                  <Card className="bonus-item-card" variant="outlined">
+                    <div className="bonus-item-content">
+                      <div className="bonus-item-header">
+                        <div className="bonus-icon-wrapper">
+                          <InfoCircleOutlined style={{ fontSize: 18 }} />
+                        </div>
+                        <div className="bonus-item-title-section">
+                          <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                            权重计算规则
+                          </Title>
+                          <Text type="secondary" className="bonus-item-desc">
+                            证书权重由多个维度自动计算
+                          </Text>
+                        </div>
+                      </div>
+                      <div className="bonus-details-grid">
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            基础权重
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            10分
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            级别系数 (50%)
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            市级×1.0
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            省级
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            ×2.0
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            国家级
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            ×4.0
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            奖项系数 (40%)
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            一等奖×2.0
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            二等奖
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            ×1.6
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            三等奖
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            ×1.3
+                          </Tag>
+                        </div>
+                        <div className="bonus-detail-item">
+                          <Text type="secondary" className="bonus-detail-level">
+                            类型系数 (10%)
+                          </Text>
+                          <Tag color="blue" className="bonus-detail-points">
+                            竞赛×1.0
+                          </Tag>
+                        </div>
+                      </div>
+                      <div className="bonus-example">
+                        <Text type="secondary" className="bonus-example-text">
+                          示例：国家级一等奖 = 10 × 4.0 × 2.0 × 1.0 = 80分
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                </Col>
+                {/* 积分获取说明 */}
+                <Col xs={24} sm={12}>
+                  <Card className="bonus-item-card" variant="outlined">
+                    <div className="bonus-item-content">
+                      <div className="bonus-item-header">
+                        <div className="bonus-icon-wrapper">
+                          <TrophyOutlined style={{ fontSize: 18 }} />
+                        </div>
+                        <div className="bonus-item-title-section">
+                          <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                            积分获取规则
+                          </Title>
+                          <Text type="secondary" className="bonus-item-desc">
+                            证书录入后自动获得对应积分
+                          </Text>
+                        </div>
+                        <div className="bonus-points-badge">
+                          <Tag color="green" className="bonus-points-tag">
+                            自动获得
+                          </Tag>
+                        </div>
+                      </div>
+                      <div className="bonus-example" style={{ marginTop: 12 }}>
+                        <Text type="secondary" className="bonus-example-text">
+                          • 证书权重 = 积分数量
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="bonus-example-text">
+                          • 权重越高，获得的积分越多
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="bonus-example-text">
+                          • 赛考指数 = 所有证书权重总和
+                        </Text>
+                        <br />
+                        <Text type="secondary" className="bonus-example-text">
+                          • 指数越高，排行榜排名越靠前
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
       {/* 内容区域 */}
       <div className="exam-hall-content">
