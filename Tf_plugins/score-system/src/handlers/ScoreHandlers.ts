@@ -161,7 +161,8 @@ export class ScoreHallHandler extends Handler {
         // 获取用户信息（包括排行榜和最近记录的用户）
         const rankingUids = topUsers.map((u) => u.uid);
         const recentRecordUids = recentRecords.map((r) => r.uid);
-        const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
+        // 如果用户已登录，确保当前用户也在列表中（用于悬浮球头像显示）
+        const allUids = [...new Set([...rankingUids, ...recentRecordUids, ...(uid ? [uid] : [])])]; // 去重合并
         const UserModel = global.Hydro.model.user;
         const rawUdocs = await UserModel.getList(this.domain._id, allUids);
 

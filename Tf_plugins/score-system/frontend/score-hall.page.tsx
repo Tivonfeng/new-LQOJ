@@ -16,7 +16,6 @@ import {
   TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { WalletFloatingBall } from './components/WalletFloatingBall';
 import {
   Button,
   Card,
@@ -30,8 +29,9 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 
 const { Title, Text } = Typography;
 
