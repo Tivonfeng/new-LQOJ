@@ -311,7 +311,17 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
                           animationDelay: `${index * 0.1}s`,
                         }}
                       >
-                        <img src={user.avatarUrl} alt={user.uname || user.displayName} />
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.uname || user.displayName}
+                            onError={(e) => {
+                              // 如果头像加载失败，隐藏图片
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            loading="lazy"
+                          />
+                        ) : null}
                         <div className="tooltip">
                           <div className="tooltip-name">
                             {user.uname || user.displayName}

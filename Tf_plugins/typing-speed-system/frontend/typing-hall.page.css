@@ -540,28 +540,15 @@ body {
     position: relative;
     min-height: 600px;
     margin-top: 12px;
-    background: linear-gradient(to bottom,
-        rgba(168, 85, 247, 0.03) 0%,
-        rgba(168, 85, 247, 0.03) 12.5%,
-        rgba(219, 39, 119, 0.03) 12.5%,
-        rgba(219, 39, 119, 0.03) 25%,
-        rgba(236, 72, 153, 0.03) 25%,
-        rgba(236, 72, 153, 0.03) 37.5%,
-        rgba(239, 68, 68, 0.03) 37.5%,
-        rgba(239, 68, 68, 0.03) 50%,
-        rgba(251, 146, 60, 0.03) 50%,
-        rgba(251, 146, 60, 0.03) 62.5%,
-        rgba(250, 204, 21, 0.03) 62.5%,
-        rgba(250, 204, 21, 0.03) 75%,
-        rgba(34, 197, 94, 0.03) 75%,
-        rgba(34, 197, 94, 0.03) 87.5%,
-        rgba(156, 163, 175, 0.03) 87.5%,
-        rgba(156, 163, 175, 0.03) 100%
-    );
+    /* 使用简化的背景色，减少渐变计算 */
+    background: var(--bg-secondary);
     border-radius: 16px;
     border: 1px solid var(--border-color);
-    overflow: hidden;
+    /* 允许内容溢出以显示 tooltip */
+    overflow: visible;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    /* 只使用 layout 和 style，不使用 paint（会裁剪内容） */
+    contain: layout style;
 }
 
 .ladder-row {
@@ -570,9 +557,14 @@ body {
     align-items: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.03);
     position: relative;
-    padding: 12px 16px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* 不设置z-index，避免创建新的堆叠上下文 */
+    /* 增加上下 padding 以确保头像有足够空间 */
+    padding: 20px 16px;
+    /* 只对背景色和透明度做过渡，减少重绘 */
+    transition: background-color 0.2s ease;
+    /* 确保不裁剪内容 */
+    overflow: visible;
+    /* 只使用 layout 和 style，不使用 paint（会裁剪内容） */
+    contain: layout style;
 }
 
 .ladder-row:last-child {
@@ -581,6 +573,8 @@ body {
 
 .ladder-row:hover {
     background: rgba(59, 130, 246, 0.04);
+    /* 使用 will-change 提示浏览器优化 */
+    will-change: background-color;
 }
 
 /* 每行设置动画延迟，让流动看起来更自然 */
@@ -685,7 +679,8 @@ body {
     padding: 8px 0;
     margin: 0 12px;
     overflow: visible;
-    /* 移除z-index: 1，不在这里创建堆叠上下文 */
+    /* 只使用 layout 和 style，不使用 paint（会裁剪内容） */
+    contain: layout style;
 }
 
 .ladder-track::before {
@@ -705,6 +700,9 @@ body {
     pointer-events: none;
     animation: speedGuideFlow 4s ease-in-out infinite;
     opacity: 0.4;
+    /* 使用 will-change 和 transform 来优化动画性能 */
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .wpm-scale {
@@ -730,20 +728,28 @@ body {
 
 .scatter-points {
     width: 100%;
-    height: 44px;
+    /* 增加高度以确保头像有足够空间 */
+    height: 60px;
     position: relative;
     display: flex;
     align-items: center;
     z-index: auto;
-    /* 移除z-index，让tooltip能够自由浮动 */
+    /* 确保不裁剪内容 */
+    overflow: visible;
+    /* 只使用 layout 和 style，不使用 paint（会裁剪内容） */
+    contain: layout style;
 }
 
 .user-avatar-point {
     position: absolute;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 只对 transform 和 opacity 做过渡，使用 GPU 加速 */
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     animation: pointFadeIn 0.6s ease-out backwards;
     z-index: auto;
+    /* 使用 will-change 提示浏览器优化 */
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 @keyframes pointFadeIn {
@@ -760,6 +766,8 @@ body {
 /* Hover时提升z-index，只在同一行内有效 */
 .user-avatar-point:hover {
     z-index: 10 !important;
+    /* 使用 will-change 提示浏览器优化 */
+    will-change: transform;
 }
 
 .user-avatar-point img {
@@ -768,14 +776,22 @@ body {
     border-radius: 50%;
     border: 2.5px solid white;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 只对 transform 做过渡，使用 GPU 加速 */
+    transition: transform 0.2s ease-out;
     background: white;
+    /* 使用 will-change 和 transform 来优化性能 */
+    will-change: transform;
+    transform: translateZ(0);
+    /* 使用 object-fit 来优化图片渲染 */
+    object-fit: cover;
 }
 
 /* 当前用户特殊标记 */
 .user-avatar-point.current-user-point img {
     border: 2.5px solid var(--primary-color);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15), 0 2px 8px rgba(59, 130, 246, 0.2);
+    /* 使用 will-change 来优化动画性能 */
+    will-change: box-shadow;
     animation: currentUserPulse 2.5s ease-in-out infinite;
 }
 
@@ -788,34 +804,38 @@ body {
     }
 }
 
-/* 简洁的左到右速度引导动画 */
+/* 简洁的左到右速度引导动画 - 使用 transform 而不是 left 来优化性能 */
 @keyframes speedGuideFlow {
     0% {
-        left: -100%;
+        transform: translateX(-100%) translateZ(0);
     }
     100% {
-        left: 100%;
+        transform: translateX(100%) translateZ(0);
     }
 }
 
 .user-avatar-point:hover img {
-    transform: scale(1.4) translateY(-6px);
+    /* 使用 transform 而不是 scale，配合 translateZ 来触发 GPU 加速 */
+    transform: translateZ(0) scale(1.4) translateY(-6px);
     border-color: var(--primary-color);
     box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
 .user-avatar-point.current-user-point:hover img {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 16px rgba(59, 130, 246, 0.4);
+    /* 使用 will-change 来优化性能 */
+    will-change: box-shadow, transform;
 }
 
 .user-avatar-point .tooltip {
     position: absolute;
     top: calc(100% + 12px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
     background: rgba(17, 24, 39, 0.98);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* 减少 backdrop-filter 的使用，因为它可能影响性能 */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: white;
     padding: 12px 16px;
     border-radius: 10px;
@@ -823,10 +843,14 @@ body {
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    z-index: 9999;
+    /* 只对 opacity 和 transform 做过渡 */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    /* 使用更高的 z-index 确保 tooltip 显示在最上层 */
+    z-index: 10000;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
     line-height: 1.5;
+    /* 使用 will-change 来优化性能 */
+    will-change: opacity, transform;
 }
 
 .user-avatar-point .tooltip::after {
@@ -841,7 +865,7 @@ body {
 
 .user-avatar-point:hover .tooltip {
     opacity: 1;
-    transform: translateX(-50%) translateY(4px);
+    transform: translateX(-50%) translateY(4px) translateZ(0);
 }
 
 .tooltip-name {
