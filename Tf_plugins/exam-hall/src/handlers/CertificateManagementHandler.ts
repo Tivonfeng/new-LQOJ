@@ -1,9 +1,9 @@
-import { Handler, PRIV } from 'hydrooj';
+import { Handler, ObjectId, PRIV } from 'hydrooj';
 import { PresetService } from '../services/PresetService';
 
 /**
  * 序列化对象为 JSON 兼容格式
- * 处理 BigInt 和 Date 对象
+ * 处理 BigInt、Date 和 ObjectId 对象
  */
 function serializeForJSON(obj: any): any {
     if (obj === null || obj === undefined) {
@@ -14,6 +14,9 @@ function serializeForJSON(obj: any): any {
     }
     if (obj instanceof Date) {
         return obj.toISOString();
+    }
+    if (obj instanceof ObjectId || (obj && typeof obj === 'object' && obj.toString && obj.constructor?.name === 'ObjectId')) {
+        return obj.toString();
     }
     if (Array.isArray(obj)) {
         return obj.map(serializeForJSON);

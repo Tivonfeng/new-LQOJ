@@ -61,11 +61,21 @@ export interface ExamHallData {
     category: string;
     level?: string;
     issueDate: string | Date;
+    certificateImageUrl?: string;
     examType?: 'competition' | 'certification';
     competitionName?: string;
     certificationSeries?: string;
     createdAt?: string;
     createdAtFormatted?: string;
+  }>;
+  /** 赛考指数排行榜 */
+  leaderboard?: Array<{
+    uid: number;
+    username?: string;
+    totalWeight: number;
+    totalCertificates: number;
+    competitionWeight: number;
+    certificationWeight: number;
   }>;
   /** 用户信息映射（用于最近记录显示） */
   udocs?: Record<string, {

@@ -163,19 +163,51 @@
   transform: translateY(-2px);
 }
 
-/* 筛选输入框样式 */
+/* 筛选输入框样式 - 确保只有一个边框 */
 .ant-input-affix-wrapper {
   transition: all 0.3s ease;
   border-radius: 8px;
+  border: 1px solid #d9d9d9 !important;
 }
 
 .ant-input-affix-wrapper:hover {
-  border-color: #6366f1;
+  border-color: #6366f1 !important;
 }
 
-.ant-input-affix-wrapper-focused {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper-focused:hover {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+  outline: none !important;
+}
+
+/* 确保内部 input 完全没有边框和阴影 */
+.ant-input-affix-wrapper .ant-input {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+.ant-input-affix-wrapper .ant-input:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.ant-input-affix-wrapper .ant-input:hover {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 移除可能的重复边框 */
+.tab-card .ant-input-affix-wrapper {
+  border: 1px solid #d9d9d9 !important;
+}
+
+.tab-card .ant-input-affix-wrapper .ant-input {
+  border: none !important;
 }
 
 /* 预设卡片样式（参考掷骰子游戏风格） */

@@ -664,3 +664,109 @@
 .record-item .ant-list-item-meta-description {
   margin-top: 0;
 }
+
+/* Leaderboard Items */
+.leaderboard-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.leaderboard-item:hover {
+  background: #f9fafb;
+  transform: translateX(4px);
+}
+
+.rank-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.rank-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.rank-badge.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+}
+
+.rank-badge.rank-1:hover {
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+.rank-badge.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 50%, #c0c0c0 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(192, 192, 192, 0.4);
+}
+
+.rank-badge.rank-2:hover {
+  box-shadow: 0 6px 20px rgba(192, 192, 192, 0.5);
+}
+
+.rank-badge.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #e6a057 50%, #cd7f32 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(205, 127, 50, 0.4);
+}
+
+.rank-badge.rank-3:hover {
+  box-shadow: 0 6px 20px rgba(205, 127, 50, 0.5);
+}
+
+.rank-badge.rank-other {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #6366f1 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.rank-badge.rank-other:hover {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.leaderboard-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-item .ant-list-item-meta-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.player-score {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+}

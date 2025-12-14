@@ -9,6 +9,7 @@ import {
   List,
   Modal,
   Row,
+  Segmented,
   Space,
   Statistic,
   Tag,
@@ -65,6 +66,7 @@ const ExamHallApp: React.FC = () => {
     cert: any;
     type: 'competition' | 'certification';
   } | null>(null);
+  const [recordFilter, setRecordFilter] = useState<'all' | 'competition' | 'certification'>('all');
 
   useEffect(() => {
     const examData = (window as any).examHallData as ExamHallData;
@@ -74,7 +76,24 @@ const ExamHallApp: React.FC = () => {
   const competitions = data?.recentCompetitions || [];
   const certifications = data?.recentCertifications || [];
   const recentRecords = data?.recentRecords || [];
+  const leaderboard = data?.leaderboard || [];
   const udocs = data?.udocs || {};
+
+  // 根据筛选条件过滤记录
+  const filteredRecentRecords = useMemo(() => {
+    if (recordFilter === 'all') {
+      return recentRecords;
+    }
+    return recentRecords.filter((record) => {
+      if (recordFilter === 'competition') {
+        return record.examType === 'competition';
+      }
+      if (recordFilter === 'certification') {
+        return record.examType === 'certification';
+      }
+      return true;
+    });
+  }, [recentRecords, recordFilter]);
 
   // 计算统计数据
   const stats = useMemo(() => {
@@ -169,24 +188,53 @@ const ExamHallApp: React.FC = () => {
             </Card>
           </Col>
         </Row>
-        {/* 最近证书记录 */}
-        {recentRecords.length > 0 && (
-          <div className="exam-hall-section" style={{ marginBottom: '24px' }}>
-            <Card
-              title={
-                <Space>
-                  <FileTextOutlined />
-                  <span>最近证书记录</span>
-                </Space>
-              }
-              className="content-card"
-            >
-              <List
-                dataSource={recentRecords}
-                renderItem={(record) => {
-                  const user = udocs[String(record.uid)];
-                  const isCompetition = record.examType === 'competition';
-                  return (
+
+        {/* 最近证书记录和排行榜 */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          {/* 最近证书记录 */}
+          <Col xs={24} lg={16}>
+            {recentRecords.length > 0 && (
+              <Card
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <Space>
+                      <FileTextOutlined />
+                      <span>最近证书记录</span>
+                    </Space>
+                    <Segmented
+                      value={recordFilter}
+                      onChange={(value) => setRecordFilter(value as 'all' | 'competition' | 'certification')}
+                      options={[
+                        { label: '全部', value: 'all' },
+                        { label: '竞赛', value: 'competition' },
+                        { label: '等级考试', value: 'certification' },
+                      ]}
+                      size="small"
+                    />
+                  </div>
+                }
+                className="content-card"
+              >
+              {filteredRecentRecords.length === 0 ? (
+                <Empty
+                  description={
+                    <Text type="secondary">
+                      {recordFilter === 'all'
+                        ? '暂无证书记录'
+                        : recordFilter === 'competition'
+                          ? '暂无竞赛证书记录'
+                          : '暂无等级考试证书记录'}
+                    </Text>
+                  }
+                  style={{ padding: '40px 0' }}
+                />
+              ) : (
+                <List
+                  dataSource={filteredRecentRecords}
+                  renderItem={(record) => {
+                    const user = udocs[String(record.uid)];
+                    const isCompetition = record.examType === 'competition';
+                    return (
                     <List.Item className="record-item">
                       <List.Item.Meta
                         avatar={
@@ -248,35 +296,156 @@ const ExamHallApp: React.FC = () => {
                         }
                         description={
                           <div style={{ marginTop: 8 }}>
-                            <div style={{ marginBottom: 4 }}>
-                              <Text strong>{record.certificateName}</Text>
-                            </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-                              <Tag color="blue">{record.category || '赛项'}</Tag>
-                              {record.level && (
-                                <Tag color={isCompetition ? 'orange' : 'blue'}>
-                                  {record.level}
-                                </Tag>
+                            <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                              {(record as any).certificateImageUrl ? (
+                                <img
+                                  src={(record as any).certificateImageUrl}
+                                  alt={record.certificateName}
+                                  style={{
+                                    width: 80,
+                                    height: 80,
+                                    objectFit: 'cover',
+                                    borderRadius: 8,
+                                    border: '1px solid #e5e7eb',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={() => setDetailCertificate({ cert: record, type: isCompetition ? 'competition' : 'certification' })}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: 8,
+                                    border: '1px solid #e5e7eb',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                                    color: '#9ca3af',
+                                    fontSize: 24,
+                                  }}
+                                >
+                                  📄
+                                </div>
                               )}
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {record.certifyingBody}
-                              </Text>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ marginBottom: 4 }}>
+                                  <Text strong>{record.certificateName}</Text>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+                                  <Tag color="blue">{record.category || '赛项'}</Tag>
+                                  {record.level && (
+                                    <Tag color={isCompetition ? 'orange' : 'blue'}>
+                                      {record.level}
+                                    </Tag>
+                                  )}
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {record.certifyingBody}
+                                  </Text>
+                                </div>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  {record.createdAt
+                                    ? formatRelativeTime(record.createdAt, record.createdAtFormatted)
+                                    : '时间未知'}
+                                </Text>
+                              </div>
                             </div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {record.createdAt
-                                ? formatRelativeTime(record.createdAt, record.createdAtFormatted)
-                                : '时间未知'}
-                            </Text>
                           </div>
                         }
                       />
                     </List.Item>
-                  );
-                }}
-              />
-            </Card>
-          </div>
-        )}
+                    );
+                  }}
+                />
+              )}
+              </Card>
+            )}
+          </Col>
+
+          {/* 赛考指数排行榜 */}
+          <Col xs={24} lg={8}>
+            {leaderboard.length > 0 && (
+              <Card
+                title={
+                  <Space>
+                    <TrophyOutlined style={{ fontSize: 20, color: '#f59e0b' }} />
+                    <span>赛考指数排行榜</span>
+                  </Space>
+                }
+                className="content-card"
+              >
+                <List
+                  dataSource={leaderboard}
+                  renderItem={(item, index) => {
+                    const user = udocs[String(item.uid)];
+                    const rank = index + 1;
+                    const getRankIcon = (r: number) => {
+                      if (r === 1) return <TrophyOutlined style={{ fontSize: 24, color: '#fff' }} />;
+                      if (r === 2) return <TrophyOutlined style={{ fontSize: 24, color: '#fff' }} />;
+                      if (r === 3) return <TrophyOutlined style={{ fontSize: 24, color: '#fff' }} />;
+                      return <span style={{ fontSize: 18, fontWeight: 700 }}>{r}</span>;
+                    };
+
+                    return (
+                      <List.Item className="leaderboard-item">
+                        <List.Item.Meta
+                          avatar={
+                            <>
+                              <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
+                                {getRankIcon(rank)}
+                              </div>
+                              {user?.avatarUrl ? (
+                                <img
+                                  src={user.avatarUrl}
+                                  alt={user?.uname || user?.displayName || `User ${item.uid}`}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : null}
+                            </>
+                          }
+                          title={
+                            <Text strong>
+                              {user?.uname || item.username || `User ${item.uid}`}
+                              {user?.displayName && (
+                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                  ({user.displayName})
+                                </Text>
+                              )}
+                            </Text>
+                          }
+                          description={
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                              <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
+                                证书: {item.totalCertificates}
+                              </Tag>
+                              <Tag color="gold" style={{ fontSize: 11, margin: 0 }}>
+                                竞赛: {item.competitionWeight.toFixed(1)}
+                              </Tag>
+                              <Tag color="purple" style={{ fontSize: 11, margin: 0 }}>
+                                考级: {item.certificationWeight.toFixed(1)}
+                              </Tag>
+                            </div>
+                          }
+                        />
+                        <div className="player-score">
+                          <Text strong style={{ fontSize: 16, color: '#10b981' }}>
+                            {item.totalWeight.toFixed(1)}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                            指数
+                          </Text>
+                        </div>
+                      </List.Item>
+                    );
+                  }}
+                />
+              </Card>
+            )}
+          </Col>
+        </Row>
       </div>
       <Modal
         open={!!detailCertificate}

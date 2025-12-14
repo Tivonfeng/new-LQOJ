@@ -17,11 +17,12 @@ export class ExamHallHandler extends Handler {
             const canManage = this.checkManagePermission();
             const certService = new CertificateService(this.ctx);
 
-            // 获取最近一个季度的证书
-            const [recentCompetitions, recentCertifications, recentCertificates] = await Promise.all([
+            // 获取最近一个季度的证书和排行榜
+            const [recentCompetitions, recentCertifications, recentCertificates, leaderboard] = await Promise.all([
                 certService.getRecentQuarterCertificates('competition', 20, { includeAllDomains: true }),
                 certService.getRecentQuarterCertificates('certification', 20, { includeAllDomains: true }),
                 certService.getRecentCertificates(10, { includeAllDomains: true }),
+                certService.getLeaderboard(20, { includeAllDomains: true }),
             ]);
 
             // 处理证书数据（统一处理逻辑）
@@ -52,6 +53,7 @@ export class ExamHallHandler extends Handler {
                     category: cert.category,
                     level: cert.level,
                     issueDate: cert.issueDate,
+                    certificateImageUrl: cert.certificateImageUrl,
                     examType: cert.examType,
                     competitionName: cert.competitionName,
                     certificationSeries: cert.certificationSeries,
@@ -71,10 +73,12 @@ export class ExamHallHandler extends Handler {
                 Promise.all(recentCertificates.map((cert) => processRecentRecord(cert))),
             ]);
 
-            // 获取用户信息（用于最近记录显示）
+            // 获取用户信息（用于最近记录显示和排行榜）
             const UserModel = (global as any).Hydro.model.user;
             const recentRecordUids = [...new Set(processedRecentRecords.map((r) => r.uid))];
-            const rawUdocs = await UserModel.getList(this.domain._id, recentRecordUids);
+            const leaderboardUids = leaderboard.map((item) => item.uid);
+            const allUids = [...new Set([...recentRecordUids, ...leaderboardUids])];
+            const rawUdocs = await UserModel.getList(this.domain._id, allUids);
 
             // 为每个用户生成 avatarUrl，确保 key 是字符串类型
             const udocs: Record<string, any> = {};
@@ -95,6 +99,17 @@ export class ExamHallHandler extends Handler {
                 }
             }
 
+            // 处理排行榜数据，添加用户名
+            const processedLeaderboard = await Promise.all(
+                leaderboard.map(async (item) => {
+                    const username = await this.lookupUsername(item.uid, this.normalizeDomainId(this.domain._id)) || `User#${item.uid}`;
+                    return {
+                        ...item,
+                        username,
+                    };
+                }),
+            );
+
             const examHallData = {
                 isLoggedIn: !!uid,
                 canManage,
@@ -102,6 +117,7 @@ export class ExamHallHandler extends Handler {
                 recentCompetitions: processedCompetitions,
                 recentCertifications: processedCertifications,
                 recentRecords: processedRecentRecords,
+                leaderboard: processedLeaderboard,
                 udocs,
             };
 

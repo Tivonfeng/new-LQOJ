@@ -1382,32 +1382,33 @@ const CertificateManagement: React.FC = () => {
   const certificateTabContent = (
     <Card variant="borderless" className="tab-card">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Space wrap size="middle" className="certificate-toolbar">
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              resetFormAndUser();
-              setEditingId(null);
-              setShowAddCertificateModal(true);
-            }}
-          >
-            添加证书
-          </Button>
-          {selectedRowKeys.length > 0 && (
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleBatchDelete}
-            >
-              批量删除 ({selectedRowKeys.length})
-            </Button>
-          )}
-        </Space>
-
-        {/* 筛选条件 */}
-        <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} md={6}>
+        {/* 添加证书按钮和筛选条件在同一行 */}
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} sm={24} md={6} lg={4}>
+            <Space wrap size="middle">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  resetFormAndUser();
+                  setEditingId(null);
+                  setShowAddCertificateModal(true);
+                }}
+              >
+                添加证书
+              </Button>
+              {selectedRowKeys.length > 0 && (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleBatchDelete}
+                >
+                  批量删除 ({selectedRowKeys.length})
+                </Button>
+              )}
+            </Space>
+          </Col>
+          <Col xs={24} sm={12} md={6} lg={5}>
             <Input
               allowClear
               placeholder="筛选用户名"
@@ -1421,7 +1422,7 @@ const CertificateManagement: React.FC = () => {
               }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} lg={5}>
             <Input
               allowClear
               placeholder="筛选赛考名称"
@@ -1435,7 +1436,7 @@ const CertificateManagement: React.FC = () => {
               }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} lg={5}>
             <Input
               allowClear
               placeholder="筛选赛项"
@@ -1449,7 +1450,7 @@ const CertificateManagement: React.FC = () => {
               }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} lg={5}>
             <Input
               allowClear
               placeholder="筛选主办单位"
