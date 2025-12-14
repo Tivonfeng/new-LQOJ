@@ -271,7 +271,13 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
         {ladderData.map(({ range, users, actualMax }, index) => {
           const mid = Math.round((range.min + actualMax) / 2);
           return (
-            <div key={index} className="ladder-row">
+            <div
+              key={index}
+              className="ladder-row"
+              style={{
+                backgroundColor: range.color,
+              }}
+            >
               <div className="ladder-label">
                 <div className="level-badge">
                   <span className="level-icon">{range.icon}</span>

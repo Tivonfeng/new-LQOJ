@@ -540,8 +540,8 @@ body {
     position: relative;
     min-height: 600px;
     margin-top: 12px;
-    /* 使用简化的背景色，减少渐变计算 */
-    background: var(--bg-secondary);
+    /* 移除背景色，让每行的背景色更清晰 */
+    background: transparent;
     border-radius: 16px;
     border: 1px solid var(--border-color);
     /* 允许内容溢出以显示 tooltip */
@@ -572,7 +572,8 @@ body {
 }
 
 .ladder-row:hover {
-    background: rgba(59, 130, 246, 0.04);
+    /* hover 时在原有背景色上叠加一个更亮的颜色 */
+    background-color: rgba(59, 130, 246, 0.08) !important;
     /* 使用 will-change 提示浏览器优化 */
     will-change: background-color;
 }
@@ -684,25 +685,8 @@ body {
 }
 
 .ladder-track::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(59, 130, 246, 0.08) 30%,
-        rgba(59, 130, 246, 0.12) 50%,
-        rgba(59, 130, 246, 0.08) 70%,
-        transparent 100%
-    );
-    pointer-events: none;
-    animation: speedGuideFlow 4s ease-in-out infinite;
-    opacity: 0.4;
-    /* 使用 will-change 和 transform 来优化动画性能 */
-    will-change: transform;
-    transform: translateZ(0);
+    /* 禁用从左到右的动画效果 */
+    display: none;
 }
 
 .wpm-scale {
