@@ -154,9 +154,13 @@ export default class WechatPlugin extends Service {
                 if (!s) throw new ValidationError('token');
 
                 const isBinding = this.session.oauthBind === 'wechat';
-                const primaryService = config.useOpenPlatformForOAuth && openWechatService
-                    ? openWechatService
-                    : wechatService;
+
+                // 根据 state token 中保存的平台信息选择正确的 service
+                // PC端（非微信浏览器）使用开放平台，微信内根据配置决定
+                const platform = (s as any).platform || 'mp'; // 默认为公众号，兼容旧数据
+                const useOpenPlatform = platform === 'open' && openWechatService;
+
+                const primaryService = useOpenPlatform ? openWechatService! : wechatService;
                 const fallbackService = primaryService === openWechatService
                     ? wechatService
                     : openWechatService;
@@ -164,6 +168,15 @@ export default class WechatPlugin extends Service {
                 let tokenData;
                 let userInfo;
                 try {
+                    if (useOpenPlatform) {
+                        logger.info('[WechatPlugin] 回调：使用开放平台 service 处理 PC 扫码登录', {
+                            platform,
+                            appId: config.openAppId,
+                            state,
+                        });
+                    } else {
+                        logger.info('[WechatPlugin] 回调：使用公众号 service 处理微信内登录', { platform, state });
+                    }
                     tokenData = await primaryService.getOAuthAccessToken(code);
                     userInfo = await primaryService.getUserInfo(tokenData.access_token, tokenData.openid);
                 } catch (error) {
@@ -198,10 +211,6 @@ export default class WechatPlugin extends Service {
                 };
             },
             get: async function get(this: Handler) {
-                const [state] = await TokenModel.add(
-                    TokenModel.TYPE_OAUTH, 600, { redirect: this.request.referer },
-                );
-
                 // 获取服务器 URL 并规范化
                 let baseUrl = SystemModel.get('server.url') || '';
 
@@ -244,10 +253,31 @@ export default class WechatPlugin extends Service {
 
                 const userAgent = this.request.headers['user-agent'] || '';
                 const isWechat = /MicroMessenger/i.test(userAgent);
-                const useOpenPlatform = config.useOpenPlatformForOAuth && config.openAppId;
-                const targetAppId = useOpenPlatform ? config.openAppId : config.appId;
+
+                // 判断使用的平台：PC端（非微信浏览器）必须使用开放平台，微信内可以使用公众号或开放平台
+                let useOpenPlatformForThisRequest: boolean;
+                if (!isWechat) {
+                    // PC端必须使用开放平台
+                    if (!config.openAppId) {
+                        throw new Error('未配置微信开放平台AppID，无法使用扫码登录功能');
+                    }
+                    useOpenPlatformForThisRequest = true;
+                } else {
+                    // 微信内根据配置决定
+                    useOpenPlatformForThisRequest = config.useOpenPlatformForOAuth && !!config.openAppId;
+                }
+
+                // 在 state token 中保存使用的平台信息，以便回调时正确选择 service
+                const [state] = await TokenModel.add(
+                    TokenModel.TYPE_OAUTH, 600, {
+                        redirect: this.request.referer,
+                        platform: useOpenPlatformForThisRequest ? 'open' : 'mp',
+                    },
+                );
 
                 if (isWechat) {
+                    // 微信内使用网页授权
+                    const targetAppId = useOpenPlatformForThisRequest ? config.openAppId! : config.appId;
                     const authUrl = 'https://open.weixin.qq.com/connect/oauth2/authorize';
                     const params = [
                         `?appid=${targetAppId}`,
@@ -258,10 +288,14 @@ export default class WechatPlugin extends Service {
                     ].join('&');
                     this.response.redirect = `${authUrl}${params}#wechat_redirect`;
                 } else {
-                    if (!config.openAppId) {
-                        throw new Error('未配置微信开放平台AppID，无法使用扫码登录功能');
-                    }
+                    // PC端使用扫码登录
+                    logger.info('[WechatPlugin] PC扫码登录：使用开放平台 qrconnect 构建跳转', {
+                        redirectUri,
+                        appId: config.openAppId,
+                        state,
+                    });
                     const authUrl = 'https://open.weixin.qq.com/connect/qrconnect';
+                    // 网站应用扫码登录官方要求 scope=snsapi_login
                     const params = [
                         `?appid=${config.openAppId}`,
                         `redirect_uri=${encodedRedirectUri}`,
