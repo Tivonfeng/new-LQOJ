@@ -744,7 +744,7 @@ const AiHelperApp: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                每次调用将消耗 <span style={{ fontWeight: 600, color: '#f97316' }}>100</span> 积分
+                每次调用将消耗 <span style={{ fontWeight: 600, color: '#f97316' }}>50</span> 积分
               </div>
               <Button
                 type="primary"

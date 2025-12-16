@@ -479,7 +479,7 @@ export class AiHelperStreamHandler extends ConnectionHandler {
                 (this.ctx as any).emit('ai/helper-used', {
                     uid,
                     domainId,
-                    cost: 100,
+                    cost: 50,
                     reason: '使用 AI 辅助解题（流式）',
                 });
             } catch (scoreErr) {
