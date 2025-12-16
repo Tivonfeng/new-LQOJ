@@ -42,8 +42,8 @@ export default class WechatPlugin extends Service {
         appId: Schema.string().description('微信公众号 AppID (用于分享功能，必需)').default('wx8f8d991dfd127dca'),
         appSecret: Schema.string().description('微信公众号 AppSecret').role('secret').default('05068710fde31b2e914dceb3f45a8aa1'),
         // 开放平台配置（用于网页扫码登录，可选，配置后可同时支持微信内和浏览器登录）
-        openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default(''),
-        openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default(''),
+        openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default('wxb2ae929b4383b073'),
+        openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default('607ac168edfd1c3b1f1a0774294d3a46'),
         useOpenPlatformForOAuth: Schema.boolean().description('优先使用开放平台进行OAuth登录').default(false),
         // 通用配置
         domains: Schema.array(Schema.string()).description('授权域名列表').default(['yz.lqcode.fun', 'noj.lqcode.fun']),
