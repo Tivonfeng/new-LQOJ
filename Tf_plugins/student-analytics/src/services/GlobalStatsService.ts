@@ -5,22 +5,22 @@ import { Context, ObjectId } from 'hydrooj';
  */
 export interface GlobalStats {
     // 用户统计
-    totalUsers: number;           // 有提交记录的总用户数
-    activeUsers: number;          // 最近 30 天有提交的活跃用户数
+    totalUsers: number; // 有提交记录的总用户数
+    activeUsers: number; // 最近 30 天有提交的活跃用户数
 
     // 提交统计
-    totalSubmissions: number;     // 总提交数
-    totalAcSubmissions: number;   // 总 AC 提交数
-    todaySubmissions: number;     // 今日提交数
-    weekSubmissions: number;      // 本周提交数
-    monthSubmissions: number;     // 本月提交数
+    totalSubmissions: number; // 总提交数
+    totalAcSubmissions: number; // 总 AC 提交数
+    todaySubmissions: number; // 今日提交数
+    weekSubmissions: number; // 本周提交数
+    monthSubmissions: number; // 本月提交数
 
     // 代码统计
-    totalCodeLines: number;       // 总代码行数（估算）
+    totalCodeLines: number; // 总代码行数（估算）
 
     // 题目统计
-    totalProblemsAttempted: number;  // 被尝试过的题目数
-    totalProblemsSolved: number;     // 被 AC 过的题目数
+    totalProblemsAttempted: number; // 被尝试过的题目数
+    totalProblemsSolved: number; // 被 AC 过的题目数
 
     // 缓存统计
     cacheStats: {
@@ -194,7 +194,7 @@ export class GlobalStatsService {
         // 获取总记录数
         const totalCount = await this.ctx.db.collection('record').countDocuments({
             ...baseMatch,
-            code: { $exists: true, $ne: null, $ne: '' },
+            code: { $exists: true, $nin: [null, ''] },
         });
 
         if (totalCount === 0) return 0;
@@ -205,7 +205,7 @@ export class GlobalStatsService {
             {
                 $match: {
                     ...baseMatch,
-                    code: { $exists: true, $ne: null, $ne: '' },
+                    code: { $exists: true, $nin: [null, ''] },
                 },
             },
             { $sample: { size: sampleSize } },
@@ -305,4 +305,3 @@ export class GlobalStatsService {
         return result.modifiedCount;
     }
 }
-

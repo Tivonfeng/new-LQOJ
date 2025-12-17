@@ -11,6 +11,7 @@ import {
   FileTextOutlined,
   FireOutlined,
   LoadingOutlined,
+  SettingOutlined,
   StarOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
@@ -236,10 +237,24 @@ const StudentAnalyticsApp: React.FC = () => {
       {/* Hero Section */}
       <Card className="hero-card">
         <div className="hero-content">
-          <Title level={1} className="hero-title">
-            <BarChartOutlined /> 学生数据分析
-          </Title>
-          <div className="hero-subtitle">全面了解你的学习情况与进步轨迹</div>
+          <div className="hero-header">
+            <div className="hero-text">
+              <Title level={1} className="hero-title">
+                <BarChartOutlined /> 学生数据分析
+              </Title>
+              <div className="hero-subtitle">全面了解你的学习情况与进步轨迹</div>
+            </div>
+            {data.isAdmin && (
+              <Button
+                type="default"
+                icon={<SettingOutlined />}
+                href="/analytics/student/admin"
+                className="admin-btn"
+              >
+                管理
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 

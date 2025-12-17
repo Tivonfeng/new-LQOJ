@@ -109,12 +109,6 @@ export class RecordAggregationService {
             contest: { $nin: [pretestId, generateId] },
         };
 
-        // 时间范围匹配（用于周和月统计）
-        const timeRangeMatch = {
-            ...baseMatch,
-            _id: { $gte: startId, $lte: endId },
-        };
-
         // 使用 $facet 一次查询完成所有统计
         const result = await this.ctx.db.collection('record').aggregate([
             // 第一阶段：基础匹配（不限时间范围，用于总计和状态统计）
@@ -403,7 +397,7 @@ export class RecordAggregationService {
         startDate.setDate(startDate.getDate() - (weeks * 7));
 
         const tempDate = new Date(startDate);
-        while (tempDate <= currentDate) {
+        while (tempDate.getTime() <= currentDate.getTime()) {
             const { year, week } = this.getISOWeek(tempDate);
             const key = `${year}-W${week.toString().padStart(2, '0')}`;
 
@@ -505,4 +499,3 @@ export class RecordAggregationService {
         return { year: d.getUTCFullYear(), week: weekNo };
     }
 }
-

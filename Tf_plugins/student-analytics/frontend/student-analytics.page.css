@@ -42,6 +42,18 @@
 }
 
 .hero-content {
+    width: 100%;
+}
+
+.hero-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.hero-text {
+    flex: 1;
     text-align: center;
 }
 
@@ -61,6 +73,30 @@
     font-size: clamp(14px, 2vw, 18px);
     font-weight: 500;
     margin-top: 8px;
+}
+
+/* Admin Button */
+.admin-btn {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 6px 16px;
+    height: auto;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.admin-btn:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.admin-btn .anticon {
+    font-size: 14px;
 }
 
 /* Stats Cards */
@@ -512,6 +548,14 @@
 
     .stat-card .ant-statistic-content {
         font-size: 20px !important;
+    }
+
+    .hero-header {
+        flex-direction: column;
+    }
+
+    .admin-btn {
+        margin-top: 12px;
     }
 }
 
