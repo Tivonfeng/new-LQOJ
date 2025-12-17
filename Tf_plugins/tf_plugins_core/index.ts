@@ -121,3 +121,21 @@ export default async function apply(ctx: Context, config: PluginConfig = {} as P
 
 // 导出配置 Schema，供 HydroOJ 使用
 export { Config };
+import type { Context } from 'hydrooj';
+import { registerTfPerms, TF_PERM } from './src/perm';
+
+// 对外聚合导出各子模块能力
+export * from './src/events';
+export * from './src/perm';
+export * from './src/score';
+export * from './src/ui';
+export * from './src/user';
+export * from './src/utils';
+
+// 保留旧的命名导出，兼容现有插件使用方式
+export { registerTfPerms, TF_PERM };
+
+// 核心插件入口：主要负责注册 TF 层权限等一次性初始化
+export default async function apply(_ctx: Context) {
+    registerTfPerms();
+}

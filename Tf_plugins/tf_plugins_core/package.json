@@ -1,7 +1,7 @@
 {
   "name": "@hydrooj/tf_plugins_core",
   "version": "1.0.0",
-  "description": "Tf 插件核心库 - 提供通用功能服务（七牛云存储等）",
+  "description": "TF Plugins 核心能力包 - 提供通用功能服务（权限、事件、通用工具、七牛云存储等）",
   "main": "index.ts",
   "author": "Tivon Feng",
   "license": "AGPL-3.0",
