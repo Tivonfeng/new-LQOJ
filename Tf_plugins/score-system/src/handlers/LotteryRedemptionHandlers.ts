@@ -1,6 +1,7 @@
 import {
     avatar,
     Handler,
+    ObjectId,
     PERM,
     PRIV,
 } from 'hydrooj';
@@ -10,7 +11,7 @@ import {
 
 /**
  * 序列化对象为 JSON 兼容格式
- * 处理 BigInt 和 Date 对象
+ * 处理 BigInt、Date 和 ObjectId 对象
  */
 function serializeForJSON(obj: any): any {
     if (obj === null || obj === undefined) {
@@ -21,6 +22,19 @@ function serializeForJSON(obj: any): any {
     }
     if (obj instanceof Date) {
         return obj.toISOString();
+    }
+    // 处理 MongoDB ObjectId - 转换为字符串
+    if (obj instanceof ObjectId) {
+        return obj.toHexString();
+    }
+    // 处理包含 buffer 的 ObjectId 对象（序列化后的格式）
+    if (typeof obj === 'object' && obj.buffer && typeof obj.buffer === 'object') {
+        try {
+            const buffer = Buffer.from(Object.values(obj.buffer) as number[]);
+            return new ObjectId(buffer).toHexString();
+        } catch {
+            // 如果转换失败，继续正常序列化
+        }
     }
     if (Array.isArray(obj)) {
         return obj.map(serializeForJSON);
