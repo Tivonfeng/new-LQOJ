@@ -31,6 +31,9 @@
     window.scoreHallUrl = '{{ url("score_hall") }}';
     window.lotteryHistoryUrl = '{{ url("lottery_history") }}';
     window.transferUrl = '{{ url("wallet") }}';
+    window.myPrizesUrl = '{{ url("my_prizes") }}';
+    window.redemptionAdminUrl = '{{ url("redemption_admin") }}';
+    window.isLotteryAdmin = {{ 'true' if isLotteryAdmin else 'false' }};
     {% if handler.user._id %}
     window.currentUserId = '{{ handler.user._id }}';
     {% endif %}

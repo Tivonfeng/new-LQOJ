@@ -3,6 +3,22 @@ import {
 } from 'hydrooj';
 import { ScoreCategory, ScoreService } from './ScoreService';
 
+// 实物奖品信息接口
+export interface PhysicalPrizeInfo {
+    description: string; // 奖品描述
+    imageUrl?: string; // 奖品图片
+    stock?: number; // 库存（可选）
+}
+
+// 奖品配置接口
+export interface PrizeConfig {
+    name: string;
+    type: 'reward' | 'nothing' | 'bonus' | 'physical';
+    reward: number; // 积分奖励（physical 类型为 0）
+    probability: number;
+    physicalPrize?: PhysicalPrizeInfo; // 实物奖品信息（仅 physical 类型）
+}
+
 // 九宫格抽奖记录接口
 export interface LotteryGameRecord {
     _id?: any;
@@ -11,10 +27,17 @@ export interface LotteryGameRecord {
     bet: number; // 投入积分
     prizeIndex: number; // 中奖格子索引 (0-8)
     prizeName: string; // 奖品名称
-    prizeType: 'reward' | 'nothing' | 'bonus'; // 奖品类型
+    prizeType: 'reward' | 'nothing' | 'bonus' | 'physical'; // 奖品类型
     reward: number; // 奖励积分 (可能为0)
     netGain: number; // 净收益
     gameTime: Date;
+
+    // 实物奖品核销相关字段
+    physicalPrize?: PhysicalPrizeInfo; // 实物奖品信息
+    redeemStatus?: 'pending' | 'redeemed' | 'cancelled'; // 核销状态
+    redeemedAt?: Date; // 核销时间
+    redeemedBy?: number; // 核销管理员UID
+    redeemNote?: string; // 核销备注
 }
 
 // 用户抽奖统计接口
@@ -40,16 +63,51 @@ export class LotteryService {
 
     // 游戏常量
     private static readonly BET_AMOUNT = 50; // 每次抽奖消耗积分
-    private static readonly PRIZES = [
-        { name: '10积分', type: 'reward' as const, reward: 10, probability: 0.15 }, // 15%
-        { name: '20积分', type: 'reward' as const, reward: 20, probability: 0.10 }, // 10%
-        { name: '50积分', type: 'reward' as const, reward: 50, probability: 0.05 }, // 5%
-        { name: '100积分', type: 'reward' as const, reward: 100, probability: 0.02 }, // 2%
-        { name: '谢谢参与', type: 'nothing' as const, reward: 0, probability: 0.50 }, // 50%
-        { name: '5积分', type: 'reward' as const, reward: 5, probability: 0.10 }, // 10%
-        { name: '30积分', type: 'reward' as const, reward: 30, probability: 0.05 }, // 5%
-        { name: '200积分', type: 'reward' as const, reward: 200, probability: 0.02 }, // 2%
-        { name: '再来一次', type: 'bonus' as const, reward: 0, probability: 0.01 }, // 1%
+    // 九宫格显示的9个位置（8个可见奖品 + 1个中间按钮占位）
+    // 按界面显示顺序：左上(0) -> 上中(1) -> 右上(2) -> 右中(3) -> 中间(4,按钮占位) -> 右下(5) -> 下中(6) -> 左下(7) -> 左中(8)
+    // 注意：索引4位置被按钮覆盖，但保留在数组中用于索引对应，抽奖时不会抽中此位置
+    private static readonly PRIZES: PrizeConfig[] = [
+        { name: '100积分', type: 'reward' as const, reward: 50, probability: 0.10 }, // 0: 左上 - 25%
+        { name: '谢谢参与', type: 'nothing' as const, reward: 0, probability: 0.10 }, // 1: 上中 - 20%
+        { name: '50积分', type: 'reward' as const, reward: 50, probability: 0.15 }, // 2: 右上 - 15%
+        { name: '再来一次', type: 'bonus' as const, reward: 0, probability: 0.10 }, // 3: 右中 - 10%
+        { name: '谢谢参与', type: 'nothing' as const, reward: 0, probability: 0.00 }, // 4: 中间（被按钮覆盖，概率为0，不会抽中）
+        {
+            name: '小玩具一份',
+            type: 'physical' as const,
+            reward: 0,
+            probability: 0.10, // 5: 右下 - 10%
+            physicalPrize: {
+                description: '小玩具一份',
+            },
+        },
+        {
+            name: '小零食一份',
+            type: 'physical' as const,
+            reward: 0,
+            probability: 0.25, // 6: 下中 - 8%
+            physicalPrize: {
+                description: '小零食一份',
+            },
+        },
+        {
+            name: '定制礼品',
+            type: 'physical' as const,
+            reward: 0,
+            probability: 0.05, // 7: 左下 - 5%
+            physicalPrize: {
+                description: '定制礼品一份',
+            },
+        },
+        {
+            name: '饮料一瓶',
+            type: 'physical' as const,
+            reward: 0,
+            probability: 0.20, // 8: 左中 - 7%
+            physicalPrize: {
+                description: '饮料一瓶',
+            },
+        },
     ];
 
     constructor(ctx: Context, scoreService: ScoreService) {
@@ -87,8 +145,13 @@ export class LotteryService {
             let finalReward = 0;
 
             if (prize.type === 'reward') {
+                // 积分奖励：立即发放
                 finalReward = prize.reward;
                 netGain += prize.reward;
+            } else if (prize.type === 'physical') {
+                // 实物奖品：不发放积分，记录待核销状态
+                finalReward = 0;
+                // netGain 保持 -50（只扣除投注）
             } else if (prize.type === 'bonus') {
                 // 再来一次：返还投注，相当于免费再抽一次
                 finalReward = 0;
@@ -109,6 +172,11 @@ export class LotteryService {
                 reward: finalReward,
                 netGain,
                 gameTime: new Date(),
+                // 如果是实物奖品，添加核销状态
+                ...(prize.type === 'physical' ? {
+                    physicalPrize: prize.physicalPrize,
+                    redeemStatus: 'pending' as const, // 待核销
+                } : {}),
             };
 
             const recordResult = await this.ctx.db.collection('lottery.records' as any).insertOne(gameRecord);
@@ -132,8 +200,8 @@ export class LotteryService {
                 title: '九宫格抽奖',
             });
 
-            // 如果中奖，发放奖励
-            if (finalReward > 0) {
+            // 只有积分奖励才发放积分
+            if (prize.type === 'reward' && finalReward > 0) {
                 await this.scoreService.updateUserScore(domainId, uid, finalReward);
                 await this.scoreService.addScoreRecord({
                     uid,
@@ -146,6 +214,7 @@ export class LotteryService {
                     title: '九宫格抽奖',
                 });
             }
+            // 实物奖品不需要发放积分，但已记录到核销系统
 
             // 如果再来一次，返还投注
             if (prize.type === 'bonus') {
@@ -162,8 +231,9 @@ export class LotteryService {
                 });
             }
 
-            // 更新用户统计
-            await this.updateUserStats(domainId, uid, finalReward > 0, netGain, LotteryService.BET_AMOUNT, finalReward);
+            // 更新用户统计（实物奖品也算中奖）
+            const won = finalReward > 0 || prize.type === 'physical';
+            await this.updateUserStats(domainId, uid, won, netGain, LotteryService.BET_AMOUNT, finalReward);
 
             return { success: true, result: finalRecord };
         } catch (error: any) {
@@ -190,8 +260,8 @@ export class LotteryService {
             }
         }
 
-        // 默认返回谢谢参与
-        return 4;
+        // 默认返回第一个奖品（10积分）
+        return 0;
     }
 
     /**
@@ -276,6 +346,7 @@ export class LotteryService {
                 name: prize.name,
                 type: prize.type,
                 reward: prize.reward,
+                physicalPrize: prize.physicalPrize,
             })),
         };
     }

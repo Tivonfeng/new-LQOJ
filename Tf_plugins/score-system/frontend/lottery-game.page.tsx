@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable react-refresh/only-export-components */
 import './lottery-game.page.css';
 
@@ -8,6 +9,7 @@ import {
   CheckCircleOutlined,
   DollarOutlined,
   GiftOutlined,
+  ToolOutlined,
   TrophyOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
@@ -71,7 +73,7 @@ interface LotteryGameData {
 interface GameResult {
   prizeIndex: number;
   prizeName: string;
-  prizeType: 'reward' | 'nothing' | 'bonus';
+  prizeType: 'reward' | 'nothing' | 'bonus' | 'physical';
   reward: number;
   netGain: number;
 }
@@ -281,7 +283,9 @@ const LotteryGameApp: React.FC = () => {
     setCurrentCoins((prev) => prev + game.netGain);
 
     // 显示成功消息
-    if (game.reward > 0) {
+    if (game.prizeType === 'physical') {
+      message.success(`恭喜获得实物奖品 ${game.prizeName}！请前往「我的奖品」查看详情`);
+    } else if (game.reward > 0) {
       message.success(`恭喜获得 ${game.prizeName}！`);
     } else if (game.prizeType === 'bonus') {
       message.success('获得再来一次，已返还投注！');
@@ -337,14 +341,25 @@ const LotteryGameApp: React.FC = () => {
             </Space>
           </Col>
           <Col>
-            <Button
-              type="default"
-              icon={<ArrowLeftOutlined />}
-              href={(window as any).scoreHallUrl || '/score/hall'}
-              className="hero-back-button"
-            >
-              返回积分大厅
-            </Button>
+            <Space>
+              <Button
+                type="default"
+                icon={<ArrowLeftOutlined />}
+                href={(window as any).scoreHallUrl || '/score/hall'}
+                className="hero-back-button"
+              >
+                返回积分大厅
+              </Button>
+              {(window as any).isLotteryAdmin && (
+                <Button
+                  type="primary"
+                  icon={<ToolOutlined />}
+                  href={(window as any).redemptionAdminUrl || '/score/lottery/admin/redeem'}
+                >
+                  核销管理
+                </Button>
+              )}
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -468,15 +483,14 @@ const LotteryGameApp: React.FC = () => {
                   width="500px"
                   height="500px"
                   blocks={[
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
-                    { padding: '10px', background: '#ff4e4e' },
+                    {
+                      padding: '20px',
+                      imgs: [{
+                        src: '/lottery_bg.png',
+                        width: '100%',
+                        height: '100%',
+                      }],
+                    },
                   ]}
                   prizes={gameData.gameConfig.prizes.map((prize, index) => {
                     // 九宫格布局：中心 (1,1) 是按钮，8个奖品绕一圈（顺时针）
@@ -514,7 +528,7 @@ const LotteryGameApp: React.FC = () => {
                     return {
                       x,
                       y,
-                      fonts: [{ text: prize.name, top: '40%', fontColor: '#fff', fontSize: '16px' }],
+                      fonts: [{ text: prize.name, top: '40%', fontColor: '#ff4e4e', fontSize: '16px' }],
                       imgs: [],
                     };
                   })}
@@ -523,23 +537,20 @@ const LotteryGameApp: React.FC = () => {
                       x: 1,
                       y: 1,
                       background: '#ec4899',
-                      borderRadius: 10,
-                      fonts: [{
-                        text: gameInProgress ? '抽奖中...' : '开始抽奖',
-                        top: '40%',
-                        fontColor: '#fff',
-                        fontSize: '18px',
-                        fontWeight: 'bold',
+                      imgs: [{
+                        src: '/lottery_btn.gif',
+                        width: '100%',
+                        height: '100%',
                       }],
                     },
                   ]}
                   defaultStyle={{
                     borderRadius: 10,
-                    background: '#ff4e4e',
+                    background: '#4A7BA7', // 深蓝色，与红色文字形成良好对比，同时与浅蓝边框形成层次感
                   }}
                   activeStyle={{
-                    background: '#ff6b6b',
-                    shadow: '0 0 10px rgba(255, 107, 107, 0.5)',
+                    background: '#5B8FC7', // 激活时稍亮的蓝色，提供清晰的视觉反馈
+                    shadow: '0 0 12px rgba(74, 123, 167, 0.6)',
                   }}
                   defaultConfig={{
                     gutter: 5,
@@ -620,15 +631,35 @@ const LotteryGameApp: React.FC = () => {
                         <GiftOutlined className="game-result-icon lost" />
                       )}
                       <Title level={3} className="game-result-title">
-                        {gameResult.reward > 0 ? '恭喜中奖！' : gameResult.prizeType === 'bonus' ? '再来一次！' : '谢谢参与'}
+                        {gameResult.prizeType === 'physical' ? '恭喜获得实物奖品！'
+                          : gameResult.reward > 0 ? '恭喜中奖！'
+                            : gameResult.prizeType === 'bonus' ? '再来一次！'
+                              : '谢谢参与'}
                       </Title>
                     </div>
+                    {gameResult.prizeType === 'physical' && (
+                      <Alert
+                        message="实物奖品"
+                        description="请前往「我的奖品」页面查看详情，并联系管理员核销"
+                        type="success"
+                        showIcon
+                        action={
+                          <Button
+                            size="small"
+                            href={(window as any).myPrizesUrl || '/score/lottery/my-prizes'}
+                          >
+                            查看我的奖品
+                          </Button>
+                        }
+                        style={{ marginBottom: '16px' }}
+                      />
+                    )}
                     <Row gutter={[16, 16]}>
                       <Col span={24}>
-                        <div className={`result-prize-card ${gameResult.reward > 0 ? 'won' : 'lost'}`}>
+                        <div className={`result-prize-card ${gameResult.prizeType === 'physical' || gameResult.reward > 0 ? 'won' : 'lost'}`}>
                           <Space direction="vertical" size="small" style={{ width: '100%' }}>
                             <Text type="secondary" className="result-prize-label">获得奖品</Text>
-                            <Text strong className={`result-prize-value ${gameResult.reward > 0 ? 'won' : 'lost'}`}>
+                            <Text strong className={`result-prize-value ${gameResult.prizeType === 'physical' || gameResult.reward > 0 ? 'won' : 'lost'}`}>
                               {gameResult.prizeName}
                             </Text>
                           </Space>
@@ -675,6 +706,15 @@ const LotteryGameApp: React.FC = () => {
                 <Badge count={totalGames || userStats.totalGames} showZero />
               </Space>
             }
+          extra={
+            <Button
+              size="small"
+              type="default"
+              href={(window as any).myPrizesUrl || '/score/lottery/my-prizes'}
+            >
+              我的实物奖品
+            </Button>
+          }
           >
             {allGames.length > 0 ? (
               <>

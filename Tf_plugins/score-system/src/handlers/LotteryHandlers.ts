@@ -1,6 +1,8 @@
 import {
     avatar,
     Handler,
+    PERM,
+    PRIV,
 } from 'hydrooj';
 import {
     DailyGameLimitService,
@@ -128,6 +130,20 @@ export class LotteryGameHandler extends Handler {
         const gameConfigJson = JSON.stringify(gameConfig);
         const recentGamesJson = JSON.stringify(formattedGames);
 
+        // 检查是否有管理权限（用于显示管理员入口）
+        // 规则与后端权限保持一致：系统管理员 或 当前域管理员
+        let isLotteryAdmin = false;
+        if (this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM) {
+            isLotteryAdmin = true;
+        } else {
+            try {
+                this.checkPerm(PERM.PERM_EDIT_DOMAIN);
+                isLotteryAdmin = true;
+            } catch {
+                isLotteryAdmin = false;
+            }
+        }
+
         this.response.template = 'lottery_game.html';
         this.response.body = {
             currentCoins,
@@ -142,6 +158,7 @@ export class LotteryGameHandler extends Handler {
             recentGamesJson,
             dailyLimit: lotteryLimit,
             udocsJson,
+            isLotteryAdmin,
         };
     }
 }
@@ -347,4 +364,3 @@ export class LotteryHistoryHandler extends Handler {
         };
     }
 }
-
