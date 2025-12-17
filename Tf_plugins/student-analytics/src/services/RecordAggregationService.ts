@@ -124,12 +124,23 @@ export class RecordAggregationService {
             {
                 $facet: {
                     // 周统计（带时间范围过滤）
+                    // 注意：使用 Asia/Shanghai 时区，确保周统计对中国用户正确
                     weeklyStats: [
                         { $match: { _id: { $gte: startId, $lte: endId } } },
                         {
                             $project: {
-                                year: { $isoWeekYear: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] } },
-                                week: { $isoWeek: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] } },
+                                year: {
+                                    $isoWeekYear: {
+                                        date: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] },
+                                        timezone: 'Asia/Shanghai',
+                                    },
+                                },
+                                week: {
+                                    $isoWeek: {
+                                        date: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] },
+                                        timezone: 'Asia/Shanghai',
+                                    },
+                                },
                                 pid: 1,
                                 codeLines: {
                                     $cond: {
@@ -168,12 +179,23 @@ export class RecordAggregationService {
                     ],
 
                     // 月统计（带时间范围过滤）
+                    // 注意：使用 Asia/Shanghai 时区，确保月统计对中国用户正确
                     monthlyStats: [
                         { $match: { _id: { $gte: startId, $lte: endId } } },
                         {
                             $project: {
-                                year: { $year: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] } },
-                                month: { $month: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] } },
+                                year: {
+                                    $year: {
+                                        date: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] },
+                                        timezone: 'Asia/Shanghai',
+                                    },
+                                },
+                                month: {
+                                    $month: {
+                                        date: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] },
+                                        timezone: 'Asia/Shanghai',
+                                    },
+                                },
                                 pid: 1,
                                 codeLines: {
                                     $cond: {
@@ -303,10 +325,16 @@ export class RecordAggregationService {
                     ],
 
                     // 小时分布（全量数据）
+                    // 注意：使用 Asia/Shanghai 时区，确保小时统计对中国用户正确显示
                     hourDistribution: [
                         {
                             $project: {
-                                hour: { $hour: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] } },
+                                hour: {
+                                    $hour: {
+                                        date: { $ifNull: ['$judgeAt', { $toDate: '$_id' }] },
+                                        timezone: 'Asia/Shanghai',
+                                    },
+                                },
                             },
                         },
                         {
