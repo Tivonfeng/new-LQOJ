@@ -1,22 +1,25 @@
-/* eslint-disable react-refresh/only-export-components */
 import './student-analytics.page.css';
 
-import { addPage, NamedPage } from '@hydrooj/ui-default';
+import { addPage, NamedPage, request } from '@hydrooj/ui-default';
 import {
   BarChartOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   CodeOutlined,
+  DownOutlined,
   FileTextOutlined,
   FireOutlined,
+  LoadingOutlined,
   StarOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
 import {
+  Button,
   Card,
   Col,
   Row,
+  Segmented,
   Statistic,
   Tag,
   Typography,
@@ -26,10 +29,23 @@ import { createRoot } from 'react-dom/client';
 
 const { Title } = Typography;
 
+// 时间范围类型
+type TimeRangeType = 'weekly' | 'monthly';
+
 // 学生数据分析页面组件
 const StudentAnalyticsApp: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState<{weekly: boolean; monthly: boolean}>({
+    weekly: false,
+    monthly: false,
+  });
+  const [expanded, setExpanded] = useState<{weekly: boolean; monthly: boolean}>({
+    weekly: false,
+    monthly: false,
+  });
+  // 时间统计视图切换
+  const [timeView, setTimeView] = useState<TimeRangeType>('monthly');
 
   useEffect(() => {
     // 从全局变量获取数据
@@ -39,11 +55,6 @@ const StudentAnalyticsApp: React.FC = () => {
         const parsedData = typeof analyticsData === 'string'
           ? JSON.parse(analyticsData)
           : analyticsData;
-        console.log('[Student Analytics] Data loaded:', {
-          hasMonthlyCodeStats: !!parsedData.monthlyCodeStats,
-          monthlyCodeStatsLength: parsedData.monthlyCodeStats?.length || 0,
-          monthlyCodeStats: parsedData.monthlyCodeStats,
-        });
         setData(parsedData);
       } catch (error) {
         console.error('[Student Analytics] Failed to parse data:', error);
@@ -51,6 +62,35 @@ const StudentAnalyticsApp: React.FC = () => {
     }
     setLoading(false);
   }, []);
+
+  // 加载更多数据
+  const loadMore = async (type: TimeRangeType) => {
+    setLoadingMore((prev) => ({ ...prev, [type]: true }));
+    try {
+      const params = type === 'weekly'
+        ? { type: 'weekly', weeks: 12 }
+        : { type: 'monthly', months: 12 };
+
+      const response = await request.get('/analytics/student/api/more', params);
+
+      if (response) {
+        setData((prev: any) => ({
+          ...prev,
+          ...(type === 'weekly' && response.weeklyCodeStats
+            ? { weeklyCodeStats: response.weeklyCodeStats }
+            : {}),
+          ...(type === 'monthly' && response.monthlyCodeStats
+            ? { monthlyCodeStats: response.monthlyCodeStats }
+            : {}),
+        }));
+        setExpanded((prev) => ({ ...prev, [type]: true }));
+      }
+    } catch (error) {
+      console.error(`[Student Analytics] Failed to load more ${type} data:`, error);
+    } finally {
+      setLoadingMore((prev) => ({ ...prev, [type]: false }));
+    }
+  };
 
   if (loading) {
     return <div className="student-analytics-container">Loading...</div>;
@@ -64,13 +104,140 @@ const StudentAnalyticsApp: React.FC = () => {
     ? Math.max(...data.submissionTimeDistribution.map((i: any) => i.count))
     : 1;
 
+  // 渲染时间统计内容
+  const renderTimeStats = () => {
+    if (timeView === 'monthly') {
+      // 每月统计
+      if (!data.monthlyCodeStats || data.monthlyCodeStats.length === 0) {
+        return (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+            暂无每月代码统计数据
+            {data.monthlyCodeStats === undefined && ' (数据加载中...)'}
+            {data.monthlyCodeStats && data.monthlyCodeStats.length === 0 && ' (最近无提交记录)'}
+          </div>
+        );
+      }
+      return (
+        <Row gutter={[16, 16]}>
+          {data.monthlyCodeStats.map((month: any, index: number) => (
+            <Col xs={24} sm={12} lg={8} xl={6} key={`month-${index}`}>
+              <Card className="time-stat-card month-card">
+                <div className="time-stat-header">
+                  <CalendarOutlined /> {month.year}年{month.month}月
+                </div>
+                <Row gutter={[8, 8]}>
+                  <Col span={12}>
+                    <Statistic
+                      title="代码行数"
+                      value={month.totalLines}
+                      valueStyle={{ fontSize: '18px', color: '#6366f1' }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="提交数"
+                      value={month.totalSubmissions}
+                      valueStyle={{ fontSize: '18px', color: '#10b981' }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="题目数"
+                      value={month.uniqueProblems}
+                      valueStyle={{ fontSize: '18px', color: '#f59e0b' }}
+                    />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="平均行数"
+                      value={month.averageLinesPerSubmission}
+                      precision={1}
+                      valueStyle={{ fontSize: '18px', color: '#ec4899' }}
+                    />
+                  </Col>
+                  <Col span={24}>
+                    <Statistic
+                      title="日均代码行数"
+                      value={month.averageLinesPerDay}
+                      precision={1}
+                      valueStyle={{ fontSize: '16px', color: '#8b5cf6' }}
+                    />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      );
+    }
+    // 每周统计
+    if (!data.weeklyCodeStats || data.weeklyCodeStats.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+          暂无每周代码统计数据
+        </div>
+      );
+    }
+    return (
+      <Row gutter={[16, 16]}>
+        {data.weeklyCodeStats.map((week: any, index: number) => (
+          <Col xs={24} sm={12} lg={8} key={`week-${index}`}>
+            <Card className="time-stat-card week-card">
+              <div className="time-stat-header">
+                <ClockCircleOutlined /> {week.year}年第{week.week}周
+              </div>
+              <Row gutter={[8, 8]}>
+                <Col span={12}>
+                  <Statistic
+                    title="代码行数"
+                    value={week.totalLines}
+                    valueStyle={{ fontSize: '18px', color: '#6366f1' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="提交数"
+                    value={week.totalSubmissions}
+                    valueStyle={{ fontSize: '18px', color: '#10b981' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="题目数"
+                    value={week.uniqueProblems}
+                    valueStyle={{ fontSize: '18px', color: '#f59e0b' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="平均行数"
+                    value={week.averageLinesPerSubmission}
+                    precision={1}
+                    valueStyle={{ fontSize: '18px', color: '#ec4899' }}
+                  />
+                </Col>
+              </Row>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  };
+
+  // 判断是否可以加载更多
+  const canLoadMore = timeView === 'weekly'
+    ? !expanded.weekly && data.hasMoreWeeks
+    : !expanded.monthly && data.hasMoreMonths;
+
+  const isLoadingMore = timeView === 'weekly' ? loadingMore.weekly : loadingMore.monthly;
+
   return (
     <div className="student-analytics-container">
       {/* Hero Section */}
       <Card className="hero-card">
         <div className="hero-content">
           <Title level={1} className="hero-title">
-            <BarChartOutlined /> 学生数据分析（开发中）
+            <BarChartOutlined /> 学生数据分析
           </Title>
           <div className="hero-subtitle">全面了解你的学习情况与进步轨迹</div>
         </div>
@@ -228,115 +395,38 @@ const StudentAnalyticsApp: React.FC = () => {
         </Card>
       )}
 
-      {/* 每月代码统计 */}
-      <Card className="stats-card" title={<><CalendarOutlined /> 每月代码统计</>}>
-        {data.monthlyCodeStats && data.monthlyCodeStats.length > 0 ? (
-          <Row gutter={[16, 16]}>
-            {data.monthlyCodeStats.map((month: any, index: number) => (
-              <Col xs={24} sm={12} lg={8} xl={6} key={index}>
-                <Card className="month-card">
-                  <div className="month-header">
-                    {month.year}年{month.month}月
-                  </div>
-                  <Row gutter={[8, 8]}>
-                    <Col span={12}>
-                      <Statistic
-                        title="代码行数"
-                        value={month.totalLines}
-                        valueStyle={{ fontSize: '18px', color: '#6366f1' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="提交数"
-                        value={month.totalSubmissions}
-                        valueStyle={{ fontSize: '18px', color: '#10b981' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="题目数"
-                        value={month.uniqueProblems}
-                        valueStyle={{ fontSize: '18px', color: '#f59e0b' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="平均行数"
-                        value={month.averageLinesPerSubmission}
-                        precision={1}
-                        valueStyle={{ fontSize: '18px', color: '#ec4899' }}
-                      />
-                    </Col>
-                    <Col span={24}>
-                      <Statistic
-                        title="日均代码行数"
-                        value={month.averageLinesPerDay}
-                        precision={1}
-                        valueStyle={{ fontSize: '16px', color: '#8b5cf6' }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-            暂无每月代码统计数据
-            {data.monthlyCodeStats === undefined && ' (数据加载中...)'}
-            {data.monthlyCodeStats && data.monthlyCodeStats.length === 0 && ' (最近12个月内无提交记录)'}
+      {/* 代码统计（按时间维度 - 合并周/月） */}
+      <Card
+        className="stats-card"
+        title={
+          <div className="time-stats-header">
+            <span><CalendarOutlined /> 代码统计趋势</span>
+            <Segmented
+              options={[
+                { label: '按月', value: 'monthly', icon: <CalendarOutlined /> },
+                { label: '按周', value: 'weekly', icon: <ClockCircleOutlined /> },
+              ]}
+              value={timeView}
+              onChange={(value) => setTimeView(value as TimeRangeType)}
+              className="time-view-switch"
+            />
           </div>
-        )}
+        }
+        extra={
+          canLoadMore && (
+            <Button
+              type="link"
+              onClick={() => loadMore(timeView)}
+              disabled={isLoadingMore}
+              icon={isLoadingMore ? <LoadingOutlined /> : <DownOutlined />}
+            >
+              {isLoadingMore ? '加载中...' : '加载更多'}
+            </Button>
+          )
+        }
+      >
+        {renderTimeStats()}
       </Card>
-
-      {/* 每周代码统计 */}
-      {data.weeklyCodeStats && data.weeklyCodeStats.length > 0 && (
-        <Card className="stats-card" title={<><ClockCircleOutlined /> 每周代码统计</>}>
-          <Row gutter={[16, 16]}>
-            {data.weeklyCodeStats.map((week: any, index: number) => (
-              <Col xs={24} sm={12} lg={8} key={index}>
-                <Card className="week-card">
-                  <div className="week-header">
-                    {week.year}年第{week.week}周
-                  </div>
-                  <Row gutter={[8, 8]}>
-                    <Col span={12}>
-                      <Statistic
-                        title="代码行数"
-                        value={week.totalLines}
-                        valueStyle={{ fontSize: '18px', color: '#6366f1' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="提交数"
-                        value={week.totalSubmissions}
-                        valueStyle={{ fontSize: '18px', color: '#10b981' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="题目数"
-                        value={week.uniqueProblems}
-                        valueStyle={{ fontSize: '18px', color: '#f59e0b' }}
-                      />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic
-                        title="平均行数"
-                        value={week.averageLinesPerSubmission}
-                        precision={1}
-                        valueStyle={{ fontSize: '18px', color: '#ec4899' }}
-                      />
-                    </Col>
-                  </Row>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Card>
-      )}
 
       {/* 提交时间分布 */}
       {data.submissionTimeDistribution && data.submissionTimeDistribution.length > 0 && (
