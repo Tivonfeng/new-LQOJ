@@ -54,8 +54,9 @@ export class WeightCalculationService {
 
     /**
      * 获取默认权重配置
-     * 权重范围: 10 ~ 80 分
-     * 积分 = 权重 × 10，范围: 100 ~ 800 分
+     * 竞赛权重范围: 10 ~ 80 分
+     * 考级权重范围: 5 ~ 24 分（降低，因为考级通过不能和竞赛获奖相提并论）
+     * 积分 = 权重，范围: 5 ~ 80 分
      */
     private getDefaultConfig(): WeightConfig {
         return {
@@ -79,7 +80,7 @@ export class WeightCalculationService {
 
             examTypeWeights: {
                 competition: 1.0, // 竞赛基础权重
-                certification: 1.0, // 考级基础权重
+                certification: 0.5, // 考级基础权重（降低，因为考级通过不能和竞赛获奖相提并论）
             },
 
             baseWeight: 10, // 基础权重分

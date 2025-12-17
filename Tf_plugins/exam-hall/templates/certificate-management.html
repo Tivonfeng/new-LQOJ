@@ -1,6 +1,17 @@
+{% set page_name = "certificate_management" %}
 {% extends "layout/basic.html" %}
 {% block title %}证书&赛考管理{% endblock %}
 
 {% block content %}
+<!-- React App Mount Point -->
 <div id="certificate-management-root"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.certificateManagementData = {{ managementDataJson|safe }};
+    
+    // 传递URL
+    window.examHallUrl = '{{ url("exam_hall") }}';
+</script>
 {% endblock %}

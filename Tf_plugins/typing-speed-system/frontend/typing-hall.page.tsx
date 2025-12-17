@@ -271,7 +271,13 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
         {ladderData.map(({ range, users, actualMax }, index) => {
           const mid = Math.round((range.min + actualMax) / 2);
           return (
-            <div key={index} className="ladder-row">
+            <div
+              key={index}
+              className="ladder-row"
+              style={{
+                backgroundColor: range.color,
+              }}
+            >
               <div className="ladder-label">
                 <div className="level-badge">
                   <span className="level-icon">{range.icon}</span>
@@ -311,7 +317,17 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
                           animationDelay: `${index * 0.1}s`,
                         }}
                       >
-                        <img src={user.avatarUrl} alt={user.uname || user.displayName} />
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.uname || user.displayName}
+                            onError={(e) => {
+                              // 如果头像加载失败，隐藏图片
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            loading="lazy"
+                          />
+                        ) : null}
                         <div className="tooltip">
                           <div className="tooltip-name">
                             {user.uname || user.displayName}

@@ -18,11 +18,28 @@ import {
 import type { Certificate } from './src/services';
 import type { CertificatePreset } from './src/services/PresetService';
 
-// 声明数据库集合类型
+// 声明数据库集合类型和事件类型
 declare module 'hydrooj' {
     interface Collections {
         'exam.certificates': Certificate;
         'exam.presets': CertificatePreset;
+    }
+
+    interface EventMap {
+        'certificate/created': (data: {
+            uid: number;
+            domainId: string;
+            certificateId: any;
+            weight: number;
+            certificateName: string;
+        }) => void;
+        'certificate/deleted': (data: {
+            uid: number;
+            domainId: string;
+            certificateId: any;
+            weight: number;
+            certificateName: string;
+        }) => void;
     }
 }
 

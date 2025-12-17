@@ -128,9 +128,13 @@ async function* callDeepSeekStream(prompt: string): AsyncGenerator<string, void,
  * 根据编程语言返回特定的提示信息
  */
 function getLanguageSpecificHints(language?: string): string | null {
-    if (!language) return null;
+    if (!language) {
+        console.log('[AI Helper LangHints] 未传入 language 参数');
+        return null;
+    }
 
     const lang = language.toLowerCase();
+    console.log('[AI Helper LangHints] 原始 language 参数:', language, '标准化后:', lang);
     const hints: Record<string, string> = {
         cpp: '这是 C++ 代码。请注意：\n'
             + '- 注意数据类型的范围（int、long long、unsigned 等）\n'
@@ -178,16 +182,19 @@ function getLanguageSpecificHints(language?: string): string | null {
 
     // 尝试精确匹配
     if (hints[lang]) {
+        console.log('[AI Helper LangHints] 命中精确匹配:', lang);
         return hints[lang];
     }
 
     // 尝试部分匹配（如 cpp17、python3 等）
     for (const [key, value] of Object.entries(hints)) {
         if (lang.includes(key)) {
+            console.log('[AI Helper LangHints] 命中部分匹配:', 'lang =', lang, 'key =', key);
             return value;
         }
     }
 
+    console.log('[AI Helper LangHints] 未找到匹配的语言提示，lang =', lang);
     return null;
 }
 
@@ -208,16 +215,20 @@ async function buildPromptText(
     let problemTitle: string | undefined;
     let problemContentSnippet = '';
     try {
+        console.log('[Confetti AI Helper Stream] 开始获取题面用于构造 prompt, problemId =', problemId, 'language =', language);
         const pdoc = await ProblemModel.get(domainId, problemId as any);
         if (pdoc) {
             problemTitle = (pdoc as any).title;
             const rawContent = (pdoc as any).content;
             let text = '';
             if (typeof rawContent === 'string') {
+                console.log('[Confetti AI Helper Stream] 题面 content 为字符串');
                 text = rawContent;
             } else if (rawContent && typeof rawContent === 'object') {
                 const keys = Object.keys(rawContent);
+                console.log('[Confetti AI Helper Stream] 题面 content 为多语言对象, 可用 keys =', keys, '请求 language =', language);
                 const prefer = language && keys.includes(language) ? language : keys[0];
+                console.log('[Confetti AI Helper Stream] 实际选用的题面语言 key =', prefer);
                 text = (rawContent as any)[prefer] || '';
             }
             if (text) {
@@ -468,7 +479,7 @@ export class AiHelperStreamHandler extends ConnectionHandler {
                 (this.ctx as any).emit('ai/helper-used', {
                     uid,
                     domainId,
-                    cost: 100,
+                    cost: 50,
                     reason: '使用 AI 辅助解题（流式）',
                 });
             } catch (scoreErr) {

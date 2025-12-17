@@ -42,8 +42,8 @@ export default class WechatPlugin extends Service {
         appId: Schema.string().description('微信公众号 AppID (用于分享功能，必需)').default('wx8f8d991dfd127dca'),
         appSecret: Schema.string().description('微信公众号 AppSecret').role('secret').default('05068710fde31b2e914dceb3f45a8aa1'),
         // 开放平台配置（用于网页扫码登录，可选，配置后可同时支持微信内和浏览器登录）
-        openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default(''),
-        openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default(''),
+        openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default('wxb2ae929b4383b073'),
+        openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default('607ac168edfd1c3b1f1a0774294d3a46'),
         useOpenPlatformForOAuth: Schema.boolean().description('优先使用开放平台进行OAuth登录').default(false),
         // 通用配置
         domains: Schema.array(Schema.string()).description('授权域名列表').default(['yz.lqcode.fun', 'noj.lqcode.fun']),
@@ -143,6 +143,15 @@ export default class WechatPlugin extends Service {
                 domains: config.domains,
             };
             openWechatService = new WechatService(openConfig, ctx);
+            logger.info('[WechatPlugin] ✓ 开放平台 WechatService 已创建', {
+                appId: config.openAppId,
+                domain: config.domains[0],
+            });
+        } else {
+            logger.warn('[WechatPlugin] ⚠ 开放平台未配置，PC端扫码登录将不可用', {
+                hasOpenAppId: !!config.openAppId,
+                hasOpenAppSecret: !!config.openAppSecret,
+            });
         }
 
         ctx.oauth.provide('wechat', {
@@ -154,9 +163,17 @@ export default class WechatPlugin extends Service {
                 if (!s) throw new ValidationError('token');
 
                 const isBinding = this.session.oauthBind === 'wechat';
-                const primaryService = config.useOpenPlatformForOAuth && openWechatService
-                    ? openWechatService
-                    : wechatService;
+
+                // 根据 state token 中保存的平台信息选择正确的 service
+                const platform = (s as any).platform || 'mp';
+                const useOpenPlatform = platform === 'open' && openWechatService;
+
+                if (platform === 'open' && !openWechatService) {
+                    logger.error('[WechatPlugin] PC端扫码登录需要开放平台service，但未创建');
+                    throw new Error('开放平台服务未初始化，无法处理PC端扫码登录');
+                }
+
+                const primaryService = useOpenPlatform ? openWechatService! : wechatService;
                 const fallbackService = primaryService === openWechatService
                     ? wechatService
                     : openWechatService;
@@ -168,7 +185,7 @@ export default class WechatPlugin extends Service {
                     userInfo = await primaryService.getUserInfo(tokenData.access_token, tokenData.openid);
                 } catch (error) {
                     if (fallbackService) {
-                        logger.warn(`[WechatPlugin] 主配置失败，尝试备用配置... ${error instanceof Error ? error.message : String(error)}`);
+                        logger.warn(`[WechatPlugin] 主配置失败，尝试备用配置: ${error instanceof Error ? error.message : String(error)}`);
                         tokenData = await fallbackService.getOAuthAccessToken(code);
                         userInfo = await fallbackService.getUserInfo(tokenData.access_token, tokenData.openid);
                     } else {
@@ -178,9 +195,26 @@ export default class WechatPlugin extends Service {
 
                 await TokenModel.del(s._id, TokenModel.TYPE_OAUTH);
 
-                const userId = tokenData.unionid || userInfo.unionid || tokenData.openid;
+                // 优先使用 unionid（跨平台统一），如果没有则使用 openid
+                const unionid = tokenData.unionid || userInfo.unionid;
+                const openid = tokenData.openid || userInfo.openid;
+
+                // 同时尝试用 unionid 和 openid 查找绑定账号
+                let existingUid: number | null = null;
+                if (unionid) {
+                    existingUid = await ctx.oauth.get('wechat', unionid);
+                }
+                if (!existingUid && openid) {
+                    existingUid = await ctx.oauth.get('wechat', openid);
+                    // 如果找到绑定账号使用的是 openid，但 unionid 存在，则更新绑定记录为 unionid
+                    if (existingUid && unionid) {
+                        await ctx.db.collection('oauth').deleteOne({ platform: 'wechat', id: openid });
+                        await ctx.oauth.set('wechat', unionid, existingUid);
+                    }
+                }
+
+                const userId = unionid || openid;
                 const email = userInfo.email || `${userId}@wechat.oauth`;
-                const existingUid = await ctx.oauth.get('wechat', userId);
                 const existingUidByEmail = await ctx.oauth.get('mail', email);
 
                 if (!isBinding && !existingUid && !existingUidByEmail && !config.canRegister) {
@@ -190,18 +224,15 @@ export default class WechatPlugin extends Service {
                     );
                 }
 
+                // 统一返回 unionid（如果存在），因为 unionid 是跨平台统一的
                 return {
-                    _id: userId,
+                    _id: unionid || openid,
                     email,
                     uname: [userInfo.nickname].filter((i) => i),
                     avatar: userInfo.headimgurl,
                 };
             },
             get: async function get(this: Handler) {
-                const [state] = await TokenModel.add(
-                    TokenModel.TYPE_OAUTH, 600, { redirect: this.request.referer },
-                );
-
                 // 获取服务器 URL 并规范化
                 let baseUrl = SystemModel.get('server.url') || '';
 
@@ -244,10 +275,28 @@ export default class WechatPlugin extends Service {
 
                 const userAgent = this.request.headers['user-agent'] || '';
                 const isWechat = /MicroMessenger/i.test(userAgent);
-                const useOpenPlatform = config.useOpenPlatformForOAuth && config.openAppId;
-                const targetAppId = useOpenPlatform ? config.openAppId : config.appId;
+
+                // 判断使用的平台：PC端必须使用开放平台，微信内根据配置决定
+                let useOpenPlatformForThisRequest: boolean;
+                if (!isWechat) {
+                    if (!config.openAppId) {
+                        throw new Error('未配置微信开放平台AppID，无法使用扫码登录功能');
+                    }
+                    useOpenPlatformForThisRequest = true;
+                } else {
+                    useOpenPlatformForThisRequest = config.useOpenPlatformForOAuth && !!config.openAppId;
+                }
+
+                // 在 state token 中保存使用的平台信息，以便回调时正确选择 service
+                const [state] = await TokenModel.add(
+                    TokenModel.TYPE_OAUTH, 600, {
+                        redirect: this.request.referer,
+                        platform: useOpenPlatformForThisRequest ? 'open' : 'mp',
+                    },
+                );
 
                 if (isWechat) {
+                    const targetAppId = useOpenPlatformForThisRequest ? config.openAppId! : config.appId;
                     const authUrl = 'https://open.weixin.qq.com/connect/oauth2/authorize';
                     const params = [
                         `?appid=${targetAppId}`,
@@ -258,9 +307,6 @@ export default class WechatPlugin extends Service {
                     ].join('&');
                     this.response.redirect = `${authUrl}${params}#wechat_redirect`;
                 } else {
-                    if (!config.openAppId) {
-                        throw new Error('未配置微信开放平台AppID，无法使用扫码登录功能');
-                    }
                     const authUrl = 'https://open.weixin.qq.com/connect/qrconnect';
                     const params = [
                         `?appid=${config.openAppId}`,
