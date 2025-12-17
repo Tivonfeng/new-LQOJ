@@ -33,19 +33,17 @@ export class SubmissionStatsService {
     constructor(private ctx: Context) {}
 
     /**
-     * 获取学生提交统计
-     * @param domainId 域ID
+     * 获取学生提交统计（全域统计）
      * @param uid 用户ID
      * @returns 提交统计
      */
-    async getSubmissionStats(domainId: string, uid: number): Promise<SubmissionStats> {
+    async getSubmissionStats(uid: number): Promise<SubmissionStats> {
         const pretestId = new ObjectId('000000000000000000000000');
         const generateId = new ObjectId('000000000000000000000001');
 
-        // 获取所有提交记录（排除 pretest 和 generate）
+        // 获取所有提交记录（全域，排除 pretest 和 generate）
         const records = await this.ctx.db.collection('record').find(
             {
-                domainId,
                 uid,
                 contest: {
                     $nin: [pretestId, generateId],
@@ -125,13 +123,11 @@ export class SubmissionStatsService {
     }
 
     /**
-     * 获取提交时间分布（按小时）
-     * @param domainId 域ID
+     * 获取提交时间分布（全域，按小时）
      * @param uid 用户ID
      * @returns 时间分布数组
      */
     async getSubmissionTimeDistribution(
-        domainId: string,
         uid: number,
     ): Promise<SubmissionTimeDistribution[]> {
         const pretestId = new ObjectId('000000000000000000000000');
@@ -139,7 +135,6 @@ export class SubmissionStatsService {
 
         const records = await this.ctx.db.collection('record').find(
             {
-                domainId,
                 uid,
                 contest: {
                     $nin: [pretestId, generateId],
@@ -173,13 +168,11 @@ export class SubmissionStatsService {
     }
 
     /**
-     * 获取提交状态分布
-     * @param domainId 域ID
+     * 获取提交状态分布（全域）
      * @param uid 用户ID
      * @returns 状态分布数组
      */
     async getSubmissionStatusDistribution(
-        domainId: string,
         uid: number,
     ): Promise<SubmissionStatusDistribution[]> {
         const pretestId = new ObjectId('000000000000000000000000');
@@ -187,7 +180,6 @@ export class SubmissionStatsService {
 
         const records = await this.ctx.db.collection('record').find(
             {
-                domainId,
                 uid,
                 contest: {
                     $nin: [pretestId, generateId],

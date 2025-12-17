@@ -28,25 +28,23 @@ export class ProblemStatsService {
     constructor(private ctx: Context) {}
 
     /**
-     * 获取题目完成情况统计
-     * @param domainId 域ID
+     * 获取题目完成情况统计（全域统计）
      * @param uid 用户ID
      * @returns 题目完成情况统计
      */
     async getProblemCompletionStats(
-        domainId: string,
         uid: number,
     ): Promise<ProblemCompletionStats> {
-        // 获取所有题目状态记录
+        // 获取所有题目状态记录（全域）
         const statusRecords = await this.ctx.db.collection('document.status').find(
             {
-                domainId,
                 uid,
                 docType: 10, // TYPE_PROBLEM
             },
             {
                 projection: {
                     docId: 1,
+                    domainId: 1,
                     status: 1,
                     score: 1,
                     star: 1,
@@ -81,65 +79,79 @@ export class ProblemStatsService {
     }
 
     /**
-     * 获取题目难度分布
-     * @param domainId 域ID
+     * 获取题目难度分布（全域统计）
      * @param uid 用户ID
      * @returns 难度分布数组
      */
     async getProblemDifficultyDistribution(
-        domainId: string,
         uid: number,
     ): Promise<ProblemDifficultyDistribution[]> {
-        // 获取用户已尝试的题目ID
+        // 获取用户已尝试的题目ID（全域）
         const statusRecords = await this.ctx.db.collection('document.status').find(
             {
-                domainId,
                 uid,
                 docType: 10, // TYPE_PROBLEM
             },
             {
                 projection: {
                     docId: 1,
+                    domainId: 1,
                     status: 1,
                     score: 1,
                 },
             },
         ).toArray();
 
-        const problemIds = statusRecords.map((s) => s.docId);
-        if (problemIds.length === 0) {
+        if (statusRecords.length === 0) {
             return [];
         }
 
-        // 获取题目信息
-        const problems = await this.ctx.db.collection('document').find(
-            {
-                domainId,
-                docType: 10, // TYPE_PROBLEM
-                docId: { $in: problemIds },
-                difficulty: { $exists: true },
-            },
-            {
-                projection: {
-                    docId: 1,
-                    difficulty: 1,
-                },
-            },
-        ).toArray();
+        // 按域分组题目ID
+        const domainProblemMap = new Map<string, number[]>();
+        for (const status of statusRecords) {
+            const domainId = status.domainId;
+            if (!domainProblemMap.has(domainId)) {
+                domainProblemMap.set(domainId, []);
+            }
+            domainProblemMap.get(domainId)!.push(status.docId);
+        }
 
-        // 创建状态映射
-        const statusMap = new Map<number, { solved: boolean }>();
+        // 从各个域并行获取题目信息
+        const problemQueries = Array.from(domainProblemMap.entries()).map(
+            ([domainId, problemIds]) => this.ctx.db.collection('document').find(
+                {
+                    domainId,
+                    docType: 10, // TYPE_PROBLEM
+                    docId: { $in: problemIds },
+                    difficulty: { $exists: true },
+                },
+                {
+                    projection: {
+                        docId: 1,
+                        domainId: 1,
+                        difficulty: 1,
+                    },
+                },
+            ).toArray(),
+        );
+        const problemResults = await Promise.all(problemQueries);
+        const allProblems = problemResults.flat();
+
+        // 创建状态映射（使用 domainId + docId 作为 key）
+        const statusMap = new Map<string, { solved: boolean }>();
         for (const status of statusRecords) {
             const solved = status.status === 1 || status.score === 100;
-            statusMap.set(status.docId, { solved });
+            const key = `${status.domainId}:${status.docId}`;
+            statusMap.set(key, { solved });
         }
 
         // 按难度分组统计
         const difficultyMap = new Map<number, { count: number, solved: number }>();
 
-        for (const problem of problems) {
+        for (const problem of allProblems) {
             const difficulty = problem.difficulty || 0;
-            const status = statusMap.get(problem.docId);
+            const key = `${problem.domainId}:${problem.docId}`;
+            const status = statusMap.get(key);
             const solved = status?.solved || false;
 
             if (!difficultyMap.has(difficulty)) {
@@ -163,65 +175,79 @@ export class ProblemStatsService {
     }
 
     /**
-     * 获取题目标签分布
-     * @param domainId 域ID
+     * 获取题目标签分布（全域统计）
      * @param uid 用户ID
      * @returns 标签分布数组
      */
     async getProblemTagDistribution(
-        domainId: string,
         uid: number,
     ): Promise<ProblemTagDistribution[]> {
-        // 获取用户已尝试的题目ID
+        // 获取用户已尝试的题目ID（全域）
         const statusRecords = await this.ctx.db.collection('document.status').find(
             {
-                domainId,
                 uid,
                 docType: 10, // TYPE_PROBLEM
             },
             {
                 projection: {
                     docId: 1,
+                    domainId: 1,
                     status: 1,
                     score: 1,
                 },
             },
         ).toArray();
 
-        const problemIds = statusRecords.map((s) => s.docId);
-        if (problemIds.length === 0) {
+        if (statusRecords.length === 0) {
             return [];
         }
 
-        // 获取题目信息
-        const problems = await this.ctx.db.collection('document').find(
-            {
-                domainId,
-                docType: 10, // TYPE_PROBLEM
-                docId: { $in: problemIds },
-                tag: { $exists: true, $ne: [] },
-            },
-            {
-                projection: {
-                    docId: 1,
-                    tag: 1,
-                },
-            },
-        ).toArray();
+        // 按域分组题目ID
+        const domainProblemMap = new Map<string, number[]>();
+        for (const status of statusRecords) {
+            const domainId = status.domainId;
+            if (!domainProblemMap.has(domainId)) {
+                domainProblemMap.set(domainId, []);
+            }
+            domainProblemMap.get(domainId)!.push(status.docId);
+        }
 
-        // 创建状态映射
-        const statusMap = new Map<number, { solved: boolean }>();
+        // 从各个域并行获取题目信息
+        const problemQueries = Array.from(domainProblemMap.entries()).map(
+            ([domainId, problemIds]) => this.ctx.db.collection('document').find(
+                {
+                    domainId,
+                    docType: 10, // TYPE_PROBLEM
+                    docId: { $in: problemIds },
+                    tag: { $exists: true, $ne: [] },
+                },
+                {
+                    projection: {
+                        docId: 1,
+                        domainId: 1,
+                        tag: 1,
+                    },
+                },
+            ).toArray(),
+        );
+        const problemResults = await Promise.all(problemQueries);
+        const allProblems = problemResults.flat();
+
+        // 创建状态映射（使用 domainId + docId 作为 key）
+        const statusMap = new Map<string, { solved: boolean }>();
         for (const status of statusRecords) {
             const solved = status.status === 1 || status.score === 100;
-            statusMap.set(status.docId, { solved });
+            const key = `${status.domainId}:${status.docId}`;
+            statusMap.set(key, { solved });
         }
 
         // 按标签分组统计
         const tagMap = new Map<string, { count: number, solved: number }>();
 
-        for (const problem of problems) {
+        for (const problem of allProblems) {
             const tags = problem.tag || [];
-            const status = statusMap.get(problem.docId);
+            const key = `${problem.domainId}:${problem.docId}`;
+            const status = statusMap.get(key);
             const solved = status?.solved || false;
 
             for (const tag of tags) {

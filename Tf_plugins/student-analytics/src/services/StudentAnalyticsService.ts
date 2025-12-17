@@ -17,17 +17,16 @@ import {
 export interface StudentAnalyticsRecord {
     _id: any;
     uid: number;
-    domainId: string;
+    domainId?: string; // 可选，用于记录来源域
     eventType: string;
     eventData: Record<string, any>;
     createdAt: Date;
 }
 
-// 学生分析统计类型
+// 学生分析统计类型（全域统计）
 export interface StudentAnalyticsStats {
     _id: any;
     uid: number;
-    domainId: string;
     totalEvents: number;
     lastUpdated: Date;
     totalCodeLines?: number; // 总代码行数
@@ -54,8 +53,7 @@ export class StudentAnalyticsService {
     }
 
     /**
-     * 获取学生统计数据（包含所有统计信息）
-     * @param domainId 域ID
+     * 获取学生统计数据（全域统计，包含所有统计信息）
      * @param uid 用户ID
      * @param includeWeeklyStats 是否包含每周统计（默认 true）
      * @param includeMonthlyStats 是否包含每月统计（默认 true）
@@ -64,7 +62,6 @@ export class StudentAnalyticsService {
      * @returns 学生统计数据
      */
     async getStudentStats(
-        domainId: string,
         uid: number,
         includeWeeklyStats: boolean = true,
         includeMonthlyStats: boolean = true,
@@ -72,11 +69,10 @@ export class StudentAnalyticsService {
         months: number = 12,
     ): Promise<StudentAnalyticsStats | null> {
         const baseStats = await this.ctx.db.collection('student.analytics.stats' as any).findOne({
-            domainId,
             uid,
         });
 
-        // 并行获取所有统计数据
+        // 并行获取所有统计数据（全域）
         const [
             totalCodeLines,
             weeklyCodeStats,
@@ -88,26 +84,25 @@ export class StudentAnalyticsService {
             problemDifficultyDistribution,
             problemTagDistribution,
         ] = await Promise.all([
-            this.dataService.getTotalCodeLines(domainId, uid),
+            this.dataService.getTotalCodeLines(uid),
             includeWeeklyStats
-                ? this.dataService.getWeeklyCodeStats(domainId, uid, weeks)
+                ? this.dataService.getWeeklyCodeStats(uid, weeks)
                 : Promise.resolve(undefined),
             includeMonthlyStats
-                ? this.dataService.getMonthlyCodeStats(domainId, uid, months)
+                ? this.dataService.getMonthlyCodeStats(uid, months)
                 : Promise.resolve(undefined),
-            this.submissionStatsService.getSubmissionStats(domainId, uid),
-            this.problemStatsService.getProblemCompletionStats(domainId, uid),
-            this.submissionStatsService.getSubmissionTimeDistribution(domainId, uid),
-            this.submissionStatsService.getSubmissionStatusDistribution(domainId, uid),
-            this.problemStatsService.getProblemDifficultyDistribution(domainId, uid),
-            this.problemStatsService.getProblemTagDistribution(domainId, uid),
+            this.submissionStatsService.getSubmissionStats(uid),
+            this.problemStatsService.getProblemCompletionStats(uid),
+            this.submissionStatsService.getSubmissionTimeDistribution(uid),
+            this.submissionStatsService.getSubmissionStatusDistribution(uid),
+            this.problemStatsService.getProblemDifficultyDistribution(uid),
+            this.problemStatsService.getProblemTagDistribution(uid),
         ]);
 
         return {
             ...(baseStats || {
                 _id: null,
                 uid,
-                domainId,
                 totalEvents: 0,
                 lastUpdated: new Date(),
             }),
@@ -124,100 +119,90 @@ export class StudentAnalyticsService {
     }
 
     /**
-     * 获取学生每周代码行数统计
-     * @param domainId 域ID
+     * 获取学生每周代码行数统计（全域统计）
      * @param uid 用户ID
      * @param weeks 统计周数（默认 12 周）
      * @returns 每周代码统计数组
      */
     async getWeeklyCodeStats(
-        domainId: string,
         uid: number,
         weeks: number = 12,
     ): Promise<WeeklyCodeStats[]> {
-        return await this.dataService.getWeeklyCodeStats(domainId, uid, weeks);
+        return await this.dataService.getWeeklyCodeStats(uid, weeks);
     }
 
     /**
-     * 获取学生每月代码行数统计
-     * @param domainId 域ID
+     * 获取学生每月代码行数统计（全域统计）
      * @param uid 用户ID
      * @param months 统计月数（默认 12 个月）
      * @returns 每月代码统计数组
      */
     async getMonthlyCodeStats(
-        domainId: string,
         uid: number,
         months: number = 12,
     ): Promise<MonthlyCodeStats[]> {
-        return await this.dataService.getMonthlyCodeStats(domainId, uid, months);
+        return await this.dataService.getMonthlyCodeStats(uid, months);
     }
 
     /**
-     * 获取学生总代码行数
-     * @param domainId 域ID
+     * 获取学生总代码行数（全域统计）
      * @param uid 用户ID
      * @returns 总代码行数
      */
-    async getTotalCodeLines(domainId: string, uid: number): Promise<number> {
-        return await this.dataService.getTotalCodeLines(domainId, uid);
+    async getTotalCodeLines(uid: number): Promise<number> {
+        return await this.dataService.getTotalCodeLines(uid);
     }
 
     /**
-     * 获取提交统计
+     * 获取提交统计（全域统计）
      */
-    async getSubmissionStats(domainId: string, uid: number): Promise<SubmissionStats> {
-        return await this.submissionStatsService.getSubmissionStats(domainId, uid);
+    async getSubmissionStats(uid: number): Promise<SubmissionStats> {
+        return await this.submissionStatsService.getSubmissionStats(uid);
     }
 
     /**
-     * 获取题目完成情况统计
+     * 获取题目完成情况统计（全域统计）
      */
     async getProblemCompletionStats(
-        domainId: string,
         uid: number,
     ): Promise<ProblemCompletionStats> {
-        return await this.problemStatsService.getProblemCompletionStats(domainId, uid);
+        return await this.problemStatsService.getProblemCompletionStats(uid);
     }
 
     /**
-     * 获取提交时间分布
+     * 获取提交时间分布（全域统计）
      */
     async getSubmissionTimeDistribution(
-        domainId: string,
         uid: number,
     ): Promise<SubmissionTimeDistribution[]> {
-        return await this.submissionStatsService.getSubmissionTimeDistribution(domainId, uid);
+        return await this.submissionStatsService.getSubmissionTimeDistribution(uid);
     }
 
     /**
-     * 获取提交状态分布
+     * 获取提交状态分布（全域统计）
      */
     async getSubmissionStatusDistribution(
-        domainId: string,
         uid: number,
     ): Promise<SubmissionStatusDistribution[]> {
-        return await this.submissionStatsService.getSubmissionStatusDistribution(domainId, uid);
+        return await this.submissionStatsService.getSubmissionStatusDistribution(uid);
     }
 
     /**
-     * 获取题目难度分布
+     * 获取题目难度分布（全域统计）
      */
     async getProblemDifficultyDistribution(
-        domainId: string,
         uid: number,
     ): Promise<ProblemDifficultyDistribution[]> {
-        return await this.problemStatsService.getProblemDifficultyDistribution(domainId, uid);
+        return await this.problemStatsService.getProblemDifficultyDistribution(uid);
     }
 
     /**
-     * 获取题目标签分布
+     * 获取题目标签分布（全域统计）
      */
     async getProblemTagDistribution(
-        domainId: string,
         uid: number,
     ): Promise<ProblemTagDistribution[]> {
-        return await this.problemStatsService.getProblemTagDistribution(domainId, uid);
+        return await this.problemStatsService.getProblemTagDistribution(uid);
     }
 
     async addAnalyticsRecord(record: Omit<StudentAnalyticsRecord, '_id' | 'createdAt'>): Promise<void> {

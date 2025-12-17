@@ -28,15 +28,14 @@ function serializeForJSON(obj: any): any {
 /**
  * 学生数据分析处理器
  * 路由: /analytics/student
- * 功能: 学生个人数据分析页面
+ * 功能: 学生个人数据分析页面（全域统计）
  */
 export class StudentAnalyticsHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const domainId = this.domain._id;
         const analyticsService = new StudentAnalyticsService(this.ctx);
 
-        // 获取用户统计数据（包含代码行数统计）
+        // 获取用户统计数据（全域统计，包含代码行数统计）
         let userStats = null;
         let weeklyCodeStats = null;
         let monthlyCodeStats = null;
@@ -49,7 +48,7 @@ export class StudentAnalyticsHandler extends Handler {
         let problemTagDistribution = null;
 
         if (uid) {
-            userStats = await analyticsService.getStudentStats(domainId, uid, true, true, 12, 12);
+            userStats = await analyticsService.getStudentStats(uid, true, true, 12, 12);
             if (userStats) {
                 weeklyCodeStats = userStats.weeklyCodeStats;
                 monthlyCodeStats = userStats.monthlyCodeStats;
@@ -69,7 +68,7 @@ export class StudentAnalyticsHandler extends Handler {
             }
         }
 
-        // 准备传递给前端的数据
+        // 准备传递给前端的数据（全域统计）
         const studentAnalyticsData = {
             userStats: serializeForJSON(userStats),
             weeklyCodeStats: serializeForJSON(weeklyCodeStats),
@@ -81,7 +80,6 @@ export class StudentAnalyticsHandler extends Handler {
             problemStats: serializeForJSON(problemStats),
             problemDifficultyDistribution: serializeForJSON(problemDifficultyDistribution),
             problemTagDistribution: serializeForJSON(problemTagDistribution),
-            domainId,
             uid,
             isLoggedIn: !!uid,
         };
@@ -98,25 +96,24 @@ export class StudentAnalyticsHandler extends Handler {
 /**
  * 管理员数据分析处理器
  * 路由: /analytics/student/admin
- * 功能: 全局学生数据分析管理面板
+ * 功能: 全域学生数据分析管理面板
  */
 export class StudentAnalyticsAdminHandler extends Handler {
     async get() {
         this.checkPriv(PRIV.PRIV_MANAGE_SYSTEM);
-        const domainId = this.domain._id;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const analyticsService = new StudentAnalyticsService(this.ctx);
 
-        // TODO: 获取全局统计数据
+        // TODO: 获取全域统计数据
         const globalStats = {
             totalStudents: 0,
             totalEvents: 0,
             // 添加更多统计字段
         };
 
-        // 准备传递给前端的数据
+        // 准备传递给前端的数据（全域统计）
         const studentAnalyticsAdminData = {
             globalStats: serializeForJSON(globalStats),
-            domainId,
             isLoggedIn: !!this.user?._id,
         };
 

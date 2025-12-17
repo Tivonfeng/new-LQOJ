@@ -41,23 +41,23 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     const analyticsService = new StudentAnalyticsService(ctx);
 
-    // 创建索引
+    // 创建索引（全域统计，按 uid 索引）
     try {
         // 为记录创建索引
         await ctx.db.ensureIndexes(
             ctx.db.collection('student.analytics.records' as any),
-            { key: { domainId: 1, uid: 1, createdAt: -1 }, name: 'domainId_uid_createdAt' },
-            { key: { domainId: 1, createdAt: -1 }, name: 'domainId_createdAt' },
-            { key: { domainId: 1, uid: 1, eventType: 1 }, name: 'domainId_uid_eventType' },
+            { key: { uid: 1, createdAt: -1 }, name: 'uid_createdAt' },
+            { key: { createdAt: -1 }, name: 'createdAt' },
+            { key: { uid: 1, eventType: 1 }, name: 'uid_eventType' },
         );
 
-        // 为统计创建索引
+        // 为统计创建索引（全域统计，uid 唯一）
         await ctx.db.ensureIndexes(
             ctx.db.collection('student.analytics.stats' as any),
-            { key: { domainId: 1, uid: 1 }, name: 'domainId_uid', unique: true },
+            { key: { uid: 1 }, name: 'uid', unique: true },
         );
 
-        console.log('[Student Analytics] ✅ Indexes created successfully');
+        console.log('[Student Analytics] ✅ Indexes created successfully (global mode)');
     } catch (error) {
         console.error('[Student Analytics] ❌ Error creating indexes:', error.message);
     }

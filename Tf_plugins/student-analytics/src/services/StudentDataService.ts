@@ -79,14 +79,12 @@ export class StudentDataService {
     }
 
     /**
-     * 获取学生每周代码行数统计
-     * @param domainId 域ID
+     * 获取学生每周代码行数统计（全域统计）
      * @param uid 用户ID
      * @param weeks 统计周数（默认最近12周）
      * @returns 每周代码统计数组
      */
     async getWeeklyCodeStats(
-        domainId: string,
         uid: number,
         weeks: number = 12,
     ): Promise<WeeklyCodeStats[]> {
@@ -106,11 +104,10 @@ export class StudentDataService {
         const pretestId = new ObjectId('000000000000000000000000');
         const generateId = new ObjectId('000000000000000000000001');
 
-        // 查询该时间段内的所有提交记录
+        // 查询该时间段内的所有提交记录（全域）
         // 注意：需要包含 code 字段，但 code 可能很大，所以需要明确指定
         const records = await this.ctx.db.collection('record').find(
             {
-                domainId,
                 uid,
                 _id: {
                     $gte: startId,
@@ -214,14 +211,12 @@ export class StudentDataService {
     }
 
     /**
-     * 获取学生每月代码行数统计
-     * @param domainId 域ID
+     * 获取学生每月代码行数统计（全域统计）
      * @param uid 用户ID
      * @param months 统计月数（默认最近12个月）
      * @returns 每月代码统计数组
      */
     async getMonthlyCodeStats(
-        domainId: string,
         uid: number,
         months: number = 12,
     ): Promise<MonthlyCodeStats[]> {
@@ -242,10 +237,9 @@ export class StudentDataService {
         const pretestId = new ObjectId('000000000000000000000000');
         const generateId = new ObjectId('000000000000000000000001');
 
-        // 查询该时间段内的所有提交记录
+        // 查询该时间段内的所有提交记录（全域）
         const records = await this.ctx.db.collection('record').find(
             {
-                domainId,
                 uid,
                 _id: {
                     $gte: startId,
@@ -353,19 +347,17 @@ export class StudentDataService {
     }
 
     /**
-     * 获取学生总代码行数（统计所有提交）
-     * @param domainId 域ID
+     * 获取学生总代码行数（全域统计所有提交）
      * @param uid 用户ID
      * @returns 总代码行数
      */
-    async getTotalCodeLines(domainId: string, uid: number): Promise<number> {
+    async getTotalCodeLines(uid: number): Promise<number> {
         // 排除 pretest 和 generate 类型的提交
         const pretestId = new ObjectId('000000000000000000000000');
         const generateId = new ObjectId('000000000000000000000001');
 
-        // 构建查询条件（统计所有提交，不限制状态）
+        // 构建查询条件（全域统计所有提交，不限制状态）
         const query: any = {
-            domainId,
             uid,
             contest: {
                 $nin: [pretestId, generateId],
@@ -432,11 +424,11 @@ export class StudentDataService {
     }
 
     // TODO: 实现数据收集相关方法
-    async collectStudentData(_domainId: string, _uid: number, _data: Record<string, any>): Promise<void> {
+    async collectStudentData(_uid: number, _data: Record<string, any>): Promise<void> {
         // 收集学生学习数据
     }
 
-    async aggregateStudentStats(_domainId: string, _uid: number): Promise<void> {
+    async aggregateStudentStats(_uid: number): Promise<void> {
         // 聚合学生统计数据
     }
 }
