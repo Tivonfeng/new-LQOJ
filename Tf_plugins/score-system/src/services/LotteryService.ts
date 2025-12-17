@@ -85,7 +85,7 @@ export class LotteryService {
             name: '小零食一份',
             type: 'physical' as const,
             reward: 0,
-            probability: 0.25, // 6: 下中 - 8%
+            probability: 0.20, // 6: 下中 - 8%
             physicalPrize: {
                 description: '小零食一份',
             },
