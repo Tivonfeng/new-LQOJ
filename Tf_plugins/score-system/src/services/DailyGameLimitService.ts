@@ -19,7 +19,7 @@ export interface DailyGameLimit {
  */
 export class DailyGameLimitService {
     private ctx: Context;
-    private static readonly MAX_DAILY_PLAYS = 100; // 每日最大游戏次数
+    private static readonly MAX_DAILY_PLAYS = 10; // 每日最大游戏次数
 
     constructor(ctx: Context) {
         this.ctx = ctx;
