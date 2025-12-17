@@ -7,7 +7,7 @@ export interface DailyGameLimit {
     _id?: any;
     uid: number;
     domainId: string;
-    gameType: 'lottery' | 'dice' | 'rps';
+    gameType: 'dice' | 'rps';
     date: string; // YYYY-MM-DD格式
     playCount: number;
     lastPlayTime: Date;
@@ -39,7 +39,7 @@ export class DailyGameLimitService {
      * @param gameType 游戏类型
      * @returns 是否可以游戏以及剩余次数
      */
-    async checkCanPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps'): Promise<{
+    async checkCanPlay(domainId: string, uid: number, gameType: 'dice' | 'rps'): Promise<{
         canPlay: boolean;
         remainingPlays: number;
         totalPlays: number;
@@ -76,7 +76,7 @@ export class DailyGameLimitService {
      * @param gameType 游戏类型
      * @returns 是否记录成功
      */
-    async recordPlay(domainId: string, uid: number, gameType: 'lottery' | 'dice' | 'rps'): Promise<boolean> {
+    async recordPlay(domainId: string, uid: number, gameType: 'dice' | 'rps'): Promise<boolean> {
         const today = this.getTodayString();
         const now = new Date();
 
@@ -116,7 +116,6 @@ export class DailyGameLimitService {
      * @returns 各游戏类型的剩余次数
      */
     async getAllRemainingPlays(_domainId: string, uid: number): Promise<{
-        lottery: number;
         dice: number;
         rps: number;
     }> {
@@ -132,7 +131,6 @@ export class DailyGameLimitService {
 
         // 按游戏类型统计总次数
         const gameStats = {
-            lottery: 0,
             dice: 0,
             rps: 0,
         };
@@ -145,7 +143,6 @@ export class DailyGameLimitService {
 
         // 计算剩余次数
         const result = {
-            lottery: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.lottery),
             dice: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.dice),
             rps: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.rps),
         };

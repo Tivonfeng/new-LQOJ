@@ -1,0 +1,690 @@
+/* Dice Game Page Styles */
+
+.dice-game-container {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.hero-card {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  border: none;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card .ant-card-body {
+  padding: 32px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.hero-title {
+  color: white;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+}
+
+.hero-back-button {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  height: 40px;
+  padding: 0 20px;
+}
+
+/* Stat Cards */
+.stat-card-hover {
+  transition: all 0.3s ease;
+}
+
+.stat-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card-current-coins {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.stat-card-total-games {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.stat-card-total-wins {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.stat-card-net-profit {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.stat-card-net-profit.negative {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.stat-card-win-rate {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stat-card-avg-profit {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(236, 72, 153, 0.02) 100%);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.stat-card-win-streak {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.stat-value {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 700;
+}
+
+.stat-value-current-coins {
+  color: #6366f1;
+}
+
+.stat-value-total-games {
+  color: #8b5cf6;
+}
+
+.stat-value-total-wins {
+  color: #10b981;
+}
+
+.stat-value-net-profit {
+  color: #10b981;
+}
+
+.stat-value-net-profit.negative {
+  color: #ef4444;
+}
+
+.stat-value-win-rate {
+  color: #3b82f6;
+}
+
+.stat-value-avg-profit {
+  color: #ec4899;
+}
+
+.stat-value-avg-profit.negative {
+  color: #ef4444;
+}
+
+.stat-value-win-streak {
+  color: #f59e0b;
+}
+
+/* Game Rules Card */
+.game-rules-card {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.game-rules-card .ant-card-body {
+  padding: 12px 16px;
+}
+
+.info-card {
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.info-card-bet {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+
+.info-card-win {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+}
+
+.info-card-size {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fcd34d;
+}
+
+.info-card-daily {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border: 1px solid #c084fc;
+}
+
+.info-icon-bet {
+  font-size: 20px;
+  color: #0369a1;
+}
+
+.info-icon-win {
+  font-size: 20px;
+  color: #166534;
+}
+
+.info-icon-size {
+  font-size: 20px;
+  color: #92400e;
+}
+
+.info-icon-daily {
+  font-size: 20px;
+  color: #6b21a8;
+}
+
+.info-label {
+  font-size: 12px;
+}
+
+.info-value {
+  font-size: 18px;
+  display: block;
+}
+
+.info-value-bet {
+  color: #0369a1;
+}
+
+.info-value-win {
+  color: #166534;
+}
+
+.info-value-size {
+  color: #92400e;
+}
+
+.info-value-daily {
+  color: #6b21a8;
+}
+
+/* Dice Game Area */
+.dice-game-area {
+  text-align: center;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.dice-game-area .ant-card-body {
+  padding: 32px 24px;
+}
+
+.dice-display-animation {
+  font-size: clamp(80px, 15vw, 120px);
+  line-height: 1;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.dice-display-inner {
+  display: inline-block;
+  font-size: 120px;
+}
+
+.dice-instruction {
+  font-size: clamp(14px, 2vw, 18px);
+  display: block;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+/* Bet Amount Selection */
+.bet-amount-button {
+  min-width: clamp(100px, 20vw, 140px);
+  height: clamp(60px, 12vw, 80px);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.bet-amount-button.selected {
+  border: 2px solid #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.bet-amount-text {
+  font-size: clamp(20px, 3.5vw, 24px);
+  line-height: 1;
+}
+
+.bet-amount-text.selected {
+  color: #fff;
+}
+
+.bet-amount-text.unselected {
+  color: #1f2937;
+}
+
+.bet-amount-subtext {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.bet-amount-subtext.selected {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bet-amount-subtext.unselected {
+  color: #6b7280;
+}
+
+.bet-amount-subtext .win-amount {
+  color: #10b981;
+}
+
+.bet-amount-subtext.selected .win-amount {
+  color: #fff;
+}
+
+/* Bet Action Buttons */
+.bet-action-button {
+  min-width: clamp(120px, 25vw, 160px);
+  height: clamp(60px, 12vw, 70px);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.bet-action-button-small {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.bet-action-button-big {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.bet-action-text {
+  color: white;
+  font-size: clamp(16px, 3vw, 20px);
+}
+
+.bet-action-subtext {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+}
+
+/* Game Result Card */
+.game-result-card {
+  margin-top: 24px;
+  border-radius: 16px;
+  position: relative;
+}
+
+.game-result-card.won {
+  border: 2px solid #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+.game-result-card.lost {
+  border: 2px solid #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(255, 255, 255, 0.95) 100%);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+}
+
+.game-result-icon {
+  font-size: 48px;
+}
+
+.game-result-icon.won {
+  color: #10b981;
+}
+
+.game-result-icon.lost {
+  color: #ef4444;
+}
+
+.game-result-title {
+  margin-top: 8px;
+}
+
+.result-dice-card {
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 2px solid #bae6fd;
+  margin-bottom: 12px;
+}
+
+.result-dice-label {
+  font-size: 13px;
+}
+
+.result-dice-value {
+  font-size: 24px;
+  color: #0369a1;
+}
+
+.result-guess-card {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.result-guess-card.won {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #86efac;
+}
+
+.result-guess-card.lost {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #fca5a5;
+}
+
+.result-guess-label {
+  font-size: 13px;
+}
+
+.result-guess-value {
+  font-size: 22px;
+}
+
+.result-guess-value.won {
+  color: #166534;
+}
+
+.result-guess-value.lost {
+  color: #991b1b;
+}
+
+.result-gain-card {
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.result-gain-card.positive {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #6ee7b7;
+}
+
+.result-gain-card.negative {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #fca5a5;
+}
+
+.result-gain-label {
+  font-size: 14px;
+}
+
+.result-gain-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.result-gain-value.positive {
+  color: #10b981;
+}
+
+.result-gain-value.negative {
+  color: #ef4444;
+}
+
+/* Game History */
+.game-history-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.game-history-item {
+  padding: 8px 0;
+}
+
+.game-history-avatar {
+  font-size: 32px;
+}
+
+.game-history-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #9ca3af;
+}
+
+/* Dice Display Image */
+.dice-display-img {
+  object-fit: contain;
+  display: inline-block;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes diceRoll {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-10deg) scale(1.1);
+  }
+  75% {
+    transform: rotate(10deg) scale(1.1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dice-game-container {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.dice-display-animation {
+  animation: diceRoll 0.2s ease-in-out;
+}
+
+.game-result-card {
+  animation: slideInUp 0.5s ease-out;
+}
+
+/* Hero Section Hover Effects */
+.hero-card {
+  border-radius: 0 0 20px 20px !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 50px rgba(245, 158, 11, 0.4) !important;
+}
+
+.hero-back-button:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Stat Cards Hover Effects */
+.stat-card-hover {
+  cursor: pointer;
+}
+
+.stat-card-hover:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Bet Amount Button Hover Effects */
+.bet-amount-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.bet-amount-button:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
+}
+
+.bet-amount-button:active:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Bet Action Button Hover Effects */
+.bet-action-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.bet-action-button:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.05);
+}
+
+.bet-action-button:active:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.bet-action-button-small:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5) !important;
+}
+
+.bet-action-button-big:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* List Item Hover Effects */
+.ant-list-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.ant-list-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateX(4px);
+}
+
+/* Card Title Optimization */
+.ant-card-head-title {
+  font-weight: 600;
+}
+
+/* Loading State Optimization */
+.ant-btn-loading {
+  opacity: 0.8;
+}
+
+/* Tag Optimization */
+.ant-tag {
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-weight: 500;
+}
+
+/* Badge Optimization */
+.ant-badge {
+  font-weight: 600;
+}
+
+/* Statistic Content Optimization */
+.ant-statistic-content {
+  font-weight: 700;
+}
+
+/* Scrollbar Optimization */
+.ant-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.ant-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.ant-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dice-game-container {
+    padding: 16px;
+  }
+
+  .hero-card .ant-card-body {
+    padding: 32px 20px !important;
+  }
+
+  .dice-display-animation {
+    font-size: 80px !important;
+  }
+
+  .bet-amount-button {
+    min-width: 120px !important;
+    height: 70px !important;
+  }
+
+  .bet-action-button {
+    min-width: 140px !important;
+    height: 60px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .dice-display-animation {
+    font-size: 60px !important;
+  }
+
+  .bet-amount-button,
+  .bet-action-button {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+

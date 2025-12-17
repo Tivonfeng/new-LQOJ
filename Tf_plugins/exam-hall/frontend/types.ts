@@ -51,6 +51,39 @@ export interface ExamHallData {
     certificateImageUrl?: string;
     certificationSeries?: string;
   }>;
+  /** 最近证书记录（按创建时间排序） */
+  recentRecords?: Array<{
+    _id?: string;
+    uid: number;
+    username?: string;
+    certificateName: string;
+    certifyingBody: string;
+    category: string;
+    level?: string;
+    issueDate: string | Date;
+    certificateImageUrl?: string;
+    examType?: 'competition' | 'certification';
+    competitionName?: string;
+    certificationSeries?: string;
+    createdAt?: string;
+    createdAtFormatted?: string;
+  }>;
+  /** 赛考指数排行榜 */
+  leaderboard?: Array<{
+    uid: number;
+    username?: string;
+    totalWeight: number;
+    totalCertificates: number;
+    competitionWeight: number;
+    certificationWeight: number;
+  }>;
+  /** 用户信息映射（用于最近记录显示） */
+  udocs?: Record<string, {
+    uname?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bio?: string;
+  }>;
 }
 
 // ============================================================================

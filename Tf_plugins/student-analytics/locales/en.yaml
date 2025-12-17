@@ -1,0 +1,7 @@
+student-analytics:
+  title: Student Analytics
+  description: Student data analysis and statistics
+  admin:
+    title: Student Analytics - Admin Panel
+    description: Global student data analysis and statistics
+

@@ -1,288 +1,389 @@
-import * as crypto from 'crypto';
-import axios from 'axios';
+import * as path from 'path';
 import {
     Context,
+    ForbiddenError,
     Handler,
+    Logger,
+    PRIV,
+    Schema,
+    Service,
     SystemModel,
+    Time,
+    TokenModel,
+    ValidationError,
 } from 'hydrooj';
+import { WechatService } from './src/core/wechat-service';
+import { WechatShareHandler } from './src/handlers/share-handler';
+import {
+    WechatTemplateDeleteHandler,
+    WechatTemplateHandler,
+} from './src/handlers/template-handler';
+import { WechatTemplateTestHandler } from './src/handlers/template-test-handler';
+import { WechatApiLimiter } from './src/services/api-limiter';
+import { TemplateMessageService } from './src/services/template-message-service';
+import { TokenCacheService } from './src/services/token-cache';
+import type { WechatConfig } from './src/types/wechat';
 
-// 硬编码配置
-const WECHAT_CONFIG = {
-    appId: process.env.WECHAT_APP_ID || 'wx8f8d991dfd127dca',
-    appSecret: process.env.WECHAT_APP_SECRET || '05068710fde31b2e914dceb3f45a8aa1',
-    domain: process.env.WECHAT_DOMAIN || 'yz.lqcode.fun',
-};
+const logger = new Logger('wechat-plugin');
 
-interface WechatToken {
-    access_token: string;
-    expires_in: number;
-    expires_at: number;
+// 声明数据库集合类型
+declare module 'hydrooj' {
+    interface Collections {
+        'wechat.tokens': import('./src/types/wechat').WechatTokenDoc;
+        'wechat.oauth_tokens': import('./src/types/wechat').WechatOAuthTokenDoc;
+        'wechat.api_calls': import('./src/types/wechat').WechatApiCallDoc;
+    }
 }
 
-interface WechatTicket {
-    ticket: string;
-    expires_in: number;
-    expires_at: number;
-}
+export default class WechatPlugin extends Service {
+    static inject = ['oauth'];
+    static Config = Schema.object({
+        // 公众号配置（用于微信内授权和分享功能）
+        appId: Schema.string().description('微信公众号 AppID (用于分享功能，必需)').default('wx8f8d991dfd127dca'),
+        appSecret: Schema.string().description('微信公众号 AppSecret').role('secret').default('05068710fde31b2e914dceb3f45a8aa1'),
+        // 开放平台配置（用于网页扫码登录，可选，配置后可同时支持微信内和浏览器登录）
+        openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default('wxb2ae929b4383b073'),
+        openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default('607ac168edfd1c3b1f1a0774294d3a46'),
+        useOpenPlatformForOAuth: Schema.boolean().description('优先使用开放平台进行OAuth登录').default(false),
+        // 通用配置
+        domains: Schema.array(Schema.string()).description('授权域名列表').default(['yz.lqcode.fun', 'noj.lqcode.fun']),
+        canRegister: Schema.boolean().description('是否允许通过微信注册新账号（false=仅允许绑定现有账号）').default(false),
+    });
 
-interface JSSDKConfig {
-    appId: string;
-    timestamp: number;
-    nonceStr: string;
-    signature: string;
-}
+    wechatService: WechatService;
 
-export class WechatService {
-    private tokenCache: WechatToken | null = null;
-    private ticketCache: WechatTicket | null = null;
+    constructor(ctx: Context, config: ReturnType<typeof WechatPlugin.Config>) {
+        super(ctx, 'wechat');
 
-    private generateNonceStr(): string {
-        return Math.random().toString(36).substring(2, 15);
-    }
+        // 保护 AppSecret，不在日志中完整输出
+        const maskSecret = (secret: string) => secret ? `${secret.substring(0, 4)}****${secret.substring(secret.length - 4)}` : '(未配置)';
 
-    private generateTimestamp(): number {
-        return Math.floor(Date.now() / 1000);
-    }
+        logger.info('=====================================');
+        logger.info('[WechatPlugin] 初始化微信插件 (分享+登录)');
+        logger.info('[WechatPlugin] 配置信息:');
+        logger.info(`[WechatPlugin]   公众号 AppID: ${config.appId}`);
+        logger.info(`[WechatPlugin]   公众号 AppSecret: ${maskSecret(config.appSecret)}`);
+        logger.info(`[WechatPlugin]   开放平台 AppID: ${config.openAppId || '(未配置)'}`);
+        logger.info(`[WechatPlugin]   开放平台 AppSecret: ${maskSecret(config.openAppSecret)}`);
+        logger.info(`[WechatPlugin]   OAuth优先使用: ${config.useOpenPlatformForOAuth ? '开放平台' : '公众号'}`);
+        logger.info(`[WechatPlugin]   授权域名: ${config.domains.join(', ')}`);
+        logger.info('=====================================');
 
-    private sha1(str: string): string {
-        return crypto.createHash('sha1').update(str).digest('hex');
-    }
+        // 创建微信配置
+        const WECHAT_CONFIG: WechatConfig = {
+            appId: config.appId,
+            appSecret: config.appSecret,
+            domain: config.domains[0], // 使用第一个域名作为主域名
+            domains: config.domains, // 传递所有域名
+        };
 
-    async getAccessToken(): Promise<string> {
-        const now = Date.now();
-        console.log('[WechatService] 获取Access Token...');
+        // 创建共享的微信服务实例（传入 ctx 以启用持久化缓存和接口限制）
+        this.wechatService = new WechatService(WECHAT_CONFIG, ctx);
 
-        if (this.tokenCache && this.tokenCache.expires_at > now) {
-            console.log('[WechatService] 使用缓存的Access Token');
-            return this.tokenCache.access_token;
-        }
+        // 将微信服务和模板消息服务注入到 context 中
+        ctx.provide('wechatService');
+        (ctx as any).wechatService = this.wechatService;
 
-        console.log('[WechatService] 从微信API获取新的Access Token');
-        try {
-            const response = await axios.get('https://api.weixin.qq.com/cgi-bin/token', {
-                params: {
-                    grant_type: 'client_credential',
-                    appid: WECHAT_CONFIG.appId,
-                    secret: WECHAT_CONFIG.appSecret,
-                },
-                timeout: 10000,
+        const templateMessageService = new TemplateMessageService(this.wechatService, ctx);
+        ctx.provide('wechatTemplateMessage');
+        (ctx as any).wechatTemplateMessage = templateMessageService;
+
+        // 初始化数据库索引和定时任务
+        this.initDatabase(ctx);
+        this.initScheduledTasks(ctx);
+
+        // ========== 功能1: 微信分享功能 ==========
+        logger.info('[WechatPlugin] 正在注册分享功能...');
+
+        // 注册分享路由
+        ctx.Route('wechat_share', '/wechat/share', WechatShareHandler);
+        logger.info('[WechatPlugin] ✓ 分享功能已启用 - 路由: /wechat/share');
+
+        // 注册模板消息路由
+        ctx.Route('wechat_template', '/wechat/template/list', WechatTemplateHandler, PRIV.PRIV_EDIT_SYSTEM);
+        ctx.Route('wechat_template_send', '/wechat/template/send', WechatTemplateHandler, PRIV.PRIV_EDIT_SYSTEM);
+        ctx.Route('wechat_template_delete', '/wechat/template/delete', WechatTemplateDeleteHandler, PRIV.PRIV_EDIT_SYSTEM);
+        ctx.Route('wechat_template_test', '/wechat/template/test', WechatTemplateTestHandler, PRIV.PRIV_EDIT_SYSTEM);
+        logger.info('[WechatPlugin] ✓ 模板消息功能已启用');
+        logger.info('[WechatPlugin] ✓ 模板消息测试页面: /wechat/template/test');
+
+        // 注册微信验证文件路由
+        const publicDir = path.join(__dirname, 'public');
+        ctx.server.server.use(async (koaCtx, next) => {
+            if (koaCtx.path.startsWith('/MP_verify_')) {
+                const filename = koaCtx.path.substring(1); // 去掉开头的 /
+                const filePath = path.join(publicDir, filename);
+                try {
+                    const fs = await import('fs-extra');
+                    if (await fs.pathExists(filePath)) {
+                        koaCtx.type = 'text/plain';
+                        koaCtx.body = await fs.readFile(filePath, 'utf-8');
+                        return;
+                    }
+                } catch (error) {
+                    logger.error('[WechatPlugin] 读取验证文件失败:', error);
+                }
+            }
+            await next();
+        });
+        logger.info('[WechatPlugin] ✓ 微信验证文件路由已注册');
+
+        // ========== 功能2: 微信 OAuth 登录功能 ==========
+        logger.info('[WechatPlugin] 正在注册OAuth登录功能...');
+
+        const wechatService = this.wechatService;
+
+        // 创建开放平台的 WechatService（如果配置了）
+        let openWechatService: WechatService | null = null;
+        if (config.openAppId && config.openAppSecret) {
+            const openConfig: WechatConfig = {
+                appId: config.openAppId,
+                appSecret: config.openAppSecret,
+                domain: config.domains[0],
+                domains: config.domains,
+            };
+            openWechatService = new WechatService(openConfig, ctx);
+            logger.info('[WechatPlugin] ✓ 开放平台 WechatService 已创建', {
+                appId: config.openAppId,
+                domain: config.domains[0],
             });
-
-            if (response.data.errcode) {
-                console.error('[WechatService] 微信API错误:', response.data.errcode, response.data.errmsg);
-                throw new Error(`微信API错误: ${response.data.errcode} - ${response.data.errmsg}`);
-            }
-
-            console.log('[WechatService] 成功获取Access Token, expires_in:', response.data.expires_in);
-            this.tokenCache = {
-                access_token: response.data.access_token,
-                expires_in: response.data.expires_in,
-                expires_at: now + (response.data.expires_in - 300) * 1000, // 提前5分钟过期
-            };
-
-            return this.tokenCache.access_token;
-        } catch (error) {
-            console.error('[WechatService] 获取Access Token失败:', error.message);
-            throw new Error(`获取微信Access Token失败: ${error.message}`);
-        }
-    }
-
-    async getJSApiTicket(): Promise<string> {
-        const now = Date.now();
-        console.log('[WechatService] 获取JS API Ticket...');
-
-        if (this.ticketCache && this.ticketCache.expires_at > now) {
-            console.log('[WechatService] 使用缓存的JS API Ticket');
-            return this.ticketCache.ticket;
-        }
-
-        console.log('[WechatService] 从微信API获取新的JS API Ticket');
-        try {
-            const accessToken = await this.getAccessToken();
-            const response = await axios.get('https://api.weixin.qq.com/cgi-bin/ticket/getticket', {
-                params: {
-                    access_token: accessToken,
-                    type: 'jsapi',
-                },
-                timeout: 10000,
+        } else {
+            logger.warn('[WechatPlugin] ⚠ 开放平台未配置，PC端扫码登录将不可用', {
+                hasOpenAppId: !!config.openAppId,
+                hasOpenAppSecret: !!config.openAppSecret,
             });
-
-            if (response.data.errcode !== 0) {
-                console.error('[WechatService] 微信API错误:', response.data.errcode, response.data.errmsg);
-                throw new Error(`微信API错误: ${response.data.errcode} - ${response.data.errmsg}`);
-            }
-
-            console.log('[WechatService] 成功获取JS API Ticket, expires_in:', response.data.expires_in);
-            this.ticketCache = {
-                ticket: response.data.ticket,
-                expires_in: response.data.expires_in,
-                expires_at: now + (response.data.expires_in - 300) * 1000, // 提前5分钟过期
-            };
-
-            return this.ticketCache.ticket;
-        } catch (error) {
-            console.error('[WechatService] 获取JS API Ticket失败:', error.message);
-            throw new Error(`获取微信JS API Ticket失败: ${error.message}`);
         }
-    }
 
-    generateSignature(ticket: string, url: string, timestamp: number, nonceStr: string): string {
-        const params = [
-            `jsapi_ticket=${ticket}`,
-            `noncestr=${nonceStr}`,
-            `timestamp=${timestamp}`,
-            `url=${url}`,
-        ].sort().join('&');
+        ctx.oauth.provide('wechat', {
+            text: 'Login with Wechat',
+            name: 'Wechat',
+            canRegister: config.canRegister,
+            callback: async function callback(this: Handler, { state, code }) {
+                const s = await TokenModel.get(state, TokenModel.TYPE_OAUTH);
+                if (!s) throw new ValidationError('token');
 
-        console.log('[WechatService] 生成签名参数:', params);
-        const signature = this.sha1(params);
-        console.log('[WechatService] 生成的签名:', signature);
+                const isBinding = this.session.oauthBind === 'wechat';
 
-        return signature;
-    }
+                // 根据 state token 中保存的平台信息选择正确的 service
+                const platform = (s as any).platform || 'mp';
+                const useOpenPlatform = platform === 'open' && openWechatService;
 
-    async getJSSDKConfig(url: string): Promise<JSSDKConfig> {
-        console.log('[WechatService] 生成JSSDK配置, URL:', url);
-        try {
-            const ticket = await this.getJSApiTicket();
-            const timestamp = this.generateTimestamp();
-            const nonceStr = this.generateNonceStr();
+                if (platform === 'open' && !openWechatService) {
+                    logger.error('[WechatPlugin] PC端扫码登录需要开放平台service，但未创建');
+                    throw new Error('开放平台服务未初始化，无法处理PC端扫码登录');
+                }
 
-            // URL处理：去除hash部分
-            const cleanUrl = url.split('#')[0];
-            console.log('[WechatService] 清理后的URL:', cleanUrl);
+                const primaryService = useOpenPlatform ? openWechatService! : wechatService;
+                const fallbackService = primaryService === openWechatService
+                    ? wechatService
+                    : openWechatService;
 
-            const signature = this.generateSignature(ticket, cleanUrl, timestamp, nonceStr);
+                let tokenData;
+                let userInfo;
+                try {
+                    tokenData = await primaryService.getOAuthAccessToken(code);
+                    userInfo = await primaryService.getUserInfo(tokenData.access_token, tokenData.openid);
+                } catch (error) {
+                    if (fallbackService) {
+                        logger.warn(`[WechatPlugin] 主配置失败，尝试备用配置: ${error instanceof Error ? error.message : String(error)}`);
+                        tokenData = await fallbackService.getOAuthAccessToken(code);
+                        userInfo = await fallbackService.getUserInfo(tokenData.access_token, tokenData.openid);
+                    } else {
+                        throw error;
+                    }
+                }
 
-            const config = {
-                appId: WECHAT_CONFIG.appId,
-                timestamp,
-                nonceStr,
-                signature,
-            };
+                await TokenModel.del(s._id, TokenModel.TYPE_OAUTH);
 
-            console.log('[WechatService] 生成的JSSDK配置:', config);
-            return config;
-        } catch (error) {
-            console.error('[WechatService] 生成JSSDK配置失败:', error.message);
-            throw new Error(`生成JSSDK配置失败: ${error.message}`);
-        }
-    }
+                // 优先使用 unionid（跨平台统一），如果没有则使用 openid
+                const unionid = tokenData.unionid || userInfo.unionid;
+                const openid = tokenData.openid || userInfo.openid;
 
-    validateDomain(url: string): boolean {
-        try {
-            const urlObj = new URL(url);
-            const hostname = urlObj.hostname;
-            const allowedDomain = WECHAT_CONFIG.domain.replace(/^https?:\/\//, '');
+                // 同时尝试用 unionid 和 openid 查找绑定账号
+                let existingUid: number | null = null;
+                if (unionid) {
+                    existingUid = await ctx.oauth.get('wechat', unionid);
+                }
+                if (!existingUid && openid) {
+                    existingUid = await ctx.oauth.get('wechat', openid);
+                    // 如果找到绑定账号使用的是 openid，但 unionid 存在，则更新绑定记录为 unionid
+                    if (existingUid && unionid) {
+                        await ctx.db.collection('oauth').deleteOne({ platform: 'wechat', id: openid });
+                        await ctx.oauth.set('wechat', unionid, existingUid);
+                    }
+                }
 
-            console.log('[WechatService] 验证域名:', hostname, '允许的域名:', allowedDomain);
+                const userId = unionid || openid;
+                const email = userInfo.email || `${userId}@wechat.oauth`;
+                const existingUidByEmail = await ctx.oauth.get('mail', email);
 
-            // 允许本地开发环境域名
-            const isLocalDev = !!hostname.match(/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)$/);
+                if (!isBinding && !existingUid && !existingUidByEmail && !config.canRegister) {
+                    throw new ForbiddenError(
+                        '微信账号未绑定',
+                        '您的微信账号尚未绑定到任何账号。请先使用其他方式登录，然后在"账号设置 → 安全设置"中绑定微信账号。',
+                    );
+                }
 
-            const isValid = hostname === allowedDomain
-                || hostname.endsWith(`.${allowedDomain}`)
-                || isLocalDev;
+                // 统一返回 unionid（如果存在），因为 unionid 是跨平台统一的
+                return {
+                    _id: unionid || openid,
+                    email,
+                    uname: [userInfo.nickname].filter((i) => i),
+                    avatar: userInfo.headimgurl,
+                };
+            },
+            get: async function get(this: Handler) {
+                // 获取服务器 URL 并规范化
+                let baseUrl = SystemModel.get('server.url') || '';
 
-            console.log('[WechatService] 域名验证结果:', isValid, isLocalDev ? '(本地开发环境)' : '');
-            return isValid;
-        } catch (error) {
-            console.error('[WechatService] 域名验证失败:', error.message);
-            return false;
-        }
-    }
-}
+                // 如果 server.url 是相对路径，从请求或配置中获取完整 URL
+                if (!baseUrl || baseUrl === '/' || !baseUrl.startsWith('http')) {
+                    const forwardedProto = this.request.headers['x-forwarded-proto'];
+                    const protocol = (forwardedProto === 'https' || this.request.headers['x-forwarded-ssl'] === 'on')
+                        ? 'https'
+                        : 'https';
 
-class WechatShareHandler extends Handler {
-    wechatService = new WechatService();
-    allowCors = true;
+                    const currentHost = (this.request.host || this.request.headers.host || '').split(':')[0];
+                    const cleanDomains = (config.domains || []).map((d: string) => d.replace(/^https?:\/\//, ''));
 
-    async options() {
-        // 使用addHeader设置CORS头部
-        this.response.addHeader('Access-Control-Allow-Origin', '*');
-        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        this.response.status = 200;
-        this.response.body = {};
-    }
+                    let selectedDomain = currentHost;
+                    if (cleanDomains.length > 0) {
+                        const isCurrentHostInConfig = cleanDomains.some((d: string) =>
+                            currentHost === d || currentHost.endsWith(`.${d}`),
+                        );
 
-    async get(args: any) {
-        // 使用addHeader设置CORS头部
-        this.response.addHeader('Access-Control-Allow-Origin', '*');
-        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                        if (isCurrentHostInConfig) {
+                            selectedDomain = cleanDomains.find((d: string) =>
+                                currentHost === d || currentHost.endsWith(`.${d}`),
+                            ) || currentHost;
+                        } else {
+                            selectedDomain = cleanDomains.find((d: string) => d.includes('noj.lqcode.fun'))
+                                || cleanDomains[0];
+                        }
+                    }
 
-        console.log('[WechatShareHandler] 收到分享配置请求:', args);
-        try {
-            const url = args.url as string;
+                    baseUrl = `${protocol}://${selectedDomain}`;
+                }
 
-            if (!url) {
-                console.error('[WechatShareHandler] 缺少url参数');
-                throw new Error('缺少url参数');
-            }
+                baseUrl = baseUrl.replace(/\/+$/, '');
+                if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+                    baseUrl = `https://${baseUrl}`;
+                }
 
-            if (!this.wechatService.validateDomain(url)) {
-                console.error('[WechatShareHandler] 域名未授权:', url);
-                throw new Error('域名未授权');
-            }
+                const redirectUri = `${baseUrl}/oauth/wechat/callback`;
+                const encodedRedirectUri = encodeURIComponent(redirectUri);
 
-            const jssdkConfig = await this.wechatService.getJSSDKConfig(url);
-            console.log('[WechatShareHandler] 成功生成分享配置');
+                const userAgent = this.request.headers['user-agent'] || '';
+                const isWechat = /MicroMessenger/i.test(userAgent);
 
-            this.response.body = {
-                success: true,
-                data: {
-                    jssdkConfig,
-                    menuConfig: {
-                        hideMenuItems: [
-                            'menuItem:copyUrl',
-                            'menuItem:openWithQQBrowser',
-                            'menuItem:openWithSafari',
-                        ],
-                        showMenuItems: [
-                            'menuItem:share:appMessage',
-                            'menuItem:share:timeline',
-                        ],
+                // 判断使用的平台：PC端必须使用开放平台，微信内根据配置决定
+                let useOpenPlatformForThisRequest: boolean;
+                if (!isWechat) {
+                    if (!config.openAppId) {
+                        throw new Error('未配置微信开放平台AppID，无法使用扫码登录功能');
+                    }
+                    useOpenPlatformForThisRequest = true;
+                } else {
+                    useOpenPlatformForThisRequest = config.useOpenPlatformForOAuth && !!config.openAppId;
+                }
+
+                // 在 state token 中保存使用的平台信息，以便回调时正确选择 service
+                const [state] = await TokenModel.add(
+                    TokenModel.TYPE_OAUTH, 600, {
+                        redirect: this.request.referer,
+                        platform: useOpenPlatformForThisRequest ? 'open' : 'mp',
                     },
-                },
-            };
-        } catch (error) {
-            console.error('[WechatShareHandler] 处理请求失败:', error.message);
-            this.response.status = 400;
-            this.response.body = {
-                success: false,
-                error: error.message,
-            };
-        }
+                );
+
+                if (isWechat) {
+                    const targetAppId = useOpenPlatformForThisRequest ? config.openAppId! : config.appId;
+                    const authUrl = 'https://open.weixin.qq.com/connect/oauth2/authorize';
+                    const params = [
+                        `?appid=${targetAppId}`,
+                        `redirect_uri=${encodedRedirectUri}`,
+                        'response_type=code',
+                        'scope=snsapi_userinfo',
+                        `state=${state}`,
+                    ].join('&');
+                    this.response.redirect = `${authUrl}${params}#wechat_redirect`;
+                } else {
+                    const authUrl = 'https://open.weixin.qq.com/connect/qrconnect';
+                    const params = [
+                        `?appid=${config.openAppId}`,
+                        `redirect_uri=${encodedRedirectUri}`,
+                        'response_type=code',
+                        'scope=snsapi_login',
+                        `state=${state}`,
+                    ].join('&');
+                    this.response.redirect = `${authUrl}${params}#wechat_redirect`;
+                }
+            },
+        });
+
+        logger.info('[WechatPlugin] ✓ OAuth登录已启用');
+        logger.info('[WechatPlugin]   - 登录入口: /oauth/wechat/login');
+        logger.info('[WechatPlugin]   - 回调地址: /oauth/wechat/callback');
+
+        logger.info('=====================================');
+        logger.info('[WechatPlugin] ✓ 微信插件加载完成');
+        logger.info('[WechatPlugin] 已启用功能:');
+        logger.info('[WechatPlugin]   1. 微信分享 (JSSDK)');
+        logger.info('[WechatPlugin]   2. 微信登录 (OAuth)');
+        logger.info('[WechatPlugin]   3. 模板消息');
+        logger.info('[WechatPlugin]   4. Token持久化缓存');
+        logger.info('[WechatPlugin]   5. 接口调用额度管理');
+        logger.info('[WechatPlugin]   6. OAuth Token自动刷新');
+        logger.info('=====================================');
+
+        ctx.i18n.load('zh', {
+            'Login With Wechat': '使用微信登录',
+        });
     }
-}
 
-export default function apply(ctx: Context) {
-    console.log('[WechatShare] 初始化微信分享插件');
-    console.log('[WechatShare] 配置信息:', {
-        appId: WECHAT_CONFIG.appId,
-        domain: WECHAT_CONFIG.domain,
-        hasSecret: !!WECHAT_CONFIG.appSecret,
-    });
+    /**
+     * 初始化数据库索引
+     */
+    private async initDatabase(ctx: Context): Promise<void> {
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('wechat.tokens' as any),
+            { key: { appId: 1, type: 1 }, name: 'appId_type' },
+            { key: { expiresAt: 1 }, name: 'expiresAt', expireAfterSeconds: 0 },
+        );
 
-    // 设置CORS配置以允许跨域请求
-    const currentCors = SystemModel.get('server.cors') || '';
-    const allowedDomains = ['yz.lqcode.fun', 'localhost', '127.0.0.1', '10.0.1.146'];
-    const newCorsValue = [...new Set([...currentCors.split(','), ...allowedDomains])].filter(Boolean).join(',');
-    SystemModel.set('server.cors', newCorsValue);
-    console.log('[WechatShare] 设置CORS允许域名:', newCorsValue);
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('wechat.oauth_tokens' as any),
+            { key: { openid: 1 }, name: 'openid', unique: true },
+            { key: { unionid: 1 }, name: 'unionid', sparse: true },
+            { key: { expiresAt: 1 }, name: 'expiresAt', expireAfterSeconds: 0 },
+        );
 
-    ctx.Route('wechat_share', '/wechat/share', WechatShareHandler);
-    console.log('[WechatShare] 注册路由: /wechat/share ');
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('wechat.api_calls' as any),
+            { key: { appId: 1, apiName: 1, date: 1 }, name: 'appId_apiName_date', unique: true },
+            { key: { date: 1 }, name: 'date' },
+        );
 
-    ctx.i18n.load('zh', {
-        wechat_share: '微信分享',
-        wechat_share_get_config: '获取分享配置',
-    });
+        logger.info('[WechatPlugin] ✓ 数据库索引已创建');
+    }
 
-    ctx.i18n.load('en', {
-        wechat_share: 'WeChat Share',
-        wechat_share_get_config: 'Get Share Config',
-    });
-    console.log('[WechatShare] 微信插件加载成功');
+    /**
+     * 初始化定时任务
+     */
+    private initScheduledTasks(ctx: Context): void {
+        // 每小时清理过期的 Token
+        ctx.interval(async () => {
+            const tokenCacheService = new TokenCacheService(ctx);
+            await tokenCacheService.cleanExpiredTokens();
+            logger.debug('[WechatPlugin] 已清理过期Token');
+        }, Time.hour);
+
+        // 每天清理旧的接口调用记录（保留30天）
+        ctx.interval(async () => {
+            const apiLimiter = new WechatApiLimiter(ctx);
+            await apiLimiter.cleanOldRecords();
+            logger.debug('[WechatPlugin] 已清理旧的接口调用记录');
+        }, Time.day);
+
+        logger.info('[WechatPlugin] ✓ 定时任务已注册');
+    }
 }

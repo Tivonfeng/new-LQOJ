@@ -1,5 +1,4 @@
 import { Context } from 'hydrooj';
-import { LotteryService, UserLotteryStats } from './LotteryService';
 import { ScoreService, UserScore } from './ScoreService';
 
 /**
@@ -9,12 +8,10 @@ import { ScoreService, UserScore } from './ScoreService';
 export class StatisticsService {
     private ctx: Context;
     private scoreService: ScoreService;
-    private lotteryService: LotteryService;
 
-    constructor(ctx: Context, scoreService: ScoreService, lotteryService: LotteryService) {
+    constructor(ctx: Context, scoreService: ScoreService) {
         this.ctx = ctx;
         this.scoreService = scoreService;
-        this.lotteryService = lotteryService;
     }
 
     /**
@@ -27,9 +24,6 @@ export class StatisticsService {
         totalScore: number;
         todayScore: number;
         todayActiveUsers: number;
-        totalDraws: number;
-        totalWins: number;
-        winRate: number;
     }> {
         // 获取总用户数和总积分
         const scoreStats = await this.ctx.db.collection('score.users' as any).aggregate([
@@ -48,20 +42,11 @@ export class StatisticsService {
         // 获取今日统计
         const todayStats = await this.scoreService.getTodayStats(_domainId);
 
-        // 获取抽奖统计
-        const lotteryStats = await this.lotteryService.getLotteryStats();
-
-        const winRate = lotteryStats.totalDraws > 0
-            ? (lotteryStats.totalWins / lotteryStats.totalDraws * 100) : 0;
-
         return {
             totalUsers: scoreData.totalUsers,
             totalScore: scoreData.totalScore,
             todayScore: todayStats.totalScore,
             todayActiveUsers: todayStats.activeUsers,
-            totalDraws: lotteryStats.totalDraws,
-            totalWins: lotteryStats.totalWins,
-            winRate: Math.round(winRate * 100) / 100,
         };
     }
 
@@ -166,58 +151,6 @@ export class StatisticsService {
     }
 
     /**
-     * 获取抽奖奖品统计
-     * @returns 奖品分布统计
-     */
-    async getPrizeDistribution(): Promise<{
-        rarity: string;
-        count: number;
-        wonCount: number;
-        winRate: number;
-    }[]> {
-        // 获取所有奖品
-        const prizes = await this.ctx.db.collection('lottery.prizes' as any)
-            .find({})
-            .toArray();
-
-        // 获取中奖统计
-        const wonStats = await this.ctx.db.collection('lottery.records' as any).aggregate([
-            { $match: { result: 'win' } },
-            {
-                $group: {
-                    _id: '$prizeRarity',
-                    wonCount: { $sum: 1 },
-                },
-            },
-        ]).toArray();
-
-        const rarities = ['common', 'rare', 'epic', 'legendary'];
-        const rarityLabels = {
-            common: '普通',
-            rare: '稀有',
-            epic: '史诗',
-            legendary: '传说',
-        };
-
-        return rarities.map((rarity) => {
-            const prizeCount = prizes.filter((p) => p.rarity === rarity).length;
-            const wonData = wonStats.find((s) => s._id === rarity);
-            const wonCount = wonData ? wonData.wonCount : 0;
-            const totalDraws = prizes.filter((p) => p.rarity === rarity)
-                .reduce((sum, prize) => sum + prize.weight, 0);
-
-            const winRate = totalDraws > 0 ? (wonCount / totalDraws * 100) : 0;
-
-            return {
-                rarity: rarityLabels[rarity],
-                count: prizeCount,
-                wonCount,
-                winRate: Math.round(winRate * 100) / 100,
-            };
-        });
-    }
-
-    /**
      * 获取最近记录统计 (全局)
      * @param _domainId 域ID (保留参数用于向后兼容)
      * @param limit 记录数量
@@ -225,19 +158,11 @@ export class StatisticsService {
      */
     async getRecentActivity(_domainId: string, limit: number = 20): Promise<{
         scoreRecords: any[];
-        lotteryRecords: any[];
     }> {
         // 获取最近积分记录
         const scoreRecords = await this.ctx.db.collection('score.records' as any)
             .find({}) // 移除域限制
             .sort({ createdAt: -1 })
-            .limit(limit)
-            .toArray();
-
-        // 获取最近抽奖记录
-        const lotteryRecords = await this.ctx.db.collection('lottery.records' as any)
-            .find({}) // 移除域限制
-            .sort({ drawTime: -1 })
             .limit(limit)
             .toArray();
 
@@ -255,10 +180,6 @@ export class StatisticsService {
                 ...record,
                 createdAt: formatTime(record.createdAt),
             })),
-            lotteryRecords: lotteryRecords.map((record) => ({
-                ...record,
-                drawTime: formatTime(record.drawTime),
-            })),
         };
     }
 
@@ -271,16 +192,11 @@ export class StatisticsService {
     async getUserSummary(_domainId: string, uid: number): Promise<{
         scoreInfo: UserScore | null;
         rank: number | null;
-        lotteryStats: UserLotteryStats | null;
         recentScoreCount: number;
-        recentLotteryCount: number;
     }> {
         // 获取用户积分信息和排名
         const scoreInfo = await this.scoreService.getUserScore(_domainId, uid);
         const rank = await this.scoreService.getUserRank(_domainId, uid);
-
-        // 获取用户抽奖统计
-        const lotteryStats = await this.lotteryService.getUserLotteryStats(_domainId, uid);
 
         // 获取最近活动数量
         const oneWeekAgo = new Date();
@@ -292,18 +208,10 @@ export class StatisticsService {
                 createdAt: { $gte: oneWeekAgo },
             });
 
-        const recentLotteryCount = await this.ctx.db.collection('lottery.records' as any)
-            .countDocuments({
-                uid, // 移除域限制
-                drawTime: { $gte: oneWeekAgo },
-            });
-
         return {
             scoreInfo,
             rank,
-            lotteryStats,
             recentScoreCount,
-            recentLotteryCount,
         };
     }
 }

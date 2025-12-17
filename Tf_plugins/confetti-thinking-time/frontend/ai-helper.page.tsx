@@ -1,6 +1,6 @@
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import { RobotOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { Button, Drawer, Form, Input, InputNumber, message, Spin, Switch, Tabs, Tag, Tooltip, Typography } from 'antd';
+import { Button, Drawer, Form, Input, InputNumber, message, Select, Spin, Switch, Tabs, Tag, Tooltip, Typography } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -80,6 +80,47 @@ function guessCurrentCode(): string | undefined {
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
+const { Option } = Select;
+
+function guessCurrentLanguage(ui: AiHelperUiContext | null): string | undefined {
+  try {
+    // 1. 优先从代码语言选择框中获取（适配常见 name）
+    const langSelect = document.querySelector<HTMLSelectElement>(
+      'select[name="lang"], select[name="language"], select[name="language_id"]',
+    );
+    if (langSelect && langSelect.value) {
+      console.log('[AI Helper] 从语言下拉框检测到语言:', langSelect.value);
+      return langSelect.value;
+    }
+
+    // 2. 尝试从 Monaco 编辑器获取语言 id
+    try {
+      const monaco = (window as any).monaco;
+      const editor = (window as any).editor;
+      if (monaco && editor && typeof editor.getModel === 'function') {
+        const model = editor.getModel();
+        const langId = model?.getLanguageId?.();
+        if (langId && typeof langId === 'string') {
+          console.log('[AI Helper] 从 Monaco 编辑器检测到语言:', langId);
+          return langId;
+        }
+      }
+    } catch (e) {
+      console.warn('[AI Helper] 从 Monaco 编辑器检测语言失败:', e);
+    }
+
+    // 3. 回退到 UiContext 中的 codeLang
+    if (ui?.codeLang) {
+      console.log('[AI Helper] 使用 UiContext.codeLang 作为语言:', ui.codeLang);
+      return ui.codeLang;
+    }
+  } catch (e) {
+    console.warn('[AI Helper] 检测当前语言失败:', e);
+  }
+
+  console.log('[AI Helper] 未能检测到当前语言，将不传 language 字段');
+  return undefined;
+}
 
 const ClassroomToolsFloating: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
   const [open, setOpen] = useState(false);
@@ -306,6 +347,7 @@ const AiHelperApp: React.FC = () => {
   const [mode, setMode] = useState<'hint' | 'debug' | 'optimize'>('hint');
   const [code, setCode] = useState<string>('');
   const [prompt, setPrompt] = useState<string>('');
+  const [language, setLanguage] = useState<string | undefined>(() => guessCurrentLanguage(ui));
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiHelperResponse['data'] | null>(null);
   const [analysisText, setAnalysisText] = useState<string>('');
@@ -321,6 +363,11 @@ const AiHelperApp: React.FC = () => {
     const guessed = guessCurrentCode();
     if (guessed && !code) {
       setCode(guessed);
+    }
+    // 打开时尝试检测一次语言并同步到 state，方便用户看到/修改
+    const guessedLang = guessCurrentLanguage(ui);
+    if (guessedLang) {
+      setLanguage(guessedLang);
     }
   }, [open, code]);
 
@@ -360,6 +407,15 @@ const AiHelperApp: React.FC = () => {
     setWsStatus('connecting');
 
     try {
+      // 发送前再尝试一次自动检测语言（若用户未手动选择）
+      let finalLanguage = language;
+      if (!finalLanguage) {
+        finalLanguage = guessCurrentLanguage(ui);
+        if (finalLanguage) {
+          setLanguage(finalLanguage);
+        }
+      }
+
       // 构建 WebSocket URL
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
@@ -406,7 +462,7 @@ const AiHelperApp: React.FC = () => {
           problemId: ui.problemId || ui.problemNumId,
           code: code || undefined,
           mode,
-          language: ui.codeLang,
+          language: finalLanguage,
           ...(prompt ? { prompt } : {}),
         };
 
@@ -655,6 +711,28 @@ const AiHelperApp: React.FC = () => {
             <div style={{ marginBottom: 4, fontSize: 12, color: '#6b7280' }}>
               可选说明（例如：当前卡在哪个样例、希望侧重什么方面）
             </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap' }}>当前代码语言</span>
+              <Select
+                allowClear
+                showSearch
+                placeholder={ui.codeLang ? `默认：${ui.codeLang}` : '自动检测 / 手动选择'}
+                value={language}
+                onChange={(value) => setLanguage(value || undefined)}
+                style={{ minWidth: 160 }}
+                optionFilterProp="children"
+              >
+                <Option value="cpp">C++</Option>
+                <Option value="c">C</Option>
+                <Option value="python">Python</Option>
+                <Option value="python3">Python3</Option>
+                <Option value="java">Java</Option>
+                <Option value="javascript">JavaScript</Option>
+                <Option value="go">Go</Option>
+                <Option value="rust">Rust</Option>
+                <Option value="bash">Bash</Option>
+              </Select>
+            </div>
             <TextArea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -666,7 +744,7 @@ const AiHelperApp: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                每次调用将消耗 <span style={{ fontWeight: 600, color: '#f97316' }}>100</span> 积分
+                每次调用将消耗 <span style={{ fontWeight: 600, color: '#f97316' }}>50</span> 积分
               </div>
               <Button
                 type="primary"

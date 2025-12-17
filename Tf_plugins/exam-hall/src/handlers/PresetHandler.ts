@@ -49,9 +49,15 @@ export class PresetListHandler extends PresetHandlerBase {
                 presets = await presetService.getAllPresets(enabledOnly);
             }
 
+            // 确保 _id 转换为字符串
+            const serializedPresets = presets.map((preset) => ({
+                ...preset,
+                _id: preset._id?.toString() || preset._id,
+            }));
+
             this.sendSuccess({
                 success: true,
-                data: presets,
+                data: serializedPresets,
             });
         } catch (err: any) {
             if (err.message === 'PERMISSION_DENIED') return;
@@ -111,9 +117,15 @@ export class PresetListHandler extends PresetHandlerBase {
                 events,
             });
 
+            // 确保 _id 转换为字符串
+            const serializedPreset = {
+                ...preset,
+                _id: preset._id?.toString() || preset._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                data: preset,
+                data: serializedPreset,
                 message: '预设创建成功',
             });
         } catch (err: any) {
@@ -153,9 +165,15 @@ export class PresetDetailHandler extends PresetHandlerBase {
                 return;
             }
 
+            // 确保 _id 转换为字符串
+            const serializedPreset = {
+                ...preset,
+                _id: preset._id?.toString() || preset._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                data: preset,
+                data: serializedPreset,
             });
         } catch (err: any) {
             if (err.message === 'PERMISSION_DENIED') return;
@@ -217,9 +235,15 @@ export class PresetDetailHandler extends PresetHandlerBase {
             const presetService = new PresetService(this.ctx);
             const preset = await presetService.updatePreset(new ObjectId(id), updateData);
 
+            // 确保 _id 转换为字符串
+            const serializedPreset = {
+                ...preset,
+                _id: preset._id?.toString() || preset._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                data: preset,
+                data: serializedPreset,
                 message: '预设更新成功',
             });
         } catch (err: any) {
@@ -284,9 +308,15 @@ export class PresetToggleHandler extends PresetHandlerBase {
             const presetService = new PresetService(this.ctx);
             const preset = await presetService.togglePreset(new ObjectId(id), enabled);
 
+            // 确保 _id 转换为字符串
+            const serializedPreset = {
+                ...preset,
+                _id: preset._id?.toString() || preset._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                data: preset,
+                data: serializedPreset,
                 message: enabled ? '预设已启用' : '预设已禁用',
             });
         } catch (err: any) {

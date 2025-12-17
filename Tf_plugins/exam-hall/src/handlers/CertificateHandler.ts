@@ -312,6 +312,8 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     calculatedWeight: weightResult.finalWeight,
                     weightBreakdown: weightResult.breakdown,
                 });
+                // 权重更新后，重新计算用户统计
+                await certService.updateUserStats(targetUid);
             } catch (err: any) {
                 console.warn(`[ExamHall] 权重计算失败: ${err.message}`);
                 // 权重计算失败不影响证书创建
@@ -320,7 +322,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             // 触发证书创建事件，由积分系统处理积分增加
             if (finalWeight > 0) {
                 try {
-                    this.ctx.emit('certificate/created', {
+                    (this.ctx.emit as any)('certificate/created', {
                         uid: targetUid,
                         domainId: this.ctx.domain!._id.toString(),
                         certificateId: certificate._id,
@@ -337,7 +339,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             this.sendSuccess({
                 success: true,
                 certificate: {
-                    _id: certificate._id,
+                    _id: certificate._id?.toString() || certificate._id,
                     certificateName: certificate.certificateName,
                     category: certificate.category,
                     issueDate: certificate.issueDate,
@@ -471,9 +473,10 @@ export class CertificateListAdminHandler extends CertificateHandlerBase {
                 }
             }
 
-            // 补充 username 到每个证书
+            // 补充 username 到每个证书，并确保 _id 转换为字符串
             const enrichedCertificates = certificates.map((cert) => ({
                 ...cert,
+                _id: cert._id?.toString() || cert._id,
                 username: userMap.get(cert.uid)?.uname || undefined,
             }));
 
@@ -525,9 +528,15 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 return;
             }
 
+            // 确保 _id 转换为字符串
+            const serializedCertificate = {
+                ...certificate,
+                _id: certificate._id?.toString() || certificate._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                certificate,
+                certificate: serializedCertificate,
             });
         } catch (err: any) {
             this.sendError(err.message, 500);
@@ -616,14 +625,22 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                     calculatedWeight: weightResult.finalWeight,
                     weightBreakdown: weightResult.breakdown,
                 });
+                // 权重更新后，重新计算用户统计
+                await certService.updateUserStats(certificate.uid);
             } catch (err: any) {
                 console.warn(`[ExamHall] 权重计算失败: ${err.message}`);
                 // 权重计算失败不影响证书更新
             }
 
+            // 确保 _id 转换为字符串
+            const serializedCertificate = {
+                ...certificate,
+                _id: certificate._id?.toString() || certificate._id,
+            };
+
             this.sendSuccess({
                 success: true,
-                certificate,
+                certificate: serializedCertificate,
                 message: '证书更新成功',
             });
         } catch (err: any) {
@@ -671,7 +688,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             // 触发证书删除事件，由积分系统处理积分减少
             if (weight > 0) {
                 try {
-                    this.ctx.emit('certificate/deleted', {
+                    (this.ctx.emit as any)('certificate/deleted', {
                         uid: certificate.uid,
                         domainId: this.ctx.domain!._id.toString(),
                         certificateId: new ObjectId(id),
@@ -751,9 +768,12 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
                     const domainId = this.ctx.domain!._id.toString();
                     // 为每个证书触发删除事件
                     for (const cert of certificates) {
+                        // 确保证书ID存在
+                        if (!cert._id) continue;
+
                         const weight = cert.calculatedWeight || cert.weight || 0;
                         if (weight > 0) {
-                            this.ctx.emit('certificate/deleted', {
+                            (this.ctx.emit as any)('certificate/deleted', {
                                 uid: cert.uid,
                                 domainId,
                                 certificateId: cert._id,

@@ -1,14 +1,14 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 掷骰子游戏记录接口
 export interface DiceGameRecord {
     _id?: any;
     uid: number;
     domainId: string;
-    bet: number; // 投入积分 (20/50/100)
+    bet: number; // 投入积分 (10/20/50)
     guess: 'big' | 'small'; // 用户猜测
     diceValue: number; // 骰子点数 (1-6)
     actualResult: 'big' | 'small'; // 实际大小 (1-3为小，4-6为大)
@@ -42,7 +42,7 @@ export class DiceGameService {
     private scoreService: ScoreService;
 
     // 游戏常量
-    private static readonly AVAILABLE_BETS = [20, 50, 100]; // 可选投注额度
+    private static readonly AVAILABLE_BETS = [10, 20, 50]; // 可选投注额度
     private static readonly WIN_MULTIPLIER = 2; // 获胜倍数(2倍)
 
     constructor(ctx: Context, scoreService: ScoreService) {
@@ -55,7 +55,7 @@ export class DiceGameService {
      * @param domainId 域ID
      * @param uid 用户ID
      * @param guess 用户猜测('big' | 'small')
-     * @param betAmount 投注金额(20/50/100)
+     * @param betAmount 投注金额(10/20/50)
      * @returns 游戏结果
      */
     async playDiceGame(domainId: string, uid: number, guess: 'big' | 'small', betAmount: number = 20): Promise<{
@@ -63,83 +63,94 @@ export class DiceGameService {
         message?: string;
         result?: DiceGameRecord;
     }> {
+        try {
         // 验证输入
-        if (!['big', 'small'].includes(guess)) {
-            return { success: false, message: '无效的猜测选项' };
-        }
+            if (!['big', 'small'].includes(guess)) {
+                return { success: false, message: '无效的猜测选项' };
+            }
 
-        // 验证投注金额
-        if (!DiceGameService.AVAILABLE_BETS.includes(betAmount)) {
-            return { success: false, message: '无效的投注金额，可选择20、50或100积分' };
-        }
+            // 验证投注金额
+            if (!DiceGameService.AVAILABLE_BETS.includes(betAmount)) {
+                return { success: false, message: '无效的投注金额，请选择10、20或50积分' };
+            }
 
-        // 检查用户积分
-        const userScore = await this.scoreService.getUserScore(domainId, uid);
-        if (!userScore || userScore.totalScore < betAmount) {
-            return {
-                success: false,
-                message: `积分不足，需要${betAmount}积分才能游戏`,
+            // 检查用户积分
+            const userScore = await this.scoreService.getUserScore(domainId, uid);
+            if (!userScore || userScore.totalScore < betAmount) {
+                return {
+                    success: false,
+                    message: `积分不足，需要${betAmount}积分才能游戏`,
+                };
+            }
+
+            // 掷骰子 (1-6)
+            const diceValue = Math.floor(Math.random() * 6) + 1;
+            const actualResult: 'big' | 'small' = diceValue >= 4 ? 'big' : 'small';
+            const won = guess === actualResult;
+            const reward = won ? betAmount * DiceGameService.WIN_MULTIPLIER : 0;
+            const netGain = won ? betAmount : -betAmount;
+
+            // 先保存游戏记录，获取 _id 用于生成唯一的 pid
+            const gameRecord: Omit<DiceGameRecord, '_id'> = {
+                uid,
+                domainId,
+                bet: betAmount,
+                guess,
+                diceValue,
+                actualResult,
+                won,
+                reward,
+                netGain,
+                gameTime: new Date(),
             };
-        }
 
-        // 掷骰子 (1-6)
-        const diceValue = Math.floor(Math.random() * 6) + 1;
-        const actualResult: 'big' | 'small' = diceValue >= 4 ? 'big' : 'small';
-        const won = guess === actualResult;
-        const reward = won ? betAmount * DiceGameService.WIN_MULTIPLIER : 0;
-        const netGain = won ? betAmount : -betAmount;
+            const recordResult = await this.ctx.db.collection('dice.records' as any).insertOne(gameRecord);
+            const finalRecord = { ...gameRecord, _id: recordResult.insertedId };
+            const gameRecordId = recordResult.insertedId;
 
-        console.log(`[DiceGame] User ${uid} - Dice: ${diceValue}, Guess: ${guess}, Result: ${actualResult}, Won: ${won}`);
+            // 为每次游戏生成唯一的负数 pid，避免与题目ID冲突
+            const timestamp = Math.floor(Date.now() / 1000);
+            const uniquePid = -1000000 - (timestamp % 1000000);
 
-        // 扣除投注积分
-        await this.scoreService.updateUserScore(domainId, uid, -betAmount);
-        await this.scoreService.addScoreRecord({
-            uid,
-            domainId,
-            pid: 0,
-            recordId: null,
-            score: -betAmount,
-            reason: `掷骰子游戏投注${betAmount}积分`,
-            problemTitle: '掷骰子游戏',
-        });
-
-        // 如果获胜，发放奖励
-        if (won) {
-            await this.scoreService.updateUserScore(domainId, uid, reward);
+            // 扣除投注积分
+            await this.scoreService.updateUserScore(domainId, uid, -betAmount);
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0,
-                recordId: null,
-                score: reward,
-                reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
-                problemTitle: '掷骰子游戏',
+                pid: uniquePid,
+                recordId: gameRecordId,
+                score: -betAmount,
+                reason: `掷骰子游戏投注${betAmount}积分`,
+                category: ScoreCategory.GAME_ENTERTAINMENT,
+                title: '掷骰子游戏',
             });
+
+            // 如果获胜，发放奖励
+            if (won) {
+                await this.scoreService.updateUserScore(domainId, uid, reward);
+                await this.scoreService.addScoreRecord({
+                    uid,
+                    domainId,
+                    pid: uniquePid - 1,
+                    recordId: gameRecordId,
+                    score: reward,
+                    reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
+                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    title: '掷骰子游戏',
+                });
+            }
+
+            // 更新用户统计
+            await this.updateUserStats(domainId, uid, won, netGain, betAmount, reward);
+
+            return { success: true, result: finalRecord };
+        } catch (error: any) {
+            console.error(`[DiceGame] Error playing game for user ${uid}:`, error);
+            return {
+                success: false,
+                message: `游戏执行失败: ${error.message || '未知错误'}`,
+            };
         }
-
-        // 保存游戏记录
-        const gameRecord: Omit<DiceGameRecord, '_id'> = {
-            uid,
-            domainId,
-            bet: betAmount,
-            guess,
-            diceValue,
-            actualResult,
-            won,
-            reward,
-            netGain,
-            gameTime: new Date(),
-        };
-
-        const recordResult = await this.ctx.db.collection('dice.records' as any).insertOne(gameRecord);
-        const finalRecord = { ...gameRecord, _id: recordResult.insertedId };
-
-        // 更新用户统计
-        await this.updateUserStats(domainId, uid, won, netGain, betAmount, reward);
-
-        console.log(`[DiceGame] ✅ User ${uid} game completed - Net: ${netGain}`);
-
-        return { success: true, result: finalRecord };
     }
 
     /**

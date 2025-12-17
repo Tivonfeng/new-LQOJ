@@ -8,7 +8,7 @@ import {
 /**
  * 管理员页面处理器
  * 路由: /typing/admin
- * 功能: 管理员录入打字成绩、批量导入、查看统计
+ * 功能: 管理员录入打字成绩、查看统计
  */
 export class TypingAdminHandler extends Handler {
     async prepare() {
@@ -44,8 +44,6 @@ export class TypingAdminHandler extends Handler {
 
         if (action === 'add_record') {
             await this.handleAddRecord();
-        } else if (action === 'import_csv') {
-            await this.handleImportCSV();
         } else if (action === 'delete_record') {
             await this.handleDeleteRecord();
         } else if (action === 'recalculate_stats') {
@@ -137,122 +135,6 @@ export class TypingAdminHandler extends Handler {
         } catch (error) {
             console.error('[TypingAdmin] Error adding record:', error);
             this.response.body = { success: false, message: `操作失败：${error.message}` };
-        }
-    }
-
-    /**
-     * 处理CSV批量导入
-     */
-    private async handleImportCSV() {
-        const { csvData } = this.request.body;
-
-        try {
-            if (!csvData || !csvData.trim()) {
-                this.response.body = { success: false, message: 'CSV数据为空' };
-                return;
-            }
-
-            const recordService = new TypingRecordService(this.ctx);
-            const statsService = new TypingStatsService(this.ctx, recordService);
-            const bonusService = new TypingBonusService(this.ctx);
-
-            // 获取更新前的排行榜（用于超越检查）
-            const oldRanking = await statsService.getAllStats();
-
-            // 导入记录
-            const result = await recordService.importRecordsFromCSV(
-                csvData,
-                this.user._id,
-                this.domain._id,
-            );
-
-            let totalBonus = 0;
-            const bonusDetails: Array<{ username: string, wpm: number, bonus: number }> = [];
-
-            // 更新所有涉及用户的统计和处理奖励
-            const lines = csvData.trim().split('\n');
-            const hasHeader = lines[0].trim().toLowerCase().includes('username')
-                && (lines[0].trim().toLowerCase().includes('wpm')
-                    || lines[0].trim().toLowerCase().includes('speed'));
-            const startLine = hasHeader ? 1 : 0;
-
-            for (let i = startLine; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                const parts = line.split(',');
-                const username = parts[0].trim();
-                const wpm = Number.parseInt(parts[1].trim());
-
-                try {
-                    const UserModel = global.Hydro.model.user;
-                    const user = await UserModel.getByUname(this.domain._id, username);
-                    if (!user) continue;
-
-                    // 获取该用户的前一条最高速度
-                    const currentStats = await statsService.getUserStats(user._id);
-                    const previousMaxWpm = currentStats?.maxWpm || 0;
-
-                    // 获取该用户最新的记录
-                    const latestRecord = await recordService.getLatestRecord(user._id);
-
-                    if (latestRecord && latestRecord.wpm === wpm) {
-                        // 处理奖励（传递旧排行榜用于超越检查）
-                        const bonusInfo = await bonusService.processBonuses(
-                            user._id,
-                            latestRecord._id,
-                            wpm,
-                            previousMaxWpm,
-                            oldRanking,
-                        );
-
-                        if (bonusInfo.totalBonus > 0) {
-                            // 触发打字奖励事件，由积分系统处理积分增加
-                            for (const bonus of bonusInfo.bonuses) {
-                                try {
-                                    this.ctx.emit('typing/bonus-awarded', {
-                                        uid: user._id,
-                                        domainId: this.domain._id.toString(),
-                                        bonus: bonus.bonus,
-                                        reason: bonus.reason,
-                                        bonusType: bonus.type,
-                                        recordId: latestRecord._id,
-                                    });
-                                } catch (err: any) {
-                                    console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
-                                    // 事件触发失败不影响奖励记录
-                                }
-                            }
-
-                            totalBonus += bonusInfo.totalBonus;
-                            bonusDetails.push({
-                                username,
-                                wpm,
-                                bonus: bonusInfo.totalBonus,
-                            });
-                        }
-                    }
-
-                    // 更新统计
-                    await statsService.updateUserStats(user._id, this.domain._id);
-                    await statsService.updateWeeklySnapshot(user._id);
-                } catch (error) {
-                    console.error(`[TypingAdmin] Error processing bonus for ${username}:`, error);
-                }
-            }
-
-            console.log(`[TypingAdmin] Admin ${this.user._id} imported ${result.success} records, total bonus: +${totalBonus}`);
-
-            this.response.body = {
-                success: true,
-                message: `成功导入 ${result.success} 条记录，失败 ${result.failed} 条，总奖励: +${totalBonus}分`,
-                data: result,
-                bonusDetails,
-                totalBonus,
-            };
-        } catch (error) {
-            console.error('[TypingAdmin] Error importing CSV:', error);
-            this.response.body = { success: false, message: `导入失败：${error.message}` };
         }
     }
 

@@ -1,4 +1,5 @@
 import {
+    avatar,
     Handler,
     PERM,
     PRIV,
@@ -6,13 +7,94 @@ import {
 import {
     CheckInService,
     DailyGameLimitService,
-    LotteryService,
-    MigrationService,
+    ScoreCategory,
     ScoreService,
     StatisticsService,
     type UserScore,
 } from '../services';
 import { DEFAULT_CONFIG } from './config';
+
+// 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
+function serializeForJSON(obj: any): any {
+    if (obj === null || obj === undefined) {
+        return obj;
+    }
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (obj instanceof Date) {
+        return obj.toISOString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(serializeForJSON);
+    }
+    if (typeof obj === 'object') {
+        const result: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = serializeForJSON(value);
+        }
+        return result;
+    }
+    return obj;
+}
+
+/**
+ * 跨域查询用户的 displayName
+ * 由于积分是全域统一的，但 displayName 是每个域都可以设置的，
+ * 所以需要跨域查询，找到任意一个域有设置的就使用
+ *
+ * @param ctx - Handler 的上下文对象
+ * @param uids - 用户ID数组
+ * @param currentDomainId - 当前域ID（优先使用当前域的 displayName）
+ * @returns 返回一个 Map，key 是 uid（数字），value 是 displayName（如果有的话）
+ */
+async function getCrossDomainDisplayNames(
+    ctx: any,
+    uids: number[],
+    currentDomainId: string,
+): Promise<Map<number, string>> {
+    const displayNameMap = new Map<number, string>();
+
+    if (!uids || uids.length === 0) {
+        return displayNameMap;
+    }
+
+    try {
+        const domainUserCollection = ctx.db.collection('domain.user');
+
+        // 优先查询当前域的用户 displayName
+        const currentDomainUsers = await domainUserCollection.find({
+            domainId: currentDomainId,
+            uid: { $in: uids },
+            displayName: { $exists: true, $ne: null, $nin: [null, ''] },
+        }).toArray() as any[];
+
+        for (const domainUser of currentDomainUsers) {
+            if (domainUser?.displayName && !displayNameMap.has(domainUser.uid)) {
+                displayNameMap.set(domainUser.uid, domainUser.displayName);
+            }
+        }
+
+        // 对于还没有 displayName 的用户，查询其他域
+        const remainingUids = uids.filter((userId) => !displayNameMap.has(userId));
+        if (remainingUids.length > 0) {
+            const allDomainUsers = await domainUserCollection.find({
+                uid: { $in: remainingUids },
+                displayName: { $exists: true, $ne: null, $nin: [null, ''] },
+            }).toArray() as any[];
+
+            for (const domainUser of allDomainUsers) {
+                if (domainUser?.displayName && !displayNameMap.has(domainUser.uid)) {
+                    displayNameMap.set(domainUser.uid, domainUser.displayName);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('[ScoreSystem] getCrossDomainDisplayNames failed', { uids, error: (error as any)?.message });
+    }
+
+    return displayNameMap;
+}
 
 /**
  * 积分大厅处理器
@@ -29,7 +111,7 @@ export class ScoreHallHandler extends Handler {
         let recentRecords: any[] = [];
         let hasCheckedInToday = false;
         let nextReward = 10;
-        let gameRemainingPlays = { lottery: 0, dice: 0, rps: 0 };
+        let gameRemainingPlays = { dice: 0, rps: 0 };
 
         if (uid) {
             // 获取用户积分信息
@@ -60,7 +142,8 @@ export class ScoreHallHandler extends Handler {
 
         recentRecords = rawRecords.map((record) => ({
             ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
+            createdAt: record.createdAt.toISOString(), // 返回ISO字符串，前端可以解析
+            createdAtFormatted: record.createdAt.toLocaleString('zh-CN', {
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
@@ -68,15 +151,45 @@ export class ScoreHallHandler extends Handler {
             }),
         }));
 
-        // 获取积分排行榜前10
-        const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
+        // 获取积分排行榜前10，并获取总数
+        const { users: topUsers, total: rankingTotal } = await scoreService.getScoreRankingWithPagination(
+            this.domain._id,
+            1,
+            10,
+        );
 
         // 获取用户信息（包括排行榜和最近记录的用户）
         const rankingUids = topUsers.map((u) => u.uid);
         const recentRecordUids = recentRecords.map((r) => r.uid);
-        const allUids = [...new Set([...rankingUids, ...recentRecordUids])]; // 去重合并
+        // 如果用户已登录，确保当前用户也在列表中（用于悬浮球头像显示）
+        const allUids = [...new Set([...rankingUids, ...recentRecordUids, ...(uid ? [uid] : [])])]; // 去重合并
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        const rawUdocs = await UserModel.getList(this.domain._id, allUids);
+
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            allUids,
+            this.domain._id,
+        );
+
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId); // 确保 key 是字符串
+            const userIdNum = Number(userId);
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
+            udocs[uidKey] = {
+                ...user,
+                displayName: finalDisplayName, // 使用跨域查询的 displayName（如果当前域没有）
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
+            };
+        }
 
         // 获取今日新增积分统计
         const todayStats = await scoreService.getTodayStats(this.domain._id);
@@ -84,14 +197,14 @@ export class ScoreHallHandler extends Handler {
         // 检查是否有管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
-        this.response.template = 'score_hall.html';
-        this.response.body = {
+        // 准备传递给前端的数据对象
+        const scoreHallData = {
             userScore: userScore || { totalScore: 0, acCount: 0 },
             currentCoins: userScore?.totalScore || 0,
             userRank,
-            recentRecords,
-            topUsers,
-            udocs,
+            recentRecords: serializeForJSON(recentRecords),
+            topUsers: serializeForJSON(topUsers),
+            udocs: serializeForJSON(udocs),
             todayTotalScore: todayStats.totalScore,
             todayActiveUsers: todayStats.activeUsers,
             canManage,
@@ -100,59 +213,14 @@ export class ScoreHallHandler extends Handler {
             nextReward,
             gameRemainingPlays,
             maxDailyPlays: DailyGameLimitService.getMaxDailyPlays(),
+            rankingTotal,
         };
-    }
-}
 
-/**
- * 积分排行榜处理器
- * 路由: /score/ranking
- * 功能: 展示全站用户积分排名，支持分页
- */
-export class ScoreRankingHandler extends Handler {
-    async get() {
-        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 50;
-        const skip = (page - 1) * limit;
-
-        const users = await this.ctx.db.collection('score.users' as any)
-            .find({}) // 移除域限制，显示全局排行榜
-            .sort({ totalScore: -1, lastUpdated: 1 })
-            .skip(skip)
-            .limit(limit)
-            .toArray();
-
-        const total = await this.ctx.db.collection('score.users' as any)
-            .countDocuments({}); // 移除域限制，统计全局用户数
-
-        // 获取用户信息
-        const uids = users.map((u) => u.uid);
-        const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
-
-        // 检查是否有管理权限
-        const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
-
-        // 格式化日期
-        const formattedUsers = users.map((user) => ({
-            ...user,
-            lastUpdated: user.lastUpdated ? user.lastUpdated.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }) : null,
-        }));
-
-        this.response.template = 'score_ranking.html';
+        this.response.template = 'score_hall.html';
         this.response.body = {
-            users: formattedUsers,
-            udocs,
-            page,
-            total,
-            totalPages: Math.ceil(total / limit),
-            canManage,
+            ...scoreHallData,
+            allUids, // 传递所有 uid 列表，方便模板遍历
+            scoreHallDataJson: JSON.stringify(scoreHallData), // 预序列化的 JSON 字符串
         };
     }
 }
@@ -187,11 +255,13 @@ export class UserScoreHandler extends Handler {
             ? (userScoreData.totalScore / userScoreData.acCount).toFixed(1)
             : '0';
 
-        this.response.template = 'user_score.html';
+        // 始终返回 JSON 格式
+        this.response.type = 'application/json';
         this.response.body = {
-            userScore: userScoreData,
+            success: true,
+            userScore: serializeForJSON(userScoreData),
             averageScore,
-            recentRecords: formattedRecords,
+            recentRecords: serializeForJSON(formattedRecords),
         };
     }
 }
@@ -204,7 +274,8 @@ export class UserScoreHandler extends Handler {
 export class ScoreRecordsHandler extends Handler {
     async get() {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
-        const limit = 20;
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const category = (this.request.query.category as string || '').trim();
 
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
 
@@ -213,15 +284,62 @@ export class ScoreRecordsHandler extends Handler {
             this.domain._id,
             page,
             limit,
+            category || undefined,
         );
 
         // 获取涉及的用户信息
         const uids = [...new Set(records.map((r) => r.uid))];
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const rawUdocs = await UserModel.getList(this.domain._id, uids);
 
-        // 使用 service 方法格式化记录
-        const formattedRecords = scoreService.formatScoreRecords(records);
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            uids,
+            this.domain._id,
+        );
+
+        // 补充跨域查询的 displayName 和生成 avatarUrl
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId);
+            const userIdNum = Number(userId);
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
+            udocs[uidKey] = {
+                ...user,
+                displayName: finalDisplayName,
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+            };
+        }
+
+        // 格式化记录，同时保留原始时间戳用于前端计算相对时间
+        const formattedRecords = records.map((record) => ({
+            ...record,
+            createdAt: record.createdAt.toISOString(), // 返回ISO字符串，前端可以解析
+            createdAtFormatted: record.createdAt.toLocaleString('zh-CN', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        }));
+
+        // 如果请求 JSON 格式（前端 API 调用），返回 JSON
+        if (this.request.json || this.request.headers.accept?.includes('application/json')) {
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                records: formattedRecords,
+                udocs: serializeForJSON(udocs),
+                page,
+                total,
+                totalPages,
+                limit,
+            };
+            return;
+        }
 
         this.response.template = 'score_records.html';
         this.response.body = {
@@ -232,6 +350,91 @@ export class ScoreRecordsHandler extends Handler {
             totalPages,
             hasNext: page < totalPages,
             hasPrev: page > 1,
+        };
+    }
+}
+
+/**
+ * 积分排行榜处理器
+ * 路由: /score/ranking
+ * 功能: 全局排行榜分页
+ */
+export class ScoreRankingHandler extends Handler {
+    async get() {
+        const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
+        const limit = Number.parseInt(this.request.query.limit as string) || 20;
+        const search = (this.request.query.search as string || '').trim();
+
+        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+        const UserModel = global.Hydro.model.user;
+        let users: any[] = [];
+        let total = 0;
+        let totalPages = 0;
+        let uids: number[] = [];
+
+        if (search) {
+            // 基于用户搜索结果的排行榜
+            const matchedUsers = await UserModel.getPrefixList(this.domain._id, search, 200);
+            uids = matchedUsers.map((u: any) => u._id);
+            total = uids.length;
+            totalPages = Math.ceil(total / limit);
+            const skip = (page - 1) * limit;
+            users = await this.ctx.db.collection('score.users' as any)
+                .find({ uid: { $in: uids } })
+                .sort({ totalScore: -1, lastUpdated: 1 })
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+        } else {
+            // 全局排行榜
+            const result = await scoreService.getScoreRankingWithPagination(
+                this.domain._id,
+                page,
+                limit,
+            );
+            users = result.users;
+            total = result.total;
+            totalPages = result.totalPages;
+            uids = users.map((u) => u.uid);
+        }
+
+        const rawUdocs = await UserModel.getList(this.domain._id, uids);
+
+        // 跨域查询 displayName（积分是全域统一的，但 displayName 可能在其他域设置）
+        const crossDomainDisplayNames = await getCrossDomainDisplayNames(
+            this.ctx,
+            uids,
+            this.domain._id,
+        );
+
+        // 为每个用户生成 avatarUrl，确保 key 是字符串类型，并包含 bio 字段
+        const udocs: Record<string, any> = {};
+        for (const userId in rawUdocs) {
+            const user = rawUdocs[userId];
+            const uidKey = String(userId); // 确保 key 是字符串
+            const userIdNum = Number(userId);
+            // 获取用户的 bio（简介）字段，User 对象会加载 settings，bio 可以直接访问
+            const bio = (user as any).bio || null;
+            // 如果当前域没有 displayName，尝试使用跨域查询的结果
+            const finalDisplayName = user.displayName || crossDomainDisplayNames.get(userIdNum) || null;
+            udocs[uidKey] = {
+                ...user,
+                displayName: finalDisplayName, // 使用跨域查询的 displayName（如果当前域没有）
+                avatarUrl: avatar(user.avatar || `gravatar:${user.mail}`, 40), // 生成40px的头像URL
+                bio, // 用户简介
+            };
+        }
+
+        this.response.type = 'application/json';
+        this.response.body = {
+            success: true,
+            users: serializeForJSON(users),
+            udocs: serializeForJSON(udocs),
+            page,
+            total,
+            totalPages,
+            limit,
         };
     }
 }
@@ -251,8 +454,7 @@ export class ScoreManageHandler extends Handler {
 
     async get() {
         const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
-        const statisticsService = new StatisticsService(this.ctx, scoreService, lotteryService);
+        const statisticsService = new StatisticsService(this.ctx, scoreService);
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
@@ -313,15 +515,19 @@ export class ScoreManageHandler extends Handler {
                 // 更新用户积分
                 await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
 
+                // 生成唯一的 pid 值，避免唯一索引冲突
+                // 使用 -2000000 - timestamp 确保唯一性，区别于游戏操作（-1000000）
+                const uniquePid = -2000000 - Date.now();
+
                 // 添加积分记录
                 await scoreService.addScoreRecord({
                     uid: user._id,
                     domainId: this.domain._id,
-                    pid: 0, // 管理员操作使用0
+                    pid: uniquePid,
                     recordId: null,
                     score: scoreChangeNum,
                     reason: `管理员调整：${reason}`,
-                    problemTitle: '管理员操作',
+                    category: ScoreCategory.ADMIN_OPERATION,
                 });
 
                 console.log(`[ScoreManage] Admin ${this.user._id} adjusted user ${user._id} score by ${scoreChangeNum}: ${reason}`);
@@ -333,77 +539,6 @@ export class ScoreManageHandler extends Handler {
             } catch (error) {
                 console.error('[ScoreManage] Error adjusting score:', error);
                 this.response.body = { success: false, message: `操作失败：${error.message}` };
-            }
-        } else if (action === 'migrate_scores') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前迁移状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasDomainData) {
-                    this.response.body = { success: false, message: '没有需要迁移的分域数据' };
-                    return;
-                }
-
-                if (status.hasGlobalData) {
-                    this.response.body = { success: false, message: '已存在全局积分数据，请先清理或回滚' };
-                    return;
-                }
-
-                // 执行迁移
-                const result = await migrationService.mergeUserScores();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed score migration: ${result.mergedUsers} users merged`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功合并 ${result.mergedUsers} 个用户的积分数据（来自 ${result.totalRecords} 条域记录）`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during migration:', error);
-                this.response.body = { success: false, message: `迁移失败：${error.message}` };
-            }
-        } else if (action === 'rollback_migration') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-
-                // 检查当前状态
-                const status = await migrationService.checkMigrationStatus();
-
-                if (!status.hasGlobalData) {
-                    this.response.body = { success: false, message: '没有需要回滚的全局数据' };
-                    return;
-                }
-
-                // 执行回滚
-                const result = await migrationService.rollbackMigration();
-
-                console.log(`[ScoreManage] Admin ${this.user._id} executed migration rollback: ${result.rolledBackUsers} users`);
-
-                this.response.body = {
-                    success: true,
-                    message: `成功回滚 ${result.rolledBackUsers} 个用户的积分数据`,
-                    data: result,
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error during rollback:', error);
-                this.response.body = { success: false, message: `回滚失败：${error.message}` };
-            }
-        } else if (action === 'get_migration_status') {
-            try {
-                const migrationService = new MigrationService(this.ctx);
-                const status = await migrationService.checkMigrationStatus();
-                const stats = await migrationService.getMigrationStats();
-
-                this.response.body = {
-                    success: true,
-                    data: { status, stats },
-                };
-            } catch (error) {
-                console.error('[ScoreManage] Error getting migration status:', error);
-                this.response.body = { success: false, message: `获取状态失败：${error.message}` };
             }
         } else {
             this.response.body = { success: false, message: '无效的操作' };

@@ -1,7 +1,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 每日签到记录接口
 export interface DailyCheckInRecord {
@@ -86,15 +86,17 @@ export class CheckInService {
             // 更新用户签到统计
             await this.updateUserStats(uid, newStreak);
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（签到使用 -10000000 范围）
+            const uniquePid = -10000000 - Date.now();
             // 添加积分记录
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0, // 签到使用特殊ID 0
+                pid: uniquePid,
                 recordId: null,
                 score,
                 reason: `每日签到奖励 (连续${newStreak}天)`,
-                problemTitle: '每日签到',
+                category: ScoreCategory.DAILY_CHECKIN,
             });
 
             // 更新用户总积分

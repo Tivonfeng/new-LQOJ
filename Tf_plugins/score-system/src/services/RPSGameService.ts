@@ -3,7 +3,7 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 剪刀石头布游戏记录接口
 export interface RPSGameRecord {
@@ -92,6 +92,7 @@ export class RPSGameService {
         playerChoice?: string;
         aiChoice?: string;
         reward?: number;
+        netGain?: number;
         newBalance?: number;
         streak?: number;
         streakBonus?: number;
@@ -165,17 +166,23 @@ export class RPSGameService {
 
             console.log(`[RPSGameService] Calculated reward: ${reward}, netGain: ${netGain}, streak: ${currentStreak}`);
 
+            // 生成唯一的 pid 值，避免唯一索引冲突（石头剪刀布使用 -8000000 范围）
+            const timestamp = Date.now();
+            const uniquePidCost = -8000000 - timestamp;
+            const uniquePidReward = -8000000 - timestamp - 1;
+
             // 扣除基础费用并记录
             console.log(`[RPSGameService] Deducting base cost: ${RPSGameService.BASE_COST}`);
             await this.scoreService.updateUserScore(domainId, uid, -RPSGameService.BASE_COST);
             await this.scoreService.addScoreRecord({
                 uid,
                 domainId,
-                pid: 0, // 游戏类型记录，使用0表示非题目
+                pid: uniquePidCost,
                 recordId: null,
                 score: -RPSGameService.BASE_COST,
                 reason: '剪刀石头布游戏 - 游戏费用',
-                problemTitle: '剪刀石头布',
+                category: ScoreCategory.GAME_ENTERTAINMENT,
+                title: '剪刀石头布',
             });
 
             // 发放奖励（如果有）并记录
@@ -196,11 +203,12 @@ export class RPSGameService {
                 await this.scoreService.addScoreRecord({
                     uid,
                     domainId,
-                    pid: 0, // 游戏类型记录，使用0表示非题目
+                    pid: uniquePidReward,
                     recordId: null,
                     score: reward,
                     reason: rewardReason,
-                    problemTitle: '剪刀石头布',
+                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    title: '剪刀石头布',
                 });
             }
 
@@ -235,7 +243,8 @@ export class RPSGameService {
                 result: gameResult,
                 playerChoice,
                 aiChoice,
-                reward: netGain, // 返回净收益
+                reward, // 总奖励（包括连胜奖励）
+                netGain, // 净收益
                 newBalance: updatedScore?.totalScore || 0,
                 streak: currentStreak,
                 streakBonus,
