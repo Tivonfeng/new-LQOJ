@@ -3,7 +3,6 @@ import {
     TypingAdminHandler,
     TypingHallHandler,
     TypingProfileHandler,
-    TypingRankingHandler,
 } from './src/handlers';
 import type {
     TypingRecord,
@@ -40,19 +39,92 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Typing Speed System] Plugin loading...');
 
-    // 修复旧索引
+    // 修复旧索引和数据（删除可能存在的 uid_domainId 复合索引，因为数据是全域统一的）
     try {
         const statsCollection = ctx.db.collection('typing.stats' as any);
         const existingIndexes = await statsCollection.listIndexes().toArray();
 
-        // 检查是否存在错误的 uid_1 索引
-        const badIndex = existingIndexes.find((idx) => idx.name === 'uid_1' && idx.unique === true);
-        if (badIndex) {
-            console.log('[Typing Speed System] 🔧 Dropping old incorrect index: uid_1');
-            await statsCollection.dropIndex('uid_1');
-            console.log('[Typing Speed System] ✅ Old index dropped successfully');
+        // 检查是否存在 uid_domainId 复合索引
+        const hasUidDomainIdIndex = existingIndexes.some(
+            (idx) => idx.name === 'uid_domainId'
+                || (idx.key && idx.key.uid && idx.key.domainId && idx.unique),
+        );
+
+        // 如果存在 uid_domainId 索引，需要先清理重复数据
+        if (hasUidDomainIdIndex) {
+            console.log('[Typing Speed System] 🔧 Found uid_domainId index, cleaning duplicate data...');
+
+            // 查找所有有重复 uid 的记录（由于旧索引，可能同一用户在不同域有多条记录）
+            const allStats = await statsCollection.find({}).toArray();
+            const uidMap = new Map<number, any[]>();
+
+            for (const stat of allStats) {
+                if (!uidMap.has(stat.uid)) {
+                    uidMap.set(stat.uid, []);
+                }
+                uidMap.get(stat.uid)!.push(stat);
+            }
+
+            // 对于每个有重复的用户，保留一条记录（选择最新的或记录最多的）
+            const deletePromises: Promise<any>[] = [];
+            for (const [uid, stats] of uidMap.entries()) {
+                if (stats.length > 1) {
+                    // 选择记录数最多或最新的
+                    const bestStat = stats.reduce((best, current) => {
+                        if (current.totalRecords > best.totalRecords) return current;
+                        if (current.totalRecords === best.totalRecords
+                            && new Date(current.lastUpdated) > new Date(best.lastUpdated)) {
+                            return current;
+                        }
+                        return best;
+                    });
+
+                    // 删除其他重复记录
+                    const idsToDelete = stats.filter((s) => s._id.toString() !== bestStat._id.toString())
+                        .map((s) => s._id);
+                    if (idsToDelete.length > 0) {
+                        deletePromises.push(
+                            statsCollection.deleteMany({ _id: { $in: idsToDelete } })
+                                .then(() => {
+                                    console.log(`[Typing Speed System] 🗑️  Removed ${idsToDelete.length} duplicate stats for uid ${uid}`);
+                                }),
+                        );
+                    }
+                }
+            }
+            if (deletePromises.length > 0) {
+                await Promise.all(deletePromises);
+            }
+
+            console.log('[Typing Speed System] ✅ Duplicate data cleaned');
         }
-    } catch (error) {
+
+        // 检查并删除所有可能冲突的旧索引
+        const indexesToDrop: string[] = [];
+        for (const idx of existingIndexes) {
+            // 收集需要删除的索引名称
+            if (idx.name === 'uid_domainId'
+                || (idx.key && idx.key.uid && idx.key.domainId && idx.unique)) {
+                indexesToDrop.push(idx.name);
+            } else if (idx.name === 'uid_1' && idx.unique === true) {
+                indexesToDrop.push(idx.name);
+            }
+        }
+
+        // 并行删除所有旧索引
+        if (indexesToDrop.length > 0) {
+            const dropPromises = indexesToDrop.map(async (indexName) => {
+                console.log(`[Typing Speed System] 🔧 Dropping old incorrect index: ${indexName}`);
+                try {
+                    await statsCollection.dropIndex(indexName);
+                    console.log(`[Typing Speed System] ✅ Old index ${indexName} dropped successfully`);
+                } catch (err: any) {
+                    console.log(`[Typing Speed System] ⚠️  Failed to drop index ${indexName}: ${err.message}`);
+                }
+            });
+            await Promise.all(dropPromises);
+        }
+    } catch (error: any) {
         console.log('[Typing Speed System] ℹ️  No old indexes to fix:', error.message);
     }
 
@@ -87,7 +159,6 @@ export default async function apply(ctx: Context, config: any = {}) {
     // 注册路由
     ctx.Route('typing_hall', '/typing/hall', TypingHallHandler);
     ctx.Route('typing_profile', '/typing/me', TypingProfileHandler);
-    ctx.Route('typing_ranking', '/typing/ranking', TypingRankingHandler);
     ctx.Route('typing_admin', '/typing/admin', TypingAdminHandler);
 
     // 注入导航栏

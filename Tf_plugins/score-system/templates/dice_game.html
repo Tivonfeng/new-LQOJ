@@ -54,6 +54,12 @@
     window.diceStatusUrl = '{{ url("dice_status") }}';
     window.scoreHallUrl = '{{ url("score_hall") }}';
     window.diceHistoryUrl = '{{ url("dice_history") }}';
+    window.transferUrl = '{{ url("wallet") }}';
+    {% if handler.user._id %}
+    window.currentUserId = '{{ handler.user._id }}';
+    {% endif %}
+    // 传递用户信息
+    window.diceGameData.udocs = {{ udocsJson|safe }};
 </script>
 
 {% endblock %}

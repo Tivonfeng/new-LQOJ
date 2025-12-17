@@ -22,11 +22,6 @@ export {
 } from './DiceGameService';
 
 
-// 数据迁移服务
-export {
-    MigrationService,
-} from './MigrationService';
-
 // 剪刀石头布游戏服务
 export {
     type RPSGameRecord,
@@ -38,6 +33,8 @@ export {
 // 积分服务
 export {
     type ScoreConfig,
+    ScoreCategory,
+    type ScoreCategoryType,
     type ScoreRecord,
     ScoreService,
     type UserScore,

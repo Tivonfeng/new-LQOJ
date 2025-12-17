@@ -37,6 +37,7 @@ import {
 } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { WalletFloatingBall } from './components/WalletFloatingBall';
 
 const { Title, Text } = Typography;
 
@@ -129,7 +130,7 @@ const DiceGameApp: React.FC = () => {
     currentCoins: 0,
     canPlay: false,
     availableBets: [],
-    gameConfig: { winMultiplier: 2, availableBets: [20, 50, 100] },
+    gameConfig: { winMultiplier: 2, availableBets: [10, 20, 50] },
     userStats: { totalGames: 0, totalWins: 0, netProfit: 0, winStreak: 0, maxWinStreak: 0 },
     winRate: '0.0',
     recentGames: [],
@@ -414,6 +415,26 @@ const DiceGameApp: React.FC = () => {
 
   return (
     <div className="dice-game-container">
+      {/* 个人钱包悬浮球 */}
+      {(() => {
+        const currentUserId = String((window as any).currentUserId || '');
+        const udocs = (window as any).diceGameData?.udocs || {};
+        const currentUser = udocs[currentUserId];
+        const isLoggedIn = !!(window as any).currentUserId;
+        return (
+          <WalletFloatingBall
+            currentCoins={currentCoins}
+            userInfo={{
+              uid: currentUserId,
+              avatarUrl: currentUser?.avatarUrl,
+              uname: currentUser?.uname,
+              displayName: currentUser?.displayName,
+            }}
+            walletUrl={(window as any).transferUrl || '/score/transfer'}
+            isLoggedIn={isLoggedIn}
+          />
+        );
+      })()}
       {/* Hero Section */}
       <Card className="hero-card" bodyStyle={{ padding: '32px 24px', position: 'relative', zIndex: 1 }}>
         <Row justify="space-between" align="middle">

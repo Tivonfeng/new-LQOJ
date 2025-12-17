@@ -1,0 +1,22 @@
+{% set page_name = "student_analytics_admin" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- React App Mount Point -->
+<div id="student-analytics-admin-react-app"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.studentAnalyticsAdminData = {{ studentAnalyticsAdminDataJson|safe }};
+
+    // 传递URL
+    window.studentAnalyticsUrl = '{{ url("student_analytics") }}';
+    window.studentAnalyticsAdminUrl = '{{ url("student_analytics_admin") }}';
+    {% if isLoggedIn %}
+    window.currentUserId = '{{ handler.user._id }}';
+    {% endif %}
+</script>
+
+{% endblock %}
+

@@ -31,7 +31,8 @@ interface ScoreRecord {
   uid: string;
   score: number;
   pid: number;
-  problemTitle?: string;
+  category?: string;
+  title?: string;
   reason?: string;
   createdAt?: string;
 }
@@ -46,20 +47,38 @@ const ScoreManageApp: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean, message: string } | null>(null);
   const [recentUsers, setRecentUsers] = useState<string[]>([]);
-  const [records] = useState<ScoreRecord[]>(() => {
+  // 使用 useMemo 确保 records 数组的稳定性，避免重复渲染
+  const records = React.useMemo<ScoreRecord[]>(() => {
     const raw = (window as any).ScoreManageRecentRecords?.records;
-    return Array.isArray(raw) ? raw : [];
-  });
-  const [userMap] = useState<UserMap>(() => {
+    return Array.isArray(raw) ? [...raw] : []; // 创建新数组，避免引用问题
+  }, []); // 只在组件挂载时计算一次
+
+  const userMap = React.useMemo<UserMap>(() => {
     const raw = (window as any).ScoreManageRecentRecords?.users;
-    return raw && typeof raw === 'object' ? raw : {};
-  });
+    return raw && typeof raw === 'object' ? { ...raw } : {}; // 创建新对象，避免引用问题
+  }, []); // 只在组件挂载时计算一次
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [, forceUpdate] = useState({});
 
   const userInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
+
+  // 当记录数量变化时，自动调整当前页（避免超出范围）
+  // 只在 records.length 变化时触发，避免在分页时重复触发
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
+    setPage((currentPage) => {
+      if (records.length === 0) {
+        return 1;
+      }
+      if (currentPage > totalPages && totalPages > 0) {
+        return totalPages;
+      }
+      return currentPage;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [records.length]); // 只依赖 records.length，不依赖 pageSize（它是常量）
 
   // 加载最近用户列表
   useEffect(() => {
@@ -398,8 +417,9 @@ const ScoreManageApp: React.FC = () => {
 
   // 侧边栏记录渲染
   const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
-  const pageSafe = Math.min(totalPages, Math.max(1, page));
-  const pageRecords = records.slice((pageSafe - 1) * pageSize, pageSafe * pageSize);
+  // 确保当前页在有效范围内
+  const currentPage = Math.min(totalPages, Math.max(1, page));
+  const pageRecords = records.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const formatTime = useCallback((value?: string) => {
     if (!value) return 'N/A';
@@ -414,27 +434,35 @@ const ScoreManageApp: React.FC = () => {
     return value;
   }, []);
 
-  const renderRecord = useCallback((record: ScoreRecord) => {
+  const renderRecord = useCallback((record: ScoreRecord, index: number) => {
     const user = userMap?.[record.uid];
     const displayName = user?.displayName || user?.uname || record.uid;
     const positive = record.score > 0;
-    const isAdmin = record.pid === 0 || record.problemTitle === '管理员操作';
+    const isAdmin = record.pid === 0 || record.category === '管理员操作';
+    // 使用更唯一的 key：包含索引和记录的唯一标识
+    const recordKey = `${record.uid}-${record.pid}-${record.createdAt || ''}-${index}`;
     return (
-      <div className={`record-item ${positive ? 'positive' : 'negative'}`} key={`${record.uid}-${record.createdAt}-${record.reason}`}>
-        <div className="record-main">
-          <div className="record-user">
-            <span className={`record-dot ${positive ? 'up' : 'down'}`} />
-            <span className="record-name">{displayName}</span>
-            <span className="record-meta">{isAdmin ? '管理员操作' : (record.problemTitle || record.pid)}</span>
+      <div className={`manage-record-item ${positive ? 'positive' : 'negative'}`} key={recordKey}>
+        <div className="manage-record-header">
+          <div className="manage-record-user-info">
+            <div className={`manage-record-indicator ${positive ? 'up' : 'down'}`} />
+            <div className="manage-record-user-details">
+              <span className="manage-record-name">{displayName}</span>
+              <span className="manage-record-meta">{isAdmin ? '管理员操作' : (record.category || record.title || `PID: ${record.pid}`)}</span>
+            </div>
           </div>
-          <div className={`record-score ${positive ? 'pos' : 'neg'}`}>
-            {positive ? '+' : ''}
-            {Math.abs(record.score)} pts
+          <div className={`manage-record-score ${positive ? 'pos' : 'neg'}`}>
+            <span className="manage-record-score-value">
+              {positive ? '+' : ''}{Math.abs(record.score)}
+            </span>
+            <span className="manage-record-score-unit">pts</span>
           </div>
         </div>
-        <div className="record-footer">
-          <span className="record-reason">{record.reason || '无原因'}</span>
-          <span className="record-time">{formatTime(record.createdAt)}</span>
+        <div className="manage-record-footer">
+          <span className="manage-record-reason" title={record.reason || '无原因'}>
+            {record.reason || '无原因'}
+          </span>
+          <span className="manage-record-time">{formatTime(record.createdAt)}</span>
         </div>
       </div>
     );
@@ -629,31 +657,38 @@ const ScoreManageApp: React.FC = () => {
         </div>
 
         <div className="sidebar-column">
-          <Card className="records-card" title="最近积分记录">
-            <div className="records-list">
+          <Card className="manage-records-card" title={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ThunderboltOutlined />
+              <span>最近积分记录</span>
+            </span>
+          }>
+            <div className="manage-records-list">
               {pageRecords.length === 0 && (
-                <div className="empty-panel">
-                  <div className="empty-icon">📋</div>
-                  <p className="empty-text">暂无记录</p>
+                <div className="manage-empty-panel">
+                  <div className="manage-empty-icon">📋</div>
+                  <p className="manage-empty-text">暂无记录</p>
                 </div>
               )}
-              {pageRecords.map(renderRecord)}
+              {pageRecords.map((record, index) => renderRecord(record, index))}
             </div>
-            <div className="records-pagination">
+            <div className="manage-records-pagination">
               <Button
-                className="pagination-btn"
+                className="manage-pagination-btn"
+                size="small"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={pageSafe <= 1}
+                disabled={currentPage <= 1}
               >
                 上一页
               </Button>
-              <div className="pagination-info">
-                <span className="current-page">{pageSafe}</span> / <span className="total-pages">{totalPages}</span>
+              <div className="manage-pagination-info">
+                <span className="manage-current-page">{currentPage}</span> / <span className="manage-total-pages">{totalPages}</span>
               </div>
               <Button
-                className="pagination-btn"
+                className="manage-pagination-btn"
+                size="small"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={pageSafe >= totalPages}
+                disabled={currentPage >= totalPages || records.length === 0}
               >
                 下一页
               </Button>

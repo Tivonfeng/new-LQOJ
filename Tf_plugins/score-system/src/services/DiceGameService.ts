@@ -1,14 +1,14 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreService } from './ScoreService';
+import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 掷骰子游戏记录接口
 export interface DiceGameRecord {
     _id?: any;
     uid: number;
     domainId: string;
-    bet: number; // 投入积分 (20/50/100)
+    bet: number; // 投入积分 (10/20/50)
     guess: 'big' | 'small'; // 用户猜测
     diceValue: number; // 骰子点数 (1-6)
     actualResult: 'big' | 'small'; // 实际大小 (1-3为小，4-6为大)
@@ -42,7 +42,7 @@ export class DiceGameService {
     private scoreService: ScoreService;
 
     // 游戏常量
-    private static readonly AVAILABLE_BETS = [20, 50, 100]; // 可选投注额度
+    private static readonly AVAILABLE_BETS = [10, 20, 50]; // 可选投注额度
     private static readonly WIN_MULTIPLIER = 2; // 获胜倍数(2倍)
 
     constructor(ctx: Context, scoreService: ScoreService) {
@@ -55,7 +55,7 @@ export class DiceGameService {
      * @param domainId 域ID
      * @param uid 用户ID
      * @param guess 用户猜测('big' | 'small')
-     * @param betAmount 投注金额(20/50/100)
+     * @param betAmount 投注金额(10/20/50)
      * @returns 游戏结果
      */
     async playDiceGame(domainId: string, uid: number, guess: 'big' | 'small', betAmount: number = 20): Promise<{
@@ -71,7 +71,7 @@ export class DiceGameService {
 
             // 验证投注金额
             if (!DiceGameService.AVAILABLE_BETS.includes(betAmount)) {
-                return { success: false, message: '无效的投注金额，可选择20、50或100积分' };
+                return { success: false, message: '无效的投注金额，请选择10、20或50积分' };
             }
 
             // 检查用户积分
@@ -121,7 +121,8 @@ export class DiceGameService {
                 recordId: gameRecordId,
                 score: -betAmount,
                 reason: `掷骰子游戏投注${betAmount}积分`,
-                problemTitle: '掷骰子游戏',
+                category: ScoreCategory.GAME_ENTERTAINMENT,
+                title: '掷骰子游戏',
             });
 
             // 如果获胜，发放奖励
@@ -134,7 +135,8 @@ export class DiceGameService {
                     recordId: gameRecordId,
                     score: reward,
                     reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
-                    problemTitle: '掷骰子游戏',
+                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    title: '掷骰子游戏',
                 });
             }
 

@@ -1,0 +1,28 @@
+{% extends "layout/basic.html" %}
+
+{% block content %}
+<!-- React App Container -->
+<div id="wallet-react-app">
+</div>
+
+
+
+<script>
+
+// 传递数据给React组件
+window.userBalance = {{ userBalance }};
+window.currentUserId = {{ currentUid }};
+window.transferConfig = {
+    minAmount: {{ transferConfig.minAmount }},
+    maxAmount: {{ transferConfig.maxAmount }},
+    transferFee: {{ transferConfig.transferFee }},
+    dailyLimit: {{ transferConfig.dailyLimit }}
+};
+window.scoreRecordsUrl = '/score/records';
+window.transferHistoryUrl = '/score/transfer/history';
+
+
+</script>
+
+{% endblock %}
+

@@ -30,7 +30,8 @@ window.ScoreManageRecentRecords = {
       uid: '{{ record.uid|escape }}',
       score: {{ record.score or 0 }},
       pid: {{ record.pid or 0 }},
-      problemTitle: '{{ record.problemTitle|default("", true)|escape }}',
+      category: '{{ record.category|default("", true)|escape }}',
+      title: '{{ record.title|default("", true)|escape }}',
       reason: '{{ record.reason|default("", true)|escape }}',
       createdAt: '{{ record.createdAt|string|escape }}'
     }{{ "," if not loop.last else "" }}

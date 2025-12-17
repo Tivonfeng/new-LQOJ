@@ -42,15 +42,27 @@ export class TypingProfileHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const recorderDocs = await UserModel.getList(this.domain._id, recorderIds);
 
+        // 将recorderDocs转换为简化的JSON格式
+        const recorderDocsSimplified: Record<string, { uname?: string; displayName?: string }> = {};
+        for (const userId in recorderDocs) {
+            recorderDocsSimplified[userId] = {
+                uname: recorderDocs[userId].uname,
+                displayName: recorderDocs[userId].displayName,
+            };
+        }
+
         this.response.template = 'typing_profile.html';
         this.response.body = {
             userStats: userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 },
+            userStatsJSON: JSON.stringify(userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 }),
             maxRank,
             avgRank,
             userRecords: formattedRecords,
+            userRecordsJSON: JSON.stringify(formattedRecords),
             progressData,
             progressDataJSON: JSON.stringify(progressData),
             recorderDocs,
+            recorderDocsJSON: JSON.stringify(recorderDocsSimplified),
         };
     }
 }

@@ -60,10 +60,30 @@ export class TypingStatsService {
         const lastRecordAt = new Date(Math.max(...records.map((r) => r.createdAt.getTime())));
 
         // 更新或插入统计记录（uid 作为唯一键，全域统一数据）
-        await this.ctx.db.collection('typing.stats' as any).updateOne(
-            { uid },
-            {
-                $set: {
+        try {
+            await this.ctx.db.collection('typing.stats' as any).updateOne(
+                { uid },
+                {
+                    $set: {
+                        uid,
+                        domainId,
+                        maxWpm,
+                        avgWpm,
+                        totalRecords: records.length,
+                        lastRecordAt,
+                        lastUpdated: new Date(),
+                    },
+                },
+                { upsert: true },
+            );
+        } catch (error: any) {
+            // 如果遇到重复键错误（可能是旧索引残留），先删除所有该用户的旧记录再重试
+            if (error.code === 11000 || error.message?.includes('duplicate key')) {
+                console.log(`[TypingStatsService] ⚠️  Duplicate key error for uid ${uid}, cleaning up...`);
+                // 删除该用户的所有旧统计记录
+                await this.ctx.db.collection('typing.stats' as any).deleteMany({ uid });
+                // 重试插入
+                await this.ctx.db.collection('typing.stats' as any).insertOne({
                     uid,
                     domainId,
                     maxWpm,
@@ -71,10 +91,12 @@ export class TypingStatsService {
                     totalRecords: records.length,
                     lastRecordAt,
                     lastUpdated: new Date(),
-                },
-            },
-            { upsert: true },
-        );
+                });
+                console.log(`[TypingStatsService] ✅ Successfully recovered from duplicate key error for uid ${uid}`);
+            } else {
+                throw error;
+            }
+        }
     }
 
     /**
@@ -121,10 +143,30 @@ export class TypingStatsService {
         const previousMaxWpm = previousStats?.maxWpm || 0;
 
         // 更新统计记录
-        await this.ctx.db.collection('typing.stats' as any).updateOne(
-            { uid },
-            {
-                $set: {
+        try {
+            await this.ctx.db.collection('typing.stats' as any).updateOne(
+                { uid },
+                {
+                    $set: {
+                        uid,
+                        domainId,
+                        maxWpm,
+                        avgWpm,
+                        totalRecords: records.length,
+                        lastRecordAt,
+                        lastUpdated: new Date(),
+                    },
+                },
+                { upsert: true },
+            );
+        } catch (error: any) {
+            // 如果遇到重复键错误（可能是旧索引残留），先删除所有该用户的旧记录再重试
+            if (error.code === 11000 || error.message?.includes('duplicate key')) {
+                console.log(`[TypingStatsService] ⚠️  Duplicate key error for uid ${uid}, cleaning up...`);
+                // 删除该用户的所有旧统计记录
+                await this.ctx.db.collection('typing.stats' as any).deleteMany({ uid });
+                // 重试插入
+                await this.ctx.db.collection('typing.stats' as any).insertOne({
                     uid,
                     domainId,
                     maxWpm,
@@ -132,10 +174,12 @@ export class TypingStatsService {
                     totalRecords: records.length,
                     lastRecordAt,
                     lastUpdated: new Date(),
-                },
-            },
-            { upsert: true },
-        );
+                });
+                console.log(`[TypingStatsService] ✅ Successfully recovered from duplicate key error for uid ${uid}`);
+            } else {
+                throw error;
+            }
+        }
 
         // 更新周快照
         await this.updateWeeklySnapshot(uid);

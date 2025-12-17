@@ -1,8 +1,68 @@
 /* eslint-disable react-refresh/only-export-components */
+import './typing-hall.page.css';
+
 import { addPage, NamedPage } from '@hydrooj/ui-default';
+import {
+  AimOutlined,
+  ArrowRightOutlined,
+  BarChartOutlined,
+  CrownOutlined,
+  FireOutlined,
+  GiftOutlined,
+  LaptopOutlined,
+  PlayCircleOutlined,
+  RiseOutlined,
+  SettingOutlined,
+  StarOutlined,
+  ThunderboltOutlined,
+  TrophyOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { Button, Card, Col, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
 import { Chart, registerables } from 'chart.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { TypingStatsFloatingBall } from './components/TypingStatsFloatingBall';
+
+const { Title, Text } = Typography;
+
+/**
+ * 计算相对时间显示
+ * 24小时内显示相对时间（如"2小时前"），超过24小时显示格式化时间
+ */
+function formatRelativeTime(isoString: string, formattedTime?: string): string {
+  try {
+    const recordTime = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - recordTime.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    // 如果超过24小时，返回格式化时间
+    if (diffHours >= 24) {
+      return formattedTime || recordTime.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    // 计算相对时间
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      if (diffMinutes < 1) {
+        return '刚刚';
+      }
+      return `${diffMinutes}分钟前`;
+    } else {
+      const hours = Math.floor(diffHours);
+      return `${hours}小时前`;
+    }
+  } catch (error) {
+    // 如果解析失败，返回格式化时间或原始字符串
+    return formattedTime || isoString;
+  }
+}
 
 // 注册 Chart.js 组件
 Chart.register(...registerables);
@@ -41,7 +101,7 @@ interface TrendData {
 
 interface LadderRange {
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   range: string;
   min: number;
   max: number;
@@ -53,7 +113,7 @@ interface LadderRange {
 const LADDER_RANGES: LadderRange[] = [
   {
     label: '终极之神',
-    icon: '👑',
+    icon: <CrownOutlined style={{ fontSize: 20 }} />,
     range: '200+',
     min: 200,
     max: Infinity,
@@ -62,7 +122,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速狂魔',
-    icon: '💻',
+    icon: <LaptopOutlined style={{ fontSize: 20 }} />,
     range: '170-200',
     min: 170,
     max: 200,
@@ -71,7 +131,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速王者',
-    icon: '⚔️',
+    icon: <TrophyOutlined style={{ fontSize: 20 }} />,
     range: '140-170',
     min: 140,
     max: 170,
@@ -80,7 +140,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速狂人',
-    icon: '🔥',
+    icon: <FireOutlined style={{ fontSize: 20 }} />,
     range: '110-140',
     min: 110,
     max: 140,
@@ -89,7 +149,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速闪电',
-    icon: '⚡',
+    icon: <ThunderboltOutlined style={{ fontSize: 20 }} />,
     range: '80-110',
     min: 80,
     max: 110,
@@ -98,7 +158,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '键速高手',
-    icon: '⭐',
+    icon: <StarOutlined style={{ fontSize: 20 }} />,
     range: '50-80',
     min: 50,
     max: 80,
@@ -107,7 +167,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '打字小匠',
-    icon: '✨',
+    icon: <StarOutlined style={{ fontSize: 20 }} />,
     range: '20-50',
     min: 20,
     max: 50,
@@ -116,7 +176,7 @@ const LADDER_RANGES: LadderRange[] = [
   },
   {
     label: '打字萌新',
-    icon: '🌱',
+    icon: <UserOutlined style={{ fontSize: 20 }} />,
     range: '0-20',
     min: 0,
     max: 20,
@@ -164,39 +224,60 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
   };
 
   return (
-    <div className="ladder-section">
-      <div className="section-header">
-        <h3>速度天梯分布</h3>
+    <Card
+      className="content-card ladder-section-card"
+      bordered={false}
+      title={
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Space>
+            <ThunderboltOutlined style={{ fontSize: 20, color: '#3b82f6' }} />
+            <Title level={4} style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+              速度天梯分布
+            </Title>
+          </Space>
+          <Text type="secondary" style={{ fontSize: '0.875rem', display: 'block', marginLeft: 28 }}>
+            查看不同速度区间的用户分布情况，悬停头像查看详细信息
+          </Text>
+        </Space>
+      }
+      extra={
         <div className="ladder-controls">
           <div className="ladder-tabs">
             <button
               className={`ladder-tab-btn ${speedType === 'avg' ? 'active' : ''}`}
               onClick={() => setSpeedType('avg')}
             >
-              <span className="tab-icon">📊</span>
+              <BarChartOutlined className="tab-icon" />
               <span>平均速度</span>
             </button>
             <button
               className={`ladder-tab-btn ${speedType === 'max' ? 'active' : ''}`}
               onClick={() => setSpeedType('max')}
             >
-              <span className="tab-icon">🏆</span>
+              <TrophyOutlined className="tab-icon" />
               <span>最高速度</span>
             </button>
           </div>
           <div className="ladder-legend">
             <span className="legend-item">
-              <span className="legend-icon">🎯</span>
+              <AimOutlined className="legend-icon" />
               <span>悬停查看详情</span>
             </span>
           </div>
         </div>
-      </div>
+      }
+    >
       <div className="ladder-chart">
         {ladderData.map(({ range, users, actualMax }, index) => {
           const mid = Math.round((range.min + actualMax) / 2);
           return (
-            <div key={index} className="ladder-row">
+            <div
+              key={index}
+              className="ladder-row"
+              style={{
+                backgroundColor: range.color,
+              }}
+            >
               <div className="ladder-label">
                 <div className="level-badge">
                   <span className="level-icon">{range.icon}</span>
@@ -236,7 +317,17 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
                           animationDelay: `${index * 0.1}s`,
                         }}
                       >
-                        <img src={user.avatarUrl} alt={user.uname || user.displayName} />
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.uname || user.displayName}
+                            onError={(e) => {
+                              // 如果头像加载失败，隐藏图片
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            loading="lazy"
+                          />
+                        ) : null}
                         <div className="tooltip">
                           <div className="tooltip-name">
                             {user.uname || user.displayName}
@@ -256,7 +347,7 @@ const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, curre
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -277,217 +368,358 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
   currentUserId,
 }) => {
   const [activeTab, setActiveTab] = useState<'max-wpm' | 'avg-wpm' | 'improvement'>('max-wpm');
+  const [rankingSearch, setRankingSearch] = useState('');
+  const [rankingPage, setRankingPage] = useState(1);
+  const [rankingPageSize] = useState(10);
 
-  const getMedal = (index: number): string => {
-    const medals = ['🥇', '🥈', '🥉'];
-    return index < 3 ? medals[index] : `${index + 1}`;
+  const getRankIcon = (rankNum: number) => {
+    if (rankNum === 1) return <TrophyOutlined style={{ color: '#FFD700' }} />;
+    if (rankNum === 2) return <TrophyOutlined style={{ color: '#C0C0C0' }} />;
+    if (rankNum === 3) return <TrophyOutlined style={{ color: '#CD7F32' }} />;
+    return rankNum;
   };
 
-  const renderRanking = (ranking: UserStats[], showImprovement: boolean = false) => (
-    <div className="ranking-list">
-      {ranking.length > 0 ? (
-        ranking.map((user, index) => {
-          const userDoc = udocs[user.uid];
-          const isCurrentUser = currentUserId === user.uid;
-          return (
-            <div key={user.uid} className={`ranking-item ${isCurrentUser ? 'current-user' : ''}`}>
-              <div className={`rank-badge rank-${index < 3 ? index + 1 : 'other'}`}>{getMedal(index)}</div>
-              <div className="user-info">
-                <div className="user-name">{userDoc?.uname || `User ${user.uid}`}</div>
-                <div className="user-meta">
-                  {showImprovement ? `本周平均: ${user.avgWpm} WPM` : `${user.totalRecords} 条记录`}
-                </div>
-              </div>
-              <div className={`score-value ${showImprovement ? 'improvement' : ''}`}>
-                {showImprovement && '+'}
-                {showImprovement ? user.improvement : activeTab === 'max-wpm' ? user.maxWpm : user.avgWpm}{' '}
-                <span className="unit">WPM</span>
-              </div>
+  const getCurrentRanking = () => {
+    switch (activeTab) {
+      case 'max-wpm':
+        return maxWpmRanking;
+      case 'avg-wpm':
+        return avgWpmRanking;
+      case 'improvement':
+        return improvementRanking;
+      default:
+        return maxWpmRanking;
+    }
+  };
+
+  const getRankingValue = (user: UserStats) => {
+    switch (activeTab) {
+      case 'max-wpm':
+        return user.maxWpm;
+      case 'avg-wpm':
+        return user.avgWpm;
+      case 'improvement':
+        return user.improvement || 0;
+      default:
+        return user.maxWpm;
+    }
+  };
+
+  const filteredRanking = useMemo(() => {
+    const ranking = getCurrentRanking();
+    if (!rankingSearch.trim()) {
+      return ranking;
+    }
+    const keyword = rankingSearch.trim().toLowerCase();
+    return ranking.filter((user) => {
+      const userDoc = udocs[user.uid];
+      const uname = userDoc?.uname?.toLowerCase() || '';
+      const displayName = userDoc?.displayName?.toLowerCase() || '';
+      return uname.includes(keyword) || displayName.includes(keyword);
+    });
+  }, [activeTab, rankingSearch, maxWpmRanking, avgWpmRanking, improvementRanking, udocs]);
+
+  // 分页后的排行榜数据
+  const paginatedRanking = useMemo(() => {
+    const start = (rankingPage - 1) * rankingPageSize;
+    const end = start + rankingPageSize;
+    return filteredRanking.slice(start, end);
+  }, [filteredRanking, rankingPage, rankingPageSize]);
+
+  // 当搜索或标签页切换时，重置到第一页
+  useEffect(() => {
+    setRankingPage(1);
+  }, [activeTab, rankingSearch]);
+
+  return (
+    <Card
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <Space>
+            <TrophyOutlined />
+            <span>排行榜</span>
+          </Space>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Space size={[4, 4]}>
+              <button
+                className={`tab-btn ${activeTab === 'max-wpm' ? 'active' : ''}`}
+                onClick={() => setActiveTab('max-wpm')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'max-wpm' ? '#1890ff' : '#fff',
+                  color: activeTab === 'max-wpm' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                最高速度
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'avg-wpm' ? 'active' : ''}`}
+                onClick={() => setActiveTab('avg-wpm')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'avg-wpm' ? '#1890ff' : '#fff',
+                  color: activeTab === 'avg-wpm' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                平均速度
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'improvement' ? 'active' : ''}`}
+                onClick={() => setActiveTab('improvement')}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  background: activeTab === 'improvement' ? '#1890ff' : '#fff',
+                  color: activeTab === 'improvement' ? '#fff' : '#000',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                进步最快
+              </button>
+            </Space>
+            <Input
+              allowClear
+              size="small"
+              placeholder="搜索用户"
+              className="leaderboard-search-input"
+              style={{
+                width: 180,
+                height: 32,
+                paddingInline: 10,
+              }}
+              value={rankingSearch}
+              onChange={(e) => setRankingSearch(e.target.value)}
+            />
+          </div>
+        </div>
+      }
+      className="content-card"
+    >
+      {filteredRanking && filteredRanking.length > 0 ? (
+        <>
+          <List
+            dataSource={paginatedRanking}
+            renderItem={(user, index) => {
+              const userDoc = udocs[user.uid];
+              const isCurrentUser = currentUserId === user.uid;
+              const rank = (rankingPage - 1) * rankingPageSize + index + 1;
+              const value = getRankingValue(user);
+              const showImprovement = activeTab === 'improvement';
+
+              return (
+                <List.Item className={`leaderboard-item ${isCurrentUser ? 'current-user' : ''}`}>
+                  <List.Item.Meta
+                    avatar={
+                      <>
+                        <div className={`rank-badge rank-${rank <= 3 ? rank : 'other'}`}>
+                          {getRankIcon(rank)}
+                        </div>
+                        {userDoc?.avatarUrl ? (
+                          <img
+                            src={userDoc.avatarUrl}
+                            alt={userDoc?.uname || userDoc?.displayName || `User ${user.uid}`}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '2px solid #e5e7eb',
+                            }}
+                          />
+                        ) : null}
+                      </>
+                    }
+                    title={
+                      <Text strong>
+                        {userDoc?.uname || `User ${user.uid}`}
+                        {userDoc?.displayName && (
+                          <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                            ({userDoc.displayName})
+                          </Text>
+                        )}
+                      </Text>
+                    }
+                    description={
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {showImprovement
+                          ? `本周平均: ${user.avgWpm} WPM`
+                          : `${user.totalRecords} 条记录`}
+                      </Text>
+                    }
+                  />
+                  <div className="player-score">
+                    <Text strong style={{ fontSize: 16, color: showImprovement ? '#10b981' : '#3b82f6' }}>
+                      {showImprovement && '+'}
+                      {value}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                      WPM
+                    </Text>
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
+          {filteredRanking.length > rankingPageSize && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Pagination
+                current={rankingPage}
+                total={filteredRanking.length}
+                pageSize={rankingPageSize}
+                onChange={(page) => setRankingPage(page)}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total) => `共 ${total} 人`}
+                size="small"
+              />
             </div>
-          );
-        })
+          )}
+        </>
       ) : (
         <div className="empty-state">
-          <p>暂无数据</p>
+          <Text type="secondary">暂无排名</Text>
         </div>
       )}
-    </div>
-  );
-
-  return (
-    <div className="rankings-section">
-      <div className="section-header">
-        <h2>排行榜</h2>
-        <a href="/typing/ranking" className="view-all-link">
-          查看全部 →
-        </a>
-      </div>
-
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'max-wpm' ? 'active' : ''}`}
-          onClick={() => setActiveTab('max-wpm')}
-        >
-          最高速度
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'avg-wpm' ? 'active' : ''}`}
-          onClick={() => setActiveTab('avg-wpm')}
-        >
-          平均速度
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'improvement' ? 'active' : ''}`}
-          onClick={() => setActiveTab('improvement')}
-        >
-          进步最快
-        </button>
-      </div>
-
-      <div className="tab-content active">
-        {activeTab === 'max-wpm' && renderRanking(maxWpmRanking)}
-        {activeTab === 'avg-wpm' && renderRanking(avgWpmRanking)}
-        {activeTab === 'improvement' && renderRanking(improvementRanking, true)}
-      </div>
-    </div>
+    </Card>
   );
 };
 
-// 奖励说明组件
-const BonusExplanation: React.FC = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const bonuses = [
-    {
-      title: '打字进步分',
-      icon: '📈',
-      description: '每次打字速度超过个人历史最高速度时，奖励',
-      points: '+20分',
-      pointsColor: '#3b82f6',
-      example: '当你的最高速度从50 WPM突破到51 WPM时获得',
-    },
-    {
-      title: '打字目标分',
-      icon: '🎯',
-      description: '达到新等级时，根据等级奖励对应积分',
-      details: [
-        { level: '打字小匠 (20-50 WPM)', points: '+100分' },
-        { level: '键速高手 (50-80 WPM)', points: '+200分' },
-        { level: '键速闪电 (80-110 WPM)', points: '+300分' },
-        { level: '键速狂人 (110-140 WPM)', points: '+400分' },
-        { level: '键速王者 (140-170 WPM)', points: '+500分' },
-        { level: '键速狂魔 (170-200 WPM)', points: '+600分' },
-        { level: '终极之神 (200+ WPM)', points: '+700分' },
-      ],
-      example: '首次达到80 WPM时获得该等级的积分奖励',
-    },
-    {
-      title: '超越对手奖',
-      icon: '⚔️',
-      description: '超越排行榜中你前一名的对手时获得',
-      points: '+20分',
-      pointsColor: '#ef4444',
-      example: '你的最高速度从85 WPM提升到95 WPM，正好超过前一名的对手时获得',
-    },
-  ];
-
-  return (
-    <>
-      <div className={`bonus-system-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
-        <div className={`bonus-section ${isCollapsed ? 'collapsed' : ''}`}>
-          <div className="section-header">
-            <h2>🎁 奖励系统说明</h2>
-            <button
-              className={`bonus-collapse-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              aria-label={isCollapsed ? '展开奖励说明' : '折叠奖励说明'}
-            >
-              <span className="collapse-icon">{isCollapsed ? '▼' : '▲'}</span>
-            </button>
-          </div>
-
-          <div className={`bonus-grid ${isCollapsed ? 'hidden' : ''}`}>
-            {bonuses.map((bonus, index) => (
-              <div key={index} className="bonus-card">
-                <div className="bonus-header">
-                  <div className="bonus-icon">{bonus.icon}</div>
-                  <div className="bonus-header-content">
-                    <div className="bonus-title">{bonus.title}</div>
-                    <div className="bonus-description">{bonus.description}</div>
-                  </div>
-                </div>
-
-                {bonus.details ? (
-                  <div className="bonus-details">
-                    {bonus.details.map((detail, idx) => (
-                      <div key={idx} className="detail-item">
-                        <span className="detail-level">{detail.level}</span>
-                        <span className="detail-points">{detail.points}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bonus-points" style={{ color: bonus.pointsColor }}>
-                    {bonus.points}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 练习提示部分 - 在奖励系统外面，同行显示 */}
-        <div className="bonus-practice-section">
-          <div className="practice-content">
-            <div className="practice-icon">🎮</div>
-            <div className="practice-text">
-              <h3>开始练习</h3>
-              <p>在打字练习网站上坚持训练，当有进步成绩时，请汇报给老师录入数据</p>
-            </div>
-            <a href="https://dazi.91xjr.com/" target="_blank" rel="noopener noreferrer" className="practice-btn">
-              前往练习网站
-              <span className="btn-icon">→</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
-
-// 周趋势图表组件
-interface WeeklyTrendChartProps {
+// 趋势图表组件（支持周趋势和月趋势）
+interface TrendChartProps {
   weeklyTrend: TrendData[];
+  globalStats?: {
+    maxWpm?: number;
+    avgWpm?: number;
+  };
 }
 
-const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
+type TrendType = 'week' | 'month';
+
+const TrendChart: React.FC<TrendChartProps> = ({ weeklyTrend, globalStats }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const chartRef = React.useRef<Chart | null>(null);
+  const [trendType, setTrendType] = useState<TrendType>('week');
+
+  // 计算月趋势数据
+  const monthlyTrend = useMemo(() => {
+    if (!weeklyTrend || weeklyTrend.length === 0) return [];
+
+    // 按月份分组
+    const monthMap = new Map<string, { total: number, count: number }>();
+
+    weeklyTrend.forEach((item) => {
+      // 从周字符串中提取年月（格式：2024-W01）
+      const match = item.week.match(/^(\d{4})-W/);
+      if (match) {
+        const year = match[1];
+        // 计算该周属于哪个月
+        // 简化处理：使用周字符串的第一个日期来确定月份
+        const weekNum = Number.parseInt(item.week.split('-W')[1], 10);
+        const yearNum = Number.parseInt(year, 10);
+        // 计算该年的第一周日期
+        const firstDay = new Date(yearNum, 0, 1);
+        const firstWeekStart = new Date(firstDay);
+        firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
+        const weekStart = new Date(firstWeekStart);
+        weekStart.setDate(firstWeekStart.getDate() + (weekNum - 1) * 7);
+        const month = `${year}-${String(weekStart.getMonth() + 1).padStart(2, '0')}`;
+
+        if (!monthMap.has(month)) {
+          monthMap.set(month, { total: 0, count: 0 });
+        }
+        const monthData = monthMap.get(month)!;
+        monthData.total += item.avgWpm;
+        monthData.count += 1;
+      }
+    });
+
+    // 转换为数组并计算平均值
+    const monthlyData: TrendData[] = Array.from(monthMap.entries())
+      .map(([month, data]) => ({
+        week: month,
+        avgWpm: data.count > 0 ? Math.round(data.total / data.count) : 0,
+      }))
+      .sort((a, b) => a.week.localeCompare(b.week));
+
+    return monthlyData;
+  }, [weeklyTrend]);
+
+  // 根据趋势类型获取数据
+  const currentTrendData = useMemo(() => {
+    return trendType === 'week' ? weeklyTrend : monthlyTrend;
+  }, [trendType, weeklyTrend, monthlyTrend]);
 
   useEffect(() => {
-    if (!canvasRef.current || !weeklyTrend || weeklyTrend.length === 0) return;
+    if (!canvasRef.current || !currentTrendData || currentTrendData.length === 0) {
+      return () => {
+        // 清理函数：如果条件不满足，确保清理已存在的图表
+        if (chartRef.current) {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+      };
+    }
 
     const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return () => {
+        // 清理函数：如果无法获取上下文，确保清理已存在的图表
+        if (chartRef.current) {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+      };
+    }
 
     // 销毁旧图表
     if (chartRef.current) {
       chartRef.current.destroy();
     }
 
+    // 格式化标签
+    const formatLabel = (label: string) => {
+      if (trendType === 'week') {
+        return label; // 周趋势直接显示
+      } else {
+        // 月趋势格式化为 "YYYY年MM月"
+        const match = label.match(/^(\d{4})-(\d{2})$/);
+        if (match) {
+          return `${match[1]}年${Number.parseInt(match[2], 10)}月`;
+        }
+        return label;
+      }
+    };
+
     // 创建新图表
     chartRef.current = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: weeklyTrend.map((d) => d.week),
+        labels: currentTrendData.map((d) => formatLabel(d.week)),
         datasets: [
           {
             label: '平均 WPM',
-            data: weeklyTrend.map((d) => d.avgWpm),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            data: currentTrendData.map((d) => d.avgWpm),
+            borderColor: '#ffffff',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
             tension: 0.4,
             fill: true,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
           },
         ],
       },
@@ -502,6 +734,20 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
         scales: {
           y: {
             beginAtZero: true,
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.8)',
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)',
+            },
+          },
+          x: {
+            ticks: {
+              color: 'rgba(255, 255, 255, 0.8)',
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)',
+            },
           },
         },
       },
@@ -510,17 +756,245 @@ const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ weeklyTrend }) => {
     return () => {
       if (chartRef.current) {
         chartRef.current.destroy();
+        chartRef.current = null;
       }
     };
-  }, [weeklyTrend]);
+  }, [currentTrendData, trendType]);
 
   return (
-    <div className="chart-section">
-      <h3>周趋势</h3>
-      <div className="trend-chart">
-        <canvas ref={canvasRef} width="400" height="250"></canvas>
+    <Card className="game-card trend-card" bordered={false}>
+      <div className="game-card-content">
+        <div className="game-card-header">
+          <div className="game-icon-wrapper">
+            <BarChartOutlined style={{ fontSize: 40, color: '#fff' }} />
+          </div>
+          <div className="game-card-title-section">
+            <Title level={4} className="game-card-title">全校打字速度趋势分析</Title>
+            <Text className="game-card-subtitle">平均速度变化</Text>
+          </div>
+        </div>
+        <div className="trend-controls">
+          <button
+            className={`trend-tab-btn ${trendType === 'week' ? 'active' : ''}`}
+            onClick={() => setTrendType('week')}
+          >
+            周趋势
+          </button>
+          <button
+            className={`trend-tab-btn ${trendType === 'month' ? 'active' : ''}`}
+            onClick={() => setTrendType('month')}
+          >
+            月趋势
+          </button>
+        </div>
+        <div className="game-card-body">
+          <div className="trend-chart">
+            <canvas ref={canvasRef} width="400" height="180"></canvas>
+          </div>
+        </div>
+        {/* 统计信息 */}
+        {globalStats && (
+          <div className="trend-stats">
+            <div className="trend-stat-item">
+              <div className="trend-stat-icon">
+                <ThunderboltOutlined />
+              </div>
+              <div className="trend-stat-content">
+                <div className="trend-stat-value">{globalStats.maxWpm || 0} WPM</div>
+                <div className="trend-stat-label">全校最高速度</div>
+              </div>
+            </div>
+            <div className="trend-stat-item">
+              <div className="trend-stat-icon">
+                <BarChartOutlined />
+              </div>
+              <div className="trend-stat-content">
+                <div className="trend-stat-value">{globalStats.avgWpm || 0} WPM</div>
+                <div className="trend-stat-label">全校平均速度</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </Card>
+  );
+};
+
+// 奖励说明组件
+interface BonusExplanationProps {
+  weeklyTrend: TrendData[];
+  globalStats?: {
+    maxWpm?: number;
+    avgWpm?: number;
+  };
+}
+
+const BonusExplanation: React.FC<BonusExplanationProps> = ({ weeklyTrend, globalStats }) => {
+  const bonuses = [
+    {
+      title: '打字进步分',
+      icon: <RiseOutlined style={{ fontSize: 18 }} />,
+      description: '每次打字速度超过个人历史最高速度奖励',
+      points: '+20分',
+      pointsColor: '#3b82f6',
+      example: '当你的最高速度从50WPM突破到51WPM时获得',
+    },
+    {
+      title: '打字目标分',
+      icon: <AimOutlined style={{ fontSize: 18 }} />,
+      description: '达到新等级时，根据等级奖励对应积分',
+      details: [
+        { level: '打字小匠 (20-50WPM)', points: '+100分' },
+        { level: '键速高手 (50-80WPM)', points: '+200分' },
+        { level: '键速闪电 (80-110WPM)', points: '+300分' },
+        { level: '键速狂人 (110-140WPM)', points: '+400分' },
+        { level: '键速王者 (140-170WPM)', points: '+500分' },
+        { level: '键速狂魔 (170-200WPM)', points: '+600分' },
+        { level: '终极之神 (200+WPM)', points: '+700分' },
+      ],
+      example: '首次达到80WPM时获得该等级的积分奖励',
+    },
+    {
+      title: '超越对手奖',
+      icon: <TrophyOutlined style={{ fontSize: 18 }} />,
+      description: '超越排行榜中你前一名的对手获得',
+      points: '+20分',
+      pointsColor: '#ef4444',
+      example: '你的最高速度从85WPM提升到95WPM，超过前一名的对手时获得',
+    },
+  ];
+
+  return (
+    <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+      {/* 奖励系统说明卡片 */}
+      <Col xs={24} lg={16}>
+        <Card
+          className="content-card"
+          title={
+            <Space>
+              <GiftOutlined />
+              奖励系统说明
+            </Space>
+          }
+        >
+          <div className="bonus-list">
+            <Row gutter={[12, 12]}>
+              {/* 第一行：打字进步分和超越对手奖 */}
+              <Col xs={24} sm={12}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[0].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[0].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[0].description}
+                        </Text>
+                      </div>
+                      <div className="bonus-points-badge">
+                        <Tag
+                          color={bonuses[0].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                          className="bonus-points-tag"
+                        >
+                          {bonuses[0].points}
+                        </Tag>
+                      </div>
+                    </div>
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[0].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[2].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[2].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[2].description}
+                        </Text>
+                      </div>
+                      <div className="bonus-points-badge">
+                        <Tag
+                          color={bonuses[2].pointsColor === '#3b82f6' ? 'blue' : 'red'}
+                          className="bonus-points-tag"
+                        >
+                          {bonuses[2].points}
+                        </Tag>
+                      </div>
+                    </div>
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[2].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+            {/* 第二行：打字目标分 */}
+            <Row gutter={[12, 12]} style={{ marginTop: 12 }}>
+              <Col xs={24}>
+                <Card className="bonus-item-card" bordered={false}>
+                  <div className="bonus-item-content">
+                    <div className="bonus-item-header">
+                      <div className="bonus-icon-wrapper">
+                        {bonuses[1].icon}
+                      </div>
+                      <div className="bonus-item-title-section">
+                        <Title level={5} className="bonus-item-title" style={{ margin: 0 }}>
+                          {bonuses[1].title}
+                        </Title>
+                        <Text type="secondary" className="bonus-item-desc">
+                          {bonuses[1].description}
+                        </Text>
+                      </div>
+                    </div>
+                    {bonuses[1].details && (
+                      <div className="bonus-details-grid">
+                        {bonuses[1].details.map((detail, idx) => (
+                          <div key={idx} className="bonus-detail-item">
+                            <Text type="secondary" className="bonus-detail-level">
+                              {detail.level}
+                            </Text>
+                            <Tag color="blue" className="bonus-detail-points">
+                              {detail.points}
+                            </Tag>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="bonus-example">
+                      <Text type="secondary" className="bonus-example-text">
+                        {bonuses[1].example}
+                      </Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          </div>
+        </Card>
+      </Col>
+
+      {/* 周趋势图表 */}
+      <Col xs={24} lg={8}>
+        <TrendChart weeklyTrend={weeklyTrend} globalStats={globalStats} />
+      </Col>
+    </Row>
   );
 };
 
@@ -532,36 +1006,105 @@ interface RecentRecordsProps {
 }
 
 const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs, currentUserId }) => {
+  const [recordsPage, setRecordsPage] = useState(1);
+  const [recordsPageSize] = useState(10);
+
+  // 分页后的记录数据
+  const paginatedRecords = useMemo(() => {
+    const start = (recordsPage - 1) * recordsPageSize;
+    const end = start + recordsPageSize;
+    return recentRecords.slice(start, end);
+  }, [recentRecords, recordsPage, recordsPageSize]);
+
   return (
-    <div className="recent-section">
-      <div className="section-header">
-        <h3>最近记录</h3>
-      </div>
-      <div className="records-list">
-        {recentRecords.length > 0 ? (
-          recentRecords.map((record, index) => {
-            const user = udocs[record.uid];
-            const isCurrentUser = currentUserId === record.uid;
-            return (
-              <div key={index} className={`record-item ${isCurrentUser ? 'current-user' : ''}`}>
-                <div className="record-icon">⌨️</div>
-                <div className="record-info">
-                  <div className="record-user">{user?.uname || `User ${record.uid}`}</div>
-                  <div className="record-time">{record.createdAt}</div>
-                </div>
-                <div className="record-wpm">
-                  {record.wpm} <span className="unit">WPM</span>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="empty-state">
-            <p>暂无记录</p>
-          </div>
-        )}
-      </div>
-    </div>
+    <Card
+      title={
+        <Space>
+          <ThunderboltOutlined />
+          <span>最近记录</span>
+        </Space>
+      }
+      className="content-card"
+    >
+      {recentRecords.length > 0 ? (
+        <>
+          <List
+            dataSource={paginatedRecords}
+            renderItem={(record) => {
+              const user = udocs[record.uid];
+              const isCurrentUser = currentUserId === record.uid;
+              return (
+                <List.Item className={`record-item ${isCurrentUser ? 'current-user' : ''}`}>
+                  <List.Item.Meta
+                    avatar={
+                      user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user?.uname || user?.displayName || `User ${record.uid}`}
+                          className="record-avatar"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="record-badge badge-positive">
+                          <ThunderboltOutlined />
+                        </div>
+                      )
+                    }
+                    title={
+                      <div className="record-header">
+                        <div className="record-user-info">
+                          <Text strong className="record-username">
+                            {user?.uname || `User ${record.uid}`}
+                          </Text>
+                          {user?.displayName && (
+                            <Text type="secondary" className="record-displayname">
+                              ({user.displayName})
+                            </Text>
+                          )}
+                        </div>
+                        <div className="record-score-badge score-positive">
+                          <Text strong className="record-score-value score-positive">
+                            {record.wpm}
+                          </Text>
+                          <Text type="secondary" className="record-score-unit">
+                            WPM
+                          </Text>
+                        </div>
+                      </div>
+                    }
+                    description={
+                      <Text type="secondary" className="record-time">
+                        {formatRelativeTime(record.createdAt)}
+                      </Text>
+                    }
+                  />
+                </List.Item>
+              );
+            }}
+          />
+          {recentRecords.length > recordsPageSize && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Pagination
+                current={recordsPage}
+                total={recentRecords.length}
+                pageSize={recordsPageSize}
+                onChange={(page) => setRecordsPage(page)}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total) => `共 ${total} 条记录`}
+                size="small"
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="empty-state">
+          <Text type="secondary">暂无记录</Text>
+        </div>
+      )}
+    </Card>
   );
 };
 
@@ -584,7 +1127,7 @@ interface TypingHallAppProps {
 }
 
 const TypingHallApp: React.FC<TypingHallAppProps> = ({
-  globalStats,
+  globalStats: _globalStats,
   userStats,
   userMaxRank,
   userAvgRank,
@@ -595,13 +1138,75 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
   userSpeedPoints,
   weeklyTrend,
   udocs,
+  canManage,
   isLoggedIn,
   currentUserId,
 }) => {
   return (
-    <div className="typing-hall-react-app">
+    <div className="typing-hall-container">
+      {/* 打字统计悬浮球 */}
+      {isLoggedIn && (
+        <TypingStatsFloatingBall
+          userStats={userStats}
+          userRank={{
+            maxRank: userMaxRank,
+            avgRank: userAvgRank,
+          }}
+          userInfo={
+            currentUserId
+              ? {
+                uid: currentUserId,
+                avatarUrl: udocs[currentUserId]?.avatarUrl,
+                uname: udocs[currentUserId]?.uname,
+                displayName: udocs[currentUserId]?.displayName,
+              }
+              : undefined
+          }
+          detailUrl="/typing/me"
+          isLoggedIn={isLoggedIn}
+        />
+      )}
+
+      {/* Hero Section - 参考积分大厅设计 */}
+      <Card className="hero-card" bordered={false}>
+        <div className="hero-content-wrapper">
+          <div className="hero-main-content">
+            <div className="hero-text-section">
+              <Title level={2} className="hero-title">
+                打字大厅
+              </Title>
+              <Text className="hero-subtitle">追踪你的打字进步</Text>
+            </div>
+          </div>
+          <div className="hero-actions-section">
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              href="https://dazi.91xjr.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hero-action-btn"
+              size="large"
+            >
+              前往练习网站
+              <ArrowRightOutlined style={{ marginLeft: 8 }} />
+            </Button>
+            {isLoggedIn && canManage && (
+              <Button
+                type="default"
+                icon={<SettingOutlined />}
+                href="/typing/admin"
+                className="hero-action-btn"
+              >
+                管理面板
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* 奖励系统说明 */}
-      <BonusExplanation />
+      <BonusExplanation weeklyTrend={weeklyTrend} globalStats={_globalStats} />
 
       {/* 天梯图 */}
       <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
@@ -619,70 +1224,11 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
 
         {/* 右侧栏 */}
         <div className="right-column">
-          {/* 用户统计卡片 */}
-          {isLoggedIn && (
-            <div className="user-overview-card-compact">
-              <div className="overview-header">
-                <h2>我的打字统计</h2>
-                <a href="/typing/me" className="view-details-link">
-                  查看详情 →
-                </a>
-              </div>
-              <div className="overview-stats-compact">
-                <div className="stat-item">
-                  <div className="stat-label">最高速度</div>
-                  <div className="stat-value">
-                    {userStats.maxWpm} <span className="unit">WPM</span>
-                  </div>
-                  {userMaxRank && <div className="stat-rank">排名 #{userMaxRank}</div>}
-                </div>
-                <div className="stat-item">
-                  <div className="stat-label">平均速度</div>
-                  <div className="stat-value">
-                    {userStats.avgWpm} <span className="unit">WPM</span>
-                  </div>
-                  {userAvgRank && <div className="stat-rank">排名 #{userAvgRank}</div>}
-                </div>
-                <div className="stat-item">
-                  <div className="stat-label">总记录数</div>
-                  <div className="stat-value">{userStats.totalRecords}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* 最近记录 */}
           <RecentRecords recentRecords={recentRecords} udocs={udocs} currentUserId={currentUserId} />
         </div>
       </div>
 
-      {/* 图表区域 */}
-      <div className="content-grid">
-        {/* 周趋势 */}
-        <WeeklyTrendChart weeklyTrend={weeklyTrend} />
-
-        {/* 活动概览 */}
-        <div className="chart-section">
-          <h3>活动概览</h3>
-          <div className="activity-stats">
-            <div className="activity-item">
-              <div className="activity-icon">👥</div>
-              <div className="activity-value">{globalStats.totalUsers}</div>
-              <div className="activity-label">总用户数</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-icon">⚡</div>
-              <div className="activity-value">{globalStats.maxWpm}</div>
-              <div className="activity-label">最高速度</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-icon">📈</div>
-              <div className="activity-value">{globalStats.avgWpm}</div>
-              <div className="activity-label">平均速度</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

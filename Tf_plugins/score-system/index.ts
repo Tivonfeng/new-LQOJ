@@ -20,10 +20,11 @@ import {
     RPSStatusHandler,
     ScoreHallHandler,
     ScoreManageHandler,
+    ScoreRankingHandler,
     ScoreRecordsHandler,
     TransferAdminHandler,
     TransferCreateHandler,
-    TransferExchangeHandler,
+    WalletHandler,
     TransferHistoryHandler,
     UserScoreHandler } from './src/handlers';
 // 导入服务层
@@ -33,6 +34,7 @@ import {
     type RPSGameRecord,
     type ScoreConfig,
     type ScoreRecord,
+    ScoreCategory,
     ScoreService,
     type TransferRecord,
     type UserCheckInStats,
@@ -53,7 +55,8 @@ interface ScoreEventData {
     domainId: string;
     score: number;
     isFirstAC: boolean;
-    problemTitle?: string;
+    category?: string;
+    title?: string;
     recordId: any;
 }
 
@@ -208,14 +211,15 @@ export default async function apply(ctx: Context, config: any = {}) {
                     domainId: rdoc.domainId,
                     pid: rdoc.pid,
                     recordId: rdoc._id,
-                    score: 10,
+                    score: 20,
                     reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
-                    problemTitle: pdoc.title,
+                    category: ScoreCategory.AC_PROBLEM,
+                    title: pdoc.title,
                 });
 
                 // 插入成功，说明是首次AC
                 isFirstAC = true;
-                score = 10;
+                score = 20;
 
                 await scoreService.updateUserScore(rdoc.domainId, rdoc.uid, score);
                 console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${score} points`);
@@ -238,7 +242,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 domainId: rdoc.domainId,
                 score,
                 isFirstAC,
-                problemTitle: pdoc.title,
+                category: ScoreCategory.AC_PROBLEM,
+                title: pdoc.title,
                 recordId: rdoc._id,
             });
         } catch (error) {
@@ -263,6 +268,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: data.certificateId,
                 score: scoreToAdd,
                 reason: `获得证书 ${data.certificateName}，权重 ${data.weight}，获得积分 ${scoreToAdd}`,
+                category: ScoreCategory.CERTIFICATE,
+                title: data.certificateName,
             });
             console.log(`[Score System] ✅ 用户 ${data.uid} 获得证书积分 ${scoreToAdd}（权重 ${data.weight}）`);
         } catch (err: any) {
@@ -286,6 +293,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: data.certificateId,
                 score: -scoreToDeduct,
                 reason: `删除证书 ${data.certificateName}，权重 ${data.weight}，扣除积分 ${scoreToDeduct}`,
+                category: ScoreCategory.CERTIFICATE,
+                title: data.certificateName,
             });
             console.log(`[Score System] ✅ 用户 ${data.uid} 删除证书扣除积分 ${scoreToDeduct}（权重 ${data.weight}）`);
         } catch (err: any) {
@@ -309,6 +318,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: data.recordId || null,
                 score: data.bonus,
                 reason: data.reason,
+                category: ScoreCategory.TYPING_CHALLENGE,
             });
             console.log(`[Score System] ✅ 用户 ${data.uid} 获得打字奖励积分 ${data.bonus}（${data.bonusType}）`);
         } catch (err: any) {
@@ -336,7 +346,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: data.workId,
                 score: -data.amount,
                 reason: `给作品「${data.workTitle}」投币`,
-                problemTitle: '作品投币',
+                category: ScoreCategory.WORK_INTERACTION,
+                title: data.workTitle,
             });
 
             // 给作品主人加积分
@@ -348,7 +359,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: data.workId,
                 score: data.amount,
                 reason: `收到作品「${data.workTitle}」的投币`,
-                problemTitle: '作品投币',
+                category: ScoreCategory.WORK_INTERACTION,
+                title: data.workTitle,
             });
 
             console.log(`[Score System] ✅ 用户 ${data.fromUid} 给作品「${data.workTitle}」投币 ${data.amount}，作品主人 ${data.toUid} 获得积分`);
@@ -376,7 +388,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                 recordId: null,
                 score: -cost,
                 reason: data.reason || `使用 AI 辅助解题，消耗积分 ${cost}`,
-                problemTitle: 'AI 辅助解题',
+                category: ScoreCategory.AI_ASSISTANT,
             });
 
             console.log(`[Score System] 🤖 用户 ${data.uid} 使用 AI 辅助一次，扣除积分 ${cost}`);
@@ -388,9 +400,9 @@ export default async function apply(ctx: Context, config: any = {}) {
     // 注册路由
     ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
     ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
+    ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
     ctx.Route('user_score', '/score/me', UserScoreHandler);
     ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
-
 
     // 掷骰子游戏路由
     ctx.Route('dice_game', '/score/dice', DiceGameHandler);
@@ -406,7 +418,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
 
     // 转账系统路由
-    ctx.Route('transfer_exchange', '/score/transfer', TransferExchangeHandler);
+    ctx.Route('wallet', '/score/transfer', WalletHandler);
     ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
     ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
     ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler);

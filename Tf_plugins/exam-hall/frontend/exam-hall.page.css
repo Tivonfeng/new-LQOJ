@@ -1,57 +1,92 @@
 /* ========================================
-   赛考大厅 - 现代时尚UI设计
+   赛考大厅 - 现代时尚UI设计（参考掷骰子游戏风格）
    ======================================== */
 
-/* 主容器 */
+/* 主容器（参考积分大厅宽度） */
 .exam-hall-react {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-  padding: 0;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fadeIn 0.5s ease-in;
 }
 
 /* ========================================
-   Hero区域 - 顶部横幅
+   Hero区域 - 顶部横幅（优化配色）
    ======================================== */
 .exam-hall-hero {
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  padding: 24px 20px 20px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
   margin-bottom: 20px;
   overflow: hidden;
+  box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+  border-radius: 0 0 20px 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.exam-hall-hero .ant-card-body {
+  padding: 28px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.exam-hall-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 50px rgba(99, 102, 241, 0.4);
 }
 
 .exam-hall-hero::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  opacity: 0.3;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.exam-hall-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .exam-hall-hero-content {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .exam-hall-hero-title {
-  font-size: 24px;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 6px 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #ffffff !important;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
 }
 
+.exam-hall-hero-title,
+.exam-hall-hero-title h1,
+.exam-hall-hero-title .ant-typography {
+  color: #ffffff !important;
+}
+
 .exam-hall-hero-subtitle {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 12px 0;
-  font-weight: 400;
+  font-size: clamp(14px, 2vw, 18px);
+  color: rgba(255, 255, 255, 0.95) !important;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+}
+
+.exam-hall-hero-subtitle,
+.exam-hall-hero-subtitle p,
+.exam-hall-hero-subtitle .ant-typography {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .exam-hall-hero-stats {
@@ -59,19 +94,18 @@
 }
 
 .hero-stat-item {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 12px 16px;
   min-width: 100px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .hero-stat-item:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .hero-stat-label {
@@ -99,76 +133,104 @@
 .exam-hall-header .manage-button {
   font-weight: 600;
   backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  height: 40px;
+  padding: 0 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .exam-hall-header .manage-button:hover {
+  background: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Ant Design Statistic 样式覆盖 */
 .hero-stat-item .ant-statistic-title {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 11px;
+  color: #6b7280;
+  font-size: 13px;
   font-weight: 500;
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .hero-stat-item .ant-statistic-content {
-  color: #ffffff;
+  color: inherit;
 }
 
 .hero-stat-item .ant-statistic-content-value {
-  font-size: 20px !important;
+  font-size: clamp(18px, 2.5vw, 22px) !important;
+  font-weight: 700;
 }
 
 .hero-stat-item .anticon {
-  font-size: 16px;
+  font-size: 18px;
+  margin-right: 4px;
 }
 
 .hero-stat-item .ant-card-body {
-  padding: 10px 12px;
+  padding: 12px 16px;
+}
+
+/* 统计卡片主题色（优化配色方案） */
+.stat-card-total {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.stat-card-competition {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stat-card-certification {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0.03) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.stat-card-users {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 /* ========================================
-   内容区域
+   内容区域（参考积分大厅宽度）
    ======================================== */
 .exam-hall-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px 24px;
+  padding: 0 4px 24px;
 }
 
-/* 分区标题 */
+/* 分区标题（参考掷骰子游戏风格） */
 .exam-hall-section {
   margin-bottom: 24px;
+  animation: slideInUp 0.5s ease-out;
 }
 
 .exam-hall-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(99, 102, 241, 0.1);
 }
 
 .exam-hall-section-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: clamp(16px, 2.5vw, 20px);
+  font-weight: 600;
   color: #1f2937;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .exam-hall-section-title::before {
   content: '';
-  width: 3px;
-  height: 18px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   border-radius: 2px;
 }
 
@@ -186,7 +248,7 @@
 }
 
 /* ========================================
-   证书卡片 - 使用Ant Design Card组件
+   证书卡片 - 使用Ant Design Card组件（参考掷骰子游戏风格）
    ======================================== */
 .certificate-card.ant-card {
   border-radius: 16px;
@@ -195,12 +257,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .certificate-card.ant-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.15);
 }
 
 .certificate-card .ant-card-body {
@@ -212,35 +275,49 @@
   cursor: pointer;
 }
 
-/* 竞赛/考级卡片边框 */
+/* 竞赛/考级卡片边框（优化配色） */
 .certificate-card.competition-card {
   border-top: 3px solid #f59e0b;
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
 .certificate-card.competition-card:hover {
   border-top-color: #f97316;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .certificate-card.certification-card {
   border-top: 3px solid #8b5cf6;
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
 .certificate-card.certification-card:hover {
   border-top-color: #6366f1;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
-/* 证书内容布局 */
+/* 证书内容布局（优化配色） */
 .certificate-card-thumbnail {
   width: 100%;
   height: 180px;
   position: relative;
   border-radius: 12px;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.15);
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.certificate-card:hover .certificate-card-thumbnail {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.25);
 }
 
 .certificate-card-thumbnail img {
@@ -263,12 +340,21 @@
 
 .certificate-card-badge {
   position: absolute !important;
-  top: 6px;
-  right: 6px;
-  font-size: 10px;
-  padding: 2px 6px;
+  top: 8px;
+  right: 8px;
+  font-size: 11px;
+  padding: 4px 10px;
   line-height: 1.4;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  font-weight: 600;
+  border-radius: 6px;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.certificate-card:hover .certificate-card-badge {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
 }
 
 .certificate-card-basic {
@@ -301,22 +387,24 @@
   overflow: hidden;
 }
 
-/* 证书详情弹窗 */
+/* 证书详情弹窗（参考掷骰子游戏风格） */
 .certificate-detail-modal {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  animation: fadeIn 0.5s ease-in;
 }
 
 .certificate-detail-image {
   position: relative;
   border-radius: 12px;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
   padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.1);
 }
 
 .certificate-detail-image img {
@@ -342,15 +430,21 @@
 }
 
 .detail-item {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f5f7ff 0%, #edf2ff 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   min-height: 64px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .detail-item-span {
@@ -364,14 +458,15 @@
 }
 
 /* ========================================
-   空状态
+   空状态（参考掷骰子游戏风格）
    ======================================== */
 .certificate-empty-state.ant-card {
   text-align: center;
   padding: 40px 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 1) 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .certificate-empty-state-icon {
@@ -409,21 +504,19 @@
 
 @media (max-width: 768px) {
   .exam-hall-hero {
-    padding: 20px 16px 16px;
+    padding: 24px 20px !important;
+  }
+
+  .exam-hall-hero .ant-card-body {
+    padding: 24px 20px !important;
   }
 
   .exam-hall-hero-title {
-    font-size: 20px;
+    font-size: clamp(1.5rem, 4vw, 2rem);
   }
 
   .exam-hall-hero-subtitle {
-    font-size: 12px;
-  }
-
-  .exam-hall-header {
-    position: static;
-    text-align: right;
-    margin-bottom: 10px;
+    font-size: clamp(12px, 2vw, 16px);
   }
 
   .exam-hall-content {
@@ -435,7 +528,7 @@
   }
 
   .exam-hall-section-title {
-    font-size: 16px;
+    font-size: clamp(14px, 2.5vw, 18px);
   }
 
   .hero-stat-item {
@@ -443,11 +536,11 @@
   }
 
   .hero-stat-item .ant-statistic-title {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .hero-stat-item .ant-statistic-content-value {
-    font-size: 16px !important;
+    font-size: clamp(16px, 2.5vw, 20px) !important;
   }
 
   .certificate-card-thumbnail {
@@ -459,4 +552,359 @@
   .certificate-card-thumbnail {
     height: 140px;
   }
+}
+
+/* ========================================
+   动画效果（参考掷骰子游戏）
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 证书卡片动画 */
+.certificate-card {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Tag 优化 */
+.ant-tag {
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ant-tag:hover {
+  transform: scale(1.05);
+}
+
+/* 列表项 hover 效果 */
+.ant-list-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.ant-list-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateX(4px);
+}
+
+/* ========================================
+   最近证书记录样式
+   ======================================== */
+.content-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.record-item {
+  padding: 12px 16px !important;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.record-item:hover {
+  background: rgba(99, 102, 241, 0.03) !important;
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.record-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+}
+
+.record-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.record-username {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.record-item .ant-list-item-meta-title {
+  margin-bottom: 8px;
+}
+
+.record-item .ant-list-item-meta-description {
+  margin-top: 0;
+}
+
+/* Leaderboard Items */
+.leaderboard-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.leaderboard-item:hover {
+  background: #f9fafb;
+  transform: translateX(4px);
+}
+
+.rank-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.rank-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.rank-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.rank-badge.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+}
+
+.rank-badge.rank-1:hover {
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+.rank-badge.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 50%, #c0c0c0 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(192, 192, 192, 0.4);
+}
+
+.rank-badge.rank-2:hover {
+  box-shadow: 0 6px 20px rgba(192, 192, 192, 0.5);
+}
+
+.rank-badge.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #e6a057 50%, #cd7f32 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(205, 127, 50, 0.4);
+}
+
+.rank-badge.rank-3:hover {
+  box-shadow: 0 6px 20px rgba(205, 127, 50, 0.5);
+}
+
+.rank-badge.rank-other {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #6366f1 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.rank-badge.rank-other:hover {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.leaderboard-item .ant-list-item-meta-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-item .ant-list-item-meta-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.player-score {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   奖励系统说明样式（参考打字大厅）
+   ======================================== */
+.bonus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bonus-item-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+}
+
+.bonus-item-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+.bonus-item-card .ant-card-body {
+  padding: 16px;
+}
+
+.bonus-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bonus-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bonus-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.bonus-item-title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.bonus-item-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin-bottom: 4px !important;
+  line-height: 1.4 !important;
+}
+
+.bonus-item-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
+  display: block;
+}
+
+.bonus-points-badge {
+  flex-shrink: 0;
+}
+
+.bonus-points-tag {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 12px;
+  margin: 0;
+  border-radius: 8px;
+}
+
+/* 奖励详情网格 - 紧凑布局 */
+.bonus-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bonus-detail-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.bonus-detail-item:hover {
+  background: #f3f4f6;
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateX(2px);
+}
+
+.bonus-detail-level {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.bonus-detail-points {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.bonus-example {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.bonus-example-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6b7280;
 }

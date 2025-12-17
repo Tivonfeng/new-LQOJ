@@ -26,6 +26,7 @@ export {
 export {
     ScoreHallHandler,
     ScoreManageHandler,
+    ScoreRankingHandler,
     ScoreRecordsHandler,
     UserScoreHandler,
 } from './ScoreHandlers';
@@ -34,6 +35,6 @@ export {
 export {
     TransferAdminHandler,
     TransferCreateHandler,
-    TransferExchangeHandler,
+    WalletHandler,
     TransferHistoryHandler,
-} from './TransferHandlers';
+} from './WalletHandlers';

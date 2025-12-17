@@ -150,7 +150,6 @@ export class StatisticsService {
         return distribution;
     }
 
-
     /**
      * 获取最近记录统计 (全局)
      * @param _domainId 域ID (保留参数用于向后兼容)

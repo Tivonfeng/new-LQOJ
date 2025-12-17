@@ -1,0 +1,22 @@
+{
+  "name": "@hydrooj/student-analytics",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "tivonfeng",
+  "license": "AGPL-3.0",
+  "description": "学生数据分析与统计插件",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "hydrooj": "workspace:^"
+  },
+  "peerDependencies": {
+    "mongodb": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
+

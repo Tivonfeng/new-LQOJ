@@ -555,6 +555,35 @@ export class CertificateService {
     }
 
     /**
+     * 获取最近证书记录（按创建时间排序）
+     * @param limit 返回数量限制，默认10
+     * @param options 可选参数
+     * @param options.includeAllDomains 是否包含所有域的证书，默认false（仅当前域）
+     */
+    async getRecentCertificates(
+        limit = 10,
+        options?: {
+            includeAllDomains?: boolean;
+        },
+    ): Promise<Certificate[]> {
+        const collection = this.ctx.db.collection('exam.certificates' as any);
+
+        const query: any = {
+            status: 'active',
+        };
+
+        if (!options?.includeAllDomains) {
+            query.domainId = this.ctx.domain!._id;
+        }
+
+        return (await collection
+            .find(query)
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .toArray()) as Certificate[];
+    }
+
+    /**
      * 更新用户证书统计
      * 支持竞赛/考级的多维度统计
      * 优化：使用投影只查询需要的字段，减少数据传输
@@ -575,7 +604,8 @@ export class CertificateService {
                 examType: 1,
                 competitionName: 1,
                 certificationSeries: 1,
-                weight: 1,
+                calculatedWeight: 1, // 优先使用计算得出的权重
+                weight: 1, // 向后兼容
                 category: 1,
                 issueDate: 1,
             })
@@ -613,12 +643,15 @@ export class CertificateService {
 
         // 遍历证书进行分类统计
         for (const cert of certs) {
+            // 获取证书权重：优先使用 calculatedWeight，如果没有则使用 weight，最后默认为 0
+            const certWeight = cert.calculatedWeight ?? cert.weight ?? 0;
+
             if (cert.examType === 'competition') {
                 competitionStats.total++;
                 const compName = cert.competitionName || '未分类竞赛';
                 competitionStats.competitions[compName] =
                     (competitionStats.competitions[compName] || 0) + 1;
-                competitionStats.weight += cert.weight || 1;
+                competitionStats.weight += certWeight;
             } else if (cert.examType === 'certification') {
                 certificationStats.total++;
                 const series = cert.certificationSeries || '其他';
@@ -628,8 +661,7 @@ export class CertificateService {
                 };
 
                 certificationStats.series[series].count++;
-
-                certificationStats.weight += cert.weight || 1;
+                certificationStats.weight += certWeight;
             }
         }
 
@@ -689,6 +721,46 @@ export class CertificateService {
             { $set: stats },
             { upsert: true },
         );
+    }
+
+    /**
+     * 获取赛考指数排行榜
+     * @param limit 返回数量限制，默认20
+     * @param options 可选参数
+     * @param options.includeAllDomains 是否包含所有域的证书，默认false（仅当前域）
+     */
+    async getLeaderboard(
+        limit = 20,
+        options?: {
+            includeAllDomains?: boolean;
+        },
+    ): Promise<Array<{
+        uid: number;
+        totalWeight: number;
+        totalCertificates: number;
+        competitionWeight: number;
+        certificationWeight: number;
+    }>> {
+        const statsCollection = this.ctx.db.collection('exam.user_stats' as any);
+
+        const query: any = {};
+        if (!options?.includeAllDomains) {
+            query.domainId = this.ctx.domain!._id;
+        }
+
+        const stats = await statsCollection
+            .find(query)
+            .sort({ totalWeight: -1 })
+            .limit(limit)
+            .toArray();
+
+        return stats.map((stat: any) => ({
+            uid: stat.uid,
+            totalWeight: stat.totalWeight || 0,
+            totalCertificates: stat.totalCertificates || 0,
+            competitionWeight: stat.competitionStats?.weight || 0,
+            certificationWeight: stat.certificationStats?.weight || 0,
+        }));
     }
 
     /**

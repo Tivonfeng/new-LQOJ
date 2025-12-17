@@ -1,3 +1,5 @@
+import { Context } from 'hydrooj';
+
 export interface ClassroomRandomNumberConfig {
     min: number;
     max: number;
@@ -6,6 +8,8 @@ export interface ClassroomRandomNumberConfig {
 }
 
 export class ClassroomToolsService {
+    constructor(private ctx: Context) {}
+
     generateRandomNumbers(config: ClassroomRandomNumberConfig): number[] {
         const { min, max, count, allowDuplicate } = config;
 
