@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // 管理员学生数据分析页面组件
-const StudentAnalyticsAdminApp: React.FC = () => {
+export const StudentAnalyticsAdminApp: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
