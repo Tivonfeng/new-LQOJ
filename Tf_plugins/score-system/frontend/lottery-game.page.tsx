@@ -333,7 +333,7 @@ const LotteryGameApp: React.FC = () => {
           <Col>
             <Space direction="vertical" size="small">
               <Title level={1} className="hero-title">
-                <GiftOutlined style={{ marginRight: '8px' }} /> 九宫格抽奖
+                <GiftOutlined style={{ marginRight: '8px' }} /> 九宫格抽奖（测试版）
               </Title>
               <Text className="hero-subtitle">
                 测试你的运气，赢取丰厚奖励
