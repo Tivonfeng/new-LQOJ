@@ -48,8 +48,8 @@ export class LotteryRedemptionService {
         totalPages: number;
     }> {
         const skip = (page - 1) * limit;
+        // 管理员视图不再按域区分，查询所有域的待核销记录
         const query: any = {
-            domainId,
             prizeType: 'physical',
             redeemStatus: 'pending',
         };
@@ -101,7 +101,8 @@ export class LotteryRedemptionService {
 
             // 查找记录
             const record = await this.ctx.db.collection('lottery.records' as any)
-                .findOne({ _id: queryId, domainId, prizeType: 'physical' });
+                // 管理员核销不再按域限制，按记录ID和奖品类型查找
+                .findOne({ _id: queryId, prizeType: 'physical' });
 
             if (!record) {
                 return { success: false, message: '记录不存在' };
@@ -172,7 +173,8 @@ export class LotteryRedemptionService {
             }
 
             const record = await this.ctx.db.collection('lottery.records' as any)
-                .findOne({ _id: queryId, domainId });
+                // 管理员取消核销不再按域限制
+                .findOne({ _id: queryId });
 
             if (!record) {
                 return { success: false, message: '记录不存在' };
@@ -260,9 +262,8 @@ export class LotteryRedemptionService {
         totalPages: number;
     }> {
         const skip = (page - 1) * limit;
-        const query: any = {
-            domainId,
-        };
+        // 管理员核销历史不再区分域
+        const query: any = {};
 
         if (filters?.uid) query.uid = filters.uid;
         if (filters?.prizeName) query.prizeName = { $regex: filters.prizeName, $options: 'i' };
@@ -302,17 +303,18 @@ export class LotteryRedemptionService {
     }> {
         const [pending, redeemed, cancelled] = await Promise.all([
             this.ctx.db.collection('lottery.records' as any)
-                .countDocuments({ domainId, prizeType: 'physical', redeemStatus: 'pending' }),
+                .countDocuments({ prizeType: 'physical', redeemStatus: 'pending' }),
             this.ctx.db.collection('lottery.records' as any)
-                .countDocuments({ domainId, prizeType: 'physical', redeemStatus: 'redeemed' }),
+                .countDocuments({ prizeType: 'physical', redeemStatus: 'redeemed' }),
             this.ctx.db.collection('lottery.records' as any)
-                .countDocuments({ domainId, prizeType: 'physical', redeemStatus: 'cancelled' }),
+                .countDocuments({ prizeType: 'physical', redeemStatus: 'cancelled' }),
         ]);
 
         // 按奖品统计
         const prizeStats = await this.ctx.db.collection('lottery.records' as any)
             .aggregate([
-                { $match: { domainId, prizeType: 'physical' } },
+                // 统计所有域的实物奖品核销数据
+                { $match: { prizeType: 'physical' } },
                 {
                     $group: {
                         _id: {
