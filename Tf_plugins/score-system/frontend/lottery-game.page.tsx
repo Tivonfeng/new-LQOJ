@@ -333,7 +333,7 @@ const LotteryGameApp: React.FC = () => {
           <Col>
             <Space direction="vertical" size="small">
               <Title level={1} className="hero-title">
-                <GiftOutlined style={{ marginRight: '8px' }} /> 九宫格抽奖（测试版）
+                <GiftOutlined style={{ marginRight: '8px' }} /> 实物抽奖（测试版）
               </Title>
               <Text className="hero-subtitle">
                 测试你的运气，赢取丰厚奖励
@@ -431,7 +431,7 @@ const LotteryGameApp: React.FC = () => {
             title={
               <Space>
                 <GiftOutlined style={{ fontSize: '20px' }} />
-                <span style={{ fontSize: '20px', fontWeight: 600 }}>九宫格抽奖</span>
+                <span style={{ fontSize: '20px', fontWeight: 600 }}>实物抽奖</span>
                 <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>
                   每次 {gameData.gameConfig.betAmount} 积分
                 </Tag>
