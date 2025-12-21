@@ -574,7 +574,7 @@ const ScoreHallApp: React.FC = () => {
                   </div>
                   <div className="game-info-item">
                     <Text className="game-info-label">投注</Text>
-                    <Text className="game-info-value">50积分</Text>
+                    <Text className="game-info-value">100积分</Text>
                   </div>
                 </div>
                 <div className="game-card-features">

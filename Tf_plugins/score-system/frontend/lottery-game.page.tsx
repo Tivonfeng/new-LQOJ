@@ -84,7 +84,7 @@ const LotteryGameApp: React.FC = () => {
   const gameData: LotteryGameData = (window as any).lotteryGameData || {
     currentCoins: 0,
     canPlay: false,
-    gameConfig: { betAmount: 50, prizes: [] },
+    gameConfig: { betAmount: 100, prizes: [] },
     userStats: { totalGames: 0, totalWins: 0, netProfit: 0 },
     winRate: '0.0',
     recentGames: [],

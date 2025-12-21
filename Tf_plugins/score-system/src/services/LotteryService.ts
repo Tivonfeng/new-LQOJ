@@ -62,7 +62,7 @@ export class LotteryService {
     private scoreService: ScoreService;
 
     // 游戏常量
-    private static readonly BET_AMOUNT = 50; // 每次抽奖消耗积分
+    private static readonly BET_AMOUNT = 100; // 每次抽奖消耗积分
     // 九宫格显示的9个位置（8个可见奖品 + 1个中间按钮占位）
     // 按界面显示顺序：左上(0) -> 上中(1) -> 右上(2) -> 右中(3) -> 中间(4,按钮占位) -> 右下(5) -> 下中(6) -> 左下(7) -> 左中(8)
     // 注意：索引4位置被按钮覆盖，但保留在数组中用于索引对应，抽奖时不会抽中此位置
