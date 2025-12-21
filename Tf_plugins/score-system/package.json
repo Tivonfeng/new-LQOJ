@@ -11,7 +11,8 @@
   "dependencies": {
     "@lucky-canvas/react": "0.1.13",
     "@react-spring/web": "^9.7.3",
-    "hydrooj": "workspace:^"
+    "hydrooj": "workspace:^",
+    "xlsx": "^0.18.5"
   },
   "peerDependencies": {
     "react": "*",

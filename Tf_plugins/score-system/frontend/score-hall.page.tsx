@@ -562,7 +562,7 @@ const ScoreHallApp: React.FC = () => {
                   <GiftOutlined style={{ fontSize: 40, color: '#fff' }} />
                 </div>
                 <div className="game-card-title-section">
-                  <Title level={4} className="game-card-title">九宫格抽奖</Title>
+                  <Title level={4} className="game-card-title">实物抽奖</Title>
                   <Text className="game-card-subtitle">测试你的运气</Text>
                 </div>
               </div>
@@ -574,7 +574,7 @@ const ScoreHallApp: React.FC = () => {
                   </div>
                   <div className="game-info-item">
                     <Text className="game-info-label">投注</Text>
-                    <Text className="game-info-value">50积分</Text>
+                    <Text className="game-info-value">100积分</Text>
                   </div>
                 </div>
                 <div className="game-card-features">

@@ -540,6 +540,67 @@ export class ScoreManageHandler extends Handler {
                 console.error('[ScoreManage] Error adjusting score:', error);
                 this.response.body = { success: false, message: `操作失败：${error.message}` };
             }
+        } else if (action === 'bulk_adjust') {
+            try {
+                const rows = this.request.body.rows;
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    this.response.body = { success: false, message: '导入数据为空或格式错误' };
+                    return;
+                }
+
+                const UserModel = global.Hydro.model.user;
+                const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+
+                // 为避免在循环内使用 await（会触发 linter 的 no-await-in-loop），先构建任务列表并并行执行
+                const tasks = rows.map(async (row: any, i: number) => {
+                    try {
+                        const usernameRow = (row.username ?? row.user ?? '').toString().trim();
+                        const scoreChangeNum = Number.parseInt(String(row.scoreChange));
+                        const reasonRow = (row.reason ?? '').toString().trim() || '批量导入';
+
+                        if (!usernameRow) {
+                            return { success: false, message: '用户名为空' };
+                        }
+                        if (!scoreChangeNum || Math.abs(scoreChangeNum) > 10000) {
+                            return { success: false, message: '积分变化值无效' };
+                        }
+
+                        const user = await UserModel.getByUname(this.domain._id, usernameRow);
+                        if (!user) {
+                            return { success: false, message: '用户不存在' };
+                        }
+
+                        await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
+
+                        const uniquePid = -2000000 - Date.now() - i;
+                        await scoreService.addScoreRecord({
+                            uid: user._id,
+                            domainId: this.domain._id,
+                            pid: uniquePid,
+                            recordId: null,
+                            score: scoreChangeNum,
+                            reason: `管理员批量调整：${reasonRow}`,
+                            category: ScoreCategory.ADMIN_OPERATION,
+                        });
+
+                        return { success: true, message: '成功' };
+                    } catch (errRow) {
+                        console.error('[ScoreManage] bulk row error', errRow);
+                        return { success: false, message: `行 ${i + 1} 处理失败: ${(errRow as any)?.message || '未知错误'}` };
+                    }
+                });
+
+                const results = await Promise.all(tasks);
+
+                this.response.body = {
+                    success: true,
+                    message: `批量处理完成，共 ${rows.length} 条`,
+                    results,
+                };
+            } catch (error) {
+                console.error('[ScoreManage] bulk adjust error:', error);
+                this.response.body = { success: false, message: `批量导入失败：${(error as any)?.message || '未知错误'}` };
+            }
         } else {
             this.response.body = { success: false, message: '无效的操作' };
         }
