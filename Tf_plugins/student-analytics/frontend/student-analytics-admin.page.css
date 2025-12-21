@@ -1,10 +1,98 @@
 .student-analytics-admin-page {
-    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
 }
 
-.student-analytics-admin-page h1 {
-    margin-bottom: 20px;
+/* Hero Card */
+.admin-hero-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    margin-bottom: 24px;
+    border: none;
 }
 
-/* TODO: 添加更多样式 */
+.admin-hero-card .ant-card-body {
+    padding: 40px;
+}
 
+.admin-hero-content {
+    text-align: center;
+}
+
+.admin-hero-title {
+    color: #fff !important;
+    margin-bottom: 8px !important;
+    font-size: 28px !important;
+}
+
+.admin-hero-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+}
+
+/* Stats Card */
+.admin-stats-card {
+    margin-bottom: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.admin-stats-card .ant-card-head {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.admin-stats-card .ant-card-head-title {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Stat Card */
+.admin-stat-card {
+    border-radius: 8px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.admin-stat-card .ant-statistic-title {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.admin-stat-card .ant-statistic-content {
+    font-weight: 600;
+}
+
+/* Actions Section */
+.admin-actions {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* Footer */
+.admin-footer {
+    text-align: center;
+    padding: 16px;
+    margin-top: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .student-analytics-admin-page {
+        padding: 16px;
+    }
+
+    .admin-hero-card .ant-card-body {
+        padding: 24px;
+    }
+
+    .admin-hero-title {
+        font-size: 22px !important;
+    }
+}

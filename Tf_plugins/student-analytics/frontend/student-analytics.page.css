@@ -42,6 +42,18 @@
 }
 
 .hero-content {
+    width: 100%;
+}
+
+.hero-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.hero-text {
+    flex: 1;
     text-align: center;
 }
 
@@ -61,6 +73,30 @@
     font-size: clamp(14px, 2vw, 18px);
     font-weight: 500;
     margin-top: 8px;
+}
+
+/* Admin Button */
+.admin-btn {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 6px 16px;
+    height: auto;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.admin-btn:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.admin-btn .anticon {
+    font-size: 14px;
 }
 
 /* Stats Cards */
@@ -248,6 +284,89 @@
     font-size: 18px;
 }
 
+/* Time Stats Header with Segmented Switch */
+.time-stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.time-stats-header > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-view-switch {
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.time-view-switch .ant-segmented-item {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.time-view-switch .ant-segmented-item-selected {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.time-view-switch .ant-segmented-item-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+}
+
+/* Unified Time Stat Cards */
+.time-stat-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.time-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.time-stat-header {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.time-stat-header .anticon {
+    color: #6366f1;
+}
+
+.time-stat-card .ant-statistic-title {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.time-stat-card .ant-statistic-content {
+    font-size: 18px;
+}
+
 /* Time Distribution */
 .time-distribution {
     display: flex;
@@ -397,6 +516,25 @@
     .time-bar-text {
         font-size: 11px;
     }
+
+    .time-stats-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .time-view-switch {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .time-view-switch .ant-segmented-group {
+        width: 100%;
+    }
+
+    .time-view-switch .ant-segmented-item {
+        flex: 1;
+        text-align: center;
+    }
 }
 
 @media (max-width: 576px) {
@@ -410,6 +548,14 @@
 
     .stat-card .ant-statistic-content {
         font-size: 20px !important;
+    }
+
+    .hero-header {
+        flex-direction: column;
+    }
+
+    .admin-btn {
+        margin-top: 12px;
     }
 }
 

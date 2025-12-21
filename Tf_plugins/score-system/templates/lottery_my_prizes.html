@@ -1,0 +1,19 @@
+{% set page_name = "lottery_my_prizes" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- React App Mount Point -->
+<div id="my-prizes-react-app"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.myPrizesData = {{ myPrizesDataJson|safe }};
+
+    // 传递URL
+    window.scoreHallUrl = '{{ url("score_hall") }}';
+    window.lotteryGameUrl = '{{ url("lottery_game") }}';
+</script>
+
+{% endblock %}
+

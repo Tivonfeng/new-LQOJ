@@ -14,6 +14,17 @@ import {
     DiceHistoryHandler,
     DicePlayHandler,
     DiceStatusHandler,
+    LotteryGameHandler,
+    LotteryHistoryHandler,
+    LotteryPlayHandler,
+    LotteryStatusHandler,
+    MyPrizesApiHandler,
+    MyPrizesHandler,
+    RedemptionAdminHandler,
+    RedemptionCancelApiHandler,
+    RedemptionHistoryApiHandler,
+    RedemptionListApiHandler,
+    RedemptionRedeemApiHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
@@ -24,21 +35,22 @@ import {
     ScoreRecordsHandler,
     TransferAdminHandler,
     TransferCreateHandler,
-    WalletHandler,
     TransferHistoryHandler,
-    UserScoreHandler } from './src/handlers';
+    UserScoreHandler, WalletHandler } from './src/handlers';
 // 导入服务层
 import {
     type DailyCheckInRecord,
     type DiceGameRecord,
+    LotteryGameRecord,
     type RPSGameRecord,
+    ScoreCategory,
     type ScoreConfig,
     type ScoreRecord,
-    ScoreCategory,
     ScoreService,
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
+    UserLotteryStats,
     type UserRPSStats,
     type UserScore,
 } from './src/services';
@@ -104,6 +116,8 @@ declare module 'hydrooj' {
         'score.users': UserScore;
         'dice.records': DiceGameRecord;
         'dice.stats': UserDiceStats;
+        'lottery.records': LotteryGameRecord;
+        'lottery.stats': UserLotteryStats;
         'rps.records': RPSGameRecord;
         'rps.stats': UserRPSStats;
         'transfer.records': TransferRecord;
@@ -133,6 +147,47 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('Score System plugin loading...');
     const scoreService = new ScoreService(finalConfig, ctx);
+
+    // 创建核销相关数据库索引
+    try {
+        // lottery.records 集合索引
+        await ctx.db.collection('lottery.records' as any).createIndex(
+            { domainId: 1, prizeType: 1, redeemStatus: 1 },
+            { background: true },
+        );
+        await ctx.db.collection('lottery.records' as any).createIndex(
+            { domainId: 1, uid: 1, prizeType: 1 },
+            { background: true },
+        );
+        console.log('[Score System] ✅ 核销索引创建成功');
+    } catch (error) {
+        const msg = (error as Error).message || '';
+        if (msg.includes('already exists') || msg.includes('same name')) {
+            console.log('[Score System] ✅ 核销索引已存在，跳过创建');
+        } else {
+            console.error('[Score System] ❌ 核销索引创建失败:', msg);
+        }
+    }
+
+    try {
+        // lottery.redemptions 集合索引
+        await ctx.db.collection('lottery.redemptions' as any).createIndex(
+            { domainId: 1, recordId: 1 },
+            { background: true },
+        );
+        await ctx.db.collection('lottery.redemptions' as any).createIndex(
+            { domainId: 1, redeemedAt: -1 },
+            { background: true },
+        );
+        console.log('[Score System] ✅ 核销历史索引创建成功');
+    } catch (error) {
+        const msg = (error as Error).message || '';
+        if (msg.includes('already exists') || msg.includes('same name')) {
+            console.log('[Score System] ✅ 核销历史索引已存在，跳过创建');
+        } else {
+            console.error('[Score System] ❌ 核销历史索引创建失败:', msg);
+        }
+    }
 
     // 🔒 确保积分记录的唯一索引，防止并发竞态条件
     try {
@@ -416,6 +471,21 @@ export default async function apply(ctx: Context, config: any = {}) {
     ctx.Route('rps_status', '/score/rps/status', RPSStatusHandler);
     ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
     ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
+
+    // 九宫格抽奖游戏路由
+    ctx.Route('lottery_game', '/score/lottery', LotteryGameHandler);
+    ctx.Route('lottery_status', '/score/lottery/status', LotteryStatusHandler);
+    ctx.Route('lottery_play', '/score/lottery/play', LotteryPlayHandler);
+    ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
+
+    // 九宫格抽奖核销路由
+    ctx.Route('my_prizes', '/score/lottery/my-prizes', MyPrizesHandler);
+    ctx.Route('my_prizes_api', '/score/lottery/my-prizes/api', MyPrizesApiHandler);
+    ctx.Route('redemption_admin', '/score/lottery/admin/redeem', RedemptionAdminHandler);
+    ctx.Route('redemption_list_api', '/score/lottery/admin/redeem/list', RedemptionListApiHandler);
+    ctx.Route('redemption_redeem_api', '/score/lottery/admin/redeem/redeem', RedemptionRedeemApiHandler);
+    ctx.Route('redemption_cancel_api', '/score/lottery/admin/redeem/cancel', RedemptionCancelApiHandler);
+    ctx.Route('redemption_history_api', '/score/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
 
     // 转账系统路由
     ctx.Route('wallet', '/score/transfer', WalletHandler);

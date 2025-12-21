@@ -21,6 +21,20 @@ export {
     type UserDiceStats,
 } from './DiceGameService';
 
+// 九宫格抽奖核销服务
+export {
+    LotteryRedemptionService,
+    type RedemptionRecord,
+} from './LotteryRedemptionService';
+
+// 九宫格抽奖游戏服务
+export {
+    type LotteryGameRecord,
+    LotteryService,
+    type PhysicalPrizeInfo,
+    type PrizeConfig,
+    type UserLotteryStats,
+} from './LotteryService';
 
 // 剪刀石头布游戏服务
 export {
@@ -32,9 +46,9 @@ export {
 
 // 积分服务
 export {
-    type ScoreConfig,
     ScoreCategory,
     type ScoreCategoryType,
+    type ScoreConfig,
     type ScoreRecord,
     ScoreService,
     type UserScore,
@@ -51,4 +65,3 @@ export {
     type TransferRecord,
     TransferService,
 } from './TransferService';
-

@@ -14,6 +14,25 @@ export {
     DiceStatusHandler,
 } from './DiceGameHandlers';
 
+// 九宫格抽奖游戏相关处理器
+export {
+    LotteryGameHandler,
+    LotteryHistoryHandler,
+    LotteryPlayHandler,
+    LotteryStatusHandler,
+} from './LotteryHandlers';
+
+// 九宫格抽奖核销相关处理器
+export {
+    MyPrizesApiHandler,
+    MyPrizesHandler,
+    RedemptionAdminHandler,
+    RedemptionCancelApiHandler,
+    RedemptionHistoryApiHandler,
+    RedemptionListApiHandler,
+    RedemptionRedeemApiHandler,
+} from './LotteryRedemptionHandlers';
+
 // 剪刀石头布游戏相关处理器
 export {
     RPSGameHandler,
@@ -35,6 +54,6 @@ export {
 export {
     TransferAdminHandler,
     TransferCreateHandler,
-    WalletHandler,
     TransferHistoryHandler,
+    WalletHandler,
 } from './WalletHandlers';

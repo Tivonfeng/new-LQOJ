@@ -111,7 +111,7 @@ export class ScoreHallHandler extends Handler {
         let recentRecords: any[] = [];
         let hasCheckedInToday = false;
         let nextReward = 10;
-        let gameRemainingPlays = { dice: 0, rps: 0 };
+        let gameRemainingPlays = { dice: 0, rps: 0, lottery: 0 };
 
         if (uid) {
             // 获取用户积分信息
