@@ -7,6 +7,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   DollarOutlined,
+  DownloadOutlined,
   EditOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
@@ -18,12 +19,16 @@ import {
   Card,
   Dropdown,
   Input,
+  message,
+  Modal,
   Space,
+  Table,
   Typography,
 } from 'antd';
 import $ from 'jquery';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import * as XLSX from 'xlsx';
 
 const { Title, Text } = Typography;
 
@@ -46,7 +51,17 @@ const ScoreManageApp: React.FC = () => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean, message: string } | null>(null);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkRows, setBulkRows] = useState<Array<{ username: string, scoreChange: number, reason?: string, status?: string }>>([]);
+  const [isImporting, setIsImporting] = useState(false);
   const [recentUsers, setRecentUsers] = useState<string[]>([]);
+  const downloadTemplate = useCallback(() => {
+    const sample = [{ username: '示例用户', scoreChange: 100, reason: '示例：活动奖励' }];
+    const ws = XLSX.utils.json_to_sheet(sample, { header: ['username', 'scoreChange', 'reason'] });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '模板');
+    XLSX.writeFile(wb, 'score_adjust_template.xlsx');
+  }, []);
   // 使用 useMemo 确保 records 数组的稳定性，避免重复渲染
   const records = React.useMemo<ScoreRecord[]>(() => {
     const raw = (window as any).ScoreManageRecentRecords?.records;
@@ -77,7 +92,6 @@ const ScoreManageApp: React.FC = () => {
       }
       return currentPage;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [records.length]); // 只依赖 records.length，不依赖 pageSize（它是常量）
 
   // 加载最近用户列表
@@ -459,7 +473,7 @@ const ScoreManageApp: React.FC = () => {
           </div>
         </div>
         <div className="manage-record-footer">
-          <span className="manage-record-reason" title={record.reason || '无原因'}>
+          <span className="manage-record-reason">
             {record.reason || '无原因'}
           </span>
           <span className="manage-record-time">{formatTime(record.createdAt)}</span>
@@ -633,18 +647,153 @@ const ScoreManageApp: React.FC = () => {
                 </div>
 
                 <div className="form-actions">
-                  <Button
-                    type="primary"
-                    icon={isSubmitting ? <ReloadOutlined spin /> : <ThunderboltOutlined />}
-                    htmlType="submit"
-                    size="large"
-                    loading={isSubmitting}
-                    className="submit-btn"
-                  >
-                    {isSubmitting ? '处理中...' : '应用调整'}
-                  </Button>
+                  <Space>
+                    <Button
+                      type="primary"
+                      icon={isSubmitting ? <ReloadOutlined spin /> : <ThunderboltOutlined />}
+                      htmlType="submit"
+                      size="large"
+                      loading={isSubmitting}
+                      className="submit-btn"
+                      style={{ minWidth: 160 }}
+                    >
+                      {isSubmitting ? '处理中...' : '应用调整'}
+                    </Button>
+                    <Button
+                      type="default"
+                      icon={<EditOutlined />}
+                      size="large"
+                      onClick={() => setShowBulkModal(true)}
+                    >
+                      批量导入
+                    </Button>
+                  </Space>
                 </div>
               </form>
+
+            {/* 批量导入弹窗 */}
+            <Modal
+              title="批量积分调整 - 导入 Excel"
+              open={showBulkModal}
+              onCancel={() => setShowBulkModal(false)}
+              footer={null}
+              width={800}
+            >
+              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Button type="default" icon={<DownloadOutlined />} onClick={downloadTemplate}>
+                  下载模板
+                </Button>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      const arrayBuffer = await f.arrayBuffer();
+                      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                      const firstSheetName = workbook.SheetNames[0];
+                      const worksheet = workbook.Sheets[firstSheetName];
+                      const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
+                      const parsed = json.map((row: any, _idx: number) => {
+                        // 支持多种列名：username/用户名/uid/用户
+                        const unameVal = row.username ?? row.用户名 ?? row.user ?? row.User ?? '';
+                        const scoreRawVal = row.scoreChange ?? row.积分变化 ?? row.score ?? row.分数 ?? '';
+                        const reasonVal = row.reason ?? row.原因 ?? row.Reason ?? '';
+                        const scoreNum = Number.parseInt(String(scoreRawVal).trim() || '0');
+                        return {
+                          username: String(unameVal).trim(),
+                          scoreChange: Number.isNaN(scoreNum) ? 0 : scoreNum,
+                          reason: String(reasonVal || '').trim(),
+                          status: '待导入',
+                        };
+                      });
+                      setBulkRows(parsed);
+                      message.success(`解析 ${parsed.length} 条记录`);
+                    } catch (err) {
+                      console.error('解析文件失败', err);
+                      message.error('解析文件失败，请确认是有效的 Excel/CSV 文件');
+                    }
+                  }}
+                />
+              </div>
+
+              <div style={{ maxHeight: 360, overflow: 'auto', marginBottom: 12 }}>
+                <Table
+                  dataSource={bulkRows.map((r, i) => ({ ...r, key: `r-${i}` }))}
+                  pagination={false}
+                  columns={[
+                    { title: '用户名', dataIndex: 'username' },
+                    { title: '积分变化', dataIndex: 'scoreChange' },
+                    { title: '原因', dataIndex: 'reason' },
+                    { title: '状态', dataIndex: 'status' },
+                  ]}
+                  size="small"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <Button onClick={() => { setBulkRows([]); setShowBulkModal(false); }}>取消</Button>
+                <Button
+                  type="primary"
+                  loading={isImporting}
+                  onClick={async () => {
+                    if (bulkRows.length === 0) {
+                      message.warning('请先导入或粘贴数据');
+                      return;
+                    }
+                    // 本地校验
+                    const validated = bulkRows.map((r) => {
+                      const errors: string[] = [];
+                      if (!r.username) errors.push('用户名为空');
+                      if (!Number.isInteger(r.scoreChange) || Math.abs(r.scoreChange) > 10000 || r.scoreChange === 0) {
+                        errors.push('积分变化无效');
+                      }
+                      return { ...r, _errors: errors };
+                    });
+                    setBulkRows(validated as any);
+                    const hasErrors = validated.some((r) => (r as any)._errors.length > 0);
+                    if (hasErrors) {
+                      message.error('存在格式错误，请修正后重试');
+                      return;
+                    }
+
+                    setIsImporting(true);
+                    try {
+                      const config = (window as any).ScoreSystemConfig;
+                      const url = config?.submitUrl || window.location.pathname;
+                      const payload = {
+                        action: 'bulk_adjust',
+                        rows: bulkRows.map((r) => ({ username: r.username, scoreChange: r.scoreChange, reason: r.reason })),
+                      };
+                      const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                      });
+                      const data = await resp.json();
+                      if (data && data.results) {
+                        const updated = bulkRows.map((r, i) => {
+                          const res = data.results[i];
+                          return { ...r, status: res?.success ? '成功' : `失败: ${res?.message || '未知错误'}` };
+                        });
+                        setBulkRows(updated as any);
+                        message.success('导入完成，查看每行状态');
+                      } else {
+                        message.error(data?.message || '导入失败');
+                      }
+                    } catch (err) {
+                      console.error('导入失败', err);
+                      message.error('导入失败，请重试');
+                    } finally {
+                      setIsImporting(false);
+                    }
+                  }}
+                >
+                  开始导入
+                </Button>
+              </div>
+            </Modal>
 
               {/* 结果显示 */}
               {result && (
@@ -657,7 +806,9 @@ const ScoreManageApp: React.FC = () => {
         </div>
 
         <div className="sidebar-column">
-          <Card className="manage-records-card" title={
+          <Card
+className="manage-records-card"
+title={
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <ThunderboltOutlined />
               <span>最近积分记录</span>
