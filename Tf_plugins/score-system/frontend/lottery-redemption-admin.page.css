@@ -1,0 +1,48 @@
+/* Redemption Admin Page Styles */
+
+.redemption-admin-container {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.hero-card {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+  border: none;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
+  position: relative;
+}
+
+.hero-back-button {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+}
+
+.hero-back-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .redemption-admin-container {
+    padding: 8px;
+  }
+
+  .hero-card .ant-card-body {
+    padding: 20px 16px;
+  }
+
+  .hero-back-button {
+    position: static !important;
+    margin-top: 16px;
+    width: 100%;
+  }
+}
+

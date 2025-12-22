@@ -105,6 +105,7 @@ interface ScoreHallData {
   gameRemainingPlays: {
     dice: number;
     rps: number;
+    lottery: number;
   };
   maxDailyPlays: number;
   udocs: Record<string, any>;
@@ -126,7 +127,7 @@ const ScoreHallApp: React.FC = () => {
     isLoggedIn: false,
     hasCheckedInToday: false,
     nextReward: 10,
-    gameRemainingPlays: { dice: 0, rps: 0 },
+    gameRemainingPlays: { dice: 0, rps: 0, lottery: 0 },
     maxDailyPlays: 10,
     udocs: {},
   };
@@ -198,6 +199,7 @@ const ScoreHallApp: React.FC = () => {
   const checkInUrl = (window as any).checkInUrl || '/score/checkin';
   const diceGameUrl = (window as any).diceGameUrl || '/score/dice';
   const rpsGameUrl = (window as any).rpsGameUrl || '/score/rps';
+  const lotteryGameUrl = (window as any).lotteryGameUrl || '/score/lottery';
   const transferUrl = (window as any).transferUrl || '/score/transfer';
   const scoreManageUrl = (window as any).scoreManageUrl || '/score/manage';
   const scoreRecordsUrl = (window as any).scoreRecordsUrl || '/score/records';
@@ -545,6 +547,58 @@ const ScoreHallApp: React.FC = () => {
                   size="large"
                 >
                   开始对战
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Lottery Game Card */}
+        <Col xs={24} lg={8}>
+          <Card className="game-card lottery-card" bordered={false}>
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper lottery-icon">
+                  <GiftOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">实物抽奖</Title>
+                  <Text className="game-card-subtitle">测试你的运气</Text>
+                </div>
+              </div>
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <Text className="game-info-label">游戏模式</Text>
+                    <Text className="game-info-value">九宫格</Text>
+                  </div>
+                  <div className="game-info-item">
+                    <Text className="game-info-label">投注</Text>
+                    <Text className="game-info-value">100积分</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">丰厚奖励</Tag>
+                  <Tag className="game-feature-tag">即时开奖</Tag>
+                </div>
+                {hallData.isLoggedIn && (
+                  <div className="game-card-remaining">
+                    <Text className="game-remaining-text">
+                      剩余: {hallData.gameRemainingPlays.lottery}/{hallData.maxDailyPlays}
+                    </Text>
+                  </div>
+                )}
+              </div>
+              <div className="game-card-footer">
+                <Button
+                  type="primary"
+                  icon={<GiftOutlined />}
+                  href={lotteryGameUrl}
+                  className="game-action-btn lottery-btn"
+                  block
+                  size="large"
+                >
+                  开始抽奖
                 </Button>
               </div>
             </div>

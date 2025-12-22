@@ -1,0 +1,70 @@
+/* My Prizes Page Styles */
+
+.my-prizes-container {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.hero-card {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+  border: none;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
+  position: relative;
+}
+
+.hero-back-button {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+}
+
+.hero-back-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+/* Prize Item */
+.prize-item {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.prize-item:hover {
+  background: rgba(236, 72, 153, 0.05);
+  border-radius: 8px;
+}
+
+.prize-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(219, 39, 119, 0.1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .my-prizes-container {
+    padding: 8px;
+  }
+
+  .hero-card .ant-card-body {
+    padding: 20px 16px;
+  }
+
+  .hero-back-button {
+    position: static !important;
+    margin-top: 16px;
+    width: 100%;
+  }
+}
+

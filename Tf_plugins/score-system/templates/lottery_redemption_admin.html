@@ -1,0 +1,26 @@
+{% set page_name = "lottery_redemption_admin" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- React App Mount Point -->
+<div id="redemption-admin-react-app"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.redemptionAdminData = {{ redemptionAdminDataJson|safe }};
+
+    // 传递URL
+    window.redemptionListUrl = '{{ url("redemption_list_api") }}';
+    window.redemptionRedeemUrl = '{{ url("redemption_redeem_api") }}';
+    window.redemptionCancelUrl = '{{ url("redemption_cancel_api") }}';
+    window.redemptionHistoryUrl = '{{ url("redemption_history_api") }}';
+    window.scoreHallUrl = '{{ url("score_hall") }}';
+    window.lotteryGameUrl = '{{ url("lottery_game") }}';
+    {% if handler.user._id %}
+    window.currentUserId = '{{ handler.user._id }}';
+    {% endif %}
+</script>
+
+{% endblock %}
+
