@@ -26,6 +26,8 @@ import {
   Typography,
 } from 'antd';
 import $ from 'jquery';
+// @ts-ignore - optional dependency, may not have types in the workspace
+import { pinyin } from 'pinyin-pro';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as XLSX from 'xlsx';
@@ -56,11 +58,17 @@ const ScoreManageApp: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [recentUsers, setRecentUsers] = useState<string[]>([]);
   const downloadTemplate = useCallback(() => {
-    const sample = [{ username: '示例用户', scoreChange: 100, reason: '示例：活动奖励' }];
-    const ws = XLSX.utils.json_to_sheet(sample, { header: ['username', 'scoreChange', 'reason'] });
+    const sample = [{ name: '示例姓名', scoreChange: 100, reason: '示例：活动奖励' }];
+    const ws = XLSX.utils.json_to_sheet(sample, { header: ['name', 'scoreChange', 'reason'] });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '模板');
     XLSX.writeFile(wb, 'score_adjust_template.xlsx');
+  }, []);
+
+  const toUsername = useCallback((chineseName: string) => {
+    if (!chineseName) return '';
+    const raw = pinyin(chineseName, { toneType: 'none', type: 'string' });
+    return raw.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   }, []);
   // 使用 useMemo 确保 records 数组的稳定性，避免重复渲染
   const records = React.useMemo<ScoreRecord[]>(() => {
@@ -695,19 +703,45 @@ const ScoreManageApp: React.FC = () => {
                       const firstSheetName = workbook.SheetNames[0];
                       const worksheet = workbook.Sheets[firstSheetName];
                       const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as any[];
-                      const parsed = json.map((row: any, _idx: number) => {
-                        // 支持多种列名：username/用户名/uid/用户
-                        const unameVal = row.username ?? row.用户名 ?? row.user ?? row.User ?? '';
+                      const parsedInitial = json.map((row: any, _idx: number) => {
+                        // 支持多种列名：name/姓名，兼容 username/用户名
+                        const nameVal = row.name ?? row.姓名 ?? row.username ?? row.用户名 ?? row.user ?? row.User ?? '';
                         const scoreRawVal = row.scoreChange ?? row.积分变化 ?? row.score ?? row.分数 ?? '';
                         const reasonVal = row.reason ?? row.原因 ?? row.Reason ?? '';
                         const scoreNum = Number.parseInt(String(scoreRawVal).trim() || '0');
+                        const nameStr = String(nameVal).trim();
+                        const usernameGenerated = nameStr ? toUsername(nameStr) : '';
                         return {
-                          username: String(unameVal).trim(),
+                          name: nameStr,
+                          username: usernameGenerated,
                           scoreChange: Number.isNaN(scoreNum) ? 0 : scoreNum,
                           reason: String(reasonVal || '').trim(),
                           status: '待导入',
                         };
                       });
+
+                      // 检查拼音冲突（重复的 username）
+                      const usernameCounts: Record<string, number> = {};
+                      for (const item of parsedInitial) {
+                        const u = item.username || '';
+                        if (u) usernameCounts[u] = (usernameCounts[u] || 0) + 1;
+                      }
+
+                      const parsed = parsedInitial.map((item) => {
+                        const errors: string[] = [];
+                        if (!item.username) errors.push('用户名为空');
+                        if (!Number.isInteger(item.scoreChange) || Math.abs(item.scoreChange) > 10000 || item.scoreChange === 0) {
+                          errors.push('积分变化无效');
+                        }
+                        const conflict = item.username && usernameCounts[item.username] > 1;
+                        return {
+                          ...item,
+                          _errors: errors,
+                          _conflict: !!conflict,
+                          status: conflict ? '冲突：拼音重复' : (errors.length ? '存在错误' : '待导入'),
+                        };
+                      });
+
                       setBulkRows(parsed);
                       message.success(`解析 ${parsed.length} 条记录`);
                     } catch (err) {
@@ -723,10 +757,21 @@ const ScoreManageApp: React.FC = () => {
                   dataSource={bulkRows.map((r, i) => ({ ...r, key: `r-${i}` }))}
                   pagination={false}
                   columns={[
+                    { title: '姓名', dataIndex: 'name' },
                     { title: '用户名', dataIndex: 'username' },
                     { title: '积分变化', dataIndex: 'scoreChange' },
                     { title: '原因', dataIndex: 'reason' },
-                    { title: '状态', dataIndex: 'status' },
+                    {
+                      title: '状态',
+                      dataIndex: 'status',
+                      render: (_: any, record: any) => {
+                        const parts: string[] = [];
+                        if (record._conflict) parts.push('冲突：拼音重复');
+                        if (record._errors && record._errors.length > 0) parts.push(record._errors.join('；'));
+                        if (parts.length === 0) return record.status || '待导入';
+                        return parts.join('；');
+                      },
+                    },
                   ]}
                   size="small"
                 />
@@ -742,19 +787,33 @@ const ScoreManageApp: React.FC = () => {
                       message.warning('请先导入或粘贴数据');
                       return;
                     }
-                    // 本地校验
+                    // 本地校验（包含冲突）
                     const validated = bulkRows.map((r) => {
-                      const errors: string[] = [];
-                      if (!r.username) errors.push('用户名为空');
+                      const errors: string[] = Array.isArray((r as any)._errors) ? (r as any)._errors.slice() : [];
+                      if (!r.username) {
+                        if (!errors.includes('用户名为空')) errors.push('用户名为空');
+                      }
                       if (!Number.isInteger(r.scoreChange) || Math.abs(r.scoreChange) > 10000 || r.scoreChange === 0) {
-                        errors.push('积分变化无效');
+                        if (!errors.includes('积分变化无效')) errors.push('积分变化无效');
                       }
                       return { ...r, _errors: errors };
                     });
-                    setBulkRows(validated as any);
-                    const hasErrors = validated.some((r) => (r as any)._errors.length > 0);
+                    // 标记冲突
+                    const usernameCounts: Record<string, number> = {};
+                    for (const item of validated) {
+                      const u = item.username || '';
+                      if (u) usernameCounts[u] = (usernameCounts[u] || 0) + 1;
+                    }
+                    const finalRows = validated.map((item) => {
+                      const conflict = item.username && usernameCounts[item.username] > 1;
+                      const status = conflict ? '冲突：拼音重复' : (item._errors && item._errors.length ? '存在错误' : '待导入');
+                      return { ...item, _conflict: !!conflict, status };
+                    });
+                    setBulkRows(finalRows as any);
+
+                    const hasErrors = finalRows.some((r) => (r as any)._errors.length > 0 || (r as any)._conflict);
                     if (hasErrors) {
-                      message.error('存在格式错误，请修正后重试');
+                      message.error('存在格式错误或拼音冲突，请修正后重试');
                       return;
                     }
 
