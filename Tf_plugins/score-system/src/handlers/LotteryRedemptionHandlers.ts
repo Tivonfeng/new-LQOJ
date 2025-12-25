@@ -274,8 +274,18 @@ export class RedemptionListApiHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const uidParam = this.request.query.uid as string | undefined;
-        const uid = uidParam && /^\d+$/.test(uidParam) ? Number.parseInt(uidParam) : undefined;
+        const searchParam = this.request.query.search as string | undefined;
+        let uid: number | number[] | undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
+
+        if (uidParam && /^\d+$/.test(uidParam)) {
+            uid = Number.parseInt(uidParam);
+        } else if (searchParam && searchParam.trim()) {
+            const UserModel = global.Hydro.model.user;
+            const matchedUsers = await UserModel.getPrefixList(this.domain._id, searchParam.trim(), 200);
+            const matchedUids = matchedUsers.map((u: any) => u._id);
+            uid = matchedUids;
+        }
 
         const data = await redemptionService.getPendingRedemptions(
             this.domain._id,
@@ -404,9 +414,19 @@ export class RedemptionHistoryApiHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const uidParam = this.request.query.uid as string | undefined;
-        const uid = uidParam && /^\d+$/.test(uidParam) ? Number.parseInt(uidParam) : undefined;
+        const searchParam = this.request.query.search as string | undefined;
+        let uid: number | number[] | undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
         const status = this.request.query.status as 'redeemed' | 'cancelled' | undefined;
+
+        if (uidParam && /^\d+$/.test(uidParam)) {
+            uid = Number.parseInt(uidParam);
+        } else if (searchParam && searchParam.trim()) {
+            const UserModel = global.Hydro.model.user;
+            const matchedUsers = await UserModel.getPrefixList(this.domain._id, searchParam.trim(), 200);
+            const matchedUids = matchedUsers.map((u: any) => u._id);
+            uid = matchedUids;
+        }
 
         const data = await redemptionService.getRedemptionHistory(
             this.domain._id,
