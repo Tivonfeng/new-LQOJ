@@ -75,12 +75,44 @@ export interface CertificateFilter {
  * 处理证书的CRUD操作和七牛云图片管理
  */
 export class CertificateService {
-    private qiniuService: QiniuStorageService;
+    private localQiniuService?: QiniuStorageService;
+    // 通过 getter 动态读取 ctx 提供的服务，避免在插件加载顺序未保证时直接访问 ctx.qiniuStorage 导致异常
+    private get qiniuService(): QiniuStorageService | undefined {
+        // 优先使用 core 提供的服务（安全访问，避免抛出 "without inject"）
+        let coreSvc: QiniuStorageService | undefined;
+        try {
+            // @ts-ignore
+            coreSvc = (this.ctx.qiniuStorage as any) as QiniuStorageService | undefined;
+        } catch (err) {
+            // 如果访问 ctx.qiniuStorage 抛出（例如尚未注入），直接回退
+            coreSvc = undefined;
+        }
+        if (coreSvc) return coreSvc;
+
+        // 回退：若环境变量配置齐全则懒实例化本地实现
+        if (!this.localQiniuService) {
+            const cfg = {
+                accessKey: process.env.QINIU_ACCESS_KEY,
+                secretKey: process.env.QINIU_SECRET_KEY,
+                bucket: process.env.QINIU_BUCKET,
+                domain: process.env.QINIU_DOMAIN,
+                zone: process.env.QINIU_ZONE,
+                maxFileSize: process.env.QINIU_MAX_SIZE ? Number.parseInt(process.env.QINIU_MAX_SIZE, 10) : undefined,
+                defaultPrefix: process.env.QINIU_PREFIX,
+            } as any;
+
+            if (cfg.accessKey && cfg.secretKey && cfg.bucket) {
+                this.localQiniuService = new QiniuStorageService(cfg);
+            }
+        }
+
+        return this.localQiniuService;
+    }
+
     private ctx: Context;
 
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.qiniuService = new QiniuStorageService();
     }
 
     /**
@@ -198,6 +230,10 @@ export class CertificateService {
             console.log('[ExamHall] 开始上传到七牛云...');
             const uploadResult = await this.qiniuService.uploadFile(filePath, 'certificates');
             console.log(`[ExamHall] 七牛云上传结果: success=${uploadResult.success}, error=${uploadResult.error}`);
+            if (!uploadResult.success) {
+                // 打印完整结果用于调试（注意：可能包含远端返回信息，不要在生产日志中泄露敏感信息）
+                console.error('[ExamHall] 七牛上传详细返回：', uploadResult);
+            }
 
             if (uploadResult.success) {
                 return {

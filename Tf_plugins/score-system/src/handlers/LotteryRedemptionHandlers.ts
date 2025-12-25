@@ -273,7 +273,8 @@ export class RedemptionListApiHandler extends Handler {
         const redemptionService = new LotteryRedemptionService(this.ctx);
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
-        const uid = this.request.query.uid ? Number.parseInt(this.request.query.uid as string) : undefined;
+        const uidParam = this.request.query.uid as string | undefined;
+        const uid = uidParam && /^\d+$/.test(uidParam) ? Number.parseInt(uidParam) : undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
 
         const data = await redemptionService.getPendingRedemptions(
@@ -402,7 +403,8 @@ export class RedemptionHistoryApiHandler extends Handler {
         const redemptionService = new LotteryRedemptionService(this.ctx);
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
-        const uid = this.request.query.uid ? Number.parseInt(this.request.query.uid as string) : undefined;
+        const uidParam = this.request.query.uid as string | undefined;
+        const uid = uidParam && /^\d+$/.test(uidParam) ? Number.parseInt(uidParam) : undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
         const status = this.request.query.status as 'redeemed' | 'cancelled' | undefined;
 
