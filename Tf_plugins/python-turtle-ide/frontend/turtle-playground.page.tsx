@@ -85,6 +85,12 @@ function useHydroMarkdown(text?: string) {
 
 const DEFAULT_CODE = '';
 
+// 清理不可见字符与统一换行，解决 Windows CRLF / BOM / 零宽字符导致的光标偏移问题
+function sanitizeCode(s?: string | null): string {
+  if (!s) return '';
+  return String(s).replace(/\uFEFF/g, '').replace(/\u200B/g, '').replace(/\r\n/g, '\n');
+}
+
 // Skulpt 初始化和执行函数
 function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void) {
   console.log('[Skulpt] Initializing Skulpt with canvas div:', canvasDiv);
@@ -168,7 +174,9 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   };
 
   const initialCode = loadInitialCode();
-  const [code, setCode] = useState(initialCode);
+  // 对初始内容进行 sanitize，避免不同平台换行或隐形字符带来差异
+  const sanitizedInitialCode = sanitizeCode(initialCode);
+  const [code, setCode] = useState(sanitizedInitialCode);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | null>(null);
   const autoSaveTimerRef = useRef<number | null>(null);
   const [consoleOutput, setConsoleOutput] = useState('>>> 准备就绪\n');
@@ -284,8 +292,10 @@ const TurtlePlayground: React.FC<TurtleData> = ({
   const MIN_SAVE_INTERVAL = 5000; // 最小保存间隔：5秒
 
   const autoSaveCode = useCallback((codeToSave: string) => {
+    // 在保存前 sanitize，确保存入的内容在各平台一致
+    const sanitizedToSave = sanitizeCode(codeToSave);
     // 如果代码为空，不保存
-    if (!codeToSave || codeToSave.trim() === '') {
+    if (!sanitizedToSave || sanitizedToSave.trim() === '') {
       return;
     }
 
@@ -301,7 +311,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       if (now - lastSaveTimeRef.current < MIN_SAVE_INTERVAL) {
         // 静默保存，不显示提示
         try {
-          localStorage.setItem(AUTO_SAVE_KEY, codeToSave);
+          localStorage.setItem(AUTO_SAVE_KEY, sanitizedToSave);
           localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
         } catch (error) {
           console.error('[AutoSave] Failed to save code:', error);
@@ -311,7 +321,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
       }
 
       try {
-        localStorage.setItem(AUTO_SAVE_KEY, codeToSave);
+        localStorage.setItem(AUTO_SAVE_KEY, sanitizedToSave);
         localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
         lastSaveTimeRef.current = now;
         // 只在真正保存成功时显示提示，不显示"保存中"
@@ -352,8 +362,20 @@ const TurtlePlayground: React.FC<TurtleData> = ({
         console.log('[Monaco] Monaco loaded successfully');
 
         // 创建Monaco model
-        const model = monacoInstance.editor.createModel(code, 'python');
+        // 使用 sanitize 过的内容创建 model，避免平台差异（CRLF/BOM/零宽空格）
+        const sanitizedForModel = sanitizeCode(code || sanitizedInitialCode);
+        const model = monacoInstance.editor.createModel(sanitizedForModel, 'python');
         console.log('[Monaco] Model created');
+        // Windows 平台调试输出尾部字符的编码，便于排查光标偏移问题
+        try {
+          if (typeof navigator !== 'undefined' && navigator.platform && navigator.platform.indexOf('Win') !== -1) {
+            const tail = sanitizedForModel.slice(-10);
+            console.log('[Monaco] tail chars', JSON.stringify(tail));
+            console.log('[Monaco] tail char codes', Array.from(tail).map((c) => c.charCodeAt(0)));
+          }
+        } catch (e) {
+          /* ignore debug errors */
+        }
 
         // 注册Python代码补全
         // Note: insertText 中的 ${} 是 Monaco snippet 占位符语法，不是模板字符串
@@ -669,7 +691,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
             action: 'taskProgress',
             taskId,
             status: nextStatus,
-            code,
+          code: sanitizeCode(code),
           }),
         });
         const result = await response.json();
@@ -748,7 +770,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
         action: 'save',
         workId: currentWorkId,
         title: workTitle,
-        code,
+        code: sanitizeCode(code),
         description: '',
         isPublic: true,
         imageUrl,
@@ -787,9 +809,10 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     const handleBeforeUnload = () => {
       if (monacoEditorRef.current) {
         const currentCode = monacoEditorRef.current.getValue();
-        if (currentCode && currentCode.trim() !== '') {
+        const sanitized = sanitizeCode(currentCode);
+        if (sanitized && sanitized.trim() !== '') {
           try {
-            localStorage.setItem(AUTO_SAVE_KEY, currentCode);
+            localStorage.setItem(AUTO_SAVE_KEY, sanitized);
             localStorage.setItem(AUTO_SAVE_TIMESTAMP_KEY, new Date().toISOString());
           } catch (error) {
             console.error('[AutoSave] Failed to save on unload:', error);
