@@ -1,5 +1,42 @@
 // 服务层统一导出
 
+// 积分相关类型定义（避免耦合，独立定义）
+export const ScoreCategory = {
+    AC_PROBLEM: 'AC题目',
+    GAME_ENTERTAINMENT: '游戏娱乐',
+    TYPING_CHALLENGE: '打字挑战',
+    WORK_INTERACTION: '作品互动',
+    AI_ASSISTANT: 'AI辅助',
+    TRANSFER: '积分转账',
+    DAILY_CHECKIN: '每日签到',
+    CERTIFICATE: '证书奖励',
+    ADMIN_OPERATION: '管理员操作',
+} as const;
+
+export type ScoreCategoryType = typeof ScoreCategory[keyof typeof ScoreCategory];
+
+export interface ScoreRecord {
+    _id?: any;
+    uid: number;
+    domainId: string;
+    pid: number;
+    recordId: any;
+    score: number;
+    reason: string;
+    createdAt: Date;
+    category?: ScoreCategoryType;
+    title?: string;
+}
+
+export interface UserScore {
+    _id?: any;
+    uid: number;
+    domainId?: string;
+    totalScore: number;
+    acCount: number;
+    lastUpdated: Date;
+}
+
 // 签到服务
 export {
     type CheckInResult,
@@ -43,16 +80,6 @@ export {
     type UserChoiceStats,
     type UserRPSStats,
 } from './RPSGameService';
-
-// 积分服务
-export {
-    ScoreCategory,
-    type ScoreCategoryType,
-    type ScoreConfig,
-    type ScoreRecord,
-    ScoreService,
-    type UserScore,
-} from './ScoreService';
 
 // 统计服务
 export {

@@ -7,9 +7,35 @@ import {
 import {
     DailyGameLimitService,
     LotteryService,
-    ScoreService,
 } from '../services';
-import { DEFAULT_CONFIG } from './config';
+
+// helper: 获取注入的 scoreCore 服务
+function getScoreCore(ctx: any) {
+    // 优先从全局对象获取（在插件加载时设置）
+    let scoreCore = (global as any).scoreCoreService;
+    if (scoreCore) {
+        return scoreCore;
+    }
+
+    // 降级到 ctx.inject（在处理器运行时可能不可用）
+    try {
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                scoreCore = _sc;
+            });
+        } else {
+            scoreCore = (ctx as any).scoreCore;
+        }
+    } catch (e) {
+        scoreCore = (ctx as any).scoreCore;
+    }
+
+    if (!scoreCore) {
+        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+    }
+
+    return scoreCore;
+}
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -52,11 +78,11 @@ export class LotteryGameHandler extends Handler {
             return;
         }
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
+        const scoreCore = getScoreCore(this.ctx);
+        const lotteryService = new LotteryService(this.ctx);
 
         // 获取用户积分
-        const userScore = await scoreService.getUserScore(this.domain._id, uid);
+        const userScore = await scoreCore.getUserScore(this.domain._id, uid);
         const currentCoins = userScore?.totalScore || 0;
 
         // 获取用户游戏统计
@@ -175,11 +201,11 @@ export class LotteryStatusHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
+        const scoreCore = getScoreCore(this.ctx);
+        const lotteryService = new LotteryService(this.ctx);
 
         // 获取用户积分
-        const userScore = await scoreService.getUserScore(this.domain._id, uid);
+        const userScore = await scoreCore.getUserScore(this.domain._id, uid);
         const currentCoins = userScore?.totalScore || 0;
 
         // 获取用户游戏统计
@@ -278,8 +304,7 @@ export class LotteryPlayHandler extends Handler {
                 return;
             }
 
-            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-            const lotteryService = new LotteryService(this.ctx, scoreService);
+            const lotteryService = new LotteryService(this.ctx);
 
             const result = await lotteryService.playLottery(
                 this.domain._id,
@@ -319,8 +344,7 @@ export class LotteryHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const lotteryService = new LotteryService(this.ctx, scoreService);
+        const lotteryService = new LotteryService(this.ctx);
 
         // 获取分页游戏历史
         const historyData = await lotteryService.getUserGameHistoryPaged(

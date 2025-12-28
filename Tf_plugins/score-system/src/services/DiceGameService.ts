@@ -1,7 +1,6 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 掷骰子游戏记录接口
 export interface DiceGameRecord {
@@ -39,15 +38,46 @@ export interface UserDiceStats {
  */
 export class DiceGameService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
 
     // 游戏常量
     private static readonly AVAILABLE_BETS = [10, 20, 50]; // 可选投注额度
     private static readonly WIN_MULTIPLIER = 2; // 获胜倍数(2倍)
 
-    constructor(ctx: Context, scoreService: ScoreService) {
+    constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
+    }
+
+    /**
+     * 获取 scoreCore 服务实例
+     */
+    private getScoreCore(): any {
+        // 优先从全局对象获取
+        let scoreCore = (global as any).scoreCoreService;
+        if (scoreCore) {
+            return scoreCore;
+        }
+
+        // 降级到 ctx.inject
+        try {
+            if (typeof this.ctx.inject === 'function') {
+                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                    scoreCore = _sc;
+                });
+            } else {
+                scoreCore = (this.ctx as any).scoreCore;
+            }
+        } catch (e) {
+            scoreCore = (this.ctx as any).scoreCore;
+        }
+
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
+
+        return scoreCore;
     }
 
     /**
@@ -74,8 +104,11 @@ export class DiceGameService {
                 return { success: false, message: '无效的投注金额，请选择10、20或50积分' };
             }
 
+            // 获取 scoreCore 实例
+            const scoreCore = this.getScoreCore();
+
             // 检查用户积分
-            const userScore = await this.scoreService.getUserScore(domainId, uid);
+            const userScore = await scoreCore.getUserScore(domainId, uid);
             if (!userScore || userScore.totalScore < betAmount) {
                 return {
                     success: false,
@@ -113,29 +146,29 @@ export class DiceGameService {
             const uniquePid = -1000000 - (timestamp % 1000000);
 
             // 扣除投注积分
-            await this.scoreService.updateUserScore(domainId, uid, -betAmount);
-            await this.scoreService.addScoreRecord({
+            await scoreCore.updateUserScore(domainId, uid, -betAmount);
+            await scoreCore.addScoreRecord({
                 uid,
                 domainId,
                 pid: uniquePid,
                 recordId: gameRecordId,
                 score: -betAmount,
                 reason: `掷骰子游戏投注${betAmount}积分`,
-                category: ScoreCategory.GAME_ENTERTAINMENT,
+                category: '游戏娱乐',
                 title: '掷骰子游戏',
             });
 
             // 如果获胜，发放奖励
             if (won) {
-                await this.scoreService.updateUserScore(domainId, uid, reward);
-                await this.scoreService.addScoreRecord({
+                await scoreCore.updateUserScore(domainId, uid, reward);
+                await scoreCore.addScoreRecord({
                     uid,
                     domainId,
                     pid: uniquePid - 1,
                     recordId: gameRecordId,
                     score: reward,
                     reason: `掷骰子猜中获胜 (${diceValue}点-${actualResult}) 投注${betAmount}积分`,
-                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    category: '游戏娱乐',
                     title: '掷骰子游戏',
                 });
             }

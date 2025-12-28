@@ -1,33 +1,38 @@
-import { Context, Schema } from 'hydrooj';
+import { Context, Logger, Schema } from 'hydrooj';
 import { ScoreCoreService } from './src/services/ScoreCoreService';
 
+const logger = new Logger('tf_plugins_core');
 const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('是否启用插件 core'),
 });
 
 export default async function apply(ctx: Context, config: any = {}) {
+    logger.info('🔄 tf_plugins_core plugin starting...');
+
     const defaultConfig = { enabled: true };
     const finalConfig = { ...defaultConfig, ...config };
 
     if (!finalConfig.enabled) {
-        console.log('[tf_plugins_core] Plugin disabled by config');
+        logger.info('Plugin disabled by config');
         return;
     }
 
-    console.log('[tf_plugins_core] Plugin loading...');
-
+    logger.info('🏗️ Creating ScoreCoreService...');
     const scoreCore = new ScoreCoreService(ctx);
+    logger.info('✅ ScoreCoreService created successfully');
 
     try {
         if (typeof ctx.provide === 'function') {
             ctx.provide('scoreCore', scoreCore);
-            console.log('[tf_plugins_core] ✅ scoreCore provided via ctx.provide');
+            logger.info('✅ scoreCore provided via ctx.provide');
+        } else {
+            logger.warn('❌ ctx.provide not available');
         }
     } catch (err: any) {
-        console.warn('[tf_plugins_core] ⚠️ provide scoreCore failed:', err?.message || err);
+        logger.error('❌ provide scoreCore failed: %s', err?.message || err);
     }
 
-    console.log('[tf_plugins_core] Plugin loaded');
+    logger.info('🎉 tf_plugins_core plugin loaded successfully');
 }
 
 export { Config };

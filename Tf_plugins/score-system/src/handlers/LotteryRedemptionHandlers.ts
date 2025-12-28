@@ -199,7 +199,7 @@ export class RedemptionAdminHandler extends Handler {
         const stats = await redemptionService.getRedemptionStats(this.domain._id);
 
         // 获取用户信息
-        const uids = [...new Set(pendingData.records.map((r) => r.uid))];
+        const uids = [...new Set(pendingData.records.map((r: any) => r.uid as number))] as number[];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -295,7 +295,7 @@ export class RedemptionListApiHandler extends Handler {
         );
 
         // 获取用户信息
-        const uids = [...new Set(data.records.map((r) => r.uid))];
+        const uids = [...new Set(data.records.map((r: any) => r.uid as number))] as number[];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -444,9 +444,9 @@ export class RedemptionHistoryApiHandler extends Handler {
         }));
 
         // 获取用户信息
-        const uids = [...new Set(data.records.map((r) => r.uid))];
-        const adminUids = [...new Set(data.records.map((r) => r.redeemedBy))];
-        const allUids = [...new Set([...uids, ...adminUids])];
+        const uids = [...new Set(data.records.map((r: any) => r.uid as number))] as number[];
+        const adminUids = [...new Set(data.records.map((r: any) => r.redeemedBy as number))] as number[];
+        const allUids = [...new Set([...uids, ...adminUids])] as number[];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, allUids);
 

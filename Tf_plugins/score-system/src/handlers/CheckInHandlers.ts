@@ -3,10 +3,36 @@ import {
 } from 'hydrooj';
 import {
     CheckInService,
-    ScoreService,
     type UserCheckInStats,
 } from '../services';
-import { DEFAULT_CONFIG } from './config';
+
+// helper: 获取注入的 scoreCore 服务
+function getScoreCore(ctx: any) {
+    // 优先从全局对象获取（在插件加载时设置）
+    let scoreCore = (global as any).scoreCoreService;
+    if (scoreCore) {
+        return scoreCore;
+    }
+
+    // 降级到 ctx.inject（在处理器运行时可能不可用）
+    try {
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                scoreCore = _sc;
+            });
+        } else {
+            scoreCore = (ctx as any).scoreCore;
+        }
+    } catch (e) {
+        scoreCore = (ctx as any).scoreCore;
+    }
+
+    if (!scoreCore) {
+        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+    }
+
+    return scoreCore;
+}
 
 /**
  * 每日签到处理器
@@ -22,8 +48,8 @@ export class CheckInHandler extends Handler {
 
         const uid = this.user._id;
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const checkInService = new CheckInService(this.ctx, scoreService);
+        const scoreCore = getScoreCore(this.ctx);
+        const checkInService = new CheckInService(this.ctx);
 
         // 获取用户签到统计
         let userStats: UserCheckInStats | null = await checkInService.getUserCheckInStats(uid);
@@ -47,7 +73,7 @@ export class CheckInHandler extends Handler {
         const monthlyCheckIns = await checkInService.getMonthlyCheckIns(uid);
 
         // 获取用户当前积分
-        const userScore = await scoreService.getUserScore(this.domain._id, uid);
+        const userScore = await scoreCore.getUserScore(this.domain._id, uid);
         const currentScore = userScore?.totalScore || 0;
 
         // 生成日历数据 (当前月份)
@@ -94,8 +120,7 @@ export class CheckInHandler extends Handler {
         const { action } = this.request.body;
 
         if (action === 'checkin') {
-            const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-            const checkInService = new CheckInService(this.ctx, scoreService);
+            const checkInService = new CheckInService(this.ctx);
 
             const result = await checkInService.checkIn(this.domain._id, uid);
             this.response.body = result;
@@ -174,7 +199,7 @@ export class CheckInHandler extends Handler {
      * @param hasCheckedInToday 今日是否已签到
      */
     private generateRewardPreview(currentStreak: number, hasCheckedInToday: boolean): any[] {
-        const checkInService = new CheckInService(this.ctx, new ScoreService(DEFAULT_CONFIG, this.ctx));
+        const checkInService = new CheckInService(this.ctx);
         const preview: any[] = [];
 
         const startStreak = hasCheckedInToday ? currentStreak + 1 : currentStreak + 1;

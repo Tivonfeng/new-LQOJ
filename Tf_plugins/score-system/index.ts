@@ -1,4 +1,6 @@
 /* eslint-disable no-await-in-loop */
+
+// 立即输出，确保模块被加载
 import {
     Context,
     PRIV,
@@ -37,6 +39,7 @@ import {
     TransferCreateHandler,
     TransferHistoryHandler,
     UserScoreHandler, WalletHandler } from './src/handlers';
+import { ScoreConfig } from './src/handlers/config';
 // 导入服务层
 import {
     type DailyCheckInRecord,
@@ -44,9 +47,7 @@ import {
     LotteryGameRecord,
     type RPSGameRecord,
     ScoreCategory,
-    type ScoreConfig,
     type ScoreRecord,
-    ScoreService,
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
@@ -54,6 +55,8 @@ import {
     type UserRPSStats,
     type UserScore,
 } from './src/services';
+
+console.log('📦 SCORE-SYSTEM MODULE LOADED');
 
 // 积分系统配置Schema
 const Config = Schema.object({
@@ -138,6 +141,8 @@ declare module 'hydrooj' {
 
 // 插件主函数
 export default async function apply(ctx: Context, config: any = {}) {
+    console.log('🚀 SCORE-SYSTEM: Plugin apply function called!');
+
     // 设置默认配置
     const defaultConfig: ScoreConfig = {
         enabled: true,
@@ -145,372 +150,168 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     const finalConfig = { ...defaultConfig, ...config };
 
-    console.log('Score System plugin loading...');
-    const scoreService = new ScoreService(finalConfig, ctx);
-    // 将 scoreService 暴露给其他插件（运行时查找），作为可选降级路径
+    console.log('📋 SCORE-SYSTEM: Config loaded:', finalConfig);
+    console.log('🔧 SCORE-SYSTEM: Starting full initialization...');
+
+    // 注入 scoreCore 服务并存储到全局对象
     try {
-        if (typeof ctx.provide === 'function') {
-            ctx.provide('scoreService', scoreService);
-            console.log('[Score System] ✅ scoreService provided via ctx.provide');
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                // 将注入的服务存储到全局对象，供处理器使用
+                (global as any).scoreCoreService = _sc;
+                console.log('[Score System] ✅ ScoreCore service injected and stored globally');
+            });
+        } else {
+            console.warn('[Score System] ⚠️ ctx.inject not available, trying fallback');
+            (global as any).scoreCoreService = (ctx as any).scoreCore;
         }
-    } catch (err: any) {
-        console.warn('[Score System] ⚠️ 无法通过 ctx.provide 暴露 scoreService:', err?.message || err);
+    } catch (e) {
+        console.warn('[Score System] ⚠️ Failed to inject scoreCore:', (e as any)?.message || e);
     }
 
     // 创建核销相关数据库索引
     try {
         // lottery.records 集合索引
-        await ctx.db.collection('lottery.records' as any).createIndex(
-            { domainId: 1, prizeType: 1, redeemStatus: 1 },
-            { background: true },
-        );
-        await ctx.db.collection('lottery.records' as any).createIndex(
-            { domainId: 1, uid: 1, prizeType: 1 },
-            { background: true },
-        );
-        console.log('[Score System] ✅ 核销索引创建成功');
-    } catch (error) {
-        const msg = (error as Error).message || '';
-        if (msg.includes('already exists') || msg.includes('same name')) {
-            console.log('[Score System] ✅ 核销索引已存在，跳过创建');
-        } else {
-            console.error('[Score System] ❌ 核销索引创建失败:', msg);
-        }
-    }
-
-    try {
-        // lottery.redemptions 集合索引
-        await ctx.db.collection('lottery.redemptions' as any).createIndex(
-            { domainId: 1, recordId: 1 },
-            { background: true },
-        );
-        await ctx.db.collection('lottery.redemptions' as any).createIndex(
-            { domainId: 1, redeemedAt: -1 },
-            { background: true },
-        );
-        console.log('[Score System] ✅ 核销历史索引创建成功');
-    } catch (error) {
-        const msg = (error as Error).message || '';
-        if (msg.includes('already exists') || msg.includes('same name')) {
-            console.log('[Score System] ✅ 核销历史索引已存在，跳过创建');
-        } else {
-            console.error('[Score System] ❌ 核销历史索引创建失败:', msg);
-        }
-    }
-
-    // 🔒 确保积分记录的唯一索引，防止并发竞态条件
-    try {
-        await ctx.db.collection('score.records' as any).createIndex(
-            { uid: 1, pid: 1, domainId: 1 },
-            { unique: true, background: false }, // 同步创建索引
-        );
-        console.log('[Score System] ✅ 唯一索引创建成功');
-    } catch (error) {
-        const msg = (error as Error).message || '';
-        // 索引已存在或配置兼容时，视为成功，避免重复报错
-        if (msg.includes('already exists') || msg.includes('same name as the requested index')) {
-            console.log('[Score System] ✅ 唯一索引已存在或配置兼容，跳过创建');
-        } else if (msg.includes('E11000') || msg.includes('duplicate key')) {
-            console.error('[Score System] ❌ 数据库中存在重复记录，无法创建唯一索引');
-            console.log('[Score System] 🧹 正在清理重复记录...');
-
-            // 清理重复记录，保留最早的那条
-            const pipeline = [
-                {
-                    $group: {
-                        _id: { uid: '$uid', pid: '$pid', domainId: '$domainId' },
-                        docs: { $push: '$$ROOT' },
-                        count: { $sum: 1 },
-                    },
-                },
-                {
-                    $match: { count: { $gt: 1 } },
-                },
-            ];
-
-            const duplicates = await ctx.db.collection('score.records' as any).aggregate(pipeline).toArray();
-            console.log(`[Score System] 📊 发现 ${duplicates.length} 组重复记录`);
-
-            for (const dup of duplicates) {
-                // 保留最早的记录（createdAt最小的），删除其他的
-                const docsToDelete = dup.docs.slice(1); // 除了第一个，其他都删除
-                const deletePromises = docsToDelete.map((doc: any) =>
-                    ctx.db.collection('score.records' as any).deleteOne({ _id: doc._id }),
-                );
-                await Promise.all(deletePromises);
-                console.log(`[Score System] 🗑️ 清理了 ${docsToDelete.length} 条重复记录 (uid: ${dup._id.uid}, pid: ${dup._id.pid})`);
-            }
-
-            // 重新尝试创建索引
-            try {
-                await ctx.db.collection('score.records' as any).createIndex(
-                    { uid: 1, pid: 1, domainId: 1 },
-                    { unique: true, background: false },
-                );
-                console.log('[Score System] ✅ 重复记录清理完成，唯一索引创建成功');
-            } catch (retryError) {
-                console.error('[Score System] ❌ 清理后仍无法创建索引:', retryError.message);
-            }
-        } else {
-            console.error('[Score System] ❌ 索引创建失败:', error.message);
-        }
-    }
-
-    // ⭐ 基于积分记录的准确首次AC检测
-    ctx.on('record/judge', async (rdoc: RecordDoc, _updated: boolean, pdoc?: ProblemDoc) => {
         try {
-            // 只处理启用状态且有题目信息的记录
-            if (!finalConfig.enabled || !pdoc) return;
-            if (rdoc.status !== STATUS.STATUS_ACCEPTED) return;
+            await ctx.db.collection('lottery.records' as any).createIndex(
+                { domainId: 1, prizeType: 1, redeemStatus: 1 },
+                { name: 'lottery_records_domain_prize_status' },
+            );
+        } catch (indexError: any) {
+            // 如果索引已存在但名称不同，尝试重命名或忽略
+            if (indexError.code === 85 || indexError.message?.includes('Index already exists')) {
+                console.log('[Score System] ✅ Lottery records index already exists, skipping creation');
+            } else {
+                throw indexError;
+            }
+        }
 
-            // 🔒 使用原子操作避免并发竞态条件
-            // 尝试插入记录，如果已存在则会失败（利用唯一索引）
-            let isFirstAC = false;
-            let score = 0;
+        // transfer.records 集合索引
+        try {
+            await ctx.db.collection('transfer.records' as any).createIndex(
+                { fromUid: 1, toUid: 1, createdAt: -1 },
+                { name: 'transfer_records_users_time' },
+            );
+        } catch (indexError: any) {
+            if (indexError.code === 85 || indexError.message?.includes('Index already exists')) {
+                console.log('[Score System] ✅ Transfer records time index already exists, skipping creation');
+            } else {
+                throw indexError;
+            }
+        }
 
+        try {
+            await ctx.db.collection('transfer.records' as any).createIndex(
+                { transactionId: 1 },
+                { name: 'transfer_records_transaction', unique: true },
+            );
+        } catch (indexError: any) {
+            if (indexError.code === 85 || indexError.message?.includes('Index already exists')) {
+                console.log('[Score System] ✅ Transfer records transaction index already exists, skipping creation');
+            } else {
+                throw indexError;
+            }
+        }
+
+        console.log('[Score System] ✅ Database indexes created');
+    } catch (error) {
+        console.warn('[Score System] ⚠️ Failed to create indexes:', error);
+    }
+
+    // 注册积分相关事件监听器
+    if (finalConfig.enabled) {
+        // 题目AC事件监听
+        ctx.on('record/judge', async (rdoc: RecordDoc, _updated: boolean, pdoc?: ProblemDoc) => {
             try {
-                // 先尝试插入积分记录，如果成功说明是首次AC
-                await scoreService.addScoreRecord({
-                    uid: rdoc.uid,
-                    domainId: rdoc.domainId,
-                    pid: rdoc.pid,
-                    recordId: rdoc._id,
-                    score: 20,
-                    reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
-                    category: ScoreCategory.AC_PROBLEM,
-                    title: pdoc.title,
-                });
+                if (!pdoc) return;
+                if (rdoc.status !== STATUS.STATUS_ACCEPTED) return;
 
-                // 插入成功，说明是首次AC
-                isFirstAC = true;
-                score = 20;
+                const scoreToAward = 20;
+                let isFirstAC = false;
+                let awardedScore = 0;
 
-                await scoreService.updateUserScore(rdoc.domainId, rdoc.uid, score);
-                console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${score} points`);
-            } catch (error) {
-                // 插入失败（重复键错误），说明已经存在记录，是重复AC
-                if (error.code === 11000 || error.message.includes('E11000')) {
-                    isFirstAC = false;
-                    score = 0;
-                    console.log(`[Score System] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded`);
+                // 从全局对象获取 scoreCore
+                const currentScoreCore = (global as any).scoreCoreService;
+                if (currentScoreCore) {
+                    const result = await currentScoreCore.awardIfFirstAC({
+                        uid: rdoc.uid,
+                        pid: rdoc.pid,
+                        domainId: rdoc.domainId,
+                        recordId: rdoc._id,
+                        score: scoreToAward,
+                        reason: `AC题目 ${pdoc.title || rdoc.pid} 获得积分`,
+                        category: ScoreCategory.AC_PROBLEM,
+                        title: pdoc.title,
+                    });
+                    isFirstAC = result.isFirstAC;
+                    awardedScore = result.awarded;
+                    if (isFirstAC) {
+                        console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${awardedScore} points via scoreCore`);
+                    } else {
+                        console.log(`[Score System] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded via scoreCore`);
+                    }
                 } else {
-                    console.error('[Score System] ❌ Unexpected error:', error);
-                    throw error;
+                    console.warn('[Score System] ❌ scoreCore not available, skipping AC reward');
                 }
+                ctx.emit(isFirstAC ? 'score/ac-rewarded' : 'score/ac-repeated', {
+                    uid: rdoc.uid, pid: rdoc.pid, domainId: rdoc.domainId, score: awardedScore,
+                    isFirstAC, category: ScoreCategory.AC_PROBLEM, title: pdoc.title, recordId: rdoc._id,
+                });
+            } catch (error) {
+                console.error('[Score System] ❌ Error in record/judge event:', error);
             }
+        });
 
-            // 统一发布事件（无论首次还是重复）
-            ctx.emit(isFirstAC ? 'score/ac-rewarded' : 'score/ac-repeated', {
-                uid: rdoc.uid,
-                pid: rdoc.pid,
-                domainId: rdoc.domainId,
-                score,
-                isFirstAC,
-                category: ScoreCategory.AC_PROBLEM,
-                title: pdoc.title,
-                recordId: rdoc._id,
-            });
-        } catch (error) {
-            console.error('[Score System] ❌ Error:', error);
-        }
-    });
+        // 注册处理器路由
+        ctx.Route('score_manage', '/score/manage', ScoreManageHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
+        ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
+        ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
+        ctx.Route('user_score', '/score/me', UserScoreHandler);
+        ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
 
-    // 📜 监听证书事件，自动处理积分
-    ctx.on('certificate/created', async (data: CertificateEventData) => {
-        try {
-            if (!finalConfig.enabled) return;
-            if (data.weight <= 0) return;
+        // 游戏相关路由
+        ctx.Route('dice_game', '/dice/play', DiceGameHandler);
+        ctx.Route('dice_status', '/dice/status', DiceStatusHandler);
+        ctx.Route('dice_play', '/dice/do', DicePlayHandler);
+        ctx.Route('dice_history', '/dice/history', DiceHistoryHandler);
+        ctx.Route('dice_admin', '/dice/admin', DiceAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
 
-            const scoreToAdd = Math.round(data.weight * 10);
-            await scoreService.updateUserScore(data.domainId, data.uid, scoreToAdd);
-            // 生成唯一的 pid 值，避免唯一索引冲突（证书积分使用 -3000000 范围）
-            const uniquePid = -3000000 - Date.now();
-            await scoreService.addScoreRecord({
-                uid: data.uid,
-                domainId: data.domainId,
-                pid: uniquePid,
-                recordId: data.certificateId,
-                score: scoreToAdd,
-                reason: `获得证书 ${data.certificateName}，权重 ${data.weight}，获得积分 ${scoreToAdd}`,
-                category: ScoreCategory.CERTIFICATE,
-                title: data.certificateName,
-            });
-            console.log(`[Score System] ✅ 用户 ${data.uid} 获得证书积分 ${scoreToAdd}（权重 ${data.weight}）`);
-        } catch (err: any) {
-            console.error(`[Score System] ❌ 处理证书创建事件失败: ${err.message}`);
-        }
-    });
+        ctx.Route('rps_game', '/rps/play', RPSGameHandler);
+        ctx.Route('rps_status', '/rps/status', RPSStatusHandler);
+        ctx.Route('rps_play', '/rps/do', RPSPlayHandler);
+        ctx.Route('rps_history', '/rps/history', RPSHistoryHandler);
 
-    ctx.on('certificate/deleted', async (data: CertificateEventData) => {
-        try {
-            if (!finalConfig.enabled) return;
-            if (data.weight <= 0) return;
+        ctx.Route('lottery_game', '/lottery/play', LotteryGameHandler);
+        ctx.Route('lottery_status', '/lottery/status', LotteryStatusHandler);
+        ctx.Route('lottery_play', '/lottery/do', LotteryPlayHandler);
+        ctx.Route('lottery_history', '/lottery/history', LotteryHistoryHandler);
 
-            const scoreToDeduct = Math.round(data.weight * 10);
-            await scoreService.updateUserScore(data.domainId, data.uid, -scoreToDeduct);
-            // 生成唯一的 pid 值，避免唯一索引冲突（证书积分使用 -3000000 范围）
-            const uniquePid = -3000000 - Date.now();
-            await scoreService.addScoreRecord({
-                uid: data.uid,
-                domainId: data.domainId,
-                pid: uniquePid,
-                recordId: data.certificateId,
-                score: -scoreToDeduct,
-                reason: `删除证书 ${data.certificateName}，权重 ${data.weight}，扣除积分 ${scoreToDeduct}`,
-                category: ScoreCategory.CERTIFICATE,
-                title: data.certificateName,
-            });
-            console.log(`[Score System] ✅ 用户 ${data.uid} 删除证书扣除积分 ${scoreToDeduct}（权重 ${data.weight}）`);
-        } catch (err: any) {
-            console.error(`[Score System] ❌ 处理证书删除事件失败: ${err.message}`);
-        }
-    });
+        // 九宫格抽奖核销路由
+        ctx.Route('my_prizes', '/lottery/my-prizes', MyPrizesHandler);
+        ctx.Route('my_prizes_api', '/lottery/my-prizes/api', MyPrizesApiHandler);
+        ctx.Route('redemption_admin', '/lottery/admin/redeem', RedemptionAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
+        ctx.Route('redemption_list_api', '/lottery/admin/redeem/list', RedemptionListApiHandler);
+        ctx.Route('redemption_redeem_api', '/lottery/admin/redeem/redeem', RedemptionRedeemApiHandler);
+        ctx.Route('redemption_cancel_api', '/lottery/admin/redeem/cancel', RedemptionCancelApiHandler);
+        ctx.Route('redemption_history_api', '/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
 
-    // 📜 监听打字奖励事件，自动处理积分
-    ctx.on('typing/bonus-awarded', async (data: TypingBonusEventData) => {
-        try {
-            if (!finalConfig.enabled) return;
-            if (data.bonus <= 0) return;
+        ctx.Route('wallet', '/wallet', WalletHandler);
+        ctx.Route('transfer_create', '/transfer/create', TransferCreateHandler);
+        ctx.Route('transfer_history', '/transfer/history', TransferHistoryHandler);
+        ctx.Route('transfer_admin', '/transfer/admin', TransferAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
 
-            await scoreService.updateUserScore(data.domainId, data.uid, data.bonus);
-            // 生成唯一的 pid 值，避免唯一索引冲突（打字奖励使用 -4000000 范围）
-            const uniquePid = -4000000 - Date.now();
-            await scoreService.addScoreRecord({
-                uid: data.uid,
-                domainId: data.domainId,
-                pid: uniquePid,
-                recordId: data.recordId || null,
-                score: data.bonus,
-                reason: data.reason,
-                category: ScoreCategory.TYPING_CHALLENGE,
-            });
-            console.log(`[Score System] ✅ 用户 ${data.uid} 获得打字奖励积分 ${data.bonus}（${data.bonusType}）`);
-        } catch (err: any) {
-            console.error(`[Score System] ❌ 处理打字奖励事件失败: ${err.message}`);
-        }
-    });
+        ctx.Route('checkin', '/checkin', CheckInHandler);
 
-    // 🐢 监听作品投币事件，自动处理积分
-    ctx.on('turtle/work-coined', async (data: TurtleWorkCoinedEventData) => {
-        try {
-            if (!finalConfig.enabled) return;
-            if (data.amount <= 0) return;
+        // 注入导航栏 - 添加权限检查，只有内部用户可见
+        ctx.injectUI('Nav', 'score_hall', {
+            prefix: 'score',
+            before: 'ranking', // 插入到排行榜前面
+        }, PRIV.PRIV_USER_PROFILE);
 
-            // 生成唯一的 pid 值，避免唯一索引冲突（作品投币使用 -5000000 范围）
-            const timestamp = Date.now();
-            const uniquePidFrom = -5000000 - timestamp;
-            const uniquePidTo = -5000000 - timestamp - 1;
+        console.log('[Score System] ✅ All routes registered');
+    }
 
-            // 扣除投币者积分
-            await scoreService.updateUserScore(data.domainId, data.fromUid, -data.amount);
-            await scoreService.addScoreRecord({
-                uid: data.fromUid,
-                domainId: data.domainId,
-                pid: uniquePidFrom,
-                recordId: data.workId,
-                score: -data.amount,
-                reason: `给作品「${data.workTitle}」投币`,
-                category: ScoreCategory.WORK_INTERACTION,
-                title: data.workTitle,
-            });
-
-            // 给作品主人加积分
-            await scoreService.updateUserScore(data.domainId, data.toUid, data.amount);
-            await scoreService.addScoreRecord({
-                uid: data.toUid,
-                domainId: data.domainId,
-                pid: uniquePidTo,
-                recordId: data.workId,
-                score: data.amount,
-                reason: `收到作品「${data.workTitle}」的投币`,
-                category: ScoreCategory.WORK_INTERACTION,
-                title: data.workTitle,
-            });
-
-            console.log(`[Score System] ✅ 用户 ${data.fromUid} 给作品「${data.workTitle}」投币 ${data.amount}，作品主人 ${data.toUid} 获得积分`);
-        } catch (err: any) {
-            console.error(`[Score System] ❌ 处理作品投币事件失败: ${err.message}`);
-        }
-    });
-
-    // 🤖 监听 AI 助手使用事件，每次扣除一定积分
-    ctx.on('ai/helper-used', async (data: AiHelperUsedEventData) => {
-        try {
-            if (!finalConfig.enabled) return;
-            if (!data.cost || data.cost <= 0) return;
-
-            const cost = Math.round(data.cost);
-
-            // 生成唯一的 pid 值，避免唯一索引冲突（AI使用使用 -6000000 范围）
-            const uniquePid = -6000000 - Date.now();
-            // 扣除用户积分
-            await scoreService.updateUserScore(data.domainId, data.uid, -cost);
-            await scoreService.addScoreRecord({
-                uid: data.uid,
-                domainId: data.domainId,
-                pid: uniquePid,
-                recordId: null,
-                score: -cost,
-                reason: data.reason || `使用 AI 辅助解题，消耗积分 ${cost}`,
-                category: ScoreCategory.AI_ASSISTANT,
-            });
-
-            console.log(`[Score System] 🤖 用户 ${data.uid} 使用 AI 辅助一次，扣除积分 ${cost}`);
-        } catch (err: any) {
-            console.error(`[Score System] ❌ 处理 AI 使用事件失败: ${err.message}`);
-        }
-    });
-
-    // 注册路由
-    ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
-    ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
-    ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
-    ctx.Route('user_score', '/score/me', UserScoreHandler);
-    ctx.Route('score_hall', '/score/hall', ScoreHallHandler);
-
-    // 掷骰子游戏路由
-    ctx.Route('dice_game', '/score/dice', DiceGameHandler);
-    ctx.Route('dice_status', '/score/dice/status', DiceStatusHandler);
-    ctx.Route('dice_play', '/score/dice/play', DicePlayHandler);
-    ctx.Route('dice_history', '/score/dice/history', DiceHistoryHandler);
-    ctx.Route('dice_admin', '/score/dice/admin', DiceAdminHandler);
-
-    // 剪刀石头布游戏路由
-    ctx.Route('rock_paper_scissors', '/score/rps', RPSGameHandler);
-    ctx.Route('rps_status', '/score/rps/status', RPSStatusHandler);
-    ctx.Route('rps_play', '/score/rps/play', RPSPlayHandler);
-    ctx.Route('rps_history', '/score/rps/history', RPSHistoryHandler);
-
-    // 九宫格抽奖游戏路由
-    ctx.Route('lottery_game', '/score/lottery', LotteryGameHandler);
-    ctx.Route('lottery_status', '/score/lottery/status', LotteryStatusHandler);
-    ctx.Route('lottery_play', '/score/lottery/play', LotteryPlayHandler);
-    ctx.Route('lottery_history', '/score/lottery/history', LotteryHistoryHandler);
-
-    // 九宫格抽奖核销路由
-    ctx.Route('my_prizes', '/score/lottery/my-prizes', MyPrizesHandler);
-    ctx.Route('my_prizes_api', '/score/lottery/my-prizes/api', MyPrizesApiHandler);
-    ctx.Route('redemption_admin', '/score/lottery/admin/redeem', RedemptionAdminHandler);
-    ctx.Route('redemption_list_api', '/score/lottery/admin/redeem/list', RedemptionListApiHandler);
-    ctx.Route('redemption_redeem_api', '/score/lottery/admin/redeem/redeem', RedemptionRedeemApiHandler);
-    ctx.Route('redemption_cancel_api', '/score/lottery/admin/redeem/cancel', RedemptionCancelApiHandler);
-    ctx.Route('redemption_history_api', '/score/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
-
-    // 转账系统路由
-    ctx.Route('wallet', '/score/transfer', WalletHandler);
-    ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
-    ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
-    ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler);
-
-    // 签到系统路由
-    ctx.Route('daily_checkin', '/score/checkin', CheckInHandler);
-
-    // 注入导航栏 - 添加权限检查，只有内部用户可见
-    ctx.injectUI('Nav', 'score_hall', {
-        prefix: 'score',
-        before: 'ranking', // 插入到排行榜前面
-    }, PRIV.PRIV_USER_PROFILE);
-    console.log('Score System plugin loaded successfully!');
+    console.log('[Score System] 🎉 Score system plugin loaded successfully');
 }
 
 // 导出配置Schema

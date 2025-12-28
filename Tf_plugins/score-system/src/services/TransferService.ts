@@ -1,7 +1,6 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreCategory, ScoreService } from './ScoreService';
 
 export interface TransferRecord {
     _id?: any;
@@ -26,12 +25,13 @@ export interface TransferConfig {
 
 export class TransferService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
     private config: TransferConfig;
 
-    constructor(ctx: Context, scoreService: ScoreService, config?: Partial<TransferConfig>) {
+    constructor(ctx: Context, config?: Partial<TransferConfig>) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
         this.config = {
             enabled: true,
             minAmount: 1,
@@ -40,6 +40,36 @@ export class TransferService {
             transferFee: 1,
             ...config,
         };
+    }
+
+    /**
+     * 获取 scoreCore 服务实例
+     */
+    private getScoreCore(): any {
+        // 优先从全局对象获取
+        let scoreCore = (global as any).scoreCoreService;
+        if (scoreCore) {
+            return scoreCore;
+        }
+
+        // 降级到 ctx.inject
+        try {
+            if (typeof this.ctx.inject === 'function') {
+                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                    scoreCore = _sc;
+                });
+            } else {
+                scoreCore = (this.ctx as any).scoreCore;
+            }
+        } catch (e) {
+            scoreCore = (this.ctx as any).scoreCore;
+        }
+
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
+
+        return scoreCore;
     }
 
     private generateTransactionId(): string {
@@ -57,6 +87,9 @@ export class TransferService {
         message: string;
     }> {
         try {
+            // 获取 scoreCore 实例
+            const scoreCore = this.getScoreCore();
+
             if (!this.config.enabled) {
                 return { success: false, message: '转账功能暂时关闭' };
             }
@@ -84,7 +117,7 @@ export class TransferService {
                 return { success: false, message: `今日转账次数已达上限 ${this.config.dailyLimit} 次` };
             }
 
-            const fromUserScore = await this.scoreService.getUserScore('system', fromUid);
+            const fromUserScore = await scoreCore.getUserScore('system', fromUid);
             const totalCost = amount + this.config.transferFee;
 
             if (!fromUserScore || fromUserScore.totalScore < totalCost) {
@@ -93,8 +126,8 @@ export class TransferService {
 
             const transactionId = this.generateTransactionId();
 
-            await this.scoreService.updateUserScore('system', fromUid, -totalCost);
-            await this.scoreService.updateUserScore('system', toUser._id, amount);
+            await scoreCore.updateUserScore('system', fromUid, -totalCost);
+            await scoreCore.updateUserScore('system', toUser._id, amount);
 
             await this.ctx.db.collection('transfer.records' as any).insertOne({
                 fromUid,
@@ -113,24 +146,24 @@ export class TransferService {
             const uniquePidFrom = -7000000 - timestamp;
             const uniquePidTo = -7000000 - timestamp - 1;
 
-            await this.scoreService.addScoreRecord({
+            await scoreCore.addScoreRecord({
                 uid: fromUid,
                 domainId: 'system',
                 pid: uniquePidFrom,
                 recordId: null,
                 score: -totalCost,
                 reason: `转账给 ${toUsername} (${amount}积分 + ${this.config.transferFee}手续费)`,
-                category: ScoreCategory.TRANSFER,
+                category: '积分转账',
             });
 
-            await this.scoreService.addScoreRecord({
+            await scoreCore.addScoreRecord({
                 uid: toUser._id,
                 domainId: 'system',
                 pid: uniquePidTo,
                 recordId: null,
                 score: amount,
                 reason: `收到来自用户的转账: ${reason || '无备注'}`,
-                category: ScoreCategory.TRANSFER,
+                category: '积分转账',
             });
 
             return {
