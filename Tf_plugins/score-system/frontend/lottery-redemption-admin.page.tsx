@@ -82,7 +82,13 @@ const RedemptionAdminApp: React.FC = () => {
         page: String(page),
         limit: '20',
       });
-      if (searchUid) params.append('uid', searchUid);
+      if (searchUid) {
+        if (/^\d+$/.test(searchUid)) {
+          params.append('uid', searchUid);
+        } else {
+          params.append('search', searchUid);
+        }
+      }
       if (searchPrizeName) params.append('prizeName', searchPrizeName);
 
       const response = await fetch(`${redemptionListUrl}?${params}`, {
@@ -296,7 +302,7 @@ const RedemptionAdminApp: React.FC = () => {
         extra={
           <Space>
             <Input
-              placeholder="搜索用户ID"
+              placeholder="搜索用户ID或用户名"
               value={searchUid}
               onChange={(e) => setSearchUid(e.target.value)}
               style={{ width: 150 }}
