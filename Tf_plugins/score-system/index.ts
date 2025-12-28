@@ -147,6 +147,15 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('Score System plugin loading...');
     const scoreService = new ScoreService(finalConfig, ctx);
+    // 将 scoreService 暴露给其他插件（运行时查找），作为可选降级路径
+    try {
+        if (typeof ctx.provide === 'function') {
+            ctx.provide('scoreService', scoreService);
+            console.log('[Score System] ✅ scoreService provided via ctx.provide');
+        }
+    } catch (err: any) {
+        console.warn('[Score System] ⚠️ 无法通过 ctx.provide 暴露 scoreService:', err?.message || err);
+    }
 
     // 创建核销相关数据库索引
     try {
