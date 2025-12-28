@@ -41,12 +41,11 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Python Turtle IDE] Plugin loading...');
 
-    // 尝试注入 scoreService（如果可用），并把它挂到 ctx 上以便 Service 使用
+    // 尝试注入 scoreService（如果可用），但不要把它赋值到 ctx（某些框架禁止在多个 fiber 中设置同一 ctx 属性）
     try {
-        ctx.inject(['scoreService'], ({ scoreService }: any) => {
-            // @ts-ignore
-            (ctx as any).scoreService = scoreService;
-            console.log('[Python Turtle IDE] ✅ scoreService injected into ctx');
+        ctx.inject(['scoreService'], ({ scoreService: _scoreService }: any) => {
+            // 使用注入回调内联处理或记录，可在此处执行需要立即执行的初始化逻辑
+            console.log('[Python Turtle IDE] ✅ scoreService injected (callback)');
         });
     } catch (e) {
         // 部分框架实现可能不支持 ctx.inject 在此处直接调用，忽略错误并依赖回退机制
