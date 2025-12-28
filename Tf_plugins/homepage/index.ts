@@ -22,12 +22,17 @@ async function getPersonal(domainId: string, userId: number, ctx: Context) {
         const tfUdoc = await UserModel.getById(domainId, userId);
         console.log('getPersonal - user found:', tfUdoc?.uname || 'no user');
 
-        // 获取用户积分(绿旗币)
+        // 获取用户积分(绿旗币)，优先使用 scoreService（若已由 score-system 提供）
         let userScore = 0;
         try {
-            const scoreDoc = await ctx.db.collection('score.users' as any).findOne({
-                uid: userId,
-            });
+            // @ts-ignore - ctx.scoreService 由 score-system 可选提供
+            const scoreSvc = (ctx as any).scoreService;
+            let scoreDoc: any = null;
+            if (scoreSvc && typeof scoreSvc.getUserScore === 'function') {
+                scoreDoc = await scoreSvc.getUserScore(domainId, userId);
+            } else {
+                scoreDoc = await ctx.db.collection('score.users' as any).findOne({ uid: userId });
+            }
             userScore = scoreDoc?.totalScore || 0;
         } catch (scoreError) {
             console.log('Score system not available or error:', scoreError.message);

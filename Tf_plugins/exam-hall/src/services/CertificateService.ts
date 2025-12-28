@@ -102,7 +102,8 @@ export class CertificateService {
             } as any;
 
             if (cfg.accessKey && cfg.secretKey && cfg.bucket) {
-                this.localQiniuService = new QiniuStorageService(cfg);
+                // QiniuStorageService 无需构造参数（内部使用默认/硬编码或环境变量）
+                this.localQiniuService = new QiniuStorageService();
             }
         }
 
