@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { Context, ObjectId } from 'hydrooj';
-import QiniuStorageService from './QiniuStorageService';
+// 移除本地QiniuStorageService导入，使用core提供的qiniuCore
 
 export interface Certificate {
     /** 证书ID（MongoDB ObjectId） */
@@ -75,39 +75,28 @@ export interface CertificateFilter {
  * 处理证书的CRUD操作和七牛云图片管理
  */
 export class CertificateService {
-    private localQiniuService?: QiniuStorageService;
-    // 通过 getter 动态读取 ctx 提供的服务，避免在插件加载顺序未保证时直接访问 ctx.qiniuStorage 导致异常
-    private get qiniuService(): QiniuStorageService | undefined {
-        // 优先使用 core 提供的服务（安全访问，避免抛出 "without inject"）
-        let coreSvc: QiniuStorageService | undefined;
+    // 获取 qiniuCore 服务实例
+    private getQiniuCore(): any {
+        let qiniuCore: any = null;
+
+        // 使用 ctx.inject 获取 qiniuCore 服务
         try {
-            // @ts-ignore
-            coreSvc = (this.ctx.qiniuStorage as any) as QiniuStorageService | undefined;
-        } catch (err) {
-            // 如果访问 ctx.qiniuStorage 抛出（例如尚未注入），直接回退
-            coreSvc = undefined;
-        }
-        if (coreSvc) return coreSvc;
-
-        // 回退：若环境变量配置齐全则懒实例化本地实现
-        if (!this.localQiniuService) {
-            const cfg = {
-                accessKey: process.env.QINIU_ACCESS_KEY,
-                secretKey: process.env.QINIU_SECRET_KEY,
-                bucket: process.env.QINIU_BUCKET,
-                domain: process.env.QINIU_DOMAIN,
-                zone: process.env.QINIU_ZONE,
-                maxFileSize: process.env.QINIU_MAX_SIZE ? Number.parseInt(process.env.QINIU_MAX_SIZE, 10) : undefined,
-                defaultPrefix: process.env.QINIU_PREFIX,
-            } as any;
-
-            if (cfg.accessKey && cfg.secretKey && cfg.bucket) {
-                // QiniuStorageService 无需构造参数（内部使用默认/硬编码或环境变量）
-                this.localQiniuService = new QiniuStorageService();
+            if (typeof this.ctx.inject === 'function') {
+                this.ctx.inject(['qiniuCore'], ({ qiniuCore: _qc }: any) => {
+                    qiniuCore = _qc;
+                });
+            } else {
+                qiniuCore = (this.ctx as any).qiniuCore;
             }
+        } catch (e) {
+            qiniuCore = (this.ctx as any).qiniuCore;
         }
 
-        return this.localQiniuService;
+        if (!qiniuCore) {
+            throw new Error('QiniuCore service not available. Please ensure tf_plugins_core plugin is loaded before exam-hall plugin.');
+        }
+
+        return qiniuCore;
     }
 
     private ctx: Context;
@@ -169,7 +158,7 @@ export class CertificateService {
         };
 
         // 如果有图片文件，上传到七牛云
-        if (imageFile && this.qiniuService?.isReady()) {
+        if (imageFile) {
             try {
                 const uploadResult = await this.uploadCertificateImage(imageFile);
                 if (uploadResult.success) {
@@ -207,7 +196,9 @@ export class CertificateService {
         size?: number;
         error?: string;
     }> {
-        if (!this.qiniuService?.isReady()) {
+        try {
+            this.getQiniuCore(); // 检查服务是否可用
+        } catch (error) {
             console.error('[ExamHall] 七牛云存储未初始化或未启用');
             return {
                 success: false,
@@ -229,7 +220,8 @@ export class CertificateService {
 
             // 上传到七牛云
             console.log('[ExamHall] 开始上传到七牛云...');
-            const uploadResult = await this.qiniuService.uploadFile(filePath, 'certificates');
+            const qiniuCore = this.getQiniuCore();
+            const uploadResult = await qiniuCore.uploadFile(filePath, 'certificates');
             console.log(`[ExamHall] 七牛云上传结果: success=${uploadResult.success}, error=${uploadResult.error}`);
             if (!uploadResult.success) {
                 // 打印完整结果用于调试（注意：可能包含远端返回信息，不要在生产日志中泄露敏感信息）
@@ -282,13 +274,14 @@ export class CertificateService {
         }
 
         // 如果有新图片，上传并删除旧图片
-        if (imageFile && this.qiniuService?.isReady()) {
+        if (imageFile) {
             const oldCert = await collection.findOne({ _id: id }) as Certificate;
 
             if (oldCert) {
                 // 删除旧图片
                 if (oldCert.certificateImageKey) {
-                    await this.qiniuService.deleteFile(oldCert.certificateImageKey);
+                    const qiniuCore = this.getQiniuCore();
+                    await qiniuCore.deleteFile(oldCert.certificateImageKey);
                 }
 
                 // 上传新图片
@@ -325,9 +318,10 @@ export class CertificateService {
         }
 
         // 删除七牛云中的图片
-        if (cert.certificateImageKey && this.qiniuService?.isReady()) {
+        if (cert.certificateImageKey) {
             try {
-                await this.qiniuService.deleteFile(cert.certificateImageKey);
+                const qiniuCore = this.getQiniuCore();
+                await qiniuCore.deleteFile(cert.certificateImageKey);
             } catch (err: any) {
                 console.error(`[ExamHall] 删除七牛云图片失败: ${err.message}`);
             }
@@ -357,17 +351,16 @@ export class CertificateService {
             .toArray()) as Certificate[];
 
         // 删除七牛云图片（失败不阻止继续）
-        if (this.qiniuService?.isReady()) {
-            const imageKeys = certs
-                .filter((c) => c.certificateImageKey)
-                .map((c) => c.certificateImageKey!);
+        const imageKeys = certs
+            .filter((c) => c.certificateImageKey)
+            .map((c) => c.certificateImageKey!);
 
-            if (imageKeys.length > 0) {
-                try {
-                    await this.qiniuService.deleteMultiple(imageKeys);
-                } catch (err: any) {
-                    console.error(`[ExamHall] 批量删除七牛云图片失败: ${err.message}，继续删除数据库记录`);
-                }
+        if (imageKeys.length > 0) {
+            try {
+                const qiniuCore = this.getQiniuCore();
+                await qiniuCore.deleteMultiple(imageKeys);
+            } catch (err: any) {
+                console.error(`[ExamHall] 批量删除七牛云图片失败: ${err.message}，继续删除数据库记录`);
             }
         }
 

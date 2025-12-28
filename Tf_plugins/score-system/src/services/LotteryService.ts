@@ -118,32 +118,6 @@ export class LotteryService {
     /**
      * 获取 scoreCore 服务实例
      */
-    private getScoreCore(): any {
-        // 优先从全局对象获取
-        let scoreCore = (global as any).scoreCoreService;
-        if (scoreCore) {
-            return scoreCore;
-        }
-
-        // 降级到 ctx.inject
-        try {
-            if (typeof this.ctx.inject === 'function') {
-                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                    scoreCore = _sc;
-                });
-            } else {
-                scoreCore = (this.ctx as any).scoreCore;
-            }
-        } catch (e) {
-            scoreCore = (this.ctx as any).scoreCore;
-        }
-
-        if (!scoreCore) {
-            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-        }
-
-        return scoreCore;
-    }
 
     /**
      * 执行九宫格抽奖
@@ -158,7 +132,10 @@ export class LotteryService {
     }> {
         try {
             // 检查用户积分
-            const scoreCore = this.getScoreCore();
+            const scoreCore = (global as any).scoreCoreService;
+            if (!scoreCore) {
+                throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+            }
             const userScore = await scoreCore.getUserScore(domainId, uid);
             if (!userScore || userScore.totalScore < LotteryService.BET_AMOUNT) {
                 return {

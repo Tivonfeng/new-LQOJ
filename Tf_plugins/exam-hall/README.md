@@ -207,8 +207,9 @@ exam-hall/
 │   │   └── LeaderboardHandler.ts    # 排行榜处理器
 │   ├── services/
 │   │   ├── CertificateService.ts              # 证书业务逻辑
-│   │   ├── QiniuStorageService.ts             # 七牛云存储
 │   │   └── CertificateLeaderboardService.ts   # 排行榜统计
+│   └── tf_plugins_core/                       # 核心服务依赖
+│       └── QiniuCoreService.ts                # 七牛云存储 (由core提供)
 │   └── components/
 │       ├── CertificateUploader.tsx   # React 上传组件
 │       └── CertificateUploader.css   # 上传组件样式
@@ -220,8 +221,10 @@ exam-hall/
 #### CertificateService
 处理证书的所有 CRUD 操作和与七牛云的集成
 
-#### QiniuStorageService
-七牛云存储的封装，支持上传、删除、URL 生成
+#### QiniuCoreService (由 tf_plugins_core 提供)
+七牛云存储的核心服务，支持上传、删除、URL 生成
+
+**注意**: 从 exam-hall v2.0 开始，七牛云存储服务已移至 `tf_plugins_core` 插件，提供统一的云存储接口。
 
 #### CertificateLeaderboardService
 排行榜、排名、统计和趋势分析

@@ -18,32 +18,6 @@ export class StatisticsService {
     /**
      * 获取 scoreCore 服务实例
      */
-    private getScoreCore(): any {
-        // 优先从全局对象获取
-        let scoreCore = (global as any).scoreCoreService;
-        if (scoreCore) {
-            return scoreCore;
-        }
-
-        // 降级到 ctx.inject
-        try {
-            if (typeof this.ctx.inject === 'function') {
-                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                    scoreCore = _sc;
-                });
-            } else {
-                scoreCore = (this.ctx as any).scoreCore;
-            }
-        } catch (e) {
-            scoreCore = (this.ctx as any).scoreCore;
-        }
-
-        if (!scoreCore) {
-            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-        }
-
-        return scoreCore;
-    }
 
     /**
      * 获取系统总览统计 (全局)
@@ -57,7 +31,10 @@ export class StatisticsService {
         todayActiveUsers: number;
     }> {
         // 获取 scoreCore 实例
-        const scoreCore = this.getScoreCore();
+        const scoreCore = (global as any).scoreCoreService;
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
 
         // 获取总用户数和总积分
         const scoreStats = await this.ctx.db.collection('score.users' as any).aggregate([
@@ -229,7 +206,10 @@ export class StatisticsService {
         recentScoreCount: number;
     }> {
         // 获取 scoreCore 实例
-        const scoreCore = this.getScoreCore();
+        const scoreCore = (global as any).scoreCoreService;
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
 
         // 获取用户积分信息和排名
         const scoreInfo = await scoreCore.getUserScore(_domainId, uid);

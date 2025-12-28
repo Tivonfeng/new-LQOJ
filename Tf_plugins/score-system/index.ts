@@ -1,5 +1,3 @@
-/* eslint-disable no-await-in-loop */
-
 // 立即输出，确保模块被加载
 import {
     Context,
@@ -55,8 +53,6 @@ import {
     type UserRPSStats,
     type UserScore,
 } from './src/services';
-
-console.log('📦 SCORE-SYSTEM MODULE LOADED');
 
 // 积分系统配置Schema
 const Config = Schema.object({
@@ -153,20 +149,25 @@ export default async function apply(ctx: Context, config: any = {}) {
     console.log('📋 SCORE-SYSTEM: Config loaded:', finalConfig);
     console.log('🔧 SCORE-SYSTEM: Starting full initialization...');
 
-    // 注入 scoreCore 服务并存储到全局对象
+    // 通过 inject 获取 scoreCore 服务并存储到 global
     try {
         if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                // 将注入的服务存储到全局对象，供处理器使用
-                (global as any).scoreCoreService = _sc;
-                console.log('[Score System] ✅ ScoreCore service injected and stored globally');
+            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
+                (global as any).scoreCoreService = scoreCore;
+                if (scoreCore) {
+                    console.log('[Score System] ✅ scoreCore service injected to global');
+                } else {
+                    console.warn('[Score System] ⚠️ scoreCore service injected but is null');
+                }
             });
-        } else {
-            console.warn('[Score System] ⚠️ ctx.inject not available, trying fallback');
+        } else if ((ctx as any).scoreCore) {
             (global as any).scoreCoreService = (ctx as any).scoreCore;
+            console.log('[Score System] ✅ scoreCore service available via ctx');
+        } else {
+            console.warn('[Score System] ⚠️ ctx.inject not available and ctx.scoreCore not found');
         }
     } catch (e) {
-        console.warn('[Score System] ⚠️ Failed to inject scoreCore:', (e as any)?.message || e);
+        console.warn('[Score System] ⚠️ Failed to inject scoreCore:', e);
     }
 
     // 创建核销相关数据库索引
@@ -230,7 +231,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                 let isFirstAC = false;
                 let awardedScore = 0;
 
-                // 从全局对象获取 scoreCore
+                // 使用 global 中的 scoreCore 服务
                 const currentScoreCore = (global as any).scoreCoreService;
                 if (currentScoreCore) {
                     const result = await currentScoreCore.awardIfFirstAC({
@@ -251,7 +252,7 @@ export default async function apply(ctx: Context, config: any = {}) {
                         console.log(`[Score System] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded via scoreCore`);
                     }
                 } else {
-                    console.warn('[Score System] ❌ scoreCore not available, skipping AC reward');
+                    console.warn('[Score System] ❌ cachedScoreCore not available, skipping AC reward');
                 }
                 ctx.emit(isFirstAC ? 'score/ac-rewarded' : 'score/ac-repeated', {
                     uid: rdoc.uid, pid: rdoc.pid, domainId: rdoc.domainId, score: awardedScore,

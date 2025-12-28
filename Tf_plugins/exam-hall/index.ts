@@ -98,6 +98,28 @@ export default async function apply(ctx: Context, _config: any = {}) {
         before: 'ranking',
     }, PRIV.PRIV_USER_PROFILE);
 
+    // 验证 qiniuCore 服务是否可用
+    try {
+        let qiniuCoreAvailable = false;
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['qiniuCore'], ({ qiniuCore }: any) => {
+                if (qiniuCore) {
+                    qiniuCoreAvailable = true;
+                }
+            });
+        } else if ((ctx as any).qiniuCore) {
+            qiniuCoreAvailable = true;
+        }
+
+        if (!qiniuCoreAvailable) {
+            console.warn('[ExamHall] ⚠️ qiniuCore service not available. Please ensure tf_plugins_core plugin is loaded before exam-hall plugin.');
+        } else {
+            console.log('[ExamHall] ✅ qiniuCore service available');
+        }
+    } catch (e) {
+        console.warn('[ExamHall] ⚠️ Failed to check qiniuCore availability:', e);
+    }
+
     console.log('[ExamHall] ✅ 导航栏入口注册完成 (Nav entry registered)');
 
     // 📍 注册路由 - Register routes

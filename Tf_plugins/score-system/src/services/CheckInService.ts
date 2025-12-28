@@ -50,32 +50,6 @@ export class CheckInService {
     /**
      * 获取 scoreCore 服务实例
      */
-    private getScoreCore(): any {
-        // 优先从全局对象获取
-        let scoreCore = (global as any).scoreCoreService;
-        if (scoreCore) {
-            return scoreCore;
-        }
-
-        // 降级到 ctx.inject
-        try {
-            if (typeof this.ctx.inject === 'function') {
-                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                    scoreCore = _sc;
-                });
-            } else {
-                scoreCore = (this.ctx as any).scoreCore;
-            }
-        } catch (e) {
-            scoreCore = (this.ctx as any).scoreCore;
-        }
-
-        if (!scoreCore) {
-            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-        }
-
-        return scoreCore;
-    }
 
     /**
      * 执行签到
@@ -117,7 +91,10 @@ export class CheckInService {
             await this.updateUserStats(uid, newStreak);
 
             // 获取 scoreCore 实例
-            const scoreCore = this.getScoreCore();
+            const scoreCore = (global as any).scoreCoreService;
+            if (!scoreCore) {
+                throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+            }
 
             // 生成唯一的 pid 值，避免唯一索引冲突（签到使用 -10000000 范围）
             const uniquePid = -10000000 - Date.now();

@@ -45,32 +45,6 @@ export class TransferService {
     /**
      * 获取 scoreCore 服务实例
      */
-    private getScoreCore(): any {
-        // 优先从全局对象获取
-        let scoreCore = (global as any).scoreCoreService;
-        if (scoreCore) {
-            return scoreCore;
-        }
-
-        // 降级到 ctx.inject
-        try {
-            if (typeof this.ctx.inject === 'function') {
-                this.ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                    scoreCore = _sc;
-                });
-            } else {
-                scoreCore = (this.ctx as any).scoreCore;
-            }
-        } catch (e) {
-            scoreCore = (this.ctx as any).scoreCore;
-        }
-
-        if (!scoreCore) {
-            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-        }
-
-        return scoreCore;
-    }
 
     private generateTransactionId(): string {
         return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -88,7 +62,10 @@ export class TransferService {
     }> {
         try {
             // 获取 scoreCore 实例
-            const scoreCore = this.getScoreCore();
+            const scoreCore = (global as any).scoreCoreService;
+            if (!scoreCore) {
+                throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+            }
 
             if (!this.config.enabled) {
                 return { success: false, message: '转账功能暂时关闭' };
