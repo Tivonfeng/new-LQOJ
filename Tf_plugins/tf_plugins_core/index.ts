@@ -22,7 +22,7 @@ export default async function apply(ctx: Context, config: any = {}) {
     const scoreCore = new ScoreCoreService(ctx);
 
     // 初始化七牛云存储核心服务
-    const qiniuCore = new QiniuCoreService();
+    const qiniuCore = new QiniuCoreService(ctx);
 
     try {
         if (typeof ctx.provide === 'function') {

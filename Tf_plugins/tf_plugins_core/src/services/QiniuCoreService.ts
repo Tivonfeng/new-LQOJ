@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as qiniu from 'qiniu';
 import { v4 as uuidv4 } from 'uuid';
-import { Logger } from 'hydrooj';
+import { Context, Logger } from 'hydrooj';
 
 const logger = new Logger('tf_plugins_core-qiniu');
 
@@ -26,6 +26,9 @@ export interface DeleteResult {
  * 作为独立的云存储服务，提供给各个业务插件使用
  */
 export class QiniuCoreService {
+    /** Hydro框架上下文 */
+    private ctx: Context;
+
     private mac: qiniu.auth.digest.Mac;
     private config: any;
     private bucket: string;
@@ -40,8 +43,20 @@ export class QiniuCoreService {
     private readonly QINIU_DOMAIN = 'lq-exam-cert.lqcode.fun';
     private readonly QINIU_ZONE = 'Zone_z0';
 
-    constructor() {
+    constructor(ctx: Context) {
+        this.ctx = ctx;
+        // 初始化时验证配置和连接
+        this.initializeQiniuService();
+    }
+
+    /**
+     * 初始化七牛云存储服务
+     * 验证配置、创建连接并测试可用性
+     */
+    private async initializeQiniuService(): Promise<void> {
         try {
+            logger.info('[QiniuCore] 开始初始化七牛云存储服务...');
+
             this.bucket = this.QINIU_BUCKET;
             this.domain = this.normalizeDomain(this.QINIU_DOMAIN);
 
@@ -58,11 +73,44 @@ export class QiniuCoreService {
             // 初始化 BucketManager
             this.bucketManager = new qiniu.rs.BucketManager(this.mac, this.config);
 
+            // 验证配置
+            await this.validateConfiguration();
+
             this.isInitialized = true;
             logger.info('[QiniuCore] 七牛云存储服务初始化成功');
         } catch (error: any) {
             logger.error(`[QiniuCore] 七牛云初始化失败: ${error.message}`);
             this.isInitialized = false;
+            throw error; // 重新抛出错误，让调用方知道初始化失败
+        }
+    }
+
+    /**
+     * 验证七牛云配置
+     * 测试基本连接和权限
+     */
+    private async validateConfiguration(): Promise<void> {
+        try {
+            // 测试bucket是否存在（通过list操作）
+            await new Promise((resolve, reject) => {
+                this.bucketManager.listPrefix(
+                    this.bucket,
+                    { limit: 1, prefix: '' },
+                    (err: any, _respBody: any, respInfo: any) => {
+                        if (err) {
+                            reject(new Error(`七牛云连接测试失败: ${err.message}`));
+                        } else if (respInfo && respInfo.statusCode === 200) {
+                            logger.info('[QiniuCore] 七牛云连接验证成功');
+                            resolve(void 0);
+                        } else {
+                            reject(new Error(`七牛云连接测试失败: HTTP ${respInfo?.statusCode || 'Unknown'}`));
+                        }
+                    },
+                );
+            });
+        } catch (error: any) {
+            logger.warn(`[QiniuCore] 七牛云配置验证失败，但服务将继续运行: ${error.message}`);
+            // 不抛出错误，允许服务在验证失败时继续运行
         }
     }
 

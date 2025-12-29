@@ -75,34 +75,16 @@ export interface CertificateFilter {
  * 处理证书的CRUD操作和七牛云图片管理
  */
 export class CertificateService {
-    // 获取 qiniuCore 服务实例
-    private getQiniuCore(): any {
-        let qiniuCore: any = null;
-
-        // 使用 ctx.inject 获取 qiniuCore 服务
-        try {
-            if (typeof this.ctx.inject === 'function') {
-                this.ctx.inject(['qiniuCore'], ({ qiniuCore: _qc }: any) => {
-                    qiniuCore = _qc;
-                });
-            } else {
-                qiniuCore = (this.ctx as any).qiniuCore;
-            }
-        } catch (e) {
-            qiniuCore = (this.ctx as any).qiniuCore;
-        }
-
-        if (!qiniuCore) {
-            throw new Error('QiniuCore service not available. Please ensure tf_plugins_core plugin is loaded before exam-hall plugin.');
-        }
-
-        return qiniuCore;
-    }
-
     private ctx: Context;
-
     constructor(ctx: Context) {
         this.ctx = ctx;
+    }
+
+    // 获取 qiniuCore 服务实例
+    private getQiniuCore(): any {
+        // 使用 ctx.inject 获取 qiniuCore 服务
+
+        return (global as any).qiniuCoreService;
     }
 
     /**
@@ -160,7 +142,7 @@ export class CertificateService {
         // 如果有图片文件，上传到七牛云
         if (imageFile) {
             try {
-                const uploadResult = await this.uploadCertificateImage(imageFile);
+                const uploadResult = await this.getQiniuCore().uploadCertificateImage(imageFile);
                 if (uploadResult.success) {
                     cert.certificateImageUrl = uploadResult.url;
                     cert.certificateImageKey = uploadResult.key;
@@ -196,16 +178,6 @@ export class CertificateService {
         size?: number;
         error?: string;
     }> {
-        try {
-            this.getQiniuCore(); // 检查服务是否可用
-        } catch (error) {
-            console.error('[ExamHall] 七牛云存储未初始化或未启用');
-            return {
-                success: false,
-                error: '七牛云存储未启用',
-            };
-        }
-
         try {
             // 检查文件大小 (限制10MB)
             const stats = fs.statSync(filePath);
