@@ -121,7 +121,7 @@ export class TypingAdminHandler extends Handler {
                                 recordId: `typing_bonus_${recordId}_${bonus.type}_${Date.now()}`,
                                 score: bonus.bonus, // 正数表示增加积分
                                 reason: `打字${bonus.type}奖励：${bonus.reason}`,
-                                category: 'TYPING_BONUS',
+                                category: '打字挑战',
                                 title: `打字奖励 +${bonus.bonus}积分`,
                             });
                             console.log(`[Typing Speed System] 打字奖励积分发放: uid=${user._id}, bonus=${bonus.bonus}, reason=${bonus.reason}`);
