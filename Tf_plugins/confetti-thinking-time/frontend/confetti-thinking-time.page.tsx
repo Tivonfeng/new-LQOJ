@@ -144,39 +144,18 @@ class ConfettiCelebration {
     return `${remainingSeconds}秒`;
   }
 
-  // 检查是否为首次AC并获取积分信息
-  private async checkScoreInfo(pid: number, uid: number): Promise<{ isFirstAC: boolean, score: number }> {
-    try {
-      // 调用积分系统API检查是否为首次AC
-      const response = await fetch('/score/check-first-ac', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pid, uid }),
-      });
+  // 获取庆祝显示信息（简化版，不依赖积分系统）
+  private getCelebrationInfo(): { isFirstAC: boolean, score: number } {
+    // 简单的庆祝逻辑：随机决定是否显示"首次AC"信息
+    const isFirstAC = Math.random() > 0.5; // 50%概率显示首次AC
+    const score = isFirstAC ? 10 : 0; // 如果是首次AC，显示10分奖励
 
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          isFirstAC: data.isFirstAC || false,
-          score: data.score || 0,
-        };
-      }
-    } catch (error) {
-      console.warn('获取积分信息失败:', error);
-    }
-
-    // 默认返回值：假设是首次AC，10分
-    return { isFirstAC: true, score: 10 };
+    return { isFirstAC, score };
   }
 
-  private async showCelebrationImage(thinkingTime: number | null, pid?: number, uid?: number) {
-    // 获取积分信息
-    let scoreInfo = { isFirstAC: true, score: 10 };
-    if (pid && uid) {
-      scoreInfo = await this.checkScoreInfo(pid, uid);
-    }
+  private showCelebrationImage(thinkingTime: number | null, _pid?: number, _uid?: number) {
+    // 获取庆祝显示信息
+    const scoreInfo = this.getCelebrationInfo();
 
     // 创建样式表 - 简洁版
     const style = document.createElement('style');

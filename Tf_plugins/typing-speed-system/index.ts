@@ -39,6 +39,27 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Typing Speed System] Plugin loading...');
 
+    // 通过 inject 获取 scoreCore 服务并存储到 global
+    try {
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
+                (global as any).scoreCoreService = scoreCore;
+                if (scoreCore) {
+                    console.log('[Typing Speed System] ✅ scoreCore service injected to global');
+                } else {
+                    console.warn('[Typing Speed System] ⚠️ scoreCore service injected but is null');
+                }
+            });
+        } else if ((ctx as any).scoreCore) {
+            (global as any).scoreCoreService = (ctx as any).scoreCore;
+            console.log('[Typing Speed System] ✅ scoreCore service available via ctx');
+        } else {
+            console.warn('[Typing Speed System] ⚠️ ctx.inject not available and ctx.scoreCore not found');
+        }
+    } catch (e) {
+        console.warn('[Typing Speed System] ⚠️ Failed to inject scoreCore:', e);
+    }
+
     // 修复旧索引和数据（删除可能存在的 uid_domainId 复合索引，因为数据是全域统一的）
     try {
         const statsCollection = ctx.db.collection('typing.stats' as any);

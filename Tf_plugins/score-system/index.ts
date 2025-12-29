@@ -59,55 +59,6 @@ const Config = Schema.object({
     enabled: Schema.boolean().default(true).description('是否启用积分系统'),
 });
 
-// 积分事件数据类型
-interface ScoreEventData {
-    uid: number;
-    pid: number;
-    domainId: string;
-    score: number;
-    isFirstAC: boolean;
-    category?: string;
-    title?: string;
-    recordId: any;
-}
-
-// 证书事件数据类型
-interface CertificateEventData {
-    uid: number;
-    domainId: string;
-    certificateId: any;
-    weight: number;
-    certificateName: string;
-}
-
-// 打字奖励事件数据类型
-interface TypingBonusEventData {
-    uid: number;
-    domainId: string;
-    bonus: number;
-    reason: string;
-    bonusType: 'progress' | 'level' | 'surpass';
-    recordId?: any;
-}
-
-// 作品投币事件数据类型
-interface TurtleWorkCoinedEventData {
-    fromUid: number; // 投币者
-    toUid: number; // 作品主人
-    domainId: string;
-    workId: string;
-    workTitle: string;
-    amount: number; // 投币数量（通常为1）
-}
-
-// AI 使用事件数据类型
-interface AiHelperUsedEventData {
-    uid: number;
-    domainId: string;
-    cost: number; // 本次使用消耗的积分（正数）
-    reason?: string;
-}
-
 // 声明数据库集合类型和事件类型
 declare module 'hydrooj' {
     interface Collections {
@@ -124,15 +75,6 @@ declare module 'hydrooj' {
         'checkin.stats': UserCheckInStats;
     }
 
-    interface EventMap {
-        'score/ac-rewarded': (data: ScoreEventData) => void;
-        'score/ac-repeated': (data: ScoreEventData) => void;
-        'certificate/created': (data: CertificateEventData) => void;
-        'certificate/deleted': (data: CertificateEventData) => void;
-        'typing/bonus-awarded': (data: TypingBonusEventData) => void;
-        'turtle/work-coined': (data: TurtleWorkCoinedEventData) => void;
-        'ai/helper-used': (data: AiHelperUsedEventData) => void;
-    }
 }
 
 // 插件主函数
@@ -247,17 +189,14 @@ export default async function apply(ctx: Context, config: any = {}) {
                     isFirstAC = result.isFirstAC;
                     awardedScore = result.awarded;
                     if (isFirstAC) {
-                        console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid} (${pdoc.title}), awarded ${awardedScore} points via scoreCore`);
+                        console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid}`,
+                            `(${pdoc.title}), awarded ${awardedScore} points via scoreCore`);
                     } else {
                         console.log(`[Score System] 🔄 User ${rdoc.uid} repeated AC problem ${rdoc.pid}, no points awarded via scoreCore`);
                     }
                 } else {
                     console.warn('[Score System] ❌ cachedScoreCore not available, skipping AC reward');
                 }
-                ctx.emit(isFirstAC ? 'score/ac-rewarded' : 'score/ac-repeated', {
-                    uid: rdoc.uid, pid: rdoc.pid, domainId: rdoc.domainId, score: awardedScore,
-                    isFirstAC, category: ScoreCategory.AC_PROBLEM, title: pdoc.title, recordId: rdoc._id,
-                });
             } catch (error) {
                 console.error('[Score System] ❌ Error in record/judge event:', error);
             }

@@ -106,23 +106,32 @@ export class TypingAdminHandler extends Handler {
 
             let bonusMessage = '';
             if (bonusInfo.totalBonus > 0) {
-                // 触发打字奖励事件，由积分系统处理积分增加
-                for (const bonus of bonusInfo.bonuses) {
-                    try {
-                        this.ctx.emit('typing/bonus-awarded', {
-                            uid: user._id,
-                            domainId: this.domain._id.toString(),
-                            bonus: bonus.bonus,
-                            reason: bonus.reason,
-                            bonusType: bonus.type,
-                            recordId,
-                        });
-                    } catch (err: any) {
-                        console.error(`[TypingSpeed] 触发打字奖励事件失败: ${err.message}`);
-                        // 事件触发失败不影响奖励记录
+                // 直接使用 ScoreCoreService 处理积分奖励
+                const scoreCore = (global as any).scoreCoreService;
+                if (!scoreCore) {
+                    console.warn('[Typing Speed System] scoreCore service not available, skipping bonus awards');
+                    bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分（积分系统暂不可用）`;
+                } else {
+                    for (const bonus of bonusInfo.bonuses) {
+                        try {
+                            await scoreCore.recordScoreChange({
+                                uid: user._id,
+                                domainId: this.domain._id.toString(),
+                                pid: -9999997 - Date.now() - Math.floor(Math.random() * 1000), // 打字奖励的特殊标识
+                                recordId: `typing_bonus_${recordId}_${bonus.type}_${Date.now()}`,
+                                score: bonus.bonus, // 正数表示增加积分
+                                reason: `打字${bonus.type}奖励：${bonus.reason}`,
+                                category: 'TYPING_BONUS',
+                                title: `打字奖励 +${bonus.bonus}积分`,
+                            });
+                            console.log(`[Typing Speed System] 打字奖励积分发放: uid=${user._id}, bonus=${bonus.bonus}, reason=${bonus.reason}`);
+                        } catch (scoreErr: any) {
+                            console.error(`[Typing Speed System] 打字奖励积分发放失败: ${scoreErr.message}`);
+                            // 积分发放失败不影响打字记录处理
+                        }
                     }
+                    bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
                 }
-                bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
             }
 
             console.log(`[TypingAdmin] Admin ${this.user._id} added record for user ${user._id}: ${wpmNum} WPM, bonus: +${bonusInfo.totalBonus}`);
