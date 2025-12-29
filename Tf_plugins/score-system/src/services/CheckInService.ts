@@ -98,19 +98,17 @@ export class CheckInService {
 
             // 生成唯一的 pid 值，避免唯一索引冲突（签到使用 -10000000 范围）
             const uniquePid = -10000000 - Date.now();
-            // 添加积分记录
-            await scoreCore.addScoreRecord({
+            // 统一处理积分记录和用户积分更新
+            await scoreCore.recordScoreChange({
                 uid,
                 domainId,
                 pid: uniquePid,
-                recordId: null,
+                recordId: `checkin_${Date.now()}_${uid}`,
                 score,
                 reason: `每日签到奖励 (连续${newStreak}天)`,
                 category: '每日签到',
+                title: `每日签到 +${score}积分`,
             });
-
-            // 更新用户总积分
-            await scoreCore.updateUserScore(domainId, uid, score);
 
             console.log(`[CheckIn] User ${uid} checked in: ${score} points, streak: ${newStreak}`);
 

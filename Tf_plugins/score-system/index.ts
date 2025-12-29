@@ -240,7 +240,7 @@ export default async function apply(ctx: Context, config: any = {}) {
         ctx.Route('transfer_history', '/transfer/history', TransferHistoryHandler);
         ctx.Route('transfer_admin', '/transfer/admin', TransferAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
 
-        ctx.Route('checkin', '/checkin', CheckInHandler);
+        ctx.Route('checkin', '/score/checkin', CheckInHandler);
 
         // 注入导航栏 - 添加权限检查，只有内部用户可见
         ctx.injectUI('Nav', 'score_hall', {
