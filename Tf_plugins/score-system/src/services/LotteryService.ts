@@ -306,9 +306,14 @@ export class LotteryService {
     /**
      * 获取用户游戏历史
      */
-    async getUserGameHistory(domainId: string, uid: number, limit: number = 20): Promise<LotteryGameRecord[]> {
+    async getUserGameHistory(domainId: string | undefined, uid: number, limit: number = 20): Promise<LotteryGameRecord[]> {
+        const query: any = { uid };
+        if (domainId) {
+            query.domainId = domainId;
+        }
+
         return await this.ctx.db.collection('lottery.records' as any)
-            .find({ domainId, uid })
+            .find(query)
             .sort({ gameTime: -1 })
             .limit(limit)
             .toArray();
@@ -317,7 +322,7 @@ export class LotteryService {
     /**
      * 获取用户分页游戏历史
      */
-    async getUserGameHistoryPaged(domainId: string, uid: number, page: number = 1, limit: number = 20): Promise<{
+    async getUserGameHistoryPaged(domainId: string | undefined, uid: number, page: number = 1, limit: number = 20): Promise<{
         records: LotteryGameRecord[];
         total: number;
         page: number;
@@ -325,15 +330,20 @@ export class LotteryService {
     }> {
         const skip = (page - 1) * limit;
 
+        const query: any = { uid };
+        if (domainId) {
+            query.domainId = domainId;
+        }
+
         const records = await this.ctx.db.collection('lottery.records' as any)
-            .find({ domainId, uid })
+            .find(query)
             .sort({ gameTime: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
 
         const total = await this.ctx.db.collection('lottery.records' as any)
-            .countDocuments({ domainId, uid });
+            .countDocuments(query);
 
         return {
             records,

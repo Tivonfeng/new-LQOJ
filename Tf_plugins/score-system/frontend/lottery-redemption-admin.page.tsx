@@ -22,6 +22,7 @@ import {
   Space,
   Statistic,
   Table,
+  Tabs,
   Typography,
 } from 'antd';
 import React, { useCallback, useState } from 'react';
@@ -69,10 +70,13 @@ const RedemptionAdminApp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchUid, setSearchUid] = useState('');
   const [searchPrizeName, setSearchPrizeName] = useState('');
+  const [activeTab, setActiveTab] = useState<'pending' | 'redeemed'>('pending');
 
   const redemptionListUrl = (window as any).redemptionListUrl || '/score/lottery/admin/redeem/list';
   const redemptionRedeemUrl = (window as any).redemptionRedeemUrl || '/score/lottery/admin/redeem/redeem';
   const redemptionCancelUrl = (window as any).redemptionCancelUrl || '/score/lottery/admin/redeem/cancel';
+  const redemptionHistoryUrl = (window as any).redemptionHistoryUrl || '/score/lottery/admin/redeem/history';
+  const myPrizesApiUrl = (window as any).myPrizesApiUrl || '/score/lottery/my-prizes/api';
 
   // 刷新数据
   const refreshData = useCallback(async (page: number = 1) => {
@@ -82,16 +86,29 @@ const RedemptionAdminApp: React.FC = () => {
         page: String(page),
         limit: '20',
       });
-      if (searchUid) {
-        if (/^\d+$/.test(searchUid)) {
-          params.append('uid', searchUid);
-        } else {
-          params.append('search', searchUid);
-        }
-      }
-      if (searchPrizeName) params.append('prizeName', searchPrizeName);
 
-      const response = await fetch(`${redemptionListUrl}?${params}`, {
+      // 全域统一查询
+      params.append('allDomains', 'true');
+
+      if (activeTab === 'redeemed') {
+        // 已核销记录查询历史API
+        params.append('status', 'redeemed');
+        const redemptionHistoryUrl = (window as any).redemptionHistoryUrl || '/score/lottery/admin/redeem/history';
+        var apiUrl = redemptionHistoryUrl;
+      } else {
+        // 待核销记录查询列表API
+        if (searchUid) {
+          if (/^\d+$/.test(searchUid)) {
+            params.append('uid', searchUid);
+          } else {
+            params.append('search', searchUid);
+          }
+        }
+        if (searchPrizeName) params.append('prizeName', searchPrizeName);
+        var apiUrl = redemptionListUrl;
+      }
+
+      const response = await fetch(`${apiUrl}?${params}`, {
         method: 'GET',
         credentials: 'same-origin',
       });
@@ -112,7 +129,7 @@ const RedemptionAdminApp: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchUid, searchPrizeName, redemptionListUrl]);
+  }, [searchUid, searchPrizeName, redemptionListUrl, activeTab]);
 
   // 执行核销
   const handleRedeem = useCallback(async (recordId: string | any) => {
@@ -180,7 +197,8 @@ const RedemptionAdminApp: React.FC = () => {
     });
   }, [currentPage, redemptionCancelUrl, refreshData]);
 
-  const columns = [
+  // 待核销记录的列定义
+  const pendingColumns = [
     {
       title: '用户',
       dataIndex: 'uid',
@@ -235,6 +253,58 @@ const RedemptionAdminApp: React.FC = () => {
       ),
     },
   ];
+
+  // 已核销记录的列定义
+  const redeemedColumns = [
+    {
+      title: '用户',
+      dataIndex: 'uid',
+      key: 'uid',
+      render: (uid: number) => {
+        const user = udocs[String(uid)];
+        return user ? (
+          <Space>
+            <img src={user.avatarUrl} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+            <Text>{user.displayName || user.uname || `UID: ${uid}`}</Text>
+          </Space>
+        ) : `UID: ${uid}`;
+      },
+    },
+    {
+      title: '奖品名称',
+      dataIndex: 'prizeName',
+      key: 'prizeName',
+    },
+    {
+      title: '奖品描述',
+      dataIndex: ['physicalPrize', 'description'],
+      key: 'description',
+      render: (desc: string) => desc || '-',
+    },
+    {
+      title: '中奖时间',
+      dataIndex: 'gameTime',
+      key: 'gameTime',
+    },
+    {
+      title: '核销时间',
+      dataIndex: 'redeemedAt',
+      key: 'redeemedAt',
+      render: (redeemedAt: string) => redeemedAt ? new Date(redeemedAt).toLocaleString('zh-CN') : '-',
+    },
+    {
+      title: '核销管理员',
+      dataIndex: 'redeemedBy',
+      key: 'redeemedBy',
+      render: (redeemedBy: number) => {
+        if (!redeemedBy) return '-';
+        const admin = udocs[String(redeemedBy)];
+        return admin ? admin.displayName || admin.uname || `UID: ${redeemedBy}` : `UID: ${redeemedBy}`;
+      },
+    },
+  ];
+
+  const columns = activeTab === 'pending' ? pendingColumns : redeemedColumns;
 
   return (
     <div className="redemption-admin-container">
@@ -296,58 +366,117 @@ const RedemptionAdminApp: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Search and Table */}
-      <Card
-        title="待核销列表"
-        extra={
-          <Space>
-            <Input
-              placeholder="搜索用户ID或用户名"
-              value={searchUid}
-              onChange={(e) => setSearchUid(e.target.value)}
-              style={{ width: 150 }}
-            />
-            <Input
-              placeholder="搜索奖品名称"
-              value={searchPrizeName}
-              onChange={(e) => setSearchPrizeName(e.target.value)}
-              style={{ width: 150 }}
-            />
-            <Button
-              icon={<SearchOutlined />}
-              onClick={() => refreshData(1)}
-            >
-              搜索
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refreshData(currentPage)}
+      {/* Tabs for different redemption statuses */}
+      <Card style={{ marginTop: '20px' }}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key as 'pending' | 'redeemed');
+            setCurrentPage(1);
+            refreshData(1);
+          }}
+          type="card"
+        >
+          <Tabs.TabPane tab={`待核销 (${stats.totalPending})`} key="pending">
+            <div style={{ marginBottom: '16px' }}>
+              <Space>
+                <Input
+                  placeholder="搜索用户ID或用户名"
+                  value={searchUid}
+                  onChange={(e) => setSearchUid(e.target.value)}
+                  style={{ width: 150 }}
+                />
+                <Input
+                  placeholder="搜索奖品名称"
+                  value={searchPrizeName}
+                  onChange={(e) => setSearchPrizeName(e.target.value)}
+                  style={{ width: 150 }}
+                />
+                <Button
+                  icon={<SearchOutlined />}
+                  onClick={() => refreshData(1)}
+                >
+                  搜索
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => refreshData(currentPage)}
+                  loading={loading}
+                >
+                  刷新
+                </Button>
+              </Space>
+            </div>
+            <Table
+              columns={columns}
+              dataSource={pendingRecords}
+              rowKey="_id"
               loading={loading}
-            >
-              刷新
-            </Button>
-          </Space>
-        }
-        style={{ marginTop: '20px' }}
-      >
-        <Table
-          columns={columns}
-          dataSource={pendingRecords}
-          rowKey="_id"
-          loading={loading}
-          pagination={false}
-        />
-        {total > 0 && (
-          <div style={{ marginTop: '16px', textAlign: 'right' }}>
-            <Pagination
-              current={currentPage}
-              total={total}
-              pageSize={20}
-              onChange={refreshData}
-              showTotal={(t) => `共 ${t} 条记录`}
+              pagination={false}
             />
-          </div>
-        )}
+            {total > 0 && (
+              <div style={{ marginTop: '16px', textAlign: 'right' }}>
+                <Pagination
+                  current={currentPage}
+                  total={total}
+                  pageSize={20}
+                  onChange={refreshData}
+                  showTotal={(t) => `共 ${t} 条记录`}
+                />
+              </div>
+            )}
+          </Tabs.TabPane>
+
+          <Tabs.TabPane tab={`已核销 (${stats.totalRedeemed})`} key="redeemed">
+            <div style={{ marginBottom: '16px' }}>
+              <Space>
+                <Input
+                  placeholder="搜索用户ID或用户名"
+                  value={searchUid}
+                  onChange={(e) => setSearchUid(e.target.value)}
+                  style={{ width: 150 }}
+                />
+                <Input
+                  placeholder="搜索奖品名称"
+                  value={searchPrizeName}
+                  onChange={(e) => setSearchPrizeName(e.target.value)}
+                  style={{ width: 150 }}
+                />
+                <Button
+                  icon={<SearchOutlined />}
+                  onClick={() => refreshData(1)}
+                >
+                  搜索
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => refreshData(currentPage)}
+                  loading={loading}
+                >
+                  刷新
+                </Button>
+              </Space>
+            </div>
+            <Table
+              columns={columns}
+              dataSource={pendingRecords}
+              rowKey="_id"
+              loading={loading}
+              pagination={false}
+            />
+            {total > 0 && (
+              <div style={{ marginTop: '16px', textAlign: 'right' }}>
+                <Pagination
+                  current={currentPage}
+                  total={total}
+                  pageSize={20}
+                  onChange={refreshData}
+                  showTotal={(t) => `共 ${t} 条记录`}
+                />
+              </div>
+            )}
+          </Tabs.TabPane>
+        </Tabs>
       </Card>
     </div>
   );

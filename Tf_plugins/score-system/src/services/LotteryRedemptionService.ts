@@ -229,15 +229,19 @@ export class LotteryRedemptionService {
      * 获取用户的所有核销记录
      */
     async getUserRedemptions(
-        domainId: string,
+        domainId: string | undefined, // 修改为可选参数，支持全域查询
         uid: number,
         status?: 'pending' | 'redeemed' | 'cancelled',
     ): Promise<LotteryGameRecord[]> {
         const query: any = {
-            domainId,
             uid,
             prizeType: 'physical',
         };
+
+        // 如果指定了domainId，则按域查询；否则全域查询
+        if (domainId) {
+            query.domainId = domainId;
+        }
 
         if (status) {
             query.redeemStatus = status;

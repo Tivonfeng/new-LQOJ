@@ -229,11 +229,11 @@ export default async function apply(ctx: Context, config: any = {}) {
         // 九宫格抽奖核销路由
         ctx.Route('my_prizes', '/lottery/my-prizes', MyPrizesHandler);
         ctx.Route('my_prizes_api', '/lottery/my-prizes/api', MyPrizesApiHandler);
-        ctx.Route('redemption_admin', '/lottery/admin/redeem', RedemptionAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
-        ctx.Route('redemption_list_api', '/lottery/admin/redeem/list', RedemptionListApiHandler);
-        ctx.Route('redemption_redeem_api', '/lottery/admin/redeem/redeem', RedemptionRedeemApiHandler);
-        ctx.Route('redemption_cancel_api', '/lottery/admin/redeem/cancel', RedemptionCancelApiHandler);
-        ctx.Route('redemption_history_api', '/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
+        ctx.Route('redemption_admin', '/score/lottery/admin/redeem', RedemptionAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
+        ctx.Route('redemption_list_api', '/score/lottery/admin/redeem/list', RedemptionListApiHandler);
+        ctx.Route('redemption_redeem_api', '/score/lottery/admin/redeem/redeem', RedemptionRedeemApiHandler);
+        ctx.Route('redemption_cancel_api', '/score/lottery/admin/redeem/cancel', RedemptionCancelApiHandler);
+        ctx.Route('redemption_history_api', '/score/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
 
         ctx.Route('wallet', '/wallet', WalletHandler);
         ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);

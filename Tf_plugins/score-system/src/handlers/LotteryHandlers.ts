@@ -89,7 +89,7 @@ export class LotteryGameHandler extends Handler {
         const userStats = await lotteryService.getUserLotteryStats(this.domain._id, uid);
 
         // 获取最近游戏记录
-        const recentGames = await lotteryService.getUserGameHistory(this.domain._id, uid, 10);
+        const recentGames = await lotteryService.getUserGameHistory(undefined, uid, 10);
 
         // 检查每日游戏次数限制
         const dailyLimitService = new DailyGameLimitService(this.ctx);
@@ -212,7 +212,7 @@ export class LotteryStatusHandler extends Handler {
         const userStats = await lotteryService.getUserLotteryStats(this.domain._id, uid);
 
         // 获取最近游戏记录
-        const recentGames = await lotteryService.getUserGameHistory(this.domain._id, uid, 10);
+        const recentGames = await lotteryService.getUserGameHistory(undefined, uid, 10);
 
         // 检查每日游戏次数限制
         const dailyLimitService = new DailyGameLimitService(this.ctx);
@@ -346,9 +346,9 @@ export class LotteryHistoryHandler extends Handler {
 
         const lotteryService = new LotteryService(this.ctx);
 
-        // 获取分页游戏历史
+        // 获取分页游戏历史（全域统一）
         const historyData = await lotteryService.getUserGameHistoryPaged(
-            this.domain._id,
+            undefined, // 全域查询
             this.user._id,
             page,
             limit,
