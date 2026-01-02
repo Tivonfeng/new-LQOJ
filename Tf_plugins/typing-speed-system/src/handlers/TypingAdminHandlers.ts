@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import { Handler, PERM, PRIV } from 'hydrooj';
 import {
     TypingBonusService,

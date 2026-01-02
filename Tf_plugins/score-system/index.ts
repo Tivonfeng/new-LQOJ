@@ -236,9 +236,9 @@ export default async function apply(ctx: Context, config: any = {}) {
         ctx.Route('redemption_history_api', '/lottery/admin/redeem/history', RedemptionHistoryApiHandler);
 
         ctx.Route('wallet', '/wallet', WalletHandler);
-        ctx.Route('transfer_create', '/transfer/create', TransferCreateHandler);
-        ctx.Route('transfer_history', '/transfer/history', TransferHistoryHandler);
-        ctx.Route('transfer_admin', '/transfer/admin', TransferAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
+        ctx.Route('transfer_create', '/score/transfer/create', TransferCreateHandler);
+        ctx.Route('transfer_history', '/score/transfer/history', TransferHistoryHandler);
+        ctx.Route('transfer_admin', '/score/transfer/admin', TransferAdminHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
 
         ctx.Route('checkin', '/score/checkin', CheckInHandler);
 
