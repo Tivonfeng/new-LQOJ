@@ -203,7 +203,7 @@ export default async function apply(ctx: Context, config: any = {}) {
         });
 
         // 注册处理器路由
-        ctx.Route('score_manage', '/score/manage', ScoreManageHandler, PRIV.PRIV_MANAGE_ALL_DOMAIN);
+        ctx.Route('score_manage', '/score/manage', ScoreManageHandler);
         ctx.Route('score_records', '/score/records', ScoreRecordsHandler);
         ctx.Route('score_ranking', '/score/ranking', ScoreRankingHandler);
         ctx.Route('user_score', '/score/me', UserScoreHandler);
