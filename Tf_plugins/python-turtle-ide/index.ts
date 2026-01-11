@@ -41,6 +41,17 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Python Turtle IDE] Plugin loading...');
 
+    // 尝试注入 scoreService（如果可用），但不要把它赋值到 ctx（某些框架禁止在多个 fiber 中设置同一 ctx 属性）
+    try {
+        ctx.inject(['scoreService'], ({ scoreService: _scoreService }: any) => {
+            // 使用注入回调内联处理或记录，可在此处执行需要立即执行的初始化逻辑
+            console.log('[Python Turtle IDE] ✅ scoreService injected (callback)');
+        });
+    } catch (e) {
+        // 部分框架实现可能不支持 ctx.inject 在此处直接调用，忽略错误并依赖回退机制
+        console.warn('[Python Turtle IDE] ⚠️ ctx.inject scoreService failed:', (e as any)?.message || e);
+    }
+
     // 创建数据库索引(作品集合 + 投币集合)
     try {
         await ctx.db.ensureIndexes(

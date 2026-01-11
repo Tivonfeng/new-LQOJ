@@ -38,7 +38,7 @@ export class LotteryRedemptionService {
         page: number = 1,
         limit: number = 20,
         filters?: {
-            uid?: number;
+            uid?: number | number[];
             prizeName?: string;
         },
     ): Promise<{
@@ -54,7 +54,13 @@ export class LotteryRedemptionService {
             redeemStatus: 'pending',
         };
 
-        if (filters?.uid) query.uid = filters.uid;
+        if (filters?.uid !== undefined) {
+            if (Array.isArray(filters.uid)) {
+                query.uid = { $in: filters.uid };
+            } else {
+                query.uid = filters.uid;
+            }
+        }
         if (filters?.prizeName) query.prizeName = { $regex: filters.prizeName, $options: 'i' };
 
         const records = await this.ctx.db.collection('lottery.records' as any)
@@ -223,15 +229,19 @@ export class LotteryRedemptionService {
      * 获取用户的所有核销记录
      */
     async getUserRedemptions(
-        domainId: string,
+        domainId: string | undefined, // 修改为可选参数，支持全域查询
         uid: number,
         status?: 'pending' | 'redeemed' | 'cancelled',
     ): Promise<LotteryGameRecord[]> {
         const query: any = {
-            domainId,
             uid,
             prizeType: 'physical',
         };
+
+        // 如果指定了domainId，则按域查询；否则全域查询
+        if (domainId) {
+            query.domainId = domainId;
+        }
 
         if (status) {
             query.redeemStatus = status;
@@ -251,7 +261,7 @@ export class LotteryRedemptionService {
         page: number = 1,
         limit: number = 20,
         filters?: {
-            uid?: number;
+            uid?: number | number[];
             prizeName?: string;
             status?: 'redeemed' | 'cancelled';
         },
@@ -265,7 +275,13 @@ export class LotteryRedemptionService {
         // 管理员核销历史不再区分域
         const query: any = {};
 
-        if (filters?.uid) query.uid = filters.uid;
+        if (filters?.uid !== undefined) {
+            if (Array.isArray(filters.uid)) {
+                query.uid = { $in: filters.uid };
+            } else {
+                query.uid = filters.uid;
+            }
+        }
         if (filters?.prizeName) query.prizeName = { $regex: filters.prizeName, $options: 'i' };
         if (filters?.status) query.status = filters.status;
 

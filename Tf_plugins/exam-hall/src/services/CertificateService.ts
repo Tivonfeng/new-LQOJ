@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { Context, ObjectId } from 'hydrooj';
-import QiniuStorageService from './QiniuStorageService';
+// 移除本地QiniuStorageService导入，使用core提供的qiniuCore
 
 export interface Certificate {
     /** 证书ID（MongoDB ObjectId） */
@@ -75,12 +75,16 @@ export interface CertificateFilter {
  * 处理证书的CRUD操作和七牛云图片管理
  */
 export class CertificateService {
-    private qiniuService: QiniuStorageService;
     private ctx: Context;
-
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.qiniuService = new QiniuStorageService();
+    }
+
+    // 获取 qiniuCore 服务实例
+    private getQiniuCore(): any {
+        // 使用 ctx.inject 获取 qiniuCore 服务
+
+        return (global as any).qiniuCoreService;
     }
 
     /**
@@ -136,9 +140,9 @@ export class CertificateService {
         };
 
         // 如果有图片文件，上传到七牛云
-        if (imageFile && this.qiniuService?.isReady()) {
+        if (imageFile) {
             try {
-                const uploadResult = await this.uploadCertificateImage(imageFile);
+                const uploadResult = await this.getQiniuCore().uploadCertificateImage(imageFile);
                 if (uploadResult.success) {
                     cert.certificateImageUrl = uploadResult.url;
                     cert.certificateImageKey = uploadResult.key;
@@ -174,14 +178,6 @@ export class CertificateService {
         size?: number;
         error?: string;
     }> {
-        if (!this.qiniuService?.isReady()) {
-            console.error('[ExamHall] 七牛云存储未初始化或未启用');
-            return {
-                success: false,
-                error: '七牛云存储未启用',
-            };
-        }
-
         try {
             // 检查文件大小 (限制10MB)
             const stats = fs.statSync(filePath);
@@ -196,8 +192,13 @@ export class CertificateService {
 
             // 上传到七牛云
             console.log('[ExamHall] 开始上传到七牛云...');
-            const uploadResult = await this.qiniuService.uploadFile(filePath, 'certificates');
+            const qiniuCore = this.getQiniuCore();
+            const uploadResult = await qiniuCore.uploadFile(filePath, 'certificates');
             console.log(`[ExamHall] 七牛云上传结果: success=${uploadResult.success}, error=${uploadResult.error}`);
+            if (!uploadResult.success) {
+                // 打印完整结果用于调试（注意：可能包含远端返回信息，不要在生产日志中泄露敏感信息）
+                console.error('[ExamHall] 七牛上传详细返回：', uploadResult);
+            }
 
             if (uploadResult.success) {
                 return {
@@ -245,13 +246,14 @@ export class CertificateService {
         }
 
         // 如果有新图片，上传并删除旧图片
-        if (imageFile && this.qiniuService?.isReady()) {
+        if (imageFile) {
             const oldCert = await collection.findOne({ _id: id }) as Certificate;
 
             if (oldCert) {
                 // 删除旧图片
                 if (oldCert.certificateImageKey) {
-                    await this.qiniuService.deleteFile(oldCert.certificateImageKey);
+                    const qiniuCore = this.getQiniuCore();
+                    await qiniuCore.deleteFile(oldCert.certificateImageKey);
                 }
 
                 // 上传新图片
@@ -288,9 +290,10 @@ export class CertificateService {
         }
 
         // 删除七牛云中的图片
-        if (cert.certificateImageKey && this.qiniuService?.isReady()) {
+        if (cert.certificateImageKey) {
             try {
-                await this.qiniuService.deleteFile(cert.certificateImageKey);
+                const qiniuCore = this.getQiniuCore();
+                await qiniuCore.deleteFile(cert.certificateImageKey);
             } catch (err: any) {
                 console.error(`[ExamHall] 删除七牛云图片失败: ${err.message}`);
             }
@@ -320,17 +323,16 @@ export class CertificateService {
             .toArray()) as Certificate[];
 
         // 删除七牛云图片（失败不阻止继续）
-        if (this.qiniuService?.isReady()) {
-            const imageKeys = certs
-                .filter((c) => c.certificateImageKey)
-                .map((c) => c.certificateImageKey!);
+        const imageKeys = certs
+            .filter((c) => c.certificateImageKey)
+            .map((c) => c.certificateImageKey!);
 
-            if (imageKeys.length > 0) {
-                try {
-                    await this.qiniuService.deleteMultiple(imageKeys);
-                } catch (err: any) {
-                    console.error(`[ExamHall] 批量删除七牛云图片失败: ${err.message}，继续删除数据库记录`);
-                }
+        if (imageKeys.length > 0) {
+            try {
+                const qiniuCore = this.getQiniuCore();
+                await qiniuCore.deleteMultiple(imageKeys);
+            } catch (err: any) {
+                console.error(`[ExamHall] 批量删除七牛云图片失败: ${err.message}，继续删除数据库记录`);
             }
         }
 

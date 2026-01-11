@@ -3,7 +3,6 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 剪刀石头布游戏记录接口
 export interface RPSGameRecord {
@@ -51,7 +50,7 @@ export interface UserChoiceStats {
  */
 export class RPSGameService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
 
     // 游戏常量
     private static readonly BASE_COST = 15; // 基础费用
@@ -60,9 +59,10 @@ export class RPSGameService {
     private static readonly STREAK_BONUS = 5; // 连胜奖励
     private static readonly CHOICES = ['rock', 'paper', 'scissors'] as const;
 
-    constructor(ctx: Context, scoreService: ScoreService) {
+    constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
 
     /**
@@ -97,6 +97,12 @@ export class RPSGameService {
         streak?: number;
         streakBonus?: number;
     }> {
+        // 获取 scoreCore 实例
+        const scoreCore = (global as any).scoreCoreService;
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
+
         try {
             console.log(`[RPSGameService] Starting game for user ${uid}, choice: ${playerChoice}`);
 
@@ -108,7 +114,7 @@ export class RPSGameService {
 
             // 检查用户积分
             console.log(`[RPSGameService] Checking user score for domain ${domainId}, uid ${uid}`);
-            const userScore = await this.scoreService.getUserScore(domainId, uid);
+            const userScore = await scoreCore.getUserScore(domainId, uid);
             console.log('[RPSGameService] User score result:', userScore);
 
             if (!userScore || userScore.totalScore < RPSGameService.BASE_COST) {
@@ -173,22 +179,22 @@ export class RPSGameService {
 
             // 扣除基础费用并记录
             console.log(`[RPSGameService] Deducting base cost: ${RPSGameService.BASE_COST}`);
-            await this.scoreService.updateUserScore(domainId, uid, -RPSGameService.BASE_COST);
-            await this.scoreService.addScoreRecord({
+            await scoreCore.updateUserScore(domainId, uid, -RPSGameService.BASE_COST);
+            await scoreCore.addScoreRecord({
                 uid,
                 domainId,
                 pid: uniquePidCost,
                 recordId: null,
                 score: -RPSGameService.BASE_COST,
                 reason: '剪刀石头布游戏 - 游戏费用',
-                category: ScoreCategory.GAME_ENTERTAINMENT,
+                category: '游戏娱乐',
                 title: '剪刀石头布',
             });
 
             // 发放奖励（如果有）并记录
             if (reward > 0) {
                 console.log(`[RPSGameService] Adding reward: ${reward}`);
-                await this.scoreService.updateUserScore(domainId, uid, reward);
+                await scoreCore.updateUserScore(domainId, uid, reward);
 
                 let rewardReason = '';
                 if (gameResult === 'win') {
@@ -200,14 +206,14 @@ export class RPSGameService {
                     rewardReason = '剪刀石头布游戏 - 平局退款';
                 }
 
-                await this.scoreService.addScoreRecord({
+                await scoreCore.addScoreRecord({
                     uid,
                     domainId,
                     pid: uniquePidReward,
                     recordId: null,
                     score: reward,
                     reason: rewardReason,
-                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    category: '游戏娱乐',
                     title: '剪刀石头布',
                 });
             }
@@ -236,7 +242,7 @@ export class RPSGameService {
 
             // 获取更新后的用户积分
             console.log('[RPSGameService] Getting updated user score');
-            const updatedScore = await this.scoreService.getUserScore(domainId, uid);
+            const updatedScore = await scoreCore.getUserScore(domainId, uid);
 
             const result = {
                 success: true,

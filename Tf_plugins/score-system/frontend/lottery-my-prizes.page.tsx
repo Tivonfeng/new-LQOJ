@@ -20,7 +20,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
@@ -53,6 +53,66 @@ const MyPrizesApp: React.FC = () => {
   };
 
   const [activeTab, setActiveTab] = useState('pending');
+  const [pendingRecords, setPendingRecords] = useState<PrizeRecord[]>(initialData.pending || []);
+  const [redeemedRecords, setRedeemedRecords] = useState<PrizeRecord[]>(initialData.redeemed || []);
+  const [cancelledRecords, setCancelledRecords] = useState<PrizeRecord[]>(initialData.cancelled || []);
+  const [loading, setLoading] = useState(false);
+
+  // API URL
+  const myPrizesApiUrl = (window as any).myPrizesApiUrl || '/score/lottery/my-prizes/api';
+
+  // 获取奖品数据（全域统一）
+  const fetchPrizes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('allDomains', 'true'); // 默认全域查询
+
+      const response = await fetch(`${myPrizesApiUrl}?${params}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (!response.ok) {
+        throw new Error('获取数据失败');
+      }
+
+      const result = await response.json();
+      if (result.success && result.records) {
+        // 按状态分组记录
+        const pending: PrizeRecord[] = [];
+        const redeemed: PrizeRecord[] = [];
+        const cancelled: PrizeRecord[] = [];
+
+        result.records.forEach((record: PrizeRecord) => {
+          switch (record.redeemStatus) {
+            case 'pending':
+              pending.push(record);
+              break;
+            case 'redeemed':
+              redeemed.push(record);
+              break;
+            case 'cancelled':
+              cancelled.push(record);
+              break;
+          }
+        });
+
+        setPendingRecords(pending);
+        setRedeemedRecords(redeemed);
+        setCancelledRecords(cancelled);
+      }
+    } catch (error) {
+      console.error('获取奖品数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [myPrizesApiUrl]);
+
+  // 初始加载和全域查询切换时重新获取数据
+  useEffect(() => {
+    fetchPrizes();
+  }, [fetchPrizes]);
 
   const getStatusTag = (status: string) => {
     switch (status) {
@@ -163,28 +223,28 @@ const MyPrizesApp: React.FC = () => {
               key: 'pending',
               label: (
                 <span>
-                  待核销 <Badge count={initialData.pendingCount} showZero />
+                  待核销 <Badge count={pendingRecords.length} showZero />
                 </span>
               ),
-              children: renderPrizeList(initialData.pending || []),
+              children: renderPrizeList(pendingRecords),
             },
             {
               key: 'redeemed',
               label: (
                 <span>
-                  已核销 <Badge count={initialData.redeemedCount} showZero />
+                  已核销 <Badge count={redeemedRecords.length} showZero />
                 </span>
               ),
-              children: renderPrizeList(initialData.redeemed || []),
+              children: renderPrizeList(redeemedRecords),
             },
             {
               key: 'cancelled',
               label: (
                 <span>
-                  已取消 <Badge count={initialData.cancelledCount} showZero />
+                  已取消 <Badge count={cancelledRecords.length} showZero />
                 </span>
               ),
-              children: renderPrizeList(initialData.cancelled || []),
+              children: renderPrizeList(cancelledRecords),
             },
           ]}
         />

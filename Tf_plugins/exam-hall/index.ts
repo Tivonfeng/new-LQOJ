@@ -18,28 +18,11 @@ import {
 import type { Certificate } from './src/services';
 import type { CertificatePreset } from './src/services/PresetService';
 
-// 声明数据库集合类型和事件类型
+// 声明数据库集合类型
 declare module 'hydrooj' {
     interface Collections {
         'exam.certificates': Certificate;
         'exam.presets': CertificatePreset;
-    }
-
-    interface EventMap {
-        'certificate/created': (data: {
-            uid: number;
-            domainId: string;
-            certificateId: any;
-            weight: number;
-            certificateName: string;
-        }) => void;
-        'certificate/deleted': (data: {
-            uid: number;
-            domainId: string;
-            certificateId: any;
-            weight: number;
-            certificateName: string;
-        }) => void;
     }
 }
 
@@ -97,6 +80,38 @@ export default async function apply(ctx: Context, _config: any = {}) {
         prefix: 'exam',
         before: 'ranking',
     }, PRIV.PRIV_USER_PROFILE);
+
+    // 通过 inject 获取 scoreCore 和 qiniuCore 服务并存储到 global
+    try {
+        if (typeof ctx.inject === 'function') {
+            // 注入 scoreCore 服务
+            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
+                (global as any).scoreCoreService = scoreCore;
+                if (scoreCore) {
+                    console.log('[ExamHall] ✅ scoreCore service injected to global');
+                } else {
+                    console.warn('[ExamHall] ⚠️ scoreCore service injected but is null');
+                }
+            });
+
+            // 注入 qiniuCore 服务
+            ctx.inject(['qiniuCore'], ({ qiniuCore }: any) => {
+                (global as any).qiniuCoreService = qiniuCore;
+                if (qiniuCore) {
+                    console.log('[ExamHall] ✅ qiniuCore service injected to global');
+                } else {
+                    console.warn('[ExamHall] ⚠️ qiniuCore service injected but is null');
+                }
+            });
+        } else if ((ctx as any).scoreCore) {
+            (global as any).scoreCoreService = (ctx as any).scoreCore;
+            console.log('[ExamHall] ✅ scoreCore service available via ctx');
+        } else {
+            console.warn('[ExamHall] ⚠️ ctx.inject not available and services not found');
+        }
+    } catch (e) {
+        console.warn('[ExamHall] ⚠️ Failed to inject services:', e);
+    }
 
     console.log('[ExamHall] ✅ 导航栏入口注册完成 (Nav entry registered)');
 

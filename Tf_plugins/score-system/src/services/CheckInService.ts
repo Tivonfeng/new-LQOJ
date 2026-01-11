@@ -1,7 +1,6 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 每日签到记录接口
 export interface DailyCheckInRecord {
@@ -40,12 +39,17 @@ export interface CheckInResult {
  */
 export class CheckInService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
 
-    constructor(ctx: Context, scoreService: ScoreService) {
+    constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
+
+    /**
+     * 获取 scoreCore 服务实例
+     */
 
     /**
      * 执行签到
@@ -86,21 +90,25 @@ export class CheckInService {
             // 更新用户签到统计
             await this.updateUserStats(uid, newStreak);
 
+            // 获取 scoreCore 实例
+            const scoreCore = (global as any).scoreCoreService;
+            if (!scoreCore) {
+                throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+            }
+
             // 生成唯一的 pid 值，避免唯一索引冲突（签到使用 -10000000 范围）
             const uniquePid = -10000000 - Date.now();
-            // 添加积分记录
-            await this.scoreService.addScoreRecord({
+            // 统一处理积分记录和用户积分更新
+            await scoreCore.recordScoreChange({
                 uid,
                 domainId,
                 pid: uniquePid,
-                recordId: null,
+                recordId: `checkin_${Date.now()}_${uid}`,
                 score,
                 reason: `每日签到奖励 (连续${newStreak}天)`,
-                category: ScoreCategory.DAILY_CHECKIN,
+                category: '每日签到',
+                title: `每日签到 +${score}积分`,
             });
-
-            // 更新用户总积分
-            await this.scoreService.updateUserScore(domainId, uid, score);
 
             console.log(`[CheckIn] User ${uid} checked in: ${score} points, streak: ${newStreak}`);
 

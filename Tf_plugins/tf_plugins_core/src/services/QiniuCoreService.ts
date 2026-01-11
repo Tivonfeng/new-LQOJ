@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as qiniu from 'qiniu';
 import { v4 as uuidv4 } from 'uuid';
-import { Logger } from 'hydrooj';
+import { Context, Logger } from 'hydrooj';
 
-const logger = new Logger('exam-hall-qiniu');
+const logger = new Logger('tf_plugins_core-qiniu');
 
 export interface UploadResult {
     success: boolean;
@@ -21,10 +21,14 @@ export interface DeleteResult {
 }
 
 /**
- * 七牛云存储服务类
- * 处理证书图片的上传、删除和URL生成
+ * 七牛云存储核心服务类
+ * 处理文件的上传、删除和URL生成
+ * 作为独立的云存储服务，提供给各个业务插件使用
  */
-export class QiniuStorageService {
+export class QiniuCoreService {
+    /** Hydro框架上下文 */
+    private ctx: Context;
+
     private mac: qiniu.auth.digest.Mac;
     private config: any;
     private bucket: string;
@@ -39,8 +43,20 @@ export class QiniuStorageService {
     private readonly QINIU_DOMAIN = 'lq-exam-cert.lqcode.fun';
     private readonly QINIU_ZONE = 'Zone_z0';
 
-    constructor() {
+    constructor(ctx: Context) {
+        this.ctx = ctx;
+        // 初始化时验证配置和连接
+        this.initializeQiniuService();
+    }
+
+    /**
+     * 初始化七牛云存储服务
+     * 验证配置、创建连接并测试可用性
+     */
+    private async initializeQiniuService(): Promise<void> {
         try {
+            logger.info('[QiniuCore] 开始初始化七牛云存储服务...');
+
             this.bucket = this.QINIU_BUCKET;
             this.domain = this.normalizeDomain(this.QINIU_DOMAIN);
 
@@ -57,11 +73,44 @@ export class QiniuStorageService {
             // 初始化 BucketManager
             this.bucketManager = new qiniu.rs.BucketManager(this.mac, this.config);
 
+            // 验证配置
+            await this.validateConfiguration();
+
             this.isInitialized = true;
-            logger.info('[ExamHall] 七牛云存储服务初始化成功');
+            logger.info('[QiniuCore] 七牛云存储服务初始化成功');
         } catch (error: any) {
-            logger.error(`[ExamHall] 七牛云初始化失败: ${error.message}`);
+            logger.error(`[QiniuCore] 七牛云初始化失败: ${error.message}`);
             this.isInitialized = false;
+            throw error; // 重新抛出错误，让调用方知道初始化失败
+        }
+    }
+
+    /**
+     * 验证七牛云配置
+     * 测试基本连接和权限
+     */
+    private async validateConfiguration(): Promise<void> {
+        try {
+            // 测试bucket是否存在（通过list操作）
+            await new Promise((resolve, reject) => {
+                this.bucketManager.listPrefix(
+                    this.bucket,
+                    { limit: 1, prefix: '' },
+                    (err: any, _respBody: any, respInfo: any) => {
+                        if (err) {
+                            reject(new Error(`七牛云连接测试失败: ${err.message}`));
+                        } else if (respInfo && respInfo.statusCode === 200) {
+                            logger.info('[QiniuCore] 七牛云连接验证成功');
+                            resolve(void 0);
+                        } else {
+                            reject(new Error(`七牛云连接测试失败: HTTP ${respInfo?.statusCode || 'Unknown'}`));
+                        }
+                    },
+                );
+            });
+        } catch (error: any) {
+            logger.warn(`[QiniuCore] 七牛云配置验证失败，但服务将继续运行: ${error.message}`);
+            // 不抛出错误，允许服务在验证失败时继续运行
         }
     }
 
@@ -154,9 +203,9 @@ export class QiniuStorageService {
 
             // 执行上传
             return new Promise((resolve) => {
-                logger.info(`[ExamHall] 开始上传文件: key=${key}, filePath=${filePath}, fileSize=${fileSize}B`);
-                logger.debug(`[ExamHall] 上传token: ${uploadToken.substring(0, 20)}...`);
-                logger.debug(`[ExamHall] 存储桶: ${this.bucket}, 域名: ${this.domain}`);
+                logger.info(`[QiniuCore] 开始上传文件: key=${key}, filePath=${filePath}, fileSize=${fileSize}B`);
+                logger.debug(`[QiniuCore] 上传token: ${uploadToken.substring(0, 20)}...`);
+                logger.debug(`[QiniuCore] 存储桶: ${this.bucket}, 域名: ${this.domain}`);
 
                 formUploader.putFile(
                     uploadToken,
@@ -165,8 +214,8 @@ export class QiniuStorageService {
                     putExtra,
                     (err: any, _body: any, info: any) => {
                         if (err) {
-                            logger.error(`[ExamHall] 七牛云上传失败: ${err.message}, 错误代码: ${err.code}, 请求ID: ${err.reqId}`);
-                            logger.error(`[ExamHall] 错误堆栈: ${err.stack}`);
+                            logger.error(`[QiniuCore] 七牛云上传失败: ${err.message}, 错误代码: ${err.code}, 请求ID: ${err.reqId}`);
+                            logger.error(`[QiniuCore] 错误堆栈: ${err.stack}`);
                             resolve({
                                 success: false,
                                 error: `上传失败: ${err.message}`,
@@ -174,7 +223,7 @@ export class QiniuStorageService {
                         } else if (info && info.statusCode === 200) {
                             const url = this.getFileUrl(key);
                             logger.info(
-                                `[ExamHall] 文件上传成功: key=${key}, size=${fileSize}, url=${url}`,
+                                `[QiniuCore] 文件上传成功: key=${key}, size=${fileSize}, url=${url}`,
                             );
                             resolve({
                                 success: true,
@@ -183,7 +232,7 @@ export class QiniuStorageService {
                                 size: fileSize,
                             });
                         } else {
-                            logger.error(`[ExamHall] 七牛云返回错误: statusCode=${info?.statusCode}, 响应: ${JSON.stringify(info)}`);
+                            logger.error(`[QiniuCore] 七牛云返回错误: statusCode=${info?.statusCode}, 响应: ${JSON.stringify(info)}`);
                             resolve({
                                 success: false,
                                 error: `上传失败: HTTP ${info?.statusCode || 'Unknown'}, 响应: ${JSON.stringify(info)}`,
@@ -193,7 +242,7 @@ export class QiniuStorageService {
                 );
             });
         } catch (error: any) {
-            logger.error(`[ExamHall] 上传异常: ${error.message}`);
+            logger.error(`[QiniuCore] 上传异常: ${error.message}`);
             return {
                 success: false,
                 error: `上传异常: ${error.message}`,
@@ -207,7 +256,7 @@ export class QiniuStorageService {
     async uploadBuffer(
         buffer: Buffer,
         filename: string,
-    prefix = 'certificates',
+        prefix = 'certificates',
     ): Promise<UploadResult> {
         if (!this.isInitialized) {
             return {
@@ -291,13 +340,13 @@ export class QiniuStorageService {
             return new Promise((resolve) => {
                 this.bucketManager.delete(this.bucket, key, (err: any, _respBody: any, respInfo: any) => {
                     if (err) {
-                        logger.warn(`[ExamHall] 删除失败: ${err.message}`);
+                        logger.warn(`[QiniuCore] 删除失败: ${err.message}`);
                         resolve({
                             success: false,
                             error: `删除失败: ${err.message}`,
                         });
                     } else if (respInfo && respInfo.statusCode === 200) {
-                        logger.info(`[ExamHall] 文件删除成功: key=${key}`);
+                        logger.info(`[QiniuCore] 文件删除成功: key=${key}`);
                         resolve({
                             success: true,
                         });
@@ -343,7 +392,7 @@ export class QiniuStorageService {
                             error: `批量删除失败: ${err.message}`,
                         });
                     } else if (respInfo && respInfo.statusCode === 200) {
-                        logger.info(`[ExamHall] 批量删除成功: 删除${keys.length}个文件`);
+                        logger.info(`[QiniuCore] 批量删除成功: 删除${keys.length}个文件`);
                         resolve({
                             success: true,
                         });
@@ -398,7 +447,7 @@ export class QiniuStorageService {
     generateCertificateKey(
         uid: number,
         certificateId: string,
-    filetype = 'image',
+        filetype = 'image',
     ): string {
         const date = new Date();
         const year = date.getFullYear();
@@ -411,4 +460,4 @@ export class QiniuStorageService {
     }
 }
 
-export default QiniuStorageService;
+export default QiniuCoreService;

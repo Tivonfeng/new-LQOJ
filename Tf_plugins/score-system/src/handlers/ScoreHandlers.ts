@@ -8,11 +8,37 @@ import {
     CheckInService,
     DailyGameLimitService,
     ScoreCategory,
-    ScoreService,
     StatisticsService,
     type UserScore,
 } from '../services';
-import { DEFAULT_CONFIG } from './config';
+
+// helper: 获取注入的 scoreCore 服务
+function getScoreCore(ctx: any) {
+    // 优先从全局对象获取（在插件加载时设置）
+    let scoreCore = (global as any).scoreCoreService;
+    if (scoreCore) {
+        return scoreCore;
+    }
+
+    // 降级到 ctx.inject（在处理器运行时可能不可用）
+    try {
+        if (typeof ctx.inject === 'function') {
+            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
+                scoreCore = _sc;
+            });
+        } else {
+            scoreCore = (ctx as any).scoreCore;
+        }
+    } catch (e) {
+        scoreCore = (ctx as any).scoreCore;
+    }
+
+    if (!scoreCore) {
+        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+    }
+
+    return scoreCore;
+}
 
 // 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
 function serializeForJSON(obj: any): any {
@@ -104,8 +130,8 @@ async function getCrossDomainDisplayNames(
 export class ScoreHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const checkInService = new CheckInService(this.ctx, scoreService);
+        const scoreCore = getScoreCore(this.ctx);
+        const checkInService = new CheckInService(this.ctx);
         let userScore: UserScore | null = null;
         let userRank: number | string = '-';
         let recentRecords: any[] = [];
@@ -115,11 +141,11 @@ export class ScoreHallHandler extends Handler {
 
         if (uid) {
             // 获取用户积分信息
-            userScore = await scoreService.getUserScore(this.domain._id, uid);
+            userScore = await scoreCore.getUserScore(this.domain._id, uid);
 
             // 获取用户排名
             if (userScore) {
-                userRank = await scoreService.getUserRank(this.domain._id, uid) || '-';
+                userRank = await scoreCore.getUserRank(this.domain._id, uid) || '-';
             }
 
             // 获取签到相关信息
@@ -138,7 +164,7 @@ export class ScoreHallHandler extends Handler {
         }
 
         // 获取全局最近积分记录（所有用户）
-        const { records: rawRecords } = await scoreService.getScoreRecordsWithPagination(this.domain._id, 1, 10);
+        const { records: rawRecords } = await scoreCore.getScoreRecordsWithPagination(this.domain._id, 1, 10);
 
         recentRecords = rawRecords.map((record) => ({
             ...record,
@@ -152,7 +178,7 @@ export class ScoreHallHandler extends Handler {
         }));
 
         // 获取积分排行榜前10，并获取总数
-        const { users: topUsers, total: rankingTotal } = await scoreService.getScoreRankingWithPagination(
+        const { users: topUsers, total: rankingTotal } = await scoreCore.getScoreRankingWithPagination(
             this.domain._id,
             1,
             10,
@@ -192,7 +218,7 @@ export class ScoreHallHandler extends Handler {
         }
 
         // 获取今日新增积分统计
-        const todayStats = await scoreService.getTodayStats(this.domain._id);
+        const todayStats = await scoreCore.getTodayStats(this.domain._id);
 
         // 检查是否有管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
@@ -233,10 +259,10 @@ export class ScoreHallHandler extends Handler {
 export class UserScoreHandler extends Handler {
     async get() {
         const uid = this.user._id;
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+        const scoreCore = getScoreCore(this.ctx);
 
-        const userScore = await scoreService.getUserScore(this.domain._id, uid);
-        const recentRecords = await scoreService.getUserScoreRecords(this.domain._id, uid, 20);
+        const userScore = await scoreCore.getUserScore(this.domain._id, uid);
+        const recentRecords = await scoreCore.getUserScoreRecords(this.domain._id, uid, 20);
 
         // 格式化日期
         const formattedRecords = recentRecords.map((record) => ({
@@ -277,10 +303,10 @@ export class ScoreRecordsHandler extends Handler {
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const category = (this.request.query.category as string || '').trim();
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+        const scoreCore = getScoreCore(this.ctx);
 
         // 使用 service 方法获取分页数据
-        const { records, total, totalPages } = await scoreService.getScoreRecordsWithPagination(
+        const { records, total, totalPages } = await scoreCore.getScoreRecordsWithPagination(
             this.domain._id,
             page,
             limit,
@@ -288,7 +314,7 @@ export class ScoreRecordsHandler extends Handler {
         );
 
         // 获取涉及的用户信息
-        const uids = [...new Set(records.map((r) => r.uid))];
+        const uids = [...new Set(records.map((r: any) => r.uid as number))] as number[];
         const UserModel = global.Hydro.model.user;
         const rawUdocs = await UserModel.getList(this.domain._id, uids);
 
@@ -365,7 +391,7 @@ export class ScoreRankingHandler extends Handler {
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const search = (this.request.query.search as string || '').trim();
 
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+        const scoreCore = getScoreCore(this.ctx);
 
         const UserModel = global.Hydro.model.user;
         let users: any[] = [];
@@ -388,7 +414,7 @@ export class ScoreRankingHandler extends Handler {
                 .toArray();
         } else {
             // 全局排行榜
-            const result = await scoreService.getScoreRankingWithPagination(
+            const result = await scoreCore.getScoreRankingWithPagination(
                 this.domain._id,
                 page,
                 limit,
@@ -453,14 +479,14 @@ export class ScoreManageHandler extends Handler {
     }
 
     async get() {
-        const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
-        const statisticsService = new StatisticsService(this.ctx, scoreService);
+        const scoreCore = getScoreCore(this.ctx);
+        const statisticsService = new StatisticsService(this.ctx);
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
 
         // 获取积分排行榜前10名
-        const topUsers = await scoreService.getScoreRanking(this.domain._id, 10);
+        const topUsers = await scoreCore.getScoreRanking(this.domain._id, 10);
 
         // 获取所有涉及的用户ID（包括排行榜和最近记录）
         const rankingUids = topUsers.map((u) => u.uid);
@@ -510,17 +536,17 @@ export class ScoreManageHandler extends Handler {
                     return;
                 }
 
-                const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+                const scoreCore = getScoreCore(this.ctx);
 
                 // 更新用户积分
-                await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
+                await scoreCore.updateUserScore(this.domain._id, user._id, scoreChangeNum);
 
                 // 生成唯一的 pid 值，避免唯一索引冲突
                 // 使用 -2000000 - timestamp 确保唯一性，区别于游戏操作（-1000000）
                 const uniquePid = -2000000 - Date.now();
 
                 // 添加积分记录
-                await scoreService.addScoreRecord({
+                await scoreCore.addScoreRecord({
                     uid: user._id,
                     domainId: this.domain._id,
                     pid: uniquePid,
@@ -549,7 +575,7 @@ export class ScoreManageHandler extends Handler {
                 }
 
                 const UserModel = global.Hydro.model.user;
-                const scoreService = new ScoreService(DEFAULT_CONFIG, this.ctx);
+                const scoreCore = getScoreCore(this.ctx);
 
                 // 为避免在循环内使用 await（会触发 linter 的 no-await-in-loop），先构建任务列表并并行执行
                 const tasks = rows.map(async (row: any, i: number) => {
@@ -570,10 +596,10 @@ export class ScoreManageHandler extends Handler {
                             return { success: false, message: '用户不存在' };
                         }
 
-                        await scoreService.updateUserScore(this.domain._id, user._id, scoreChangeNum);
+                        await scoreCore.updateUserScore(this.domain._id, user._id, scoreChangeNum);
 
                         const uniquePid = -2000000 - Date.now() - i;
-                        await scoreService.addScoreRecord({
+                        await scoreCore.addScoreRecord({
                             uid: user._id,
                             domainId: this.domain._id,
                             pid: uniquePid,

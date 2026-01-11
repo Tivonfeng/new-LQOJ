@@ -58,4 +58,3 @@ export class ClassroomToolsHandler extends Handler {
         };
     }
 }
-

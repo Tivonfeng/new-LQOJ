@@ -476,12 +476,30 @@ export class AiHelperStreamHandler extends ConnectionHandler {
             try {
                 const uid = Number(this.user._id);
                 const domainId = this.domain._id as string;
-                (this.ctx as any).emit('ai/helper-used', {
-                    uid,
-                    domainId,
-                    cost: 50,
-                    reason: '使用 AI 辅助解题（流式）',
-                });
+                const scoreCore = (global as any).scoreCoreService;
+
+                if (!scoreCore) {
+                    console.warn('[Confetti AI Helper Stream] scoreCore service not available, skipping score deduction');
+                } else {
+                    // 检查用户是否有足够的积分
+                    const userScore = await scoreCore.getUserScore(domainId, uid);
+                    if (!userScore || userScore.totalScore < 50) {
+                        console.warn(`[Confetti AI Helper Stream] 用户积分不足: uid=${uid}, current=${userScore?.totalScore || 0}, required=50`);
+                        // 不阻止AI功能，只是记录警告
+                    } else {
+                        await scoreCore.recordScoreChange({
+                            uid,
+                            domainId,
+                            pid: -8888888 - Date.now(), // AI助手流式使用的特殊标识
+                            recordId: `ai_helper_stream_${Date.now()}_${uid}`,
+                            score: -50, // 负数表示扣除
+                            reason: '使用 AI 辅助解题（流式）',
+                            category: 'AI_ASSISTANT',
+                            title: 'AI 辅助解题（流式）',
+                        });
+                        console.log(`[Confetti AI Helper Stream] 成功扣除积分: uid=${uid}, amount=50, remaining=${userScore.totalScore - 50}`);
+                    }
+                }
             } catch (scoreErr) {
                 console.error('[Confetti AI Helper Stream] 扣除积分失败:', scoreErr);
             }
