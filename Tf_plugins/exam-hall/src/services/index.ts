@@ -4,5 +4,4 @@ export { default as CertificateService } from './CertificateService';
 export type { Certificate, CertificateFilter } from './CertificateService';
 export { default as PresetService } from './PresetService';
 export type { CertificatePreset, ExamEvent, Level } from './PresetService';
-export { default as QiniuStorageService } from './QiniuStorageService';
-export type { DeleteResult, UploadResult } from './QiniuStorageService';
+// 注意：QiniuStorageService 现在由 tf_plugins_core 提供，不再本地导出

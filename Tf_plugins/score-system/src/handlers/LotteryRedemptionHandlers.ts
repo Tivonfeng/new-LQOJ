@@ -63,11 +63,11 @@ export class MyPrizesHandler extends Handler {
         const uid = this.user._id;
         const redemptionService = new LotteryRedemptionService(this.ctx);
 
-        // 获取所有状态的奖品
+        // 获取所有状态的奖品（全域查询）
         const [pending, redeemed, cancelled] = await Promise.all([
-            redemptionService.getUserRedemptions(this.domain._id, uid, 'pending'),
-            redemptionService.getUserRedemptions(this.domain._id, uid, 'redeemed'),
-            redemptionService.getUserRedemptions(this.domain._id, uid, 'cancelled'),
+            redemptionService.getUserRedemptions(undefined, uid, 'pending'),
+            redemptionService.getUserRedemptions(undefined, uid, 'redeemed'),
+            redemptionService.getUserRedemptions(undefined, uid, 'cancelled'),
         ]);
 
         // 格式化时间
@@ -145,8 +145,9 @@ export class MyPrizesApiHandler extends Handler {
         const status = this.request.query.status as string | undefined;
         const redemptionService = new LotteryRedemptionService(this.ctx);
 
+        // 全域统一查询，不再区分域
         const records = await redemptionService.getUserRedemptions(
-            this.domain._id,
+            undefined, // 全域查询
             uid,
             status as 'pending' | 'redeemed' | 'cancelled' | undefined,
         );
@@ -199,7 +200,7 @@ export class RedemptionAdminHandler extends Handler {
         const stats = await redemptionService.getRedemptionStats(this.domain._id);
 
         // 获取用户信息
-        const uids = [...new Set(pendingData.records.map((r) => r.uid))];
+        const uids = [...new Set(pendingData.records.map((r: any) => r.uid as number))] as number[];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -273,20 +274,32 @@ export class RedemptionListApiHandler extends Handler {
         const redemptionService = new LotteryRedemptionService(this.ctx);
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
-        const uid = this.request.query.uid ? Number.parseInt(this.request.query.uid as string) : undefined;
+        const uidParam = this.request.query.uid as string | undefined;
+        const searchParam = this.request.query.search as string | undefined;
+        let uid: number | number[] | undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
 
+        if (uidParam && /^\d+$/.test(uidParam)) {
+            uid = Number.parseInt(uidParam);
+        } else if (searchParam && searchParam.trim()) {
+            const UserModel = global.Hydro.model.user;
+            // 全域搜索用户
+            const matchedUsers = await UserModel.getPrefixList('', searchParam.trim(), 200);
+            const matchedUids = matchedUsers.map((u: any) => u._id);
+            uid = matchedUids;
+        }
+
         const data = await redemptionService.getPendingRedemptions(
-            this.domain._id,
+            undefined, // 全域查询
             page,
             limit,
             { uid, prizeName },
         );
 
-        // 获取用户信息
-        const uids = [...new Set(data.records.map((r) => r.uid))];
+        // 获取用户信息（全域）
+        const uids = [...new Set(data.records.map((r: any) => r.uid as number))] as number[];
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, uids);
+        const udocs = await UserModel.getList('', uids);
 
         // 格式化记录
         const formattedRecords = data.records.map((record) => ({
@@ -402,12 +415,24 @@ export class RedemptionHistoryApiHandler extends Handler {
         const redemptionService = new LotteryRedemptionService(this.ctx);
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
-        const uid = this.request.query.uid ? Number.parseInt(this.request.query.uid as string) : undefined;
+        const uidParam = this.request.query.uid as string | undefined;
+        const searchParam = this.request.query.search as string | undefined;
+        let uid: number | number[] | undefined;
         const prizeName = this.request.query.prizeName as string | undefined;
         const status = this.request.query.status as 'redeemed' | 'cancelled' | undefined;
 
+        if (uidParam && /^\d+$/.test(uidParam)) {
+            uid = Number.parseInt(uidParam);
+        } else if (searchParam && searchParam.trim()) {
+            const UserModel = global.Hydro.model.user;
+            // 全域搜索用户
+            const matchedUsers = await UserModel.getPrefixList('', searchParam.trim(), 200);
+            const matchedUids = matchedUsers.map((u: any) => u._id);
+            uid = matchedUids;
+        }
+
         const data = await redemptionService.getRedemptionHistory(
-            this.domain._id,
+            undefined, // 全域查询
             page,
             limit,
             { uid, prizeName, status },
@@ -422,11 +447,12 @@ export class RedemptionHistoryApiHandler extends Handler {
         }));
 
         // 获取用户信息
-        const uids = [...new Set(data.records.map((r) => r.uid))];
-        const adminUids = [...new Set(data.records.map((r) => r.redeemedBy))];
-        const allUids = [...new Set([...uids, ...adminUids])];
+        const uids = [...new Set(data.records.map((r: any) => r.uid as number))] as number[];
+        const adminUids = [...new Set(data.records.map((r: any) => r.redeemedBy as number))] as number[];
+        const allUids = [...new Set([...uids, ...adminUids])] as number[];
         const UserModel = global.Hydro.model.user;
-        const udocs = await UserModel.getList(this.domain._id, allUids);
+        // 全域获取用户信息
+        const udocs = await UserModel.getList('', allUids);
 
         this.response.type = 'application/json';
         this.response.body = {

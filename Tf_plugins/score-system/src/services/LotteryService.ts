@@ -1,7 +1,6 @@
 import {
     Context,
 } from 'hydrooj';
-import { ScoreCategory, ScoreService } from './ScoreService';
 
 // 实物奖品信息接口
 export interface PhysicalPrizeInfo {
@@ -59,10 +58,10 @@ export interface UserLotteryStats {
  */
 export class LotteryService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
 
     // 游戏常量
-    private static readonly BET_AMOUNT = 50; // 每次抽奖消耗积分
+    private static readonly BET_AMOUNT = 100; // 每次抽奖消耗积分
     // 九宫格显示的9个位置（8个可见奖品 + 1个中间按钮占位）
     // 按界面显示顺序：左上(0) -> 上中(1) -> 右上(2) -> 右中(3) -> 中间(4,按钮占位) -> 右下(5) -> 下中(6) -> 左下(7) -> 左中(8)
     // 注意：索引4位置被按钮覆盖，但保留在数组中用于索引对应，抽奖时不会抽中此位置
@@ -110,10 +109,15 @@ export class LotteryService {
         },
     ];
 
-    constructor(ctx: Context, scoreService: ScoreService) {
+    constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
+
+    /**
+     * 获取 scoreCore 服务实例
+     */
 
     /**
      * 执行九宫格抽奖
@@ -128,7 +132,11 @@ export class LotteryService {
     }> {
         try {
             // 检查用户积分
-            const userScore = await this.scoreService.getUserScore(domainId, uid);
+            const scoreCore = (global as any).scoreCoreService;
+            if (!scoreCore) {
+                throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+            }
+            const userScore = await scoreCore.getUserScore(domainId, uid);
             if (!userScore || userScore.totalScore < LotteryService.BET_AMOUNT) {
                 return {
                     success: false,
@@ -188,29 +196,29 @@ export class LotteryService {
             const uniquePid = -2000000 - (timestamp % 1000000);
 
             // 扣除投注积分
-            await this.scoreService.updateUserScore(domainId, uid, -LotteryService.BET_AMOUNT);
-            await this.scoreService.addScoreRecord({
+            await scoreCore.updateUserScore(domainId, uid, -LotteryService.BET_AMOUNT);
+            await scoreCore.addScoreRecord({
                 uid,
                 domainId,
                 pid: uniquePid,
                 recordId: gameRecordId,
                 score: -LotteryService.BET_AMOUNT,
                 reason: `九宫格抽奖投注${LotteryService.BET_AMOUNT}积分`,
-                category: ScoreCategory.GAME_ENTERTAINMENT,
+                category: '游戏娱乐',
                 title: '九宫格抽奖',
             });
 
             // 只有积分奖励才发放积分
             if (prize.type === 'reward' && finalReward > 0) {
-                await this.scoreService.updateUserScore(domainId, uid, finalReward);
-                await this.scoreService.addScoreRecord({
+                await scoreCore.updateUserScore(domainId, uid, finalReward);
+                await scoreCore.addScoreRecord({
                     uid,
                     domainId,
                     pid: uniquePid - 1,
                     recordId: gameRecordId,
                     score: finalReward,
                     reason: `九宫格抽奖获得${prize.name}`,
-                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    category: '游戏娱乐',
                     title: '九宫格抽奖',
                 });
             }
@@ -218,15 +226,15 @@ export class LotteryService {
 
             // 如果再来一次，返还投注
             if (prize.type === 'bonus') {
-                await this.scoreService.updateUserScore(domainId, uid, LotteryService.BET_AMOUNT);
-                await this.scoreService.addScoreRecord({
+                await scoreCore.updateUserScore(domainId, uid, LotteryService.BET_AMOUNT);
+                await scoreCore.addScoreRecord({
                     uid,
                     domainId,
                     pid: uniquePid - 2,
                     recordId: gameRecordId,
                     score: LotteryService.BET_AMOUNT,
                     reason: `九宫格抽奖获得${prize.name}，返还投注`,
-                    category: ScoreCategory.GAME_ENTERTAINMENT,
+                    category: '游戏娱乐',
                     title: '九宫格抽奖',
                 });
             }
@@ -298,9 +306,14 @@ export class LotteryService {
     /**
      * 获取用户游戏历史
      */
-    async getUserGameHistory(domainId: string, uid: number, limit: number = 20): Promise<LotteryGameRecord[]> {
+    async getUserGameHistory(domainId: string | undefined, uid: number, limit: number = 20): Promise<LotteryGameRecord[]> {
+        const query: any = { uid };
+        if (domainId) {
+            query.domainId = domainId;
+        }
+
         return await this.ctx.db.collection('lottery.records' as any)
-            .find({ domainId, uid })
+            .find(query)
             .sort({ gameTime: -1 })
             .limit(limit)
             .toArray();
@@ -309,7 +322,7 @@ export class LotteryService {
     /**
      * 获取用户分页游戏历史
      */
-    async getUserGameHistoryPaged(domainId: string, uid: number, page: number = 1, limit: number = 20): Promise<{
+    async getUserGameHistoryPaged(domainId: string | undefined, uid: number, page: number = 1, limit: number = 20): Promise<{
         records: LotteryGameRecord[];
         total: number;
         page: number;
@@ -317,15 +330,20 @@ export class LotteryService {
     }> {
         const skip = (page - 1) * limit;
 
+        const query: any = { uid };
+        if (domainId) {
+            query.domainId = domainId;
+        }
+
         const records = await this.ctx.db.collection('lottery.records' as any)
-            .find({ domainId, uid })
+            .find(query)
             .sort({ gameTime: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
 
         const total = await this.ctx.db.collection('lottery.records' as any)
-            .countDocuments({ domainId, uid });
+            .countDocuments(query);
 
         return {
             records,

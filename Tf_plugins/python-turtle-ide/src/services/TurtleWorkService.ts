@@ -191,14 +191,33 @@ export class TurtleWorkService {
         }
 
         // 检查投币者积分是否足够（至少1积分）
-        // 直接查询积分数据库，避免依赖 ScoreService
-        const userScore = await this.ctx.db.collection('score.users' as any).findOne({ uid });
+        // 优先使用 scoreService（如果已经通过 ctx.provide 暴露），否则回退到直接查询数据库
+        let userScore: any = null;
+        try {
+            // @ts-ignore - ctx.scoreService 由 score-system 可选提供
+            const scoreSvc = (this.ctx as any).scoreService;
+            if (scoreSvc && typeof scoreSvc.getUserScore === 'function') {
+                userScore = await scoreSvc.getUserScore(domainId, uid);
+            } else {
+                userScore = await this.ctx.db.collection('score.users' as any).findOne({ uid });
+            }
+        } catch (err) {
+            // 如果获取过程中发生异常，记录并回退到直接查询数据库
+            try {
+                userScore = await this.ctx.db.collection('score.users' as any).findOne({ uid });
+            } catch (e) {
+                // 最终失败则抛错
+                throw new Error('无法获取用户积分，请稍后重试');
+            }
+        }
+
         if (!userScore || (userScore.totalScore || 0) < 1) {
             throw new Error('积分不足，至少需要1积分才能投币');
         }
 
         // 触发投币事件，让积分系统处理积分变更
-        this.ctx.emit('turtle/work-coined', {
+        // 使用 any 绕过类型系统的事件键检查（事件类型在外部插件中声明）
+        (this.ctx as any).emit('turtle/work-coined', {
             fromUid: uid,
             toUid: work.uid,
             domainId,

@@ -19,6 +19,9 @@ import {
   Input,
   Space,
   Typography,
+  Avatar,
+  Tooltip,
+  Popconfirm,
 } from 'antd';
 import $ from 'jquery';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -335,29 +338,49 @@ const TypingAdminApp: React.FC = () => {
   const renderRecord = useCallback((record: TypingRecord) => {
     const user = userMap?.[record.uid];
     const displayName = user?.displayName || user?.uname || record.uid;
+    const avatarContent = user?.avatarUrl ? (
+      <Avatar src={user.avatarUrl} alt={displayName} className="record-avatar" />
+    ) : (
+      <Avatar className="record-avatar">{(displayName || '?').charAt(0).toUpperCase()}</Avatar>
+    );
+
     return (
       <div className="record-item" key={record._id}>
         <div className="record-main">
           <div className="record-user">
-            <span className="record-name">{displayName}</span>
+            {avatarContent}
+            <div className="record-user-meta">
+              <div className="record-name">{displayName}</div>
+              <div className="record-time-small">{formatTime(record.createdAt)}</div>
+            </div>
           </div>
-          <div className="record-wpm">{record.wpm} WPM</div>
+          <div className="record-wpm-badge">
+            <div className="record-wpm">{record.wpm}</div>
+            <div className="record-wpm-unit">WPM</div>
+          </div>
         </div>
-        <div className="record-footer">
-          <span className="record-note">{record.note || '-'}</span>
-          <span className="record-time">{formatTime(record.createdAt)}</span>
-        </div>
-        <div className="record-actions">
-          <Button
-            type="text"
-            danger
-            size="small"
-            icon={<DeleteOutlined />}
-            className="delete-record-btn"
-            onClick={() => handleDeleteRecord(record._id, displayName)}
-          >
-            删除
-          </Button>
+
+        <div className="record-bottom-row">
+          <Tooltip title={record.note || '无备注'}>
+            <div className="record-note">{record.note || '-'}</div>
+          </Tooltip>
+
+          <div className="record-actions">
+            <Popconfirm
+              title={`确认删除 ${displayName} 的记录？`}
+              onConfirm={() => handleDeleteRecord(record._id, displayName)}
+              okText="删除"
+              cancelText="取消"
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                className="delete-record-btn"
+              />
+            </Popconfirm>
+          </div>
         </div>
       </div>
     );

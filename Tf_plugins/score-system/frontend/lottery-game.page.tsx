@@ -84,7 +84,7 @@ const LotteryGameApp: React.FC = () => {
   const gameData: LotteryGameData = (window as any).lotteryGameData || {
     currentCoins: 0,
     canPlay: false,
-    gameConfig: { betAmount: 50, prizes: [] },
+    gameConfig: { betAmount: 100, prizes: [] },
     userStats: { totalGames: 0, totalWins: 0, netProfit: 0 },
     winRate: '0.0',
     recentGames: [],
@@ -135,11 +135,16 @@ const LotteryGameApp: React.FC = () => {
     }
   }, []);
 
-  // 获取分页游戏历史
+  // 获取分页游戏历史（全域统一）
   const fetchGameHistory = useCallback(async (page: number) => {
     try {
       const historyUrl = (window as any).lotteryHistoryUrl || '/score/lottery/history';
-      const response = await fetch(`${historyUrl}?page=${page}&limit=${pageSize}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(pageSize),
+        allDomains: 'true', // 默认全域查询
+      });
+      const response = await fetch(`${historyUrl}?${params}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: {
@@ -156,21 +161,22 @@ const LotteryGameApp: React.FC = () => {
         const result = await response.json();
         if (result.success && result.records) {
           setAllGames(result.records);
-          setTotalGames(result.total || userStats.totalGames);
+          setTotalGames(result.total || 0);
         }
       }
     } catch (err) {
       // Failed to fetch game history
     }
-  }, [pageSize, userStats.totalGames]);
+  }, [pageSize]);
 
   // 初始化游戏历史数据
   React.useEffect(() => {
-    if (recentGames.length > 0 && userStats.totalGames > 0) {
+    if (recentGames.length > 0) {
       setAllGames(recentGames);
-      setTotalGames(userStats.totalGames);
+      // 初始时调用API获取正确的全域总数量
+      fetchGameHistory(1);
     }
-  }, [recentGames, userStats.totalGames]);
+  }, [recentGames, fetchGameHistory]);
 
   // 存储抽奖结果，供 end 回调使用
   const lotteryResultRef = useRef<GameResult | null>(null);
@@ -333,7 +339,7 @@ const LotteryGameApp: React.FC = () => {
           <Col>
             <Space direction="vertical" size="small">
               <Title level={1} className="hero-title">
-                <GiftOutlined style={{ marginRight: '8px' }} /> 九宫格抽奖（测试版）
+                <GiftOutlined style={{ marginRight: '8px' }} /> 实物抽奖（测试版）
               </Title>
               <Text className="hero-subtitle">
                 测试你的运气，赢取丰厚奖励
@@ -431,7 +437,7 @@ const LotteryGameApp: React.FC = () => {
             title={
               <Space>
                 <GiftOutlined style={{ fontSize: '20px' }} />
-                <span style={{ fontSize: '20px', fontWeight: 600 }}>九宫格抽奖</span>
+                <span style={{ fontSize: '20px', fontWeight: 600 }}>实物抽奖</span>
                 <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>
                   每次 {gameData.gameConfig.betAmount} 积分
                 </Tag>
@@ -703,7 +709,7 @@ const LotteryGameApp: React.FC = () => {
             title={
               <Space>
                 <span>抽奖历史</span>
-                <Badge count={totalGames || userStats.totalGames} showZero />
+                <Badge count={totalGames} showZero />
               </Space>
             }
           extra={
@@ -748,11 +754,11 @@ const LotteryGameApp: React.FC = () => {
                     </List.Item>
                   )}
                 />
-                {(totalGames || userStats.totalGames) > pageSize && (
+                {totalGames > pageSize && (
                   <div style={{ marginTop: '16px', textAlign: 'center' }}>
                     <Pagination
                       current={currentPage}
-                      total={totalGames || userStats.totalGames}
+                      total={totalGames}
                       pageSize={pageSize}
                       onChange={(page) => {
                         setCurrentPage(page);

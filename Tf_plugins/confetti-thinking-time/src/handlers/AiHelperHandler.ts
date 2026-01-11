@@ -183,16 +183,34 @@ export class AiHelperHandler extends Handler {
                 },
             };
 
-            // 调用成功后，通过事件机制扣除积分（每次 100 分）
+            // 调用成功后，直接扣除积分（每次 100 分）
             try {
                 const uid = Number(this.user._id);
                 const domainId = this.domain._id as string;
-                (this.ctx as any).emit('ai/helper-used', {
-                    uid,
-                    domainId,
-                    cost: 100,
-                    reason: '使用 AI 辅助解题',
-                });
+                const scoreCore = (global as any).scoreCoreService;
+
+                if (!scoreCore) {
+                    console.warn('[Confetti AI Helper] scoreCore service not available, skipping score deduction');
+                } else {
+                    // 检查用户是否有足够的积分
+                    const userScore = await scoreCore.getUserScore(domainId, uid);
+                    if (!userScore || userScore.totalScore < 100) {
+                        console.warn(`[Confetti AI Helper] 用户积分不足: uid=${uid}, current=${userScore?.totalScore || 0}, required=100`);
+                        // 不阻止AI功能，只是记录警告
+                    } else {
+                        await scoreCore.recordScoreChange({
+                            uid,
+                            domainId,
+                            pid: -9999999 - Date.now(), // AI助手使用的特殊标识
+                            recordId: `ai_helper_${Date.now()}_${uid}`,
+                            score: -100, // 负数表示扣除
+                            reason: '使用 AI 辅助解题',
+                            category: 'AI_ASSISTANT',
+                            title: 'AI 辅助解题',
+                        });
+                        console.log(`[Confetti AI Helper] 成功扣除积分: uid=${uid}, amount=100, remaining=${userScore.totalScore - 100}`);
+                    }
+                }
             } catch (scoreErr) {
                 // 积分扣除失败不影响 AI 功能本身，只在服务端记录日志
                 console.error('[Confetti AI Helper] 扣除积分失败:', scoreErr);

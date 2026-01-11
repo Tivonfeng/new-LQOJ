@@ -17,17 +17,33 @@ import {
  *    - 替换网站 Favicon
  */
 
-async function getPersonal(domainId: string, userId: number, ctx: Context) {
+async function getPersonal(domainId: string, userId: number, ctx: Context, injectedScoreService?: any) {
     try {
         const tfUdoc = await UserModel.getById(domainId, userId);
         console.log('getPersonal - user found:', tfUdoc?.uname || 'no user');
 
-        // 获取用户积分(绿旗币)
+        // 获取用户积分(绿旗币)，优先使用 scoreService（若已由 score-system 提供）
         let userScore = 0;
         try {
-            const scoreDoc = await ctx.db.collection('score.users' as any).findOne({
-                uid: userId,
-            });
+            let scoreDoc: any = null;
+            if (injectedScoreService && typeof injectedScoreService.getUserScore === 'function') {
+                scoreDoc = await injectedScoreService.getUserScore(domainId, userId);
+            } else {
+                // 安全读取 ctx.scoreService（可能抛出 without inject），故包裹到 try/catch 中
+                let scoreSvc: any;
+                try {
+                    // @ts-ignore
+                    scoreSvc = (ctx as any).scoreService;
+                } catch (e) {
+                    scoreSvc = undefined;
+                }
+
+                if (scoreSvc && typeof scoreSvc.getUserScore === 'function') {
+                    scoreDoc = await scoreSvc.getUserScore(domainId, userId);
+                } else {
+                    scoreDoc = await ctx.db.collection('score.users' as any).findOne({ uid: userId });
+                }
+            }
             userScore = scoreDoc?.totalScore || 0;
         } catch (scoreError) {
             console.log('Score system not available or error:', scoreError.message);
@@ -124,19 +140,30 @@ async function getSwiderpic(domainId: string, info: any) {
 // }
 
 export async function apply(ctx: Context) {
+    // 尝试通过注入获取 scoreService，优先使用注入的 service（避免直接在运行时读取 ctx.scoreService 导致的 "without inject" 错误）
+    let injectedScoreService: any;
+    try {
+        ctx.inject(['scoreService'], ({ scoreService }: any) => {
+            injectedScoreService = scoreService;
+            console.log('[Homepage] ✅ scoreService injected');
+        });
+    } catch (e) {
+        // 某些框架可能在此阶段不允许 inject，忽略并使用回退
+        console.warn('[Homepage] ⚠️ ctx.inject scoreService failed:', (e as any)?.message || e);
+    }
+
     // 使用 withHandlerClass 正确扩展 HomeHandler
     ctx.withHandlerClass('HomeHandler', (HomeHandler) => {
         // 扩展HomeHandler添加首页数据获取功能
         (HomeHandler.prototype as any).getSwiderpic = async (domainId: string, info: any) => await getSwiderpic(domainId, info);
 
         (HomeHandler.prototype as any).getPersonal = async function (domainId: string) {
-            return await getPersonal(domainId, this.user._id, ctx);
+            // 在请求时优先使用已注入的 scoreService，否则回退到直接查询数据库
+            const localCtx = ctx;
+            return await getPersonal(domainId, this.user._id, localCtx, injectedScoreService);
         };
 
         console.log('Homepage methods added to HomeHandler');
     });
-
-    // 静态文件（Logo 和 Favicon）会自动从 public/ 目录加载
-    // 这些文件会被复制到 ~/.hydro/static/ 目录
     console.log('Homepage plugin loaded successfully! (includes logos and favicon support)');
 }

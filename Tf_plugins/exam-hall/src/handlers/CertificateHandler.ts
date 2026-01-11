@@ -319,20 +319,28 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                 // 权重计算失败不影响证书创建
             }
 
-            // 触发证书创建事件，由积分系统处理积分增加
+            // 直接使用 ScoreCoreService 增加积分
             if (finalWeight > 0) {
                 try {
-                    (this.ctx.emit as any)('certificate/created', {
-                        uid: targetUid,
-                        domainId: this.ctx.domain!._id.toString(),
-                        certificateId: certificate._id,
-                        weight: finalWeight,
-                        certificateName: certificate.certificateName,
-                    });
-                    console.log(`[ExamHall] 触发证书创建事件，权重 ${finalWeight}`);
-                } catch (err: any) {
-                    console.error(`[ExamHall] 触发证书创建事件失败: ${err.message}`);
-                    // 事件触发失败不影响证书创建
+                    const scoreCore = (global as any).scoreCoreService;
+                    if (!scoreCore) {
+                        console.warn('[ExamHall] scoreCore service not available, skipping score award');
+                    } else {
+                        await scoreCore.recordScoreChange({
+                            uid: targetUid,
+                            domainId: this.ctx.domain!._id.toString(),
+                            pid: -9999998 - Date.now(), // 证书奖励的特殊标识
+                            recordId: `certificate_created_${certificate._id}_${Date.now()}`,
+                            score: finalWeight, // 正数表示增加积分
+                            reason: `证书录入奖励：${certificate.certificateName}`,
+                            category: '证书奖励',
+                            title: `证书奖励 +${finalWeight}积分`,
+                        });
+                        console.log(`[ExamHall] 证书创建奖励积分: uid=${targetUid}, amount=${finalWeight}`);
+                    }
+                } catch (scoreErr: any) {
+                    console.error(`[ExamHall] 证书创建积分奖励失败: ${scoreErr.message}`);
+                    // 积分奖励失败不影响证书创建
                 }
             }
 
@@ -685,20 +693,28 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 return;
             }
 
-            // 触发证书删除事件，由积分系统处理积分减少
+            // 直接使用 ScoreCoreService 减少积分
             if (weight > 0) {
                 try {
-                    (this.ctx.emit as any)('certificate/deleted', {
-                        uid: certificate.uid,
-                        domainId: this.ctx.domain!._id.toString(),
-                        certificateId: new ObjectId(id),
-                        weight,
-                        certificateName: certificate.certificateName,
-                    });
-                    console.log(`[ExamHall] 触发证书删除事件，权重 ${weight}`);
-                } catch (err: any) {
-                    console.error(`[ExamHall] 触发证书删除事件失败: ${err.message}`);
-                    // 事件触发失败不影响证书删除
+                    const scoreCore = (global as any).scoreCoreService;
+                    if (!scoreCore) {
+                        console.warn('[ExamHall] scoreCore service not available, skipping score deduction');
+                    } else {
+                        await scoreCore.recordScoreChange({
+                            uid: certificate.uid,
+                            domainId: this.ctx.domain!._id.toString(),
+                            pid: -8888887 - Date.now(), // 证书删除的特殊标识
+                            recordId: `certificate_deleted_${id}_${Date.now()}`,
+                            score: -weight, // 负数表示减少积分
+                            reason: `证书删除扣除：${certificate.certificateName}`,
+                            category: '证书奖励',
+                            title: `证书删除 -${weight}积分`,
+                        });
+                        console.log(`[ExamHall] 证书删除扣除积分: uid=${certificate.uid}, amount=${weight}`);
+                    }
+                } catch (scoreErr: any) {
+                    console.error(`[ExamHall] 证书删除积分扣除失败: ${scoreErr.message}`);
+                    // 积分扣除失败不影响证书删除
                 }
             }
 
@@ -762,30 +778,44 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
             // 批量删除
             const deletedCount = await certService.deleteCertificates(validIds);
 
-            // 批量触发证书删除事件，由积分系统处理积分减少
+            // 直接使用 ScoreCoreService 批量减少积分
             if (certificates.length > 0) {
                 try {
-                    const domainId = this.ctx.domain!._id.toString();
-                    // 为每个证书触发删除事件
-                    for (const cert of certificates) {
-                        // 确保证书ID存在
-                        if (!cert._id) continue;
+                    const scoreCore = (global as any).scoreCoreService;
+                    if (!scoreCore) {
+                        console.warn('[ExamHall] scoreCore service not available, skipping batch score deduction');
+                    } else {
+                        const domainId = this.ctx.domain!._id.toString();
+                        let deductionCount = 0;
 
-                        const weight = cert.calculatedWeight || cert.weight || 0;
-                        if (weight > 0) {
-                            (this.ctx.emit as any)('certificate/deleted', {
-                                uid: cert.uid,
-                                domainId,
-                                certificateId: cert._id,
-                                weight,
-                                certificateName: cert.certificateName,
-                            });
+                        // 为每个证书扣除积分
+                        for (const cert of certificates) {
+                            if (!cert._id) continue;
+
+                            const weight = cert.calculatedWeight || cert.weight || 0;
+                            if (weight > 0) {
+                                // eslint-disable-next-line no-await-in-loop
+                                await scoreCore.recordScoreChange({
+                                    uid: cert.uid,
+                                    domainId,
+                                    pid: -7777776 - Date.now() - deductionCount, // 批量删除的特殊标识
+                                    recordId: `certificate_batch_deleted_${cert._id}_${Date.now()}`,
+                                    score: -weight, // 负数表示减少积分
+                                    reason: `批量删除证书扣除：${cert.certificateName}`,
+                                    category: '证书奖励',
+                                    title: `批量删除证书 -${weight}积分`,
+                                });
+                                deductionCount++;
+                            }
+                        }
+
+                        if (deductionCount > 0) {
+                            console.log(`[ExamHall] 批量删除证书扣除积分: ${deductionCount} 个证书，共扣除积分`);
                         }
                     }
-                    console.log(`[ExamHall] 批量触发证书删除事件，共 ${certificates.length} 个证书`);
-                } catch (err: any) {
-                    console.error(`[ExamHall] 批量触发证书删除事件失败: ${err.message}`);
-                    // 事件触发失败不影响证书删除
+                } catch (scoreErr: any) {
+                    console.error(`[ExamHall] 批量删除证书积分扣除失败: ${scoreErr.message}`);
+                    // 积分扣除失败不影响证书删除
                 }
             }
 

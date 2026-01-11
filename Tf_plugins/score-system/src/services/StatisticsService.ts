@@ -1,5 +1,5 @@
 import { Context } from 'hydrooj';
-import { ScoreService, UserScore } from './ScoreService';
+import { UserScore } from '../services';
 
 /**
  * 统计分析服务
@@ -7,12 +7,17 @@ import { ScoreService, UserScore } from './ScoreService';
  */
 export class StatisticsService {
     private ctx: Context;
-    private scoreService: ScoreService;
+    private scoreCore: any;
 
-    constructor(ctx: Context, scoreService: ScoreService) {
+    constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreService = scoreService;
+        this.scoreCore = null;
+        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
+
+    /**
+     * 获取 scoreCore 服务实例
+     */
 
     /**
      * 获取系统总览统计 (全局)
@@ -25,6 +30,12 @@ export class StatisticsService {
         todayScore: number;
         todayActiveUsers: number;
     }> {
+        // 获取 scoreCore 实例
+        const scoreCore = (global as any).scoreCoreService;
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
+
         // 获取总用户数和总积分
         const scoreStats = await this.ctx.db.collection('score.users' as any).aggregate([
             { $match: {} }, // 移除域限制
@@ -40,7 +51,7 @@ export class StatisticsService {
         const scoreData = scoreStats[0] || { totalUsers: 0, totalScore: 0 };
 
         // 获取今日统计
-        const todayStats = await this.scoreService.getTodayStats(_domainId);
+        const todayStats = await scoreCore.getTodayStats(_domainId);
 
         return {
             totalUsers: scoreData.totalUsers,
@@ -194,9 +205,15 @@ export class StatisticsService {
         rank: number | null;
         recentScoreCount: number;
     }> {
+        // 获取 scoreCore 实例
+        const scoreCore = (global as any).scoreCoreService;
+        if (!scoreCore) {
+            throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
+        }
+
         // 获取用户积分信息和排名
-        const scoreInfo = await this.scoreService.getUserScore(_domainId, uid);
-        const rank = await this.scoreService.getUserRank(_domainId, uid);
+        const scoreInfo = await scoreCore.getUserScore(_domainId, uid);
+        const rank = await scoreCore.getUserRank(_domainId, uid);
 
         // 获取最近活动数量
         const oneWeekAgo = new Date();

@@ -1,0 +1,11 @@
+{
+  "name": "tf_plugins_core",
+  "version": "0.1.0",
+  "main": "index.ts",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  }
+}
+
+
