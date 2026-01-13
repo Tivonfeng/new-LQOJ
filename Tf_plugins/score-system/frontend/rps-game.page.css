@@ -672,3 +672,108 @@
   }
 }
 
+/* Result overlay inside battle arena */
+/* Result overlay inside battle arena (merged) */
+.rps-battle-arena .result-overlay {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%) translateY(0);
+  width: auto;
+  max-width: 560px;
+  background: rgba(255,255,255,0.96);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+  z-index: 100006 !important;
+  backdrop-filter: blur(6px) saturate(120%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,246,255,0.92));
+  border: 2px solid rgba(139, 92, 246, 0.12);
+  animation: resultOverlayIn 320ms cubic-bezier(.2,.8,.2,1);
+  display: inline-block;
+  text-align: left;
+  pointer-events: auto;
+}
+
+.rps-battle-arena .result-overlay.won { border-color: rgba(16,185,129,0.18); }
+.rps-battle-arena .result-overlay.lost { border-color: rgba(239,68,68,0.18); }
+.rps-battle-arena .result-overlay.draw { border-color: rgba(245,158,11,0.18); }
+
+.rps-battle-arena .result-overlay-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rps-battle-arena .result-overlay-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rps-battle-arena .result-overlay-icon .game-result-icon {
+  font-size: 56px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 360ms cubic-bezier(.2,.8,.2,1);
+}
+.rps-battle-arena .game-result-icon.pop {
+  animation: popIn 420ms cubic-bezier(.2,.8,.2,1);
+}
+
+.rps-battle-arena .result-gain-value {
+  transition: color 240ms ease, transform 240ms ease;
+  display: inline-block;
+  transform-origin: center;
+}
+
+.rps-battle-arena .result-gain-value.positive {
+  color: #0ea05a;
+  transform: scale(1.02);
+}
+.rps-battle-arena .result-gain-value.negative {
+  color: #ef4444;
+}
+
+@keyframes popIn {
+  0% { transform: scale(.6) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.05) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.rps-battle-arena .result-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.rps-battle-arena .result-overlay-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+}
+
+@keyframes resultOverlayIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(.98); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .rps-battle-arena .result-overlay {
+    top: 8%;
+    padding: 10px;
+  }
+  .rps-battle-arena .result-overlay-inner {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .rps-battle-arena .result-overlay-actions {
+    justify-content: flex-end;
+  }
+}

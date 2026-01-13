@@ -34,7 +34,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const { Title, Text } = Typography;
@@ -163,6 +163,9 @@ const RPSGameApp: React.FC = () => {
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [battleStatus, setBattleStatus] = useState('选择你的武器！');
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const [displayNetGain, setDisplayNetGain] = useState<number | null>(null);
   // 使用状态管理所有游戏数据
   const [currentCoins, setCurrentCoins] = useState(gameData.currentCoins);
   const [userStats, setUserStats] = useState(gameData.userStats);
@@ -289,6 +292,58 @@ const RPSGameApp: React.FC = () => {
     setGameResult(null);
     setError(null);
   }, [gameInProgress]);
+
+  // focus management and Esc handler for overlay
+  useEffect(() => {
+    if (gameResult) {
+      // save last active element
+      lastActiveElementRef.current = document.activeElement as HTMLElement | null;
+      // focus close button after render
+      setTimeout(() => {
+        closeBtnRef.current?.focus();
+      }, 0);
+
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+          setGameResult(null);
+          resetGame();
+        }
+      };
+      document.addEventListener('keydown', onKey);
+      return () => {
+        document.removeEventListener('keydown', onKey);
+        // return focus
+        try {
+          lastActiveElementRef.current?.focus();
+        } catch (err) {}
+      };
+    }
+    return;
+  }, [gameResult, resetGame]);
+
+  // animate displayed netGain when result appears
+  useEffect(() => {
+    if (!gameResult) {
+      setDisplayNetGain(null);
+      return;
+    }
+    const from = 0;
+    const to = gameResult.netGain || 0;
+    const duration = 600;
+    const start = performance.now();
+    let rafId = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      const current = Math.round(from + (to - from) * eased);
+      setDisplayNetGain(current);
+      if (t < 1) {
+        rafId = requestAnimationFrame(step);
+      }
+    };
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [gameResult]);
 
   // 执行游戏
   const playGame = useCallback(async (choice: 'rock' | 'paper' | 'scissors') => {
@@ -772,57 +827,71 @@ const RPSGameApp: React.FC = () => {
                     </Button>
                   </div>
 
-                  {/* Game Result */}
+                  {/* Game Result Overlay inside battle arena */}
                   {gameResult && (
-                    <Card
-                      className={`game-result-card ${gameResult.result === 'win' ? 'won' : gameResult.result === 'lose' ? 'lost' : 'draw'}`}
-                      extra={
-                        <Button
-                          type="text"
-                          size="small"
-                          onClick={() => {
-                            setGameResult(null);
-                            resetGame();
-                          }}
-                          style={{ color: '#666' }}
-                        >
-                          关闭
-                        </Button>
-                      }
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                        <div style={{ textAlign: 'center' }}>
-                          {gameResult.result === 'win' ? (
-                            <CheckCircleOutlined className="game-result-icon won" />
-                          ) : gameResult.result === 'lose' ? (
-                            <CloseCircleOutlined className="game-result-icon lost" />
-                          ) : (
-                            <AppstoreOutlined className="game-result-icon draw" />
-                          )}
-                          <Title level={3} className="game-result-title">
-                            {gameResult.result === 'win' ? '恭喜！你赢了！' : gameResult.result === 'lose' ? '下次好运' : '平局！'}
-                          </Title>
-                        </div>
-                        <Row gutter={[16, 16]}>
-                          <Col span={24}>
-                            <div className="result-gain-card positive">
-                              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                <Text type="secondary" className="result-gain-label">本局收益</Text>
-                                <Text strong className={`result-gain-value ${gameResult.netGain >= 0 ? 'positive' : 'negative'}`}>
-                                  {gameResult.netGain > 0 ? '+' : ''}
-                                  {gameResult.netGain} <WalletOutlined />
-                                </Text>
-                                {gameResult.streakBonus > 0 && (
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    连胜奖励: +{gameResult.streakBonus} <WalletOutlined /> (当前连胜: {gameResult.streak})
-                                  </Text>
-                                )}
-                              </Space>
+                    <>
+                      <div
+                        className="result-backdrop"
+                        aria-hidden="true"
+                        onClick={() => {
+                          setGameResult(null);
+                          resetGame();
+                        }}
+                      />
+                      <div
+                        className={`result-overlay ${gameResult.result === 'win' ? 'won' : gameResult.result === 'lose' ? 'lost' : 'draw'}`}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-live="polite"
+                      >
+                        <div className="result-overlay-inner">
+                          <div className="result-overlay-body">
+                            <div className="result-overlay-icon">
+                              {gameResult.result === 'win' ? (
+                                <CheckCircleOutlined className="game-result-icon pop won" />
+                              ) : gameResult.result === 'lose' ? (
+                                <CloseCircleOutlined className="game-result-icon pop lost" />
+                              ) : (
+                                <AppstoreOutlined className="game-result-icon pop draw" />
+                              )}
                             </div>
-                          </Col>
-                        </Row>
-                      </Space>
-                    </Card>
+                            <div className="result-overlay-content">
+                              <Title level={3} className="game-result-title" style={{ margin: 0 }}>
+                                {gameResult.result === 'win' ? '恭喜！你赢了！' : gameResult.result === 'lose' ? '下次好运' : '平局！'}
+                              </Title>
+                              <div style={{ marginTop: 8 }}>
+                                <div className={`result-gain-card ${gameResult.netGain >= 0 ? 'positive' : 'negative'}`} style={{ display: 'inline-block' }}>
+                                  <Space direction="vertical" size="small" style={{ width: '160px' }}>
+                                    <Text type="secondary" className="result-gain-label">本局收益</Text>
+                                    <Text strong className={`result-gain-value ${gameResult.netGain >= 0 ? 'positive' : 'negative'}`}>
+                                      {displayNetGain !== null ? (displayNetGain > 0 ? `+${displayNetGain}` : `${displayNetGain}`) : (gameResult.netGain > 0 ? `+${gameResult.netGain}` : `${gameResult.netGain}`)} <WalletOutlined />
+                                    </Text>
+                                    {gameResult.streakBonus > 0 && (
+                                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                                        连胜奖励: +{gameResult.streakBonus} <WalletOutlined /> (当前连胜: {gameResult.streak})
+                                      </Text>
+                                    )}
+                                  </Space>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="result-overlay-actions">
+                            <Button
+                              type="primary"
+                              ref={closeBtnRef}
+                              aria-label="关闭结果"
+                              onClick={() => {
+                                setGameResult(null);
+                                resetGame();
+                              }}
+                            >
+                              关闭
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   {/* Error Display */}
