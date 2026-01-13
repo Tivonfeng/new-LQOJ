@@ -451,6 +451,51 @@
   color: #9ca3af;
 }
 
+/* Scoped adjustments to avoid affecting other lists/pages */
+.game-history-card .ant-list-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.game-history-card .ant-list-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateX(2px);
+}
+
+.game-history-card .ant-list-item .ant-list-item-meta {
+  flex: 1 1 auto;
+  margin-right: 12px;
+}
+
+.game-history-card .game-history-item .game-history-avatar {
+  margin-right: 12px;
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-history-card .game-history-item .ant-list-item-meta .ant-list-item-meta-description {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-history-card .game-history-item .ant-list-item-meta .ant-typography {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
