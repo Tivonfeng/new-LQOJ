@@ -163,6 +163,27 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 注册积分相关事件监听器
     if (finalConfig.enabled) {
+        // 在插件内注册系统设置：score.max_daily_plays（仅当 model.setting 可用时）
+        try {
+            const settingModel = (global as any).Hydro?.model?.setting;
+            if (settingModel && typeof settingModel.SystemSetting === 'function' && typeof settingModel.Setting === 'function') {
+                settingModel.SystemSetting(
+                    settingModel.Setting(
+                        'setting_score',
+                        'score.max_daily_plays',
+                        10,
+                        'number',
+                        'score.max_daily_plays',
+                        'Maximum daily plays for score system games',
+                    ),
+                );
+                console.log('[Score System] ✅ Registered system setting: score.max_daily_plays');
+            } else {
+                console.warn('[Score System] ⚠️ setting model not available; cannot register system settings locally');
+            }
+        } catch (e) {
+            console.warn('[Score System] ⚠️ Failed to register system setting:', e);
+        }
         // 题目AC事件监听
         ctx.on('record/judge', async (rdoc: RecordDoc, _updated: boolean, pdoc?: ProblemDoc) => {
             try {
