@@ -55,6 +55,7 @@ export interface Certificate {
         levelFactor: number;
         awardFactor: number;
         typeFactor: number;
+        categoryFactor: number;
         calculation: string;
     };
 }

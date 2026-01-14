@@ -154,7 +154,7 @@ const ScoreHallApp: React.FC = () => {
   const ruleItems = [
     { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
     { title: '每日签到', desc: '连续签到递增奖励，周/双周额外奖励' },
-    { title: '证书', desc: '积分 = 证书权重 × 10，删除证书反向扣除' },
+    { title: '证书', desc: '竞赛证书 ×10，考级证书 ×20，删除证书反向扣除' },
     { title: '打字挑战', desc: '进度 / 等级 / 超越奖励发放对应积分' },
     { title: '作品投币', desc: '投币者扣除积分，作者获得同等积分' },
     { title: 'AI 辅助', desc: '按使用次数扣除设定的积分' },

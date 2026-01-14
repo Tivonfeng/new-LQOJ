@@ -19,6 +19,7 @@ import type { TabsProps } from 'antd';
 import {
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Empty,
@@ -209,6 +210,9 @@ const CertificateUploader: React.FC<{
 interface ExamEventData {
   name: string;
   description?: string;
+  weight?: number;
+  eventType?: string;
+  autoWeight?: boolean;
 }
 
 /** 预设表单数据类型 */
@@ -295,7 +299,7 @@ const CertificateManagement: React.FC = () => {
     certifyingBody: '',
     level: 'city',
     description: '',
-    events: [],
+    events: [{ name: '', description: '', weight: 1.0 }],
   });
   const [isPresetSubmitting, setIsPresetSubmitting] = useState(false);
   const [previewingCertId, setPreviewingCertId] = useState<string | null>(null);
@@ -540,6 +544,9 @@ const CertificateManagement: React.FC = () => {
     if (presetFormData.events.some((event) => !event.name.trim())) {
       return warn('赛项名称不能为空');
     }
+    if (presetFormData.events.some((event) => !event.weight || event.weight <= 0)) {
+      return warn('赛项权重必须大于0');
+    }
 
     return true;
   };
@@ -594,7 +601,7 @@ const CertificateManagement: React.FC = () => {
           certifyingBody: '',
           level: 'city',
           description: '',
-          events: [],
+          events: [{ name: '', description: '', weight: 1.0, autoWeight: true }],
         });
         setEditingPresetId(null);
         await fetchAllPresets();
@@ -658,7 +665,13 @@ const CertificateManagement: React.FC = () => {
       certifyingBody: preset.certifyingBody,
       level: preset.level,
       description: preset.description || '',
-      events: preset.events?.map((e) => ({ name: e.name, description: e.description })) || [],
+      events: preset.events?.map((e) => ({
+        name: e.name,
+        description: e.description,
+        weight: e.weight || 1.0,
+        eventType: e.eventType,
+        autoWeight: e.autoWeight !== false,
+      })) || [],
     });
     setEditingPresetId(preset._id || null);
     setShowAddExamForm(true);
@@ -1273,6 +1286,7 @@ const CertificateManagement: React.FC = () => {
                     <div>级别系数: ×{record.weightBreakdown.levelFactor}</div>
                     <div>奖项系数: ×{record.weightBreakdown.awardFactor}</div>
                     <div>类型系数: ×{record.weightBreakdown.typeFactor}</div>
+                    <div>赛项系数: ×{record.weightBreakdown.categoryFactor}</div>
                     <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 8 }}>
                       {record.weightBreakdown.calculation}
                     </div>
@@ -1527,7 +1541,7 @@ const CertificateManagement: React.FC = () => {
                     certifyingBody: '',
                     level: 'city',
                     description: '',
-                    events: [],
+                    events: [{ name: '', description: '', weight: 1.0, autoWeight: true }],
                   });
                   setShowAddExamForm(true);
                 }}
@@ -1597,6 +1611,11 @@ const CertificateManagement: React.FC = () => {
                           {preset.events?.slice(0, 4).map((event, index) => (
                             <Tag key={`${preset._id}-event-${index}`} color="blue">
                               {event.name}
+                              {event.weight && event.weight !== 1.0 && (
+                                <span style={{ marginLeft: 4, fontSize: '12px', opacity: 0.8 }}>
+                                  ×{event.weight}
+                                </span>
+                              )}
                             </Tag>
                           ))}
                           {eventCount > 4 && <Tag color="default">+{eventCount - 4} 更多</Tag>}
@@ -1954,7 +1973,10 @@ const CertificateManagement: React.FC = () => {
 
       <Modal
         open={showAddExamForm}
-        onCancel={() => setShowAddExamForm(false)}
+        onCancel={() => {
+          setShowAddExamForm(false);
+          setEditingPresetId(null);
+        }}
         title={editingPresetId ? '✏️ 编辑赛考' : '➕ 添加赛考'}
         width={480}
         footer={null}
@@ -2056,7 +2078,12 @@ const CertificateManagement: React.FC = () => {
           <Form.Item
             label={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <span>赛项 *</span>
+                <div>
+                  <span>赛项 *</span>
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
+                    💡 开启"自动推荐权重"，系统将根据赛项名称智能推荐权重
+                  </div>
+                </div>
                 <Button
                   type="dashed"
                   size="small"
@@ -2064,7 +2091,7 @@ const CertificateManagement: React.FC = () => {
                   onClick={() => {
                     setPresetFormData((prev) => ({
                       ...prev,
-                      events: [...(prev.events || []), { name: '', description: '' }],
+                      events: [...(prev.events || []), { name: '', description: '', weight: 1.0, autoWeight: true }],
                     }));
                   }}
                   disabled={isPresetSubmitting}
@@ -2080,40 +2107,88 @@ const CertificateManagement: React.FC = () => {
               <Card size="small" style={{ backgroundColor: '#fafafa', padding: '8px' }}>
                 <Space direction="vertical" size={6} style={{ width: '100%' }}>
                   {presetFormData.events.map((event, index) => (
-                    <div key={index} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                      <Input
-                        size="small"
-                        placeholder="赛项名称"
-                        value={event.name}
-                        onChange={(e) => {
-                          const newEvents = [...presetFormData.events!];
-                          newEvents[index].name = e.target.value;
-                          setPresetFormData((prev) => ({
-                            ...prev,
-                            events: newEvents,
-                          }));
-                        }}
-                        disabled={isPresetSubmitting}
-                        style={{ flex: 1 }}
-                      />
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                          const newEvents = presetFormData.events!.filter(
-                            (_, i) => i !== index,
-                          );
-                          setPresetFormData((prev) => ({
-                            ...prev,
-                            events: newEvents,
-                          }));
-                        }}
-                        disabled={isPresetSubmitting}
-                        aria-label="删除"
-                      />
-                    </div>
+                    <Card key={index} size="small" style={{ marginBottom: 8 }}>
+                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <Input
+                            size="small"
+                            placeholder="赛项名称"
+                            value={event.name}
+                            onChange={(e) => {
+                              const newEvents = [...presetFormData.events!];
+                              newEvents[index].name = e.target.value;
+                              setPresetFormData((prev) => ({
+                                ...prev,
+                                events: newEvents,
+                              }));
+                            }}
+                            disabled={isPresetSubmitting}
+                            style={{ flex: 1 }}
+                          />
+                          <Input
+                            size="small"
+                            type="number"
+                            placeholder="权重"
+                            value={event.weight || 1.0}
+                            min={0.1}
+                            step={0.1}
+                            onChange={(e) => {
+                              const newEvents = [...presetFormData.events!];
+                              newEvents[index].weight = Number.parseFloat(e.target.value) || 1.0;
+                              newEvents[index].autoWeight = false; // 手动设置权重时关闭自动权重
+                              setPresetFormData((prev) => ({
+                                ...prev,
+                                events: newEvents,
+                              }));
+                            }}
+                            disabled={isPresetSubmitting || event.autoWeight}
+                            style={{ width: 80 }}
+                          />
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              const newEvents = presetFormData.events!.filter(
+                                (_, i) => i !== index,
+                              );
+                              setPresetFormData((prev) => ({
+                                ...prev,
+                                events: newEvents,
+                              }));
+                            }}
+                            disabled={isPresetSubmitting}
+                            aria-label="删除"
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <Checkbox
+                            checked={event.autoWeight !== false}
+                            onChange={(e) => {
+                              const newEvents = [...presetFormData.events!];
+                              newEvents[index].autoWeight = e.target.checked;
+                              if (e.target.checked) {
+                                // 开启自动权重时重置为默认值
+                                newEvents[index].weight = 1.0;
+                              }
+                              setPresetFormData((prev) => ({
+                                ...prev,
+                                events: newEvents,
+                              }));
+                            }}
+                            disabled={isPresetSubmitting}
+                          >
+                            自动推荐权重
+                          </Checkbox>
+                          {event.autoWeight !== false && (
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              系统将根据赛项名称智能推荐权重
+                            </Text>
+                          )}
+                        </div>
+                      </Space>
+                    </Card>
                   ))}
                 </Space>
               </Card>
@@ -2136,25 +2211,6 @@ const CertificateManagement: React.FC = () => {
               >
                 {editingPresetId ? '更新赛考' : '创建赛考'}
               </Button>
-              {editingPresetId && (
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setEditingPresetId(null);
-                    setPresetFormData({
-                      type: 'competition',
-                      name: '',
-                      certifyingBody: '',
-                      level: 'city',
-                      description: '',
-                      events: [],
-                    });
-                  }}
-                  disabled={isPresetSubmitting}
-                >
-                  取消编辑
-                </Button>
-              )}
             </Space>
           </Form.Item>
         </Form>

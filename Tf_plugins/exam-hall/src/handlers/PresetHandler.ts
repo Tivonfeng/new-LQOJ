@@ -106,6 +106,10 @@ export class PresetListHandler extends PresetHandlerBase {
                 this.sendError('赛项名称无效', 400);
                 return;
             }
+            if (events.some((event: any) => event.weight !== undefined && (typeof event.weight !== 'number' || event.weight <= 0))) {
+                this.sendError('赛项权重必须是正数', 400);
+                return;
+            }
 
             const presetService = new PresetService(this.ctx);
             const preset = await presetService.createPreset({
@@ -219,6 +223,10 @@ export class PresetDetailHandler extends PresetHandlerBase {
 
                 if (events.some((event: any) => !event.name || typeof event.name !== 'string')) {
                     this.sendError('赛项名称无效', 400);
+                    return;
+                }
+                if (events.some((event: any) => event.weight !== undefined && (typeof event.weight !== 'number' || event.weight <= 0))) {
+                    this.sendError('赛项权重必须是正数', 400);
                     return;
                 }
             }
