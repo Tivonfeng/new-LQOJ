@@ -44,7 +44,7 @@ export default class WechatPlugin extends Service {
         // 开放平台配置（用于网页扫码登录，可选，配置后可同时支持微信内和浏览器登录）
         openAppId: Schema.string().description('微信开放平台 AppID (可选，用于扫码登录)').default('wxb2ae929b4383b073'),
         openAppSecret: Schema.string().description('微信开放平台 AppSecret').role('secret').default('607ac168edfd1c3b1f1a0774294d3a46'),
-        useOpenPlatformForOAuth: Schema.boolean().description('优先使用开放平台进行OAuth登录').default(true),
+        useOpenPlatformForOAuth: Schema.boolean().description('优先使用开放平台进行OAuth登录').default(false),
         // 通用配置
         domains: Schema.array(Schema.string()).description('授权域名列表').default(['yz.lqcode.fun', 'noj.lqcode.fun']),
         canRegister: Schema.boolean().description('是否允许通过微信注册新账号（false=仅允许绑定现有账号）').default(false),
