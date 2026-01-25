@@ -2,7 +2,7 @@ import {
     Handler,
     ObjectId,
 } from 'hydrooj';
-import { ThinkingTimeService } from '../services';
+import { ThinkingTimeService } from '../services/ThinkingTimeService';
 
 export class ThinkingTimeHandler extends Handler {
     async post(args: any) {

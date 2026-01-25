@@ -1,11 +1,15 @@
 // 立即输出，确保模块被加载
 import {
     Context,
-    PRIV,
     ProblemDoc,
     RecordDoc,
     Schema,
-    STATUS } from 'hydrooj';
+    STATUS,
+    PRIV,
+    db,
+    ProblemModel,
+    RecordModel,
+} from 'hydrooj';
 // 导入处理器
 import {
     CheckInHandler,
@@ -36,7 +40,7 @@ import {
     TransferAdminHandler,
     TransferCreateHandler,
     TransferHistoryHandler,
-    UserScoreHandler, WalletHandler } from './src/handlers';
+    UserScoreHandler, ThinkingTimeHandler, WalletHandler } from './src/handlers';
 import { ScoreConfig } from './src/handlers/config';
 // 导入服务层
 import {
@@ -209,6 +213,23 @@ export default async function apply(ctx: Context, config: any = {}) {
                     });
                     isFirstAC = result.isFirstAC;
                     awardedScore = result.awarded;
+
+                    // Broadcast an augmented record/change event so frontends can show accurate first-AC/score info.
+                    try {
+                        const broadcastRdoc = {
+                            ...rdoc,
+                            scoreAwardInfo: {
+                                isFirstAC,
+                                awardedScore,
+                            },
+                        };
+                        // Use ctx.broadcast to propagate through the system event bus
+                        (ctx as any).broadcast('record/change', broadcastRdoc);
+                        console.log(`[Score System] 🔔 broadcasted record/change with scoreAwardInfo for rid ${rdoc._id}`);
+                    } catch (e) {
+                        console.warn('[Score System] ⚠️ Failed to broadcast scoreAwardInfo:', e);
+                    }
+
                     if (isFirstAC) {
                         console.log(`[Score System] ✅ User ${rdoc.uid} first AC problem ${rdoc.pid}`,
                             `(${pdoc.title}), awarded ${awardedScore} points via scoreCore`);
@@ -263,6 +284,14 @@ export default async function apply(ctx: Context, config: any = {}) {
 
         ctx.Route('checkin', '/score/checkin', CheckInHandler);
 
+        // 思考时间记录接口（来自 confetti-thinking-time 插件）
+        try {
+            ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
+            console.log('[Score System] ✅ thinking-time route registered');
+        } catch (e) {
+            console.warn('[Score System] ⚠️ Failed to register thinking-time route:', e);
+        }
+
         // 注入导航栏 - 添加权限检查，只有内部用户可见
         ctx.injectUI('Nav', 'score_hall', {
             prefix: 'score',
@@ -271,6 +300,57 @@ export default async function apply(ctx: Context, config: any = {}) {
 
         console.log('[Score System] ✅ All routes registered');
     }
+
+    ctx.on('app/started' as any, async () => {
+        try {
+            if (RecordModel && RecordModel.PROJECTION_LIST) {
+                if (!RecordModel.PROJECTION_LIST.includes('thinkingTime' as any)) {
+                    RecordModel.PROJECTION_LIST.push('thinkingTime' as any);
+                    console.log('✅ 已添加 thinkingTime 到 RecordModel PROJECTION_LIST');
+                }
+            } else {
+                console.warn('⚠️ 无法找到 RecordModel 或 PROJECTION_LIST');
+            }
+
+            if (ProblemModel) {
+                const projectionLists = ['PROJECTION_LIST', 'PROJECTION_PUBLIC', 'PROJECTION_CONTEST_LIST'];
+                for (const listName of projectionLists) {
+                    if (ProblemModel[listName] && Array.isArray(ProblemModel[listName])) {
+                        if (!ProblemModel[listName].includes('thinkingTimeStats' as any)) {
+                            ProblemModel[listName].push('thinkingTimeStats' as any);
+                            console.log(`✅ 已添加 thinkingTimeStats 到 ProblemModel.${listName}`);
+                        }
+                    }
+                }
+            } else {
+                console.warn('⚠️ 无法找到 ProblemModel');
+            }
+
+            const recordColl = db.collection('record');
+
+            await recordColl.createIndex(
+                { uid: 1, domainId: 1, thinkingTime: 1 },
+                {
+                    name: 'thinking_time_user_stats',
+                    background: true,
+                    sparse: true,
+                },
+            );
+
+            await recordColl.createIndex(
+                { pid: 1, domainId: 1, thinkingTime: 1 },
+                {
+                    name: 'thinking_time_problem_stats',
+                    background: true,
+                    sparse: true,
+                },
+            );
+
+            console.log('✅ 思考时间插件索引创建成功');
+        } catch (error) {
+            console.warn('⚠️ 思考时间插件索引创建失败:', error);
+        }
+    });
 
     console.log('[Score System] 🎉 Score system plugin loaded successfully');
 }

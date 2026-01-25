@@ -50,6 +50,9 @@ export {
     UserScoreHandler,
 } from './ScoreHandlers';
 
+// 思考时间处理器（来自 confetti-thinking-time 插件）
+export { ThinkingTimeHandler } from './ThinkingTimeHandler';
+
 // 转账相关处理器
 export {
     TransferAdminHandler,
