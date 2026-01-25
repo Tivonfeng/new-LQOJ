@@ -1,14 +1,14 @@
 // 立即输出，确保模块被加载
 import {
     Context,
+    db,
+    PRIV,
     ProblemDoc,
+    ProblemModel,
     RecordDoc,
+    RecordModel,
     Schema,
     STATUS,
-    PRIV,
-    db,
-    ProblemModel,
-    RecordModel,
 } from 'hydrooj';
 // 导入处理器
 import {
@@ -37,10 +37,10 @@ import {
     ScoreManageHandler,
     ScoreRankingHandler,
     ScoreRecordsHandler,
-    TransferAdminHandler,
+    ThinkingTimeHandler, TransferAdminHandler,
     TransferCreateHandler,
     TransferHistoryHandler,
-    UserScoreHandler, ThinkingTimeHandler, WalletHandler } from './src/handlers';
+    UserScoreHandler, WalletHandler } from './src/handlers';
 import { ScoreConfig } from './src/handlers/config';
 // 导入服务层
 import {
