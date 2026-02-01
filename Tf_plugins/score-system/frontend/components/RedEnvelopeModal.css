@@ -1,139 +1,252 @@
 /* 红包弹窗样式 */
 .red-envelope-modal {
     .ant-modal-content {
-        border-radius: 16px;
+        border-radius: 20px;
         overflow: hidden;
+        box-shadow: 0 20px 60px rgba(255, 77, 79, 0.3);
+    }
+
+    .ant-modal-body {
+        padding: 0;
     }
 }
 
 .red-envelope-modal-content {
-    padding: 24px;
+    padding: 32px 28px;
     text-align: center;
+    background: linear-gradient(180deg, #fff 0%, #fff7e6 100%);
+    position: relative;
 }
 
 /* 红包头部 */
 .red-envelope-header {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    position: relative;
 }
 
 .red-envelope-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 12px;
-    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 50%, #ffaaa5 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
-    animation: pulse 2s infinite;
+    box-shadow: 0 8px 24px rgba(255, 77, 79, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+    position: relative;
+}
+
+.red-envelope-icon::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    z-index: -1;
+    opacity: 0.3;
+    filter: blur(8px);
 }
 
 @keyframes pulse {
     0% {
         transform: scale(1);
-        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+        box-shadow: 0 8px 24px rgba(255, 77, 79, 0.4);
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+        box-shadow: 0 12px 32px rgba(255, 77, 79, 0.5);
     }
     100% {
         transform: scale(1);
-        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+        box-shadow: 0 8px 24px rgba(255, 77, 79, 0.4);
     }
 }
 
+@keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+}
+
 .red-envelope-icon-text {
-    font-size: 40px;
+    font-size: 48px;
+    animation: shake 0.5s ease-in-out infinite;
 }
 
 .red-envelope-title {
     margin: 0;
     color: #ff4d4f;
+    font-size: 22px;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(255, 77, 79, 0.2);
 }
 
 /* 红包信息 */
 .red-envelope-info {
-    margin: 20px 0;
-    padding: 16px;
-    background: #fafafa;
-    border-radius: 8px;
+    margin: 24px 0;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #fff 0%, #fff7e6 100%);
+    border-radius: 16px;
+    border: 1px solid #ffd591;
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.08);
 }
 
 .red-envelope-sender {
     display: block;
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #262626;
 }
 
 .red-envelope-message {
     display: block;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 12px;
+    font-size: 16px;
+    color: #595959;
+    margin-bottom: 16px;
     font-style: italic;
+    padding: 12px 16px;
+    background: rgba(255, 77, 79, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #ff4d4f;
 }
 
 .red-envelope-amount {
     display: block;
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 700;
     color: #ff4d4f;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 8px rgba(255, 77, 79, 0.2);
 }
 
 .red-envelope-count {
     display: block;
-    font-size: 12px;
-    color: #999;
+    font-size: 14px;
+    color: #8c8c8c;
+    font-weight: 500;
 }
 
 /* 领取结果 */
 .red-envelope-result {
-    margin: 16px 0;
-    padding: 12px;
-    border-radius: 8px;
+    margin: 20px 0;
+    padding: 16px 20px;
+    border-radius: 12px;
+    animation: fadeInUp 0.4s ease-out;
 
     &.success {
-        background: #f6ffed;
+        background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
         border: 1px solid #b7eb8f;
+        box-shadow: 0 4px 12px rgba(82, 196, 26, 0.15);
     }
 
     &.error {
-        background: #fff2f0;
+        background: linear-gradient(135deg, #fff2f0 0%, #ffccc7 100%);
         border: 1px solid #ffccc7;
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
     }
 
     .result-text {
-        font-size: 16px;
+        font-size: 20px;
+        font-weight: 700;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
 /* 按钮区域 */
 .red-envelope-actions {
-    margin-top: 20px;
+    margin-top: 24px;
 }
 
 .red-envelope-claim-btn {
-    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 50%, #a8071a 100%);
     border: none;
-    height: 48px;
+    height: 52px;
     font-size: 18px;
-    font-weight: bold;
-    border-radius: 24px;
+    font-weight: 700;
+    border-radius: 26px;
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
 
-    &:hover,
-    &:focus {
-        background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%);
-    }
+.red-envelope-claim-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.red-envelope-claim-btn:hover::before {
+    left: 100%;
+}
+
+.red-envelope-claim-btn:hover,
+.red-envelope-claim-btn:focus {
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+    box-shadow: 0 8px 28px rgba(255, 77, 79, 0.5);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.red-envelope-claim-btn:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .red-envelope-countdown {
     display: block;
-    margin-top: 12px;
-    font-size: 12px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #8c8c8c;
+    font-weight: 500;
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+    .red-envelope-modal-content {
+        padding: 24px 20px;
+    }
+
+    .red-envelope-icon {
+        width: 70px;
+        height: 70px;
+    }
+
+    .red-envelope-icon-text {
+        font-size: 36px;
+    }
+
+    .red-envelope-title {
+        font-size: 18px;
+    }
+
+    .red-envelope-sender {
+        font-size: 16px;
+    }
+
+    .red-envelope-amount {
+        font-size: 24px;
+    }
+
+    .red-envelope-claim-btn {
+        height: 48px;
+        font-size: 16px;
+    }
 }
 

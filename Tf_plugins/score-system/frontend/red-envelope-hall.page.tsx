@@ -28,6 +28,7 @@ import {
   Progress,
   Row,
   Select,
+  Skeleton,
   Space,
   Statistic,
   Tabs,
@@ -133,8 +134,8 @@ const RedEnvelopeHallApp: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
 
-  // 发红包弹窗状态
-  const [createModalVisible, setCreateModalVisible] = useState(false);
+  // 发红包弹窗状态 - 已移除未使用的状态
+  // const [createModalVisible, setCreateModalVisible] = useState(false);
 
   // 我的记录状态
   const [mySent, setMySent] = useState<RedEnvelopeDetail[]>([]);
@@ -364,7 +365,7 @@ const RedEnvelopeHallApp: React.FC = () => {
                     <div className="red-envelope-claimers">
                         <CheckCircleOutlined className="check-icon" />
                         {envelope.claims.slice(0, 3).map((claim, index) => (
-                            <div key={index} className="claimer-avatar" title={claim.claimerDisplayName || claim.claimerName}>
+                            <div key={index} className="claimer-avatar" data-tooltip={claim.claimerDisplayName || claim.claimerName}>
                                 {claim.claimerName?.charAt(0).toUpperCase()}
                             </div>
                         ))}
@@ -376,6 +377,37 @@ const RedEnvelopeHallApp: React.FC = () => {
             </div>
     );
   };
+
+  // 骨架屏列表项
+  const renderSkeletonItem = () => (
+    <div className="red-envelope-item">
+      <div className="red-envelope-item-left">
+        <Skeleton.Avatar active size={52} shape="circle" />
+        <div className="red-envelope-item-info">
+          <Skeleton.Input active style={{ width: 100 }} size="small" />
+          <Skeleton.Input active style={{ width: 180 }} size="small" />
+        </div>
+      </div>
+      <div className="red-envelope-item-center">
+        <Skeleton.Input active style={{ width: 80 }} size="small" />
+      </div>
+      <div className="red-envelope-item-right">
+        <Skeleton.Button active style={{ width: 80, height: 36 }} shape="round" />
+      </div>
+    </div>
+  );
+
+  // 骨架屏数据
+  const skeletonData = Array.from({ length: 5 }, () => 0);
+
+  // 自定义加载状态
+  const renderLoading = loading ? (
+    <List
+      dataSource={skeletonData}
+      renderItem={() => renderSkeletonItem()}
+      className="red-envelope-list"
+    />
+  ) : null;
 
   return (
         <div className="red-envelope-hall-container">
@@ -640,21 +672,25 @@ const RedEnvelopeHallApp: React.FC = () => {
                             </Space>
                         ),
                         children: (
-                                <List
-                                    dataSource={envelopes}
-                                    renderItem={renderEnvelopeItem}
-                                    loading={loading}
-                                    className="red-envelope-list"
-                                    locale={{
-                                      emptyText: (
-                                            <div className="red-envelope-empty">
-                                                <RedEnvelopeOutlined className="red-envelope-empty-icon" />
-                                                <div className="red-envelope-empty-text">暂无红包</div>
-                                                <Text type="secondary">快来发个红包吧！</Text>
-                                            </div>
-                                      ),
-                                    }}
-                                />
+                                <>
+                                  {renderLoading}
+                                  {!loading && (
+                                    <List
+                                      dataSource={envelopes}
+                                      renderItem={renderEnvelopeItem}
+                                      className="red-envelope-list"
+                                      locale={{
+                                        emptyText: (
+                                          <div className="red-envelope-empty">
+                                            <RedEnvelopeOutlined className="red-envelope-empty-icon" />
+                                            <div className="red-envelope-empty-text">暂无红包</div>
+                                            <Text type="secondary">快来发个红包吧！</Text>
+                                          </div>
+                                        ),
+                                      }}
+                                    />
+                                  )}
+                                </>
                         ),
                       },
                       {
