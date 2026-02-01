@@ -29,6 +29,15 @@ import {
     RedemptionHistoryApiHandler,
     RedemptionListApiHandler,
     RedemptionRedeemApiHandler,
+    RedEnvelopeClaimHandler,
+    RedEnvelopeCreateHandler,
+    RedEnvelopeDetailHandler,
+    RedEnvelopeHallPageHandler,
+    RedEnvelopeListHandler,
+    RedEnvelopeMyClaimedHandler,
+    RedEnvelopeMySentHandler,
+    RedEnvelopeStatsHandler,
+    RedEnvelopeWSHandler,
     RPSGameHandler,
     RPSHistoryHandler,
     RPSPlayHandler,
@@ -57,6 +66,21 @@ import {
     type UserRPSStats,
     type UserScore,
 } from './src/services';
+
+// 【关键】初始化 WebSocket 客户端 Map，确保在模块加载时就创建
+// 使用 global 并保存直接引用，确保热重载时不会丢失
+const WS_CLIENTS_KEY = 'hydro_redEnvelope_wsClients';
+let wsClientsMap: Map<string, any> | null = null;
+
+// 在 global 上保存引用的同时保存本地变量
+if (!(global as any)[WS_CLIENTS_KEY]) {
+    wsClientsMap = new Map();
+    (global as any)[WS_CLIENTS_KEY] = wsClientsMap;
+    console.log('[Score System] WebSocket 客户端 Map 已初始化');
+} else {
+    wsClientsMap = (global as any)[WS_CLIENTS_KEY];
+    console.log('[Score System] 使用已有的 WebSocket 客户端 Map');
+}
 
 // 积分系统配置Schema
 const Config = Schema.object({
@@ -284,6 +308,23 @@ export default async function apply(ctx: Context, config: any = {}) {
 
         ctx.Route('checkin', '/score/checkin', CheckInHandler);
 
+        // 红包相关路由
+        ctx.Route('red_envelope_hall', '/score/red-envelope/hall', RedEnvelopeHallPageHandler);
+        ctx.Route('red_envelope_create', '/score/red-envelope/create', RedEnvelopeCreateHandler);
+        ctx.Route('red_envelope_list', '/score/red-envelope/list', RedEnvelopeListHandler);
+        ctx.Route('red_envelope_claim', '/score/red-envelope/:envelopeId/claim', RedEnvelopeClaimHandler);
+        ctx.Route('red_envelope_detail', '/score/red-envelope/:envelopeId', RedEnvelopeDetailHandler);
+        ctx.Route('red_envelope_my_sent', '/score/red-envelope/my/sent', RedEnvelopeMySentHandler);
+        ctx.Route('red_envelope_my_claimed', '/score/red-envelope/my/claimed', RedEnvelopeMyClaimedHandler);
+        ctx.Route('red_envelope_stats', '/score/red-envelope/stats', RedEnvelopeStatsHandler);
+
+        // 注册红包 WebSocket 路由
+        ctx.Connection(
+            'red_envelope_ws',
+            '/ws/red-envelope',
+            RedEnvelopeWSHandler,
+        );
+
         // 思考时间记录接口（来自 confetti-thinking-time 插件）
         try {
             ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
@@ -347,6 +388,16 @@ export default async function apply(ctx: Context, config: any = {}) {
             );
 
             console.log('✅ 思考时间插件索引创建成功');
+
+            // 创建红包相关数据库索引
+            try {
+                const { RedEnvelopeService } = await import('./src/services/RedEnvelopeService');
+                const service = new RedEnvelopeService(ctx);
+                await service.createIndexes();
+                console.log('✅ 红包插件索引创建成功');
+            } catch (error) {
+                console.warn('⚠️ 红包插件索引创建失败:', error);
+            }
         } catch (error) {
             console.warn('⚠️ 思考时间插件索引创建失败:', error);
         }

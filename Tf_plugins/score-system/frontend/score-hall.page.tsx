@@ -11,6 +11,7 @@ import {
   DollarOutlined,
   GiftOutlined,
   PlayCircleOutlined,
+  RedEnvelopeOutlined,
   RocketOutlined,
   SettingOutlined,
   TrophyOutlined,
@@ -200,6 +201,7 @@ const ScoreHallApp: React.FC = () => {
   const diceGameUrl = (window as any).diceGameUrl || '/score/dice';
   const rpsGameUrl = (window as any).rpsGameUrl || '/score/rps';
   const lotteryGameUrl = (window as any).lotteryGameUrl || '/score/lottery';
+  const redEnvelopeHallUrl = (window as any).redEnvelopeHallUrl || '/score/red-envelope/hall';
   const transferUrl = (window as any).transferUrl || '/score/transfer';
   const scoreManageUrl = (window as any).scoreManageUrl || '/score/manage';
   const scoreRecordsUrl = (window as any).scoreRecordsUrl || '/score/records';
@@ -599,6 +601,51 @@ const ScoreHallApp: React.FC = () => {
                   size="large"
                 >
                   开始抽奖
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Red Envelope Card */}
+        <Col xs={24} lg={8}>
+          <Card className="game-card red-envelope-card" bordered={false}>
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper red-envelope-icon">
+                  <RedEnvelopeOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">发红包</Title>
+                  <Text className="game-card-subtitle">分享积分好运</Text>
+                </div>
+              </div>
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <Text className="game-info-label">分配方式</Text>
+                    <Text className="game-info-value">随机/平均</Text>
+                  </div>
+                  <div className="game-info-item">
+                    <Text className="game-info-label">有效时间</Text>
+                    <Text className="game-info-value">24小时</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">全员可抢</Tag>
+                  <Tag className="game-feature-tag">实时到账</Tag>
+                </div>
+              </div>
+              <div className="game-card-footer">
+                <Button
+                  type="primary"
+                  icon={<RedEnvelopeOutlined />}
+                  href={redEnvelopeHallUrl}
+                  className="game-action-btn red-envelope-btn"
+                  block
+                  size="large"
+                >
+                  发红包
                 </Button>
               </div>
             </div>

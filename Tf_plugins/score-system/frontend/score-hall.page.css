@@ -468,6 +468,32 @@
   box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
 }
 
+/* Red Envelope Card */
+.red-envelope-card {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  border: none;
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.3);
+}
+
+.red-envelope-icon {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.red-envelope-btn {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.red-envelope-btn:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
 /* Content Cards */
 .content-card {
   border-radius: 12px;

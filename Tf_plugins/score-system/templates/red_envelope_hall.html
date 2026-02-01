@@ -1,0 +1,24 @@
+{% set page_name = "red_envelope_hall" %}
+{% extends "layout/basic.html" %}
+{% block content %}
+
+<!-- React App Mount Point -->
+<div id="red-envelope-hall-react-app"></div>
+
+<!-- Pass data to React component via global variables -->
+<script>
+    // 将模板数据传递给React组件
+    window.redEnvelopeHallData = {{ redEnvelopeHallDataJson|safe }};
+
+    // 传递URL
+    window.redEnvelopeHallUrl = '{{ url("red_envelope_hall") }}';
+    window.redEnvelopeCreateUrl = '{{ url("red_envelope_create") }}';
+    window.redEnvelopeListUrl = '{{ url("red_envelope_list") }}';
+    window.redEnvelopeMySentUrl = '{{ url("red_envelope_my_sent") }}';
+    window.redEnvelopeMyClaimedUrl = '{{ url("red_envelope_my_claimed") }}';
+    window.redEnvelopeStatsUrl = '{{ url("red_envelope_stats") }}';
+    window.redEnvelopeClaimUrl = '/score/red-envelope/:envelopeId/claim';
+</script>
+
+{% endblock %}
+

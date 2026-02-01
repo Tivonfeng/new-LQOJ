@@ -92,3 +92,10 @@ export {
     type TransferRecord,
     TransferService,
 } from './TransferService';
+
+// 红包服务
+export {
+    RedEnvelopeService,
+} from './RedEnvelopeService';
+
+export * from '../models/RedEnvelope';

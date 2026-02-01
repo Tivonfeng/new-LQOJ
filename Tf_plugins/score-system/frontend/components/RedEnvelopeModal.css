@@ -1,0 +1,139 @@
+/* 红包弹窗样式 */
+.red-envelope-modal {
+    .ant-modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+}
+
+.red-envelope-modal-content {
+    padding: 24px;
+    text-align: center;
+}
+
+/* 红包头部 */
+.red-envelope-header {
+    margin-bottom: 20px;
+}
+
+.red-envelope-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 12px;
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    }
+}
+
+.red-envelope-icon-text {
+    font-size: 40px;
+}
+
+.red-envelope-title {
+    margin: 0;
+    color: #ff4d4f;
+}
+
+/* 红包信息 */
+.red-envelope-info {
+    margin: 20px 0;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+.red-envelope-sender {
+    display: block;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.red-envelope-message {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+.red-envelope-amount {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff4d4f;
+    margin-bottom: 4px;
+}
+
+.red-envelope-count {
+    display: block;
+    font-size: 12px;
+    color: #999;
+}
+
+/* 领取结果 */
+.red-envelope-result {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 8px;
+
+    &.success {
+        background: #f6ffed;
+        border: 1px solid #b7eb8f;
+    }
+
+    &.error {
+        background: #fff2f0;
+        border: 1px solid #ffccc7;
+    }
+
+    .result-text {
+        font-size: 16px;
+    }
+}
+
+/* 按钮区域 */
+.red-envelope-actions {
+    margin-top: 20px;
+}
+
+.red-envelope-claim-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    border: none;
+    height: 48px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 24px;
+
+    &:hover,
+    &:focus {
+        background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%);
+    }
+}
+
+.red-envelope-countdown {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+}
+

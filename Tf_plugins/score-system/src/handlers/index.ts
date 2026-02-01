@@ -60,3 +60,22 @@ export {
     TransferHistoryHandler,
     WalletHandler,
 } from './WalletHandlers';
+
+// 红包相关处理器
+export {
+    RedEnvelopeClaimHandler,
+    RedEnvelopeCreateHandler,
+    RedEnvelopeDetailHandler,
+    RedEnvelopeHallPageHandler,
+    RedEnvelopeListHandler,
+    RedEnvelopeMyClaimedHandler,
+    RedEnvelopeMySentHandler,
+    RedEnvelopeStatsHandler,
+} from './RedEnvelopeHandler';
+
+// 红包 WebSocket 处理器
+export {
+    RedEnvelopeWSHandler,
+    broadcastNewRedEnvelope,
+    broadcastToAllClients,
+} from './RedEnvelopeWSHandler';
