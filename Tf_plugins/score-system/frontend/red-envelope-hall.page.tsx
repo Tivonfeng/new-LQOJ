@@ -416,8 +416,7 @@ const RedEnvelopeHallApp: React.FC = () => {
               <Row justify="space-between" align="middle">
                 <Col>
                   <Space direction="vertical" size="small">
-                    <Typography.Title level={1} className="hero-title">
-                      <RedEnvelopeOutlined style={{ marginRight: '8px' }} /> 红包大厅
+                    <Typography.Title level={1} className="hero-title"> 发红包（beta版）
                     </Typography.Title>
                     <Text className="hero-subtitle">
                       发送红包，与大家分享好运
