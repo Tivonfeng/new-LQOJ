@@ -878,6 +878,20 @@
     text-align: center;
     padding: 64px 24px;
     color: #8c8c8c;
+    position: relative;
+}
+
+.red-envelope-empty::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(ellipse, rgba(255, 77, 79, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .red-envelope-empty-icon {
@@ -886,11 +900,48 @@
     margin-bottom: 20px;
     display: inline-block;
     animation: float 3s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+}
+
+.red-envelope-empty-icon::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255, 77, 79, 0.2), transparent);
+    border-radius: 2px;
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%, 100% {
+        transform: translateY(0);
+    }
+    25% {
+        transform: translateY(-8px) rotate(-2deg);
+    }
+    50% {
+        transform: translateY(0);
+    }
+    75% {
+        transform: translateY(-8px) rotate(2deg);
+    }
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.red-envelope-empty-icon.blinking {
+    animation: float 3s ease-in-out infinite, blink 2s ease-in-out infinite;
 }
 
 .red-envelope-empty-text {
@@ -898,10 +949,44 @@
     font-weight: 600;
     color: #595959;
     margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
 }
 
 .red-envelope-empty .ant-typography {
     color: #8c8c8c;
+    position: relative;
+    z-index: 1;
+}
+
+/* 空状态操作引导 */
+.red-envelope-empty-hint {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, rgba(255, 77, 79, 0.08) 0%, rgba(255, 77, 79, 0.04) 100%);
+    border: 1px solid rgba(255, 77, 79, 0.2);
+    border-radius: 24px;
+    display: inline-block;
+    animation: pulseHint 2s ease-in-out infinite;
+}
+
+@keyframes pulseHint {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(255, 77, 79, 0);
+    }
+}
+
+.red-envelope-empty-hint-text {
+    color: #ff4d4f;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.red-envelope-empty-hint-text::before {
+    content: '👆 ';
 }
 
 /* 我的记录标签页 */
@@ -1005,6 +1090,66 @@
     height: 40px;
 }
 
+/* 分页容器样式 */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px 16px;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+}
+
+.pagination-container .ant-pagination {
+    margin: 0;
+}
+
+.pagination-container .ant-pagination-item {
+    border-radius: 8px;
+    border-color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-item:hover {
+    border-color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-item a {
+    color: #595959;
+    border-radius: 6px;
+}
+
+.pagination-container .ant-pagination-item:hover a {
+    color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-item-active {
+    background: #ff4d4f;
+    border-color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-item-active a {
+    color: #fff;
+}
+
+.pagination-container .ant-pagination-item-active:hover a {
+    color: #fff;
+}
+
+.pagination-container .ant-pagination-prev:hover,
+.pagination-container .ant-pagination-next:hover {
+    border-color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-prev:hover .ant-pagination-item-link,
+.pagination-container .ant-pagination-next:hover .ant-pagination-item-link {
+    color: #ff4d4f;
+    border-color: #ff4d4f;
+}
+
+.pagination-container .ant-pagination-jump-prev:hover .ant-pagination-item-ellipsis,
+.pagination-container .ant-pagination-jump-next:hover .ant-pagination-item-ellipsis {
+    color: #ff4d4f;
+}
+
 /* 响应式调整 */
 @media (max-width: 992px) {
     .send-envelope-button-container {
@@ -1048,61 +1193,66 @@
         gap: 12px;
     }
 
-    .red-envelope-item {
+    .compact-envelope-item {
         flex-wrap: wrap;
-        padding: 16px;
+        padding: 12px;
         gap: 12px;
     }
 
-    .red-envelope-item-left {
+    .compact-item-left {
         flex-basis: 100%;
         order: 1;
     }
 
-    .red-envelope-avatar {
-        width: 44px;
-        height: 44px;
-        font-size: 16px;
+    .compact-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
     }
 
-    .red-envelope-item-center {
+    .compact-item-center {
         order: 2;
-        flex-basis: auto;
-        min-width: 90px;
-        padding: 10px 12px;
+        flex-basis: 60%;
     }
 
-    .red-envelope-amount .amount-value {
-        font-size: 22px;
+    .compact-amount .amount-value {
+        font-size: 20px;
     }
 
-    .red-envelope-item-right {
+    .compact-item-right {
         order: 3;
-        flex-direction: row;
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 4px;
+        flex-basis: 40%;
+        justify-content: flex-end;
     }
 
-    .red-envelope-claimers {
+    .compact-claimers-preview {
         order: 4;
         flex-basis: 100%;
         margin-top: 8px;
-        justify-content: center;
+        justify-content: flex-start;
+        padding-left: 48px;
     }
 
-    .red-envelope-progress {
-        width: 80px;
+    .envelope-hover-card {
+        width: calc(100vw - 32px);
+        max-width: 380px;
+        left: 16px !important;
+        transform: translateX(0) !important;
     }
 
-    .claim-list-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+    @keyframes slideUpFade {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .claim-record-amount {
-        align-self: flex-end;
+    .hover-card-stats {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1145,6 +1295,101 @@
     }
 }
 
+/* ========== 移动端触摸优化 ========== */
+@media (hover: none) and (pointer: coarse) {
+    /* 移动端禁用hover效果 */
+    .compact-envelope-item:hover {
+        transform: none;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    /* 移动端使用active状态代替hover */
+    .compact-envelope-item:active {
+        background: linear-gradient(135deg, #fff7e6 0%, #fff 50%, #f0f5ff 100%);
+        transform: scale(0.98);
+    }
+
+    /* 可领取状态在移动端的特殊处理 */
+    .compact-envelope-item.claimable:active {
+        background: linear-gradient(135deg, #fff7e6 0%, #fff 50%, #fff0f0 100%);
+        border-color: #ff4d4f;
+        box-shadow: 0 2px 12px rgba(255, 77, 79, 0.25);
+    }
+
+    /* 抢按钮触摸反馈 */
+    .compact-claim-btn:active {
+        transform: scale(0.95);
+        opacity: 0.9;
+    }
+
+    /* 触摸友好的点击区域 */
+    .compact-claim-btn {
+        min-height: 44px;
+        min-width: 60px;
+    }
+
+    /* 移动端分页优化 */
+    .pagination-container {
+        padding: 16px 8px;
+    }
+
+    .pagination-container .ant-pagination-item {
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .pagination-container .ant-pagination-prev,
+    .pagination-container .ant-pagination-next {
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .pagination-container .ant-pagination-item a {
+        padding: 0 8px;
+    }
+
+    /* 移动端列表项触摸优化 */
+    .compact-envelope-item {
+        -webkit-tap-highlight-color: rgba(255, 77, 79, 0.1);
+        touch-action: manipulation;
+    }
+
+    /* 状态标签触摸优化 */
+    .compact-status-tag {
+        min-height: 32px;
+        padding: 4px 12px;
+    }
+
+    /* 头像触摸优化 */
+    .claimer-avatar-small {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
+    .compact-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+
+    /* 触摸涟漪效果 - iOS Safari 优化 */
+    @supports (-webkit-touch-callout: none) {
+        .compact-envelope-item:active::after {
+            width: 150%;
+            height: 150%;
+        }
+    }
+
+    /* 移除移动端不需要的动画 */
+    .compact-envelope-item.claimable::before,
+    .compact-envelope-item.claimable::after,
+    .compact-claim-btn::before {
+        animation: none;
+    }
+}
+
 /* 打印样式 */
 @media print {
     .send-envelope-button-container,
@@ -1159,18 +1404,149 @@
     border: none;
 }
 
+/* 入场动画 - 错落效果 */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 .compact-envelope-item {
     display: flex;
     align-items: center;
     padding: 14px 16px;
     border-bottom: 1px solid #f0f0f0;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     gap: 16px;
     position: relative;
     cursor: pointer;
     background: #fff;
     border-radius: 12px;
     margin: 4px 8px;
+    animation: slideInUp 0.4s ease-out backwards;
+}
+
+/* 每个列表项的延迟动画 */
+.compact-envelope-item:nth-child(1) { animation-delay: 0.05s; }
+.compact-envelope-item:nth-child(2) { animation-delay: 0.08s; }
+.compact-envelope-item:nth-child(3) { animation-delay: 0.11s; }
+.compact-envelope-item:nth-child(4) { animation-delay: 0.14s; }
+.compact-envelope-item:nth-child(5) { animation-delay: 0.17s; }
+.compact-envelope-item:nth-child(6) { animation-delay: 0.20s; }
+.compact-envelope-item:nth-child(7) { animation-delay: 0.23s; }
+.compact-envelope-item:nth-child(8) { animation-delay: 0.26s; }
+.compact-envelope-item:nth-child(9) { animation-delay: 0.29s; }
+.compact-envelope-item:nth-child(10) { animation-delay: 0.32s; }
+
+/* 可领取状态 - 脉冲动画和边框高亮 */
+.compact-envelope-item.claimable {
+    background: linear-gradient(135deg, #fff7e6 0%, #fff 50%, #fff0f0 100%);
+    border: 2px solid #ff4d4f;
+    box-shadow: 0 4px 20px rgba(255, 77, 79, 0.2);
+}
+
+.compact-envelope-item.claimable::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 77, 79, 0.3);
+    animation: pulseBorder 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes pulseBorder {
+    0%, 100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+/* 脉冲光晕效果 */
+.compact-envelope-item.claimable::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(255, 77, 79, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+.compact-envelope-item.claimable:hover {
+    transform: translateX(6px) scale(1.01);
+    box-shadow: 0 8px 28px rgba(255, 77, 79, 0.3);
+}
+
+.compact-envelope-item.claimable .compact-avatar {
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 50%, #ffaaa5 100%);
+    box-shadow: 0 4px 16px rgba(255, 77, 79, 0.4);
+    animation: avatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(255, 77, 79, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 24px rgba(255, 77, 79, 0.6);
+    }
+}
+
+/* 已领取状态 - 柔和风格 */
+.compact-envelope-item.claimed {
+    background: linear-gradient(135deg, #f6ffed 0%, #fff 50%, #f0f5ff 100%);
+    border: 1px solid #b7eb8f;
+}
+
+.compact-envelope-item.claimed:hover {
+    background: linear-gradient(135deg, #f0fff0 0%, #fff 50%, #e6f7ff 100%);
+    transform: translateX(2px);
+}
+
+/* 已过期状态 - 灰色调 */
+.compact-envelope-item.expired {
+    opacity: 0.7;
+    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+}
+
+.compact-envelope-item.expired:hover {
+    opacity: 0.9;
+    transform: translateX(2px);
+}
+
+/* 已领完状态 */
+.compact-envelope-item.completed {
+    background: linear-gradient(135deg, #f9f0ff 0%, #fff 50%, #f5f5f5 100%);
+    border: 1px solid #d3adf7;
+}
+
+.compact-envelope-item.completed:hover {
+    background: linear-gradient(135deg, #faf5ff 0%, #fff 50%, #f0f0f0 100%);
+    transform: translateX(2px);
 }
 
 .compact-envelope-item:hover {
@@ -1179,15 +1555,93 @@
     transform: translateX(4px);
 }
 
+/* 点击波纹效果 */
+.compact-envelope-item::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 77, 79, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.compact-envelope-item:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0s;
+}
+
 .compact-envelope-item.skeleton {
     cursor: default;
-    opacity: 0.7;
+    opacity: 0.85;
 }
 
 .compact-envelope-item.skeleton:hover {
     background: #fff;
     box-shadow: none;
     transform: none;
+}
+
+/* 骨架屏动画增强 */
+.compact-envelope-item.skeleton .ant-skeleton-avatar {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+}
+
+.compact-envelope-item.skeleton .ant-skeleton-input {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+}
+
+.compact-envelope-item.skeleton .ant-skeleton-button {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonLoading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* 骨架屏入场动画 */
+.compact-envelope-item.skeleton {
+    animation: skeletonSlideIn 0.5s ease-out backwards;
+}
+
+.compact-envelope-item.skeleton:nth-child(1) { animation-delay: 0.05s; }
+.compact-envelope-item.skeleton:nth-child(2) { animation-delay: 0.1s; }
+.compact-envelope-item.skeleton:nth-child(3) { animation-delay: 0.15s; }
+.compact-envelope-item.skeleton:nth-child(4) { animation-delay: 0.2s; }
+.compact-envelope-item.skeleton:nth-child(5) { animation-delay: 0.25s; }
+.compact-envelope-item.skeleton:nth-child(6) { animation-delay: 0.3s; }
+.compact-envelope-item.skeleton:nth-child(7) { animation-delay: 0.35s; }
+.compact-envelope-item.skeleton:nth-child(8) { animation-delay: 0.4s; }
+.compact-envelope-item.skeleton:nth-child(9) { animation-delay: 0.45s; }
+.compact-envelope-item.skeleton:nth-child(10) { animation-delay: 0.5s; }
+
+@keyframes skeletonSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 0.85;
+        transform: translateY(0);
+    }
 }
 
 /* 左侧：发送者 */
@@ -1217,36 +1671,61 @@
 .compact-sender-info {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 5px;
     min-width: 0;
+    flex: 1;
 }
 
-.compact-sender-name {
-    font-weight: 600;
-    font-size: 15px;
-    color: #262626;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.compact-brief-message {
+/* 祝福语 - 突出显示 */
+.compact-blessing-message {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 13px;
-    color: #8c8c8c;
+    font-size: 14px;
+    color: #ff4d4f;
+    font-weight: 600;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 77, 79, 0.05) 100%);
+    border-radius: 6px;
+    border-left: 3px solid #ff4d4f;
 }
 
-.compact-brief-message .message-icon {
+.compact-blessing-message .blessing-icon {
     font-size: 12px;
+    flex-shrink: 0;
 }
 
-.compact-brief-message .message-text {
+.compact-blessing-message .blessing-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 150px;
+    max-width: 180px;
+    font-style: italic;
+}
+
+/* 发送者名字 */
+.compact-sender-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #8c8c8c;
+    padding-left: 4px;
+}
+
+.compact-sender-name .sender-label {
+    font-size: 11px;
+    color: #bfbfbf;
+    font-weight: 500;
+}
+
+.compact-sender-name .sender-name-text {
+    font-weight: 600;
+    font-size: 14px;
+    color: #595959;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* 中间：进度 */
@@ -1273,6 +1752,56 @@
     height: 100%;
     border-radius: 3px;
     transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 进度条流光动画 */
+.compact-progress .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* 进度条波动动画 */
+@keyframes progressWave {
+    0%, 100% {
+        height: 100%;
+    }
+    50% {
+        height: 80%;
+    }
+}
+
+.compact-progress .progress-fill.animating::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    filter: blur(4px);
+    opacity: 0.5;
+    animation: progressWave 1.5s ease-in-out infinite;
+    border-radius: 3px;
 }
 
 .compact-progress .progress-info {
@@ -1330,11 +1859,45 @@
     background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
     border: none;
     box-shadow: 0 2px 8px rgba(255, 77, 79, 0.35);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 抢按钮脉冲动画 */
+.compact-claim-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    transform: translate(-50%, -50%) scale(0);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: buttonPulse 2s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.8;
+    }
 }
 
 .compact-claim-btn:hover {
     background: linear-gradient(135deg, #ff4d4f 0%, #a8071a 100%);
     box-shadow: 0 4px 12px rgba(255, 77, 79, 0.45);
+    transform: translateY(-2px) scale(1.05);
+}
+
+.compact-claim-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 6px rgba(255, 77, 79, 0.3);
 }
 
 .compact-status-tag {
@@ -1347,11 +1910,25 @@
     gap: 4px;
     font-weight: 500;
     border: none;
+    transition: all 0.3s ease;
 }
 
 .compact-status-tag.red {
     background: linear-gradient(135deg, rgba(255, 77, 79, 0.15) 0%, rgba(255, 77, 79, 0.05) 100%);
     color: #cf1322;
+}
+
+.compact-status-tag.red .anticon {
+    animation: firePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes firePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
 
 .compact-status-tag.green {
@@ -1403,6 +1980,24 @@
     margin-left: -8px;
     border: 2px solid #fff;
     position: relative;
+    transition: all 0.3s ease;
+}
+
+.compact-envelope-item:hover .claimer-avatar-small {
+    transform: scale(1.1);
+    z-index: 1;
+}
+
+.compact-envelope-item:hover .claimer-avatar-small:nth-child(1) {
+    transform: translateY(-4px) scale(1.15);
+}
+
+.compact-envelope-item:hover .claimer-avatar-small:nth-child(2) {
+    transform: translateY(-2px);
+}
+
+.compact-envelope-item:hover .claimer-avatar-small:nth-child(3) {
+    transform: translateY(0);
 }
 
 .claimer-avatar-small:first-child {
@@ -1412,6 +2007,17 @@
 .claimer-avatar-small.best-claimer {
     background: linear-gradient(135deg, #ffd700 0%, #ffb800 50%, #ffa500 100%);
     color: #5a3d00;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    animation: bestClaimerPulse 2s ease-in-out infinite;
+}
+
+@keyframes bestClaimerPulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 2px 16px rgba(255, 215, 0, 0.7);
+    }
 }
 
 .claimer-avatar-small .best-claimer-icon {
@@ -1423,6 +2029,7 @@
     background: #fff;
     border-radius: 50%;
     padding: 1px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .more-claimers {

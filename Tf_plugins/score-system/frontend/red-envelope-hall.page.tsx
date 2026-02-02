@@ -27,6 +27,7 @@ import {
   List,
   message,
   Modal,
+  Pagination,
   Progress,
   Row,
   Select,
@@ -148,49 +149,63 @@ function getProgressColor(percent: number): string {
   return '#ff4d4f';
 }
 
-// 红包列表项组件 - 紧凑版
-const CompactEnvelopeItem: React.FC<{
-  envelope: RedEnvelopeDetail;
-  onClaim: (envelope: RedEnvelopeDetail) => void;
-}> = ({ envelope, onClaim }) => {
-  const [hovered, setHovered] = useState(false);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  // 获取状态样式类名
+  function getStatusClassName(envelope: RedEnvelopeDetail): string {
+    if (envelope.canClaim && !envelope.userHasClaimed) return 'claimable';
+    if (envelope.userHasClaimed) return 'claimed';
+    if (envelope.isExpired || envelope.status === 'expired') return 'expired';
+    if (envelope.remainingCount === 0) return 'completed';
+    return '';
+  }
 
-  const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
-  const senderName = envelope.senderDisplayName || envelope.senderName;
-  const bestClaimer = findBestClaimer(envelope.claims);
-  const statusConfig = getStatusConfig(envelope);
-  const claimedAmount = envelope.totalAmount - envelope.remainingAmount;
+  // 红包列表项组件 - 紧凑版
+  const CompactEnvelopeItem: React.FC<{
+    envelope: RedEnvelopeDetail;
+    onClaim: (envelope: RedEnvelopeDetail) => void;
+  }> = ({ envelope, onClaim }) => {
+    const [hovered, setHovered] = useState(false);
+    const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setHoverPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom + 10,
-    });
-    setHovered(true);
-  };
+    const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
+    const senderName = envelope.senderDisplayName || envelope.senderName;
+    const bestClaimer = findBestClaimer(envelope.claims);
+    const statusConfig = getStatusConfig(envelope);
+    const claimedAmount = envelope.totalAmount - envelope.remainingAmount;
+    const statusClassName = getStatusClassName(envelope);
 
-  const handleMouseLeave = () => {
-    setHovered(false);
-  };
+    const handleMouseEnter = (e: React.MouseEvent) => {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setHoverPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 10,
+      });
+      setHovered(true);
+    };
 
-  return (
-    <div
-      className="compact-envelope-item"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* 左侧：发送者 */}
+    const handleMouseLeave = () => {
+      setHovered(false);
+    };
+
+    return (
+      <div
+        className={`compact-envelope-item ${statusClassName}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+      {/* 左侧：祝福语和发送者 */}
       <div className="compact-item-left">
         <div className="compact-avatar envelope-icon">
           <span>🧧</span>
         </div>
         <div className="compact-sender-info">
-          <div className="compact-sender-name">{senderName}</div>
-          <div className="compact-brief-message">
-            <span className="message-icon">💬</span>
-            <span className="message-text">{envelope.message.slice(0, 15)}{envelope.message.length > 15 ? '...' : ''}</span>
+          {/* 祝福语 - 突出显示 */}
+          <div className="compact-blessing-message">
+            <span className="blessing-icon">💬</span>
+            <span className="blessing-text">{envelope.message.slice(0, 20)}{envelope.message.length > 20 ? '...' : ''}</span>
+          </div>
+          <div className="compact-sender-name">
+            <span className="sender-label">发起人</span>
+            <span className="sender-name-text">{senderName}</span>
           </div>
         </div>
       </div>
@@ -466,6 +481,8 @@ const RedEnvelopeHallApp: React.FC = () => {
   const [total, setTotal] = useState(hallData.total);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // 发红包弹窗状态 - 已移除未使用的状态
   // const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -482,7 +499,7 @@ const RedEnvelopeHallApp: React.FC = () => {
   const fetchEnvelopes = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const response = await fetch(`/score/red-envelope/list?page=${page}&limit=20`, {
+      const response = await fetch(`/score/red-envelope/list?page=${page}&limit=${PAGE_SIZE}`, {
         method: 'GET',
         credentials: 'same-origin',
       });
@@ -491,6 +508,7 @@ const RedEnvelopeHallApp: React.FC = () => {
       if (result.success) {
         setEnvelopes(result.envelopes);
         setTotal(result.total);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('获取红包列表失败:', error);
@@ -929,30 +947,49 @@ const RedEnvelopeHallApp: React.FC = () => {
                             </Space>
                         ),
                         children: (
-                                <>
-                                  {renderLoading}
-                                  {!loading && (
-                                    <List
-                                      dataSource={envelopes}
-                                      renderItem={(envelope: RedEnvelopeDetail) => (
-                                        <CompactEnvelopeItem
-                                          envelope={envelope}
-                                          onClaim={handleClaim}
-                                        />
-                                      )}
-                                      className="compact-envelope-list"
-                                      locale={{
-                                        emptyText: (
-                                          <div className="red-envelope-empty">
-                                            <RedEnvelopeOutlined className="red-envelope-empty-icon" />
-                                            <div className="red-envelope-empty-text">暂无红包</div>
-                                            <Text type="secondary">快来发个红包吧！</Text>
-                                          </div>
-                                        ),
-                                      }}
+                          <>
+                            {renderLoading}
+                            {!loading && (
+                              <>
+                                <List
+                                  dataSource={envelopes}
+                                  renderItem={(envelope: RedEnvelopeDetail) => (
+                                    <CompactEnvelopeItem
+                                      envelope={envelope}
+                                      onClaim={handleClaim}
                                     />
                                   )}
-                                </>
+                                  className="compact-envelope-list"
+                                  locale={{
+                                    emptyText: (
+                                      <div className="red-envelope-empty">
+                                        <RedEnvelopeOutlined className="red-envelope-empty-icon blinking" />
+                                        <div className="red-envelope-empty-text">暂无红包</div>
+                                        <Text type="secondary">快来发个红包吧！</Text>
+                                        {hallData.isLoggedIn && (
+                                          <div className="red-envelope-empty-hint">
+                                            <span className="red-envelope-empty-hint-text">点击右上角发红包</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ),
+                                  }}
+                                />
+                                {total > PAGE_SIZE && (
+                                  <div className="pagination-container">
+                                    <Pagination
+                                      current={currentPage}
+                                      pageSize={PAGE_SIZE}
+                                      total={total}
+                                      onChange={(page) => fetchEnvelopes(page)}
+                                      showSizeChanger={false}
+                                      showTotal={(count) => `共 ${count} 个红包`}
+                                    />
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </>
                         ),
                       },
                       {
