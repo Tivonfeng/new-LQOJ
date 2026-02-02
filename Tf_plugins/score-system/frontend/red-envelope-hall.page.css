@@ -456,7 +456,7 @@
     margin-top: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border-radius: 16px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .red-envelope-list-card .ant-card-head {
@@ -475,6 +475,7 @@
 
 .red-envelope-list-card .ant-card-body {
     padding: 0;
+    overflow: visible;
 }
 
 /* ===== 红包列表项 - 增强版 ===== */
@@ -834,10 +835,16 @@
 
 .red-envelope-tabs .ant-tabs-content-holder {
     padding: 0;
+    overflow: visible;
 }
 
 .red-envelope-tabs .ant-tabs-content {
     padding: 0;
+    overflow: visible;
+}
+
+.red-envelope-tabs .ant-tabs-tabpane {
+    overflow: visible;
 }
 
 /* 发红包浮动按钮 */
@@ -1402,6 +1409,11 @@
 .compact-envelope-list .ant-list-item {
     padding: 0;
     border: none;
+    overflow: visible;
+}
+
+.compact-envelope-list {
+    overflow: visible;
 }
 
 /* 入场动画 - 错落效果 */
@@ -2051,10 +2063,11 @@
 .envelope-hover-card {
     position: fixed;
     transform: translateX(-50%);
-    z-index: 9999;
+    z-index: 10000;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    pointer-events: auto;
     width: 380px;
     max-height: 80vh;
     overflow-y: auto;

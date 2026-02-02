@@ -149,44 +149,51 @@ function getProgressColor(percent: number): string {
   return '#ff4d4f';
 }
 
-  // 获取状态样式类名
-  function getStatusClassName(envelope: RedEnvelopeDetail): string {
-    if (envelope.canClaim && !envelope.userHasClaimed) return 'claimable';
-    if (envelope.userHasClaimed) return 'claimed';
-    if (envelope.isExpired || envelope.status === 'expired') return 'expired';
-    if (envelope.remainingCount === 0) return 'completed';
-    return '';
-  }
+// 获取状态样式类名
+function getStatusClassName(envelope: RedEnvelopeDetail): string {
+  if (envelope.canClaim && !envelope.userHasClaimed) return 'claimable';
+  if (envelope.userHasClaimed) return 'claimed';
+  if (envelope.isExpired || envelope.status === 'expired') return 'expired';
+  if (envelope.remainingCount === 0) return 'completed';
+  return '';
+}
 
-  // 红包列表项组件 - 紧凑版
-  const CompactEnvelopeItem: React.FC<{
-    envelope: RedEnvelopeDetail;
-    onClaim: (envelope: RedEnvelopeDetail) => void;
-  }> = ({ envelope, onClaim }) => {
-    const [hovered, setHovered] = useState(false);
-    const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+// 红包列表项组件 - 紧凑版
+const CompactEnvelopeItem: React.FC<{
+  envelope: RedEnvelopeDetail;
+  onClaim: (envelope: RedEnvelopeDetail) => void;
+}> = ({ envelope, onClaim }) => {
+  const [hovered, setHovered] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
 
-    const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
-    const senderName = envelope.senderDisplayName || envelope.senderName;
-    const bestClaimer = findBestClaimer(envelope.claims);
-    const statusConfig = getStatusConfig(envelope);
-    const claimedAmount = envelope.totalAmount - envelope.remainingAmount;
-    const statusClassName = getStatusClassName(envelope);
+  const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
+  const senderName = envelope.senderDisplayName || envelope.senderName;
+  const bestClaimer = findBestClaimer(envelope.claims);
+  const statusConfig = getStatusConfig(envelope);
+  const claimedAmount = envelope.totalAmount - envelope.remainingAmount;
+  const statusClassName = getStatusClassName(envelope);
 
-    const handleMouseEnter = (e: React.MouseEvent) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setHoverPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.bottom + 10,
-      });
-      setHovered(true);
-    };
+  // 处理抢按钮点击
+  const handleClaimClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClaim(envelope);
+  };
 
-    const handleMouseLeave = () => {
-      setHovered(false);
-    };
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setHoverPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10,
+    });
+    setHovered(true);
+  };
 
-    return (
+  const handleMouseLeave = () => {
+    setHovered(false);
+  };
+
+  return (
       <div
         className={`compact-envelope-item ${statusClassName}`}
         onMouseEnter={handleMouseEnter}
@@ -244,10 +251,8 @@ function getProgressColor(percent: number): string {
             <Button
               type="primary"
               size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClaim(envelope);
-              }}
+              htmlType="button"
+              onClick={handleClaimClick}
               className="compact-claim-btn"
               icon={<ThunderboltOutlined />}
             >
@@ -506,14 +511,19 @@ const RedEnvelopeHallApp: React.FC = () => {
 
       const result = await response.json();
       if (result.success) {
-        setEnvelopes(result.envelopes);
-        setTotal(result.total);
-        setCurrentPage(page);
+        // 使用 requestAnimationFrame 确保在下一个渲染周期更新状态
+        requestAnimationFrame(() => {
+          setEnvelopes(result.envelopes);
+          setTotal(result.total);
+          setCurrentPage(page);
+        });
       }
     } catch (error) {
       console.error('获取红包列表失败:', error);
     } finally {
-      setLoading(false);
+      requestAnimationFrame(() => {
+        setLoading(false);
+      });
     }
   }, []);
 
@@ -577,6 +587,26 @@ const RedEnvelopeHallApp: React.FC = () => {
     };
   }, [fetchEnvelopes]);
 
+  // 阻止意外的页面刷新
+  useEffect(() => {
+    const handleBeforeUnload = (_e: BeforeUnloadEvent) => {
+      // 不需要阻止，只是用于调试
+      console.log('[RedEnvelopeHall] beforeunload 被触发');
+    };
+
+    const handlePageHide = () => {
+      console.log('[RedEnvelopeHall] pagehide 被触发');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, []);
+
   // 发送红包
   const handleSend = async (values: any) => {
     if (!hallData.isLoggedIn) {
@@ -625,33 +655,74 @@ const RedEnvelopeHallApp: React.FC = () => {
   };
 
   // 领取红包
-  const handleClaim = async (envelope: RedEnvelopeDetail) => {
+  const handleClaim = React.useCallback(async (envelope: RedEnvelopeDetail) => {
     if (!hallData.isLoggedIn) {
       message.warning('请先登录');
       return;
     }
 
     try {
+      // 使用 abort controller 来避免可能的超时问题
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(`/score/red-envelope/${envelope.envelopeId}/claim`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'same-origin',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      // 确保响应是 JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('服务器响应格式错误');
+      }
 
       const result = await response.json();
       if (result.success) {
         message.success(`恭喜！获得 ${result.amount} 积分`);
-        // 刷新列表
-        fetchEnvelopes(1);
+        // 只更新本地状态，不重新获取整个列表，保持当前页面位置
+        setEnvelopes((prevEnvelopes) =>
+          prevEnvelopes.map((e) => {
+            if (e.envelopeId === envelope.envelopeId) {
+              return {
+                ...e,
+                userHasClaimed: true,
+                userClaimAmount: result.amount,
+                canClaim: false,
+                remainingCount: result.remainingCount ?? e.remainingCount - 1,
+                remainingAmount: result.remainingAmount ?? e.remainingAmount - result.amount,
+                claims: [
+                  ...(e.claims || []),
+                  {
+                    claimerUid: hallData.currentUserId || 0,
+                    claimerName: '',
+                    amount: result.amount,
+                    createdAt: new Date().toISOString(),
+                  },
+                ],
+              };
+            }
+            return e;
+          }),
+        );
       } else {
         message.error(result.error || '领取失败');
       }
     } catch (error) {
-      message.error('网络错误，请重试');
+      if (error instanceof Error && error.name === 'AbortError') {
+        message.error('请求超时，请重试');
+      } else {
+        message.error('网络错误，请重试');
+      }
+      console.error('领取红包失败:', error);
     }
-  };
+  }, [hallData.isLoggedIn, hallData.currentUserId]);
 
   // 骨架屏列表项 - 紧凑版
   const renderSkeletonItem = () => (
