@@ -1153,3 +1153,671 @@
     }
 }
 
+/* ========== 紧凑列表样式 ========== */
+.compact-envelope-list .ant-list-item {
+    padding: 0;
+    border: none;
+}
+
+.compact-envelope-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+    gap: 16px;
+    position: relative;
+    cursor: pointer;
+    background: #fff;
+    border-radius: 12px;
+    margin: 4px 8px;
+}
+
+.compact-envelope-item:hover {
+    background: linear-gradient(135deg, #fff7e6 0%, #fff 50%, #f0f5ff 100%);
+    box-shadow: 0 4px 16px rgba(255, 77, 79, 0.12);
+    transform: translateX(4px);
+}
+
+.compact-envelope-item.skeleton {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.compact-envelope-item.skeleton:hover {
+    background: #fff;
+    box-shadow: none;
+    transform: none;
+}
+
+/* 左侧：发送者 */
+.compact-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.compact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+}
+
+.compact-sender-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.compact-sender-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #262626;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.compact-brief-message {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #8c8c8c;
+}
+
+.compact-brief-message .message-icon {
+    font-size: 12px;
+}
+
+.compact-brief-message .message-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* 中间：进度 */
+.compact-item-center {
+    flex: 1.5;
+    min-width: 150px;
+    padding: 0 12px;
+}
+
+.compact-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.compact-progress .progress-bar {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.compact-progress .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.compact-progress .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.compact-progress .progress-count {
+    font-weight: 500;
+}
+
+.compact-progress .progress-amount {
+    color: #52c41a;
+    font-weight: 500;
+}
+
+/* 右侧：金额和操作 */
+.compact-item-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.compact-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+}
+
+.compact-amount .amount-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff4d4f;
+}
+
+.compact-amount .amount-unit {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.compact-action {
+    display: flex;
+    align-items: center;
+}
+
+.compact-claim-btn {
+    height: 32px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(255, 77, 79, 0.35);
+}
+
+.compact-claim-btn:hover {
+    background: linear-gradient(135deg, #ff4d4f 0%, #a8071a 100%);
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.45);
+}
+
+.compact-status-tag {
+    height: 28px;
+    padding: 0 12px;
+    font-size: 13px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    border: none;
+}
+
+.compact-status-tag.red {
+    background: linear-gradient(135deg, rgba(255, 77, 79, 0.15) 0%, rgba(255, 77, 79, 0.05) 100%);
+    color: #cf1322;
+}
+
+.compact-status-tag.green {
+    background: linear-gradient(135deg, rgba(82, 196, 26, 0.15) 0%, rgba(82, 196, 26, 0.05) 100%);
+    color: #389e0d;
+}
+
+.compact-status-tag.blue {
+    background: linear-gradient(135deg, rgba(24, 144, 255, 0.15) 0%, rgba(24, 144, 255, 0.05) 100%);
+    color: #096dd9;
+}
+
+.compact-status-tag.default {
+    background: #f5f5f5;
+    color: #8c8c8c;
+}
+
+.compact-time {
+    font-size: 12px;
+    color: #bfbfbf;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* 领取者预览 */
+.compact-claimers-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.claimer-avatars {
+    display: flex;
+    align-items: center;
+}
+
+.claimer-avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: -8px;
+    border: 2px solid #fff;
+    position: relative;
+}
+
+.claimer-avatar-small:first-child {
+    margin-left: 0;
+}
+
+.claimer-avatar-small.best-claimer {
+    background: linear-gradient(135deg, #ffd700 0%, #ffb800 50%, #ffa500 100%);
+    color: #5a3d00;
+}
+
+.claimer-avatar-small .best-claimer-icon {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    font-size: 10px;
+    color: #ffd700;
+    background: #fff;
+    border-radius: 50%;
+    padding: 1px;
+}
+
+.more-claimers {
+    font-size: 11px;
+    color: #8c8c8c;
+    margin-left: 4px;
+}
+
+.best-claimer-preview {
+    font-size: 11px;
+    color: #faad14;
+    font-weight: 500;
+    background: rgba(250, 173, 20, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* ========== 悬浮详情卡片 ========== */
+.envelope-hover-card {
+    position: fixed;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    width: 380px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUpFade 0.25s ease-out;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 卡片头部 */
+.hover-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+    border-radius: 16px 16px 0 0;
+    color: white;
+}
+
+.hover-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.hover-card-sender {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hover-card-sender .sender-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.hover-card-sender .send-time {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* 祝福语区域 */
+.hover-card-blessing {
+    padding: 16px;
+    background: linear-gradient(135deg, #fff9f0 0%, #fff 50%, #f5f5f5 100%);
+    border-left: 4px solid #ff4d4f;
+    margin: 0 16px;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+
+.hover-card-blessing .quote {
+    font-size: 24px;
+    color: #ff4d4f;
+    font-weight: bold;
+    line-height: 1;
+    position: absolute;
+}
+
+.hover-card-blessing .quote:first-child {
+    top: 8px;
+    left: 0;
+}
+
+.hover-card-blessing .quote:last-child {
+    bottom: 8px;
+    right: 0;
+}
+
+.hover-card-blessing .blessing-text {
+    display: block;
+    padding: 0 16px;
+    font-size: 15px;
+    color: #595959;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* 统计区域 */
+.hover-card-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hover-card-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.hover-card-stats .stat-icon {
+    font-size: 16px;
+}
+
+.hover-card-stats .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #262626;
+}
+
+.hover-card-stats .stat-label {
+    font-size: 11px;
+    color: #8c8c8c;
+}
+
+/* 进度条 */
+.hover-card-progress {
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hover-card-progress .progress-format {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+/* 领取详情 */
+.hover-card-claims {
+    padding: 16px;
+    background: #fff;
+}
+
+.hover-card-claims .claims-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hover-card-claims .claims-total {
+    margin-left: auto;
+    font-size: 13px;
+    color: #52c41a;
+    font-weight: 500;
+}
+
+.hover-card-claims .claims-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hover-card-claims .claim-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.hover-card-claims .claim-item:hover {
+    background: #f5f5f5;
+}
+
+.hover-card-claims .best-claim-item {
+    background: linear-gradient(135deg, #fffbe6 0%, #fff 100%);
+    border: 1px solid #ffd591;
+}
+
+.hover-card-claims .claim-rank {
+    font-size: 12px;
+    color: #8c8c8c;
+    width: 24px;
+    text-align: center;
+}
+
+.hover-card-claims .best-claim-item .claim-rank {
+    font-size: 16px;
+}
+
+.hover-card-claims .claim-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.hover-card-claims .claim-avatar.best-avatar {
+    background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+    color: #5a3d00;
+}
+
+.hover-card-claims .claim-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hover-card-claims .claim-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hover-card-claims .claim-time {
+    font-size: 11px;
+    color: #bfbfbf;
+}
+
+.hover-card-claims .claim-amount {
+    font-size: 15px;
+    font-weight: 600;
+    color: #52c41a;
+    flex-shrink: 0;
+}
+
+.hover-card-claims .claim-amount.best-amount {
+    color: #faad14;
+    font-size: 16px;
+}
+
+.hover-card-claims .claims-more {
+    text-align: center;
+    font-size: 12px;
+    color: #8c8c8c;
+    padding: 8px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+/* 底部操作 */
+.hover-card-footer {
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 0 0 16px 16px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.hover-claim-btn {
+    height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+    border: none;
+    box-shadow: 0 4px 16px rgba(255, 77, 79, 0.4);
+}
+
+.hover-claim-btn:hover {
+    background: linear-gradient(135deg, #ff4d4f 0%, #a8071a 100%);
+    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+}
+
+.hover-card-footer .footer-info {
+    text-align: center;
+    font-size: 14px;
+    color: #8c8c8c;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .compact-envelope-item {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .compact-item-left {
+        flex-basis: 100%;
+    }
+
+    .compact-item-center {
+        flex-basis: 60%;
+    }
+
+    .compact-item-right {
+        flex-basis: 40%;
+        justify-content: flex-end;
+    }
+
+    .compact-claimers-preview {
+        flex-basis: 100%;
+        margin-top: 4px;
+        justify-content: flex-start;
+        padding-left: 52px;
+    }
+
+    .envelope-hover-card {
+        width: calc(100vw - 32px);
+        max-width: 380px;
+        left: 16px !important;
+        transform: translateX(0) !important;
+    }
+
+    @keyframes slideUpFade {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hover-card-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .compact-amount .amount-value {
+        font-size: 18px;
+    }
+
+    .compact-time {
+        display: none;
+    }
+
+    .hover-card-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        padding: 12px;
+    }
+
+    .hover-card-stats .stat-item {
+        padding: 6px;
+    }
+
+    .hover-card-stats .stat-value {
+        font-size: 16px;
+    }
+}
+

@@ -8,10 +8,12 @@ import {
   ArrowLeftOutlined,
   BellOutlined,
   CheckCircleOutlined,
+  CrownOutlined,
   GiftOutlined,
   PaperClipOutlined,
   RedEnvelopeOutlined,
   SendOutlined,
+  ThunderboltOutlined,
   UserOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
@@ -87,20 +89,351 @@ interface RedEnvelopeHallData {
   isLoggedIn: boolean;
 }
 
-// 格式化时间
-function formatTime(isoString: string): string {
+// 格式化相对时间
+function formatRelativeTime(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (seconds < 60) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    if (hours < 24) return `${hours}小时前`;
+    if (days < 7) return `${days}天前`;
+
+    return date.toLocaleDateString('zh-CN');
   } catch {
     return isoString;
   }
 }
+
+// 找到最佳手气
+function findBestClaimer(claims: Array<{
+  claimerUid: number;
+  claimerName: string;
+  claimerDisplayName?: string;
+  amount: number;
+  createdAt: string;
+}>) {
+  if (!claims || claims.length === 0) return null;
+  return claims.reduce((best, current) => (current.amount > best.amount ? current : best), claims[0]);
+}
+
+// 获取状态配置
+function getStatusConfig(envelope: RedEnvelopeDetail) {
+  if (envelope.isExpired || envelope.status === 'expired') {
+    return { color: 'default', text: '已过期', icon: '⏰' };
+  }
+  if (envelope.userHasClaimed) {
+    return { color: 'blue', text: '已领取', icon: '✅' };
+  }
+  if (envelope.remainingCount === 0) {
+    return { color: 'green', text: '已领完', icon: '🎉' };
+  }
+  if (envelope.canClaim) {
+    return { color: 'red', text: '可领取', icon: '🔥' };
+  }
+  return { color: 'default', text: '待领取', icon: '📬' };
+}
+
+// 计算领取进度颜色
+function getProgressColor(percent: number): string {
+  if (percent >= 80) return '#52c41a';
+  if (percent >= 50) return '#faad14';
+  return '#ff4d4f';
+}
+
+// 红包列表项组件 - 紧凑版
+const CompactEnvelopeItem: React.FC<{
+  envelope: RedEnvelopeDetail;
+  onClaim: (envelope: RedEnvelopeDetail) => void;
+}> = ({ envelope, onClaim }) => {
+  const [hovered, setHovered] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+
+  const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
+  const senderName = envelope.senderDisplayName || envelope.senderName;
+  const bestClaimer = findBestClaimer(envelope.claims);
+  const statusConfig = getStatusConfig(envelope);
+  const claimedAmount = envelope.totalAmount - envelope.remainingAmount;
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setHoverPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10,
+    });
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+  };
+
+  return (
+    <div
+      className="compact-envelope-item"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* 左侧：发送者 */}
+      <div className="compact-item-left">
+        <div className="compact-avatar envelope-icon">
+          <span>🧧</span>
+        </div>
+        <div className="compact-sender-info">
+          <div className="compact-sender-name">{senderName}</div>
+          <div className="compact-brief-message">
+            <span className="message-icon">💬</span>
+            <span className="message-text">{envelope.message.slice(0, 15)}{envelope.message.length > 15 ? '...' : ''}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 中间：进度与状态 */}
+      <div className="compact-item-center">
+        <div className="compact-progress">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{
+                width: `${progressPercent}%`,
+                background: `linear-gradient(90deg, #ff4d4f 0%, ${getProgressColor(progressPercent)} 100%)`,
+              }}
+            />
+          </div>
+          <div className="progress-info">
+            <span className="progress-count">
+              {envelope.totalCount - envelope.remainingCount}/{envelope.totalCount}
+            </span>
+            <span className="progress-amount">
+              已抢 {claimedAmount}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 右侧：操作与时间 */}
+      <div className="compact-item-right">
+        <div className="compact-amount">
+          <span className="amount-value">{envelope.totalAmount}</span>
+          <span className="amount-unit">积分</span>
+        </div>
+        <div className="compact-action">
+          {envelope.canClaim && !envelope.userHasClaimed ? (
+            <Button
+              type="primary"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClaim(envelope);
+              }}
+              className="compact-claim-btn"
+              icon={<ThunderboltOutlined />}
+            >
+              抢
+            </Button>
+          ) : (
+            <Tag
+              className={`compact-status-tag ${statusConfig.color}`}
+              icon={statusConfig.icon.includes('🔥') ? <ThunderboltOutlined /> : <CheckCircleOutlined />}
+            >
+              {statusConfig.text}
+            </Tag>
+          )}
+        </div>
+        <div className="compact-time">{formatRelativeTime(envelope.createdAt)}</div>
+      </div>
+
+      {/* 领取者预览 */}
+      <div className="compact-claimers-preview">
+        {envelope.claims.length > 0 && (
+          <>
+            <div className="claimer-avatars">
+              {envelope.claims.slice(0, 3).map((claim, index) => (
+                <div
+                  key={index}
+                  className={`claimer-avatar-small ${bestClaimer && claim.claimerUid === bestClaimer.claimerUid ? 'best-claimer' : ''}`}
+                  data-tooltip={`${claim.claimerDisplayName || claim.claimerName}: +${claim.amount}`}
+                >
+                  {claim.claimerName?.charAt(0).toUpperCase()}
+                  {bestClaimer && claim.claimerUid === bestClaimer.claimerUid && (
+                    <CrownOutlined className="best-claimer-icon" />
+                  )}
+                </div>
+              ))}
+              {envelope.claims.length > 3 && (
+                <span className="more-claimers">+{envelope.claims.length - 3}</span>
+              )}
+            </div>
+            {bestClaimer && (
+              <div className="best-claimer-preview">
+                👑 {bestClaimer.amount}max
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* 悬浮详情卡片 */}
+      {hovered && (
+        <div
+          className="envelope-hover-card"
+          style={{
+            left: hoverPosition.x,
+            top: hoverPosition.y,
+          }}
+        >
+          <div className="hover-card-header">
+            <div className="hover-card-avatar">
+              <span>{senderName.charAt(0).toUpperCase()}</span>
+            </div>
+            <div className="hover-card-sender">
+              <span className="sender-name">{senderName}</span>
+              <span className="send-time">{formatRelativeTime(envelope.createdAt)}</span>
+            </div>
+            <Tag
+              color={
+                statusConfig.color === 'red' ? 'red'
+                  : statusConfig.color === 'green' ? 'green'
+                    : statusConfig.color === 'blue' ? 'blue'
+                      : 'default'
+              }
+            >
+              {statusConfig.text}
+            </Tag>
+          </div>
+
+          <div className="hover-card-blessing">
+            <span className="quote">"</span>
+            <span className="blessing-text">{envelope.message}</span>
+            <span className="quote">"</span>
+          </div>
+
+          <div className="hover-card-stats">
+            <div className="stat-item">
+              <span className="stat-icon">💰</span>
+              <span className="stat-value">{envelope.totalAmount}</span>
+              <span className="stat-label">总积分</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-icon">📦</span>
+              <span className="stat-value">{envelope.totalCount}</span>
+              <span className="stat-label">红包数</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-icon">🎯</span>
+              <span className="stat-value">{claimedAmount}</span>
+              <span className="stat-label">已抢</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-icon">⏳</span>
+              <span className="stat-value">{envelope.remainingCount}</span>
+              <span className="stat-label">剩余</span>
+            </div>
+          </div>
+
+          <div className="hover-card-progress">
+            <Progress
+              percent={Math.round(progressPercent)}
+              strokeColor={getProgressColor(progressPercent)}
+              trailColor="#f0f0f0"
+              size="small"
+              format={(_percent) => (
+                <span className="progress-format">
+                  {envelope.totalCount - envelope.remainingCount}/{envelope.totalCount} 人已抢
+                </span>
+              )}
+            />
+          </div>
+
+          {envelope.claims.length > 0 && (
+            <div className="hover-card-claims">
+              <div className="claims-header">
+                <UserOutlined />
+                <span>领取详情 ({envelope.claims.length}人)</span>
+                <span className="claims-total">共抢 {claimedAmount} 积分</span>
+              </div>
+              <div className="claims-list">
+                {bestClaimer && (
+                  <div className="claim-item best-claim-item">
+                    <div className="claim-rank">👑</div>
+                    <div className="claim-avatar best-avatar">
+                      <span>{bestClaimer.claimerName?.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="claim-info">
+                      <span className="claim-name">
+                        {bestClaimer.claimerDisplayName || bestClaimer.claimerName}
+                      </span>
+                      <span className="claim-time">
+                        {formatRelativeTime(bestClaimer.createdAt)}
+                      </span>
+                    </div>
+                    <div className="claim-amount best-amount">
+                      +{bestClaimer.amount}
+                    </div>
+                  </div>
+                )}
+                {envelope.claims
+                  .filter((c) => !bestClaimer || c.claimerUid !== bestClaimer.claimerUid)
+                  .slice(0, 4)
+                  .map((claim, index) => (
+                    <div key={claim.claimerUid} className="claim-item">
+                      <div className="claim-rank">#{index + 2}</div>
+                      <div className="claim-avatar">
+                        <span>{claim.claimerName?.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="claim-info">
+                        <span className="claim-name">
+                          {claim.claimerDisplayName || claim.claimerName}
+                        </span>
+                        <span className="claim-time">
+                          {formatRelativeTime(claim.createdAt)}
+                        </span>
+                      </div>
+                      <div className="claim-amount">+{claim.amount}</div>
+                    </div>
+                  ))}
+                {envelope.claims.length > 5 && (
+                  <div className="claims-more">
+                    还有 {envelope.claims.length - 5} 人领取...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="hover-card-footer">
+            {envelope.canClaim && !envelope.userHasClaimed ? (
+              <Button
+                type="primary"
+                block
+                size="large"
+                icon={<RedEnvelopeOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClaim(envelope);
+                }}
+                className="hover-claim-btn"
+              >
+                🧧 立即抢红包
+              </Button>
+            ) : (
+              <div className="footer-info">
+                {envelope.userHasClaimed ? `您已领取 +${envelope.userClaimAmount} 积分` : statusConfig.text}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // 获取状态标签
 
@@ -302,97 +635,22 @@ const RedEnvelopeHallApp: React.FC = () => {
     }
   };
 
-  // 红包列表项渲染
-  const renderEnvelopeItem = (envelope: RedEnvelopeDetail) => {
-    const progressPercent = ((envelope.totalCount - envelope.remainingCount) / envelope.totalCount) * 100;
-    const senderName = envelope.senderDisplayName || envelope.senderName;
-    const isExpired = envelope.isExpired || envelope.status === 'expired';
-
-    return (
-            <div className="red-envelope-item" key={envelope.envelopeId}>
-                {/* 左侧：发送者和祝福语 */}
-                <div className="red-envelope-item-left">
-                    <div className="red-envelope-avatar">
-                        <span>{senderName.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div className="red-envelope-item-info">
-                        <div className="red-envelope-sender">{senderName}</div>
-                        <div className="red-envelope-blessing">{envelope.message}</div>
-                    </div>
-                </div>
-
-                {/* 中间：金额 */}
-                <div className="red-envelope-item-center">
-                    <div className="red-envelope-amount">
-                        <span className="amount-value">{envelope.totalAmount}</span>
-                        <span className="amount-unit">积分</span>
-                    </div>
-                    <div className="red-envelope-progress">
-                        <Progress
-                            percent={Math.round(progressPercent)}
-                            size="small"
-                            strokeColor="#ff4d4f"
-                            trailColor="#fff1f0"
-                            showInfo={false}
-                        />
-                        <span className="progress-text">
-                            {envelope.totalCount - envelope.remainingCount}/{envelope.totalCount}
-                        </span>
-                    </div>
-                </div>
-
-                {/* 右侧：操作按钮 */}
-                <div className="red-envelope-item-right">
-                    {envelope.canClaim && !envelope.userHasClaimed ? (
-                        <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => handleClaim(envelope)}
-                            className="red-envelope-claim-btn"
-                        >
-                            抢红包
-                        </Button>
-                    ) : (
-                        <Tag className={`red-envelope-status ${isExpired ? 'expired' : envelope.remainingCount === 0 ? 'completed' : 'pending'}`}>
-                            {isExpired ? '已过期' : envelope.remainingCount === 0 ? '已领完' : envelope.userHasClaimed ? '已领取' : '待领取'}
-                        </Tag>
-                    )}
-                    <div className="red-envelope-time">{formatTime(envelope.createdAt)}</div>
-                </div>
-
-                {/* 领取者头像 */}
-                {envelope.claims.length > 0 && (
-                    <div className="red-envelope-claimers">
-                        <CheckCircleOutlined className="check-icon" />
-                        {envelope.claims.slice(0, 3).map((claim, index) => (
-                            <div key={index} className="claimer-avatar" data-tooltip={claim.claimerDisplayName || claim.claimerName}>
-                                {claim.claimerName?.charAt(0).toUpperCase()}
-                            </div>
-                        ))}
-                        {envelope.claims.length > 3 && (
-                            <span className="more-claimers">+{envelope.claims.length - 3}</span>
-                        )}
-                    </div>
-                )}
-            </div>
-    );
-  };
-
-  // 骨架屏列表项
+  // 骨架屏列表项 - 紧凑版
   const renderSkeletonItem = () => (
-    <div className="red-envelope-item">
-      <div className="red-envelope-item-left">
-        <Skeleton.Avatar active size={52} shape="circle" />
-        <div className="red-envelope-item-info">
-          <Skeleton.Input active style={{ width: 100 }} size="small" />
-          <Skeleton.Input active style={{ width: 180 }} size="small" />
+    <div className="compact-envelope-item skeleton">
+      <div className="compact-item-left">
+        <Skeleton.Avatar active size={40} shape="circle" />
+        <div className="compact-sender-info">
+          <Skeleton.Input active style={{ width: 80 }} size="small" />
+          <Skeleton.Input active style={{ width: 120 }} size="small" />
         </div>
       </div>
-      <div className="red-envelope-item-center">
-        <Skeleton.Input active style={{ width: 80 }} size="small" />
+      <div className="compact-item-center">
+        <Skeleton.Input active style={{ width: '100%' }} size="small" />
       </div>
-      <div className="red-envelope-item-right">
-        <Skeleton.Button active style={{ width: 80, height: 36 }} shape="round" />
+      <div className="compact-item-right">
+        <Skeleton.Input active style={{ width: 60 }} size="small" />
+        <Skeleton.Button active style={{ width: 50 }} shape="round" />
       </div>
     </div>
   );
@@ -405,7 +663,7 @@ const RedEnvelopeHallApp: React.FC = () => {
     <List
       dataSource={skeletonData}
       renderItem={() => renderSkeletonItem()}
-      className="red-envelope-list"
+      className="compact-envelope-list"
     />
   ) : null;
 
@@ -676,8 +934,13 @@ const RedEnvelopeHallApp: React.FC = () => {
                                   {!loading && (
                                     <List
                                       dataSource={envelopes}
-                                      renderItem={renderEnvelopeItem}
-                                      className="red-envelope-list"
+                                      renderItem={(envelope: RedEnvelopeDetail) => (
+                                        <CompactEnvelopeItem
+                                          envelope={envelope}
+                                          onClaim={handleClaim}
+                                        />
+                                      )}
+                                      className="compact-envelope-list"
                                       locale={{
                                         emptyText: (
                                           <div className="red-envelope-empty">
@@ -715,9 +978,14 @@ const RedEnvelopeHallApp: React.FC = () => {
                                         children: (
                                                 <List
                                                     dataSource={mySent}
-                                                    renderItem={renderEnvelopeItem}
+                                                    renderItem={(envelope: RedEnvelopeDetail) => (
+                                                        <CompactEnvelopeItem
+                                                            envelope={envelope}
+                                                            onClaim={handleClaim}
+                                                        />
+                                                    )}
                                                     loading={recordsLoading}
-                                                    className="red-envelope-list"
+                                                    className="compact-envelope-list"
                                                     locale={{
                                                       emptyText: (
                                                             <div className="red-envelope-empty">
@@ -752,7 +1020,7 @@ const RedEnvelopeHallApp: React.FC = () => {
                                                                         来自 {item.claimerDisplayName || item.claimerName}
                                                                     </div>
                                                                     <div className="claim-record-time">
-                                                                        {formatTime(item.createdAt)}
+                                                                        {formatRelativeTime(item.createdAt)}
                                                                     </div>
                                                                 </div>
                                                             </div>
