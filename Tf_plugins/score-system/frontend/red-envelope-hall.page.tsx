@@ -494,7 +494,6 @@ const RedEnvelopeHallApp: React.FC = () => {
 
   // 我的记录状态
   const [mySent, setMySent] = useState<RedEnvelopeDetail[]>([]);
-  const [myClaimed, setMyClaimed] = useState<RedEnvelopeClaimRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
 
   // 计算平均金额
@@ -539,16 +538,6 @@ const RedEnvelopeHallApp: React.FC = () => {
       const sentResult = await sentResponse.json();
       if (sentResult.success) {
         setMySent(sentResult.envelopes || []);
-      }
-
-      // 获取我领取的红包
-      const claimedResponse = await fetch('/score/red-envelope/my/claimed?page=1&limit=10', {
-        method: 'GET',
-        credentials: 'same-origin',
-      });
-      const claimedResult = await claimedResponse.json();
-      if (claimedResult.success) {
-        setMyClaimed(claimedResult.claims || []);
       }
     } catch (error) {
       console.error('获取我的记录失败:', error);
@@ -1067,91 +1056,30 @@ const RedEnvelopeHallApp: React.FC = () => {
                         key: 'my',
                         label: (
                             <Space>
-                                <UserOutlined />
-                                我的记录
+                                <SendOutlined />
+                                我发出的 ({mySent.length})
                             </Space>
                         ),
                         children: (
-                                <Tabs
-                                    className="my-record-tabs"
-                                    items={[
-                                      {
-                                        key: 'sent',
-                                        label: (
-                                            <Space>
-                                                <SendOutlined />
-                                                我发出的 ({mySent.length})
-                                            </Space>
-                                        ),
-                                        children: (
-                                                <List
-                                                    dataSource={mySent}
-                                                    renderItem={(envelope: RedEnvelopeDetail) => (
-                                                        <CompactEnvelopeItem
-                                                            envelope={envelope}
-                                                            onClaim={handleClaim}
-                                                        />
-                                                    )}
-                                                    loading={recordsLoading}
-                                                    className="compact-envelope-list"
-                                                    locale={{
-                                                      emptyText: (
-                                                            <div className="red-envelope-empty">
-                                                                <SendOutlined className="red-envelope-empty-icon" />
-                                                                <div className="red-envelope-empty-text">还没有发出过红包</div>
-                                                                <Text type="secondary">快来分享好运吧！</Text>
-                                                            </div>
-                                                      ),
-                                                    }}
-                                                />
-                                        ),
-                                      },
-                                      {
-                                        key: 'claimed',
-                                        label: (
-                                            <Space>
-                                                <GiftOutlined />
-                                                我领取的 ({myClaimed.length})
-                                            </Space>
-                                        ),
-                                        children: (
-                                                <List
-                                                    dataSource={myClaimed}
-                                                    renderItem={(item) => (
-                                                        <List.Item className="claim-list-item">
-                                                            <div className="claim-record-info">
-                                                                <div className="claim-record-avatar">
-                                                                    {item.claimerName?.charAt(0).toUpperCase() || '?'}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="claim-record-name">
-                                                                        来自 {item.claimerDisplayName || item.claimerName}
-                                                                    </div>
-                                                                    <div className="claim-record-time">
-                                                                        {formatRelativeTime(item.createdAt)}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <Text type="success" strong className="claim-record-amount">
-                                                                +{item.amount} 积分
-                                                            </Text>
-                                                        </List.Item>
-                                                    )}
-                                                    loading={recordsLoading}
-                                                    className="red-envelope-list"
-                                                    locale={{
-                                                      emptyText: (
-                                                            <div className="red-envelope-empty">
-                                                                <GiftOutlined className="red-envelope-empty-icon" />
-                                                                <div className="red-envelope-empty-text">还没有领取过红包</div>
-                                                                <Text type="secondary">关注红包大厅，抢红包啦！</Text>
-                                                            </div>
-                                                      ),
-                                                    }}
-                                                />
-                                        ),
-                                      },
-                                    ]}
+                                <List
+                                    dataSource={mySent}
+                                    renderItem={(envelope: RedEnvelopeDetail) => (
+                                        <CompactEnvelopeItem
+                                            envelope={envelope}
+                                            onClaim={handleClaim}
+                                        />
+                                    )}
+                                    loading={recordsLoading}
+                                    className="compact-envelope-list"
+                                    locale={{
+                                      emptyText: (
+                                            <div className="red-envelope-empty">
+                                                <SendOutlined className="red-envelope-empty-icon" />
+                                                <div className="red-envelope-empty-text">还没有发出过红包</div>
+                                                <Text type="secondary">快来分享好运吧！</Text>
+                                            </div>
+                                      ),
+                                    }}
                                 />
                         ),
                       },
@@ -1161,17 +1089,6 @@ const RedEnvelopeHallApp: React.FC = () => {
         </div>
   );
 };
-
-// 红包领取记录接口
-interface RedEnvelopeClaimRecord {
-  envelopeId: string;
-  claimerUid: number;
-  claimerName: string;
-  claimerDisplayName?: string;
-  amount: number;
-  createdAt: string;
-  domainId: string;
-}
 
 // 注册页面组件
 addPage(new NamedPage(['red_envelope_hall'], async () => {
