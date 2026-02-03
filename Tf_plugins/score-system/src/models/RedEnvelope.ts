@@ -23,6 +23,7 @@ export type RedEnvelopeStatus = typeof RedEnvelopeStatus[keyof typeof RedEnvelop
 export const RedEnvelopeCategory = {
     RED_ENVELOPE_SEND: '发红包' as const,
     RED_ENVELOPE_CLAIM: '抢红包' as const,
+    RED_ENVELOPE_REFUND: '红包退款' as const,
 } as const;
 
 export type RedEnvelopeCategory = typeof RedEnvelopeCategory[keyof typeof RedEnvelopeCategory];

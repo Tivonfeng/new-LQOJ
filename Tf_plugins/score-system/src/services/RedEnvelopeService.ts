@@ -463,30 +463,97 @@ export class RedEnvelopeService {
     }
 
     /**
-     * 过期红包处理
+     * 过期红包处理（退回剩余积分）
      */
-    async expireEnvelope(envelopeId: string): Promise<void> {
+    async expireEnvelope(envelopeId: string): Promise<{ success: boolean, refundedAmount?: number, error?: string }> {
+        const envelope = await db.collection(RED_ENVELOPE_COLLECTION).findOne({
+            envelopeId,
+            domainId: this.domainId,
+        }) as unknown as RedEnvelope | null;
+
+        if (!envelope) {
+            return { success: false, error: '红包不存在' };
+        }
+
+        // 如果已经是过期或已领完状态，不再处理
+        if (envelope.status !== RedEnvelopeStatus.ACTIVE) {
+            return { success: false, error: '红包状态异常' };
+        }
+
+        let refundedAmount = 0;
+
+        // 检查是否有剩余积分需要退回
+        if (envelope.remainingAmount > 0) {
+            const scoreCore = (global as any).scoreCoreService;
+            if (scoreCore) {
+                try {
+                    // 生成唯一PID和recordId
+                    const refundPid = -10000003 - Date.now() % 1000000;
+                    const refundRecordId = `refund_${envelopeId}_${Date.now()}`;
+
+                    // 退回积分给发送者
+                    await scoreCore.recordScoreChange({
+                        uid: envelope.senderUid,
+                        domainId: this.domainId,
+                        pid: refundPid,
+                        recordId: refundRecordId,
+                        score: envelope.remainingAmount,
+                        reason: `红包过期退款：${envelope.message || '恭喜发财'}`,
+                        category: RedEnvelopeCategory.RED_ENVELOPE_REFUND,
+                    });
+                    refundedAmount = envelope.remainingAmount;
+                    console.log(`[RedEnvelope] 红包 ${envelopeId} 退回 ${refundedAmount} 积分给用户 ${envelope.senderUid}`);
+                } catch (error) {
+                    console.error(`[RedEnvelope] 红包 ${envelopeId} 退回积分失败:`, error);
+                    return { success: false, error: '退回积分失败' };
+                }
+            } else {
+                console.warn(`[RedEnvelope] scoreCore 服务不可用，无法退回红包 ${envelopeId} 的积分`);
+            }
+        }
+
+        // 更新状态为已过期
         await db.collection(RED_ENVELOPE_COLLECTION).updateOne(
             { envelopeId, domainId: this.domainId },
             { $set: { status: RedEnvelopeStatus.EXPIRED } },
         );
+
         console.log(`[RedEnvelope] 红包 ${envelopeId} 已过期`);
+        return { success: true, refundedAmount };
     }
 
     /**
-     * 检查并过期红包
+     * 检查并过期红包（退回剩余积分）
      */
-    async checkAndExpireEnvelopes(): Promise<number> {
+    async checkAndExpireWithRefund(): Promise<{ expired: number, refunded: number, totalRefundedAmount: number }> {
         const now = new Date();
-        const result = await db.collection(RED_ENVELOPE_COLLECTION).updateMany(
-            {
+
+        // 查找所有超时且有剩余积分的活动红包
+        const expiredEnvelopes = await db.collection(RED_ENVELOPE_COLLECTION)
+            .find({
                 domainId: this.domainId,
                 status: RedEnvelopeStatus.ACTIVE,
                 expiredAt: { $lt: now },
-            },
-            { $set: { status: RedEnvelopeStatus.EXPIRED } },
-        );
-        return result.modifiedCount;
+                remainingAmount: { $gt: 0 },
+            })
+            .toArray() as unknown as RedEnvelope[];
+
+        let expiredCount = 0;
+        let refundedCount = 0;
+        let totalRefundedAmount = 0;
+
+        for (const envelope of expiredEnvelopes) {
+            const result = await this.expireEnvelope(envelope.envelopeId);
+            if (result.success) {
+                expiredCount++;
+                if (result.refundedAmount && result.refundedAmount > 0) {
+                    refundedCount++;
+                    totalRefundedAmount += result.refundedAmount;
+                }
+            }
+        }
+
+        return { expired: expiredCount, refunded: refundedCount, totalRefundedAmount };
     }
 
     /**

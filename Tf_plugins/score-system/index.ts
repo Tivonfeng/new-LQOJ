@@ -325,6 +325,26 @@ export default async function apply(ctx: Context, config: any = {}) {
             RedEnvelopeWSHandler,
         );
 
+        // 红包过期检查定时任务（每分钟执行一次）
+        // 确保只在主实例执行，避免分布式环境下重复执行
+        if (process.env.NODE_APP_INSTANCE === '0' && !process.env.HYDRO_CLI) {
+            ctx.effect(() => ctx.setInterval(async () => {
+                try {
+                    const { RedEnvelopeService } = await import('./src/services/RedEnvelopeService');
+                    const service = new RedEnvelopeService(ctx, ctx.domain?._id || 'default');
+                    const result = await service.checkAndExpireWithRefund();
+                    if (result.expired > 0) {
+                        console.log(
+                            `[RedEnvelope] 定时任务：处理了 ${result.expired} 个过期红包，`
+                            + `退回 ${result.refunded} 个，共 ${result.totalRefundedAmount} 积分`,
+                        );
+                    }
+                } catch (error) {
+                    console.error('[RedEnvelope] 定时任务执行失败:', error);
+                }
+            }, 60000)); // 60秒
+        }
+
         // 思考时间记录接口（来自 confetti-thinking-time 插件）
         try {
             ctx.Route('thinking_time', '/thinking-time', ThinkingTimeHandler);
