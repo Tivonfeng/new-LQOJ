@@ -261,7 +261,7 @@ const CompactEnvelopeItem: React.FC<{
               {envelope.totalCount - envelope.remainingCount}/{envelope.totalCount}
             </span>
             <span className="progress-amount">
-              已抢 {claimedAmount}
+              剩余积分 {envelope.remainingAmount}
             </span>
           </div>
         </div>
@@ -379,8 +379,8 @@ const CompactEnvelopeItem: React.FC<{
             </div>
             <div className="stat-item">
               <span className="stat-icon"><AimOutlined /></span>
-              <span className="stat-value">{claimedAmount}</span>
-              <span className="stat-label">已抢</span>
+              <span className="stat-value">{envelope.remainingAmount}</span>
+              <span className="stat-label">剩余积分</span>
             </div>
             <div className="stat-item">
               <span className="stat-icon"><HistoryOutlined /></span>
