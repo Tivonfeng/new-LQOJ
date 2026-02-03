@@ -91,6 +91,34 @@ export interface ExamHallData {
 // ============================================================================
 
 /**
+ * 赛项类型枚举
+ */
+export enum ExamEventType {
+  // 比赛阶段类型
+  PRELIMINARY = 'preliminary',    // 初赛
+  SEMI_FINAL = 'semi_final',      // 复赛
+  FINAL = 'final',                // 决赛
+  QUALIFYING = 'qualifying',      // 资格赛
+  SELECTION = 'selection',        // 选拔赛
+
+  // 考级等级类型
+  LEVEL_1 = 'level_1',           // 1级
+  LEVEL_2 = 'level_2',           // 2级
+  LEVEL_3 = 'level_3',           // 3级
+  LEVEL_4 = 'level_4',           // 4级
+  LEVEL_5 = 'level_5',           // 5级
+  LEVEL_6 = 'level_6',           // 6级
+  LEVEL_7 = 'level_7',           // 7级
+  LEVEL_8 = 'level_8',           // 8级
+
+  // 其他类型
+  THEORY = 'theory',             // 理论考试
+  PRACTICAL = 'practical',       // 实践考试
+  COMPREHENSIVE = 'comprehensive', // 综合考试
+  OTHER = 'other',               // 其他
+}
+
+/**
  * 赛项接口
  * 表示赛考下的单个赛项
  */
@@ -99,6 +127,12 @@ export interface ExamEvent {
   name: string;
   /** 赛项描述（可选） */
   description?: string;
+  /** 赛项权重系数（默认为1.0，支持自动推荐） */
+  weight?: number;
+  /** 赛项类型，用于智能权重推荐 */
+  eventType?: ExamEventType;
+  /** 是否使用自动推荐权重（默认为true） */
+  autoWeight?: boolean;
 }
 
 /**
@@ -176,6 +210,7 @@ export interface CertificateInfo {
     levelFactor: number;
     awardFactor: number;
     typeFactor: number;
+    categoryFactor: number;
     calculation: string;
   };
   /** 颁发日期 */

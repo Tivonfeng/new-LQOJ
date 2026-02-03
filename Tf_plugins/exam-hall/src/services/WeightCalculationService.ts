@@ -9,17 +9,18 @@ export interface WeightConfig {
     // 级别权重系数 (40% 权重)
     levelWeights: Record<Level, number>;
 
-    // 奖项权重系数 (35% 权重)
+    // 奖项权重系数 (30% 权重)
     awardWeights: {
         competition: Record<string, number>;
         certification: Record<string, number>;
     };
 
-    // 赛考类型权重系数 (20% 权重)
+    // 赛考类型权重系数 (15% 权重)
     examTypeWeights: {
         competition: number;
         certification: number;
     };
+
 
     // 基础权重
     baseWeight: number;
@@ -35,6 +36,7 @@ export interface WeightCalculationResult {
         levelFactor: number;
         awardFactor: number;
         typeFactor: number;
+        categoryFactor: number;
         calculation: string; // 计算过程说明
     };
 }
@@ -56,7 +58,8 @@ export class WeightCalculationService {
      * 获取默认权重配置
      * 竞赛权重范围: 10 ~ 80 分
      * 考级权重范围: 5 ~ 24 分（降低，因为考级通过不能和竞赛获奖相提并论）
-     * 积分 = 权重，范围: 5 ~ 80 分
+     * 竞赛积分 = 权重 × 10，范围: 100 ~ 800 分
+     * 考级积分 = 权重 × 20，范围: 100 ~ 480 分
      */
     private getDefaultConfig(): WeightConfig {
         return {
@@ -99,23 +102,31 @@ export class WeightCalculationService {
             levelFactor: 1.0,
             awardFactor: 1.0,
             typeFactor: 1.0,
+            categoryFactor: 1.0,
             calculation: '',
         };
 
-        // 1. 级别权重系数 (50% 权重)
+        // 1. 级别权重系数 (40% 权重)
         if (preset?.level) {
             breakdown.levelFactor = this.config.levelWeights[preset.level] || 1.0;
         }
 
-        // 2. 奖项权重系数 (40% 权重)
+        // 2. 奖项权重系数 (30% 权重)
         if (certificate.level && certificate.examType) {
             const awardWeights = this.config.awardWeights[certificate.examType];
             breakdown.awardFactor = awardWeights?.[certificate.level] || 1.0;
         }
 
-        // 3. 赛考类型权重系数 (10% 权重)
+        // 3. 赛考类型权重系数 (15% 权重)
         if (certificate.examType) {
             breakdown.typeFactor = this.config.examTypeWeights[certificate.examType] || 1.0;
+        }
+
+        // 4. 赛项权重系数 (15% 权重)
+        if (certificate.category && preset?.events) {
+            // 从预设的赛项列表中查找匹配的赛项权重
+            const matchedEvent = preset.events.find(event => event.name === certificate.category);
+            breakdown.categoryFactor = matchedEvent?.weight || 1.0;
         }
 
         // 计算最终权重
@@ -124,6 +135,7 @@ export class WeightCalculationService {
             * breakdown.levelFactor
             * breakdown.awardFactor
             * breakdown.typeFactor
+            * breakdown.categoryFactor
             * 100,
         ) / 100; // 保留两位小数
 
@@ -160,6 +172,10 @@ export class WeightCalculationService {
         if (breakdown.typeFactor !== 1.0) {
             const typeText = certificate?.examType === 'competition' ? '竞赛' : '考级';
             parts.push(`${typeText}系数: ×${breakdown.typeFactor}`);
+        }
+
+        if (breakdown.categoryFactor !== 1.0) {
+            parts.push(`${certificate?.category || '赛项'}系数: ×${breakdown.categoryFactor}`);
         }
 
         return parts.join(' → ');
@@ -227,19 +243,18 @@ export class WeightCalculationService {
         examType: 'competition' | 'certification',
         level: Level,
         awardLevel: string,
+        preset?: CertificatePreset,
+        category?: string,
     ): Promise<WeightCalculationResult> {
         const mockCertificate: Partial<Certificate> = {
             examType,
             level: awardLevel,
-        };
-
-        const mockPreset: Partial<CertificatePreset> = {
-            level: level as Level,
+            category,
         };
 
         return this.calculateCertificateWeight(
             mockCertificate as Certificate,
-            mockPreset as CertificatePreset,
+            preset,
         );
     }
 }

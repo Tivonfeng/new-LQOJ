@@ -126,6 +126,27 @@ class ConfettiCelebration {
       source.buffer = this.audioBuffer;
       source.connect(this.audioContext.destination);
       source.start(0);
+    } else if (this.audioContext) {
+      // 回退：如果没有预加载音频，使用简单的振荡器发出短促提示音
+      try {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.05;
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.start();
+        setTimeout(() => {
+          try {
+            osc.stop();
+            gain.disconnect();
+          } catch (e) {}
+        }, 180);
+      } catch (e) {
+        // 忽略播放错误
+        console.warn('播放回退提示音失败:', e);
+      }
     }
   }
 
@@ -144,18 +165,27 @@ class ConfettiCelebration {
     return `${remainingSeconds}秒`;
   }
 
-  // 获取庆祝显示信息（简化版，不依赖积分系统）
-  private getCelebrationInfo(): { isFirstAC: boolean, score: number } {
-    // 简单的庆祝逻辑：随机决定是否显示"首次AC"信息
+  // 获取庆祝显示信息（优先使用后端提供的真实数据）
+  private getCelebrationInfo(
+    awardInfo?: { isFirstAC?: boolean, awardedScore?: number },
+  ): { isFirstAC: boolean, score: number } {
+    if (awardInfo && typeof awardInfo.isFirstAC === 'boolean') {
+      return { isFirstAC: Boolean(awardInfo.isFirstAC), score: Number(awardInfo.awardedScore || 0) };
+    }
+    // 后备逻辑：随机决定是否显示"首次AC"信息（仅用于兼容旧服务端）
     const isFirstAC = Math.random() > 0.5; // 50%概率显示首次AC
     const score = isFirstAC ? 10 : 0; // 如果是首次AC，显示10分奖励
-
     return { isFirstAC, score };
   }
 
-  private showCelebrationImage(thinkingTime: number | null, _pid?: number, _uid?: number) {
-    // 获取庆祝显示信息
-    const scoreInfo = this.getCelebrationInfo();
+  private showCelebrationImage(
+    thinkingTime: number | null,
+    _pid?: number,
+    _uid?: number,
+    awardInfo?: { isFirstAC?: boolean, awardedScore?: number },
+  ) {
+    // 获取庆祝显示信息（优先使用后端提供的 awardInfo）
+    const scoreInfo = this.getCelebrationInfo(awardInfo);
 
     // 创建样式表 - 简洁版
     const style = document.createElement('style');
@@ -214,7 +244,7 @@ class ConfettiCelebration {
       animation: simple-scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     `;
 
-    // 生成积分显示内容
+    // 生成积分显示内容（使用真实的 first-AC/awardedScore 信息）
     const scoreContent = scoreInfo.isFirstAC && scoreInfo.score > 0
       ? `<div style="
           background: linear-gradient(135deg, #28a745, #20c997);
@@ -225,9 +255,18 @@ class ConfettiCelebration {
           font-weight: 600;
           margin-bottom: 20px;
           box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-        ">🎁 积分 +${scoreInfo.score}</div>`
+        ">🎁 首次通过奖励 +${scoreInfo.score} 分</div>`
       : scoreInfo.isFirstAC
-        ? '' // 首次AC但无积分奖励
+        ? `<div style="
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.18);
+          ">🎉 首次通过（无额外积分）</div>`
         : `<div style="
             background: linear-gradient(135deg, #6c757d, #adb5bd);
             color: white;
@@ -412,7 +451,7 @@ class ConfettiCelebration {
                 console.log('🎉 开始执行庆祝动画');
                 this.playSound();
                 this.triggerConfetti();
-                this.showCelebrationImage(thinkingTime, pid, uid);
+                this.showCelebrationImage(thinkingTime, pid, uid, msg.rdoc?.scoreAwardInfo);
 
                 this.tracker.resetTimer();
               }, 100);

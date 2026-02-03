@@ -37,11 +37,11 @@ type TimeRangeType = 'weekly' | 'monthly';
 const StudentAnalyticsApp: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState<{weekly: boolean; monthly: boolean}>({
+  const [loadingMore, setLoadingMore] = useState<{ weekly: boolean, monthly: boolean }>({
     weekly: false,
     monthly: false,
   });
-  const [expanded, setExpanded] = useState<{weekly: boolean; monthly: boolean}>({
+  const [expanded, setExpanded] = useState<{ weekly: boolean, monthly: boolean }>({
     weekly: false,
     monthly: false,
   });
@@ -489,3 +489,4 @@ addPage(new NamedPage(['student_analytics'], async () => {
     console.error('[Student Analytics] Mount point not found');
   }
 }));
+export default StudentAnalyticsApp;

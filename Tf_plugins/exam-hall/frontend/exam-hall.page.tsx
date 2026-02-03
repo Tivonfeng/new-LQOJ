@@ -286,7 +286,7 @@ const ExamHallApp: React.FC = () => {
                       </div>
                       <div className="bonus-example" style={{ marginTop: 12 }}>
                         <Text type="secondary" className="bonus-example-text">
-                          • 证书权重 = 积分数量
+                          • 竞赛证书积分 = 权重 × 10，考级证书积分 = 权重 × 20
                         </Text>
                         <br />
                         <Text type="secondary" className="bonus-example-text">

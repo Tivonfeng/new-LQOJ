@@ -19,7 +19,7 @@ export interface DailyGameLimit {
  */
 export class DailyGameLimitService {
     private ctx: Context;
-    private static readonly MAX_DAILY_PLAYS = 10; // 每日最大游戏次数
+    private static readonly DEFAULT_MAX_DAILY_PLAYS = 10; // 每日默认最大游戏次数
 
     constructor(ctx: Context) {
         this.ctx = ctx;
@@ -58,14 +58,15 @@ export class DailyGameLimitService {
 
         // 计算总游戏次数
         const currentPlays = records.reduce((total, record) => total + record.playCount, 0);
-        const remainingPlays = Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - currentPlays);
+        const maxDaily = DailyGameLimitService.getMaxDailyPlays();
+        const remainingPlays = Math.max(0, maxDaily - currentPlays);
         const canPlay = remainingPlays > 0;
 
         return {
             canPlay,
             remainingPlays,
             totalPlays: currentPlays,
-            maxPlays: DailyGameLimitService.MAX_DAILY_PLAYS,
+            maxPlays: DailyGameLimitService.getMaxDailyPlays(),
         };
     }
 
@@ -144,10 +145,11 @@ export class DailyGameLimitService {
         }
 
         // 计算剩余次数
+        const maxDaily = DailyGameLimitService.getMaxDailyPlays();
         const result = {
-            dice: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.dice),
-            rps: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.rps),
-            lottery: Math.max(0, DailyGameLimitService.MAX_DAILY_PLAYS - gameStats.lottery),
+            dice: Math.max(0, maxDaily - gameStats.dice),
+            rps: Math.max(0, maxDaily - gameStats.rps),
+            lottery: Math.max(0, maxDaily - gameStats.lottery),
         };
 
         return result;
@@ -157,7 +159,17 @@ export class DailyGameLimitService {
      * 获取最大每日游戏次数限制
      */
     static getMaxDailyPlays(): number {
-        return DailyGameLimitService.MAX_DAILY_PLAYS;
+        try {
+            const systemModel = (global as any).Hydro?.model?.system;
+            if (systemModel && typeof systemModel.get === 'function') {
+                const configured = systemModel.get('score.max_daily_plays');
+                const n = Number(configured);
+                if (Number.isSafeInteger(n) && n >= 0) return n;
+            }
+        } catch (e) {
+            // ignore and fallback
+        }
+        return DailyGameLimitService.DEFAULT_MAX_DAILY_PLAYS;
     }
 
     /**

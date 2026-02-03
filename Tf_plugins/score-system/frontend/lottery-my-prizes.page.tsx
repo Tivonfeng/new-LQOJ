@@ -56,7 +56,7 @@ const MyPrizesApp: React.FC = () => {
   const [pendingRecords, setPendingRecords] = useState<PrizeRecord[]>(initialData.pending || []);
   const [redeemedRecords, setRedeemedRecords] = useState<PrizeRecord[]>(initialData.redeemed || []);
   const [cancelledRecords, setCancelledRecords] = useState<PrizeRecord[]>(initialData.cancelled || []);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // API URL
   const myPrizesApiUrl = (window as any).myPrizesApiUrl || '/score/lottery/my-prizes/api';

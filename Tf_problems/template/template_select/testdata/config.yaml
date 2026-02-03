@@ -1,0 +1,11 @@
+type: objective
+answers:
+  '1':
+    - - A
+      - B
+      - C
+      - E
+    - 25
+  '2':
+    - D
+    - 25

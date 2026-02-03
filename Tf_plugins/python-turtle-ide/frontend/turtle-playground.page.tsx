@@ -91,11 +91,31 @@ function sanitizeCode(s?: string | null): string {
   return String(s).replace(/\uFEFF/g, '').replace(/\u200B/g, '').replace(/\r\n/g, '\n');
 }
 
+// 检查 Skulpt 是否可用
+function isSkulptAvailable(): boolean {
+  // 首先检查全局加载状态
+  if (typeof (window as any).checkSkulptLoaded === 'function') {
+    if (!(window as any).checkSkulptLoaded()) {
+      return false;
+    }
+  }
+
+  // 然后检查 Sk 对象是否完整
+  return !!(window as any).Sk &&
+         typeof (window as any).Sk.configure === 'function' &&
+         typeof (window as any).Sk.misceval === 'object' &&
+         typeof (window as any).Sk.misceval.asyncToPromise === 'function';
+}
+
 // Skulpt 初始化和执行函数
 function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void) {
   console.log('[Skulpt] Initializing Skulpt with canvas div:', canvasDiv);
-  console.log('[Skulpt] Sk available:', !!(window as any).Sk);
-  console.log('[Skulpt] Sk.builtinFiles available:', !!(window as any).Sk?.builtinFiles);
+  console.log('[Skulpt] Sk available:', isSkulptAvailable());
+  console.log('[Skulpt] Sk object:', (window as any).Sk);
+
+  if (!isSkulptAvailable()) {
+    throw new Error('Skulpt 库未正确加载，请刷新页面重试');
+  }
 
   const skConfig: any = {
     output: onOutput,
@@ -106,7 +126,11 @@ function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void)
       throw new Error(`File not found: '${x}'`);
     },
   };
-  skConfig.__future__ = (window as any).Sk.python3;
+
+  if ((window as any).Sk.python3) {
+    skConfig.__future__ = (window as any).Sk.python3;
+  }
+
   (window as any).Sk.configure(skConfig);
   (window as any).Sk.TurtleGraphics = (window as any).Sk.TurtleGraphics || {};
   (window as any).Sk.TurtleGraphics.target = canvasDiv.id; // 使用ID字符串
@@ -115,6 +139,11 @@ function initSkulpt(canvasDiv: HTMLDivElement, onOutput: (text: string) => void)
 
 async function runPythonCode(code: string, onOutput: (text: string) => void) {
   console.log('[Skulpt] Running Python code, length:', code.length);
+
+  if (!isSkulptAvailable()) {
+    throw new Error('Skulpt 库不可用，请刷新页面重试');
+  }
+
   (window as any).Sk.configure({ output: onOutput });
 
   await (window as any).Sk.misceval.asyncToPromise(() => {
@@ -190,6 +219,7 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     taskProgress || (task ? { status: 'not_started' } : null),
   );
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [skulptStatus, setSkulptStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const canvasRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -593,20 +623,71 @@ const TurtlePlayground: React.FC<TurtleData> = ({
 
   // 初始化 Skulpt
   useEffect(() => {
-    console.log('[TurtlePlayground] useEffect - initializing');
-    console.log('[TurtlePlayground] canvasRef.current:', canvasRef.current);
-    console.log('[TurtlePlayground] Sk available:', !!(window as any).Sk);
-    console.log('[TurtlePlayground] Component mounted');
+    const initSkulptWithRetry = () => {
+      console.log('[TurtlePlayground] useEffect - initializing');
+      console.log('[TurtlePlayground] canvasRef.current:', canvasRef.current);
+      console.log('[TurtlePlayground] Sk available:', isSkulptAvailable());
+      console.log('[TurtlePlayground] Component mounted');
 
-    if (canvasRef.current && (window as any).Sk) {
-      console.log('[TurtlePlayground] Calling initSkulpt');
-      initSkulpt(canvasRef.current, (text: string) => {
-        console.log('[Skulpt Output]', text);
-        appendConsoleOutput(text);
-      });
-    } else {
-      console.error('[TurtlePlayground] Cannot initialize: canvas or Sk missing');
-    }
+      if (!canvasRef.current) {
+        console.error('[TurtlePlayground] Canvas ref not available');
+        setSkulptStatus('failed');
+        return;
+      }
+
+      if (!isSkulptAvailable()) {
+        console.warn('[TurtlePlayground] Skulpt not ready, retrying in 500ms...');
+        setSkulptStatus('loading');
+
+        // 最多重试 20 次（10秒）
+        let retryCount = 0;
+        const retryInterval = setInterval(() => {
+          retryCount++;
+          console.log(`[TurtlePlayground] Retry ${retryCount}/20`);
+
+          if (isSkulptAvailable()) {
+            clearInterval(retryInterval);
+            console.log('[TurtlePlayground] Skulpt ready, initializing...');
+            setSkulptStatus('ready');
+            try {
+              initSkulpt(canvasRef.current!, (text: string) => {
+                console.log('[Skulpt Output]', text);
+                appendConsoleOutput(text);
+              });
+              console.log('[TurtlePlayground] Skulpt initialized successfully');
+              appendConsoleOutput('>>> Skulpt 库已准备就绪\n');
+            } catch (error) {
+              console.error('[TurtlePlayground] Skulpt initialization failed:', error);
+              setSkulptStatus('failed');
+              appendConsoleOutput(`[错误] Skulpt 初始化失败: ${error.message}\n`);
+            }
+          } else if (retryCount >= 20) {
+            clearInterval(retryInterval);
+            console.error('[TurtlePlayground] Skulpt failed to load after 20 retries');
+            setSkulptStatus('failed');
+            appendConsoleOutput('[错误] Skulpt 库加载失败，请检查网络连接或刷新页面\n');
+          }
+        }, 500);
+        return;
+      }
+
+      try {
+        console.log('[TurtlePlayground] Calling initSkulpt');
+        setSkulptStatus('ready');
+        initSkulpt(canvasRef.current, (text: string) => {
+          console.log('[Skulpt Output]', text);
+          appendConsoleOutput(text);
+        });
+        console.log('[TurtlePlayground] Skulpt initialized successfully');
+        appendConsoleOutput('>>> Skulpt 库已准备就绪\n');
+      } catch (error) {
+        console.error('[TurtlePlayground] Skulpt initialization failed:', error);
+        setSkulptStatus('failed');
+        appendConsoleOutput(`[错误] Skulpt 初始化失败: ${error.message}\n`);
+      }
+    };
+
+    initSkulptWithRetry();
   }, []);
 
   // 运行代码
@@ -627,29 +708,37 @@ const TurtlePlayground: React.FC<TurtleData> = ({
     }
 
     try {
-      // 重新初始化Skulpt和Turtle图形目标
-      if ((window as any).Sk) {
-        // 重要：Skulpt的Turtle需要特定的配置方式
-        const runConfig: any = {
-          output: (text: string) => {
-            appendConsoleOutput(text);
-          },
-          read: (x: string) => {
-            if ((window as any).Sk.builtinFiles?.files[x]) {
-              return (window as any).Sk.builtinFiles.files[x];
-            }
-            throw new Error(`文件未找到: '${x}'`);
-          },
-        };
-        runConfig.__future__ = (window as any).Sk.python3;
-        (window as any).Sk.configure(runConfig);
-
-        // 设置Turtle图形配置
-        (window as any).Sk.TurtleGraphics = (window as any).Sk.TurtleGraphics || {};
-        (window as any).Sk.TurtleGraphics.target = 'turtle-canvas';
-        (window as any).Sk.TurtleGraphics.width = 500;
-        (window as any).Sk.TurtleGraphics.height = 350;
+      // 检查 Skulpt 是否可用
+      if (!isSkulptAvailable()) {
+        throw new Error('Skulpt 库不可用，请刷新页面重试');
       }
+
+      console.log('[Run] Skulpt available for execution');
+
+      // 重新初始化Skulpt和Turtle图形目标
+      const runConfig: any = {
+        output: (text: string) => {
+          appendConsoleOutput(text);
+        },
+        read: (x: string) => {
+          if ((window as any).Sk.builtinFiles?.files[x]) {
+            return (window as any).Sk.builtinFiles.files[x];
+          }
+          throw new Error(`文件未找到: '${x}'`);
+        },
+      };
+
+      if ((window as any).Sk.python3) {
+        runConfig.__future__ = (window as any).Sk.python3;
+      }
+
+      (window as any).Sk.configure(runConfig);
+
+      // 设置Turtle图形配置
+      (window as any).Sk.TurtleGraphics = (window as any).Sk.TurtleGraphics || {};
+      (window as any).Sk.TurtleGraphics.target = 'turtle-canvas';
+      (window as any).Sk.TurtleGraphics.width = 500;
+      (window as any).Sk.TurtleGraphics.height = 350;
 
       await runPythonCode(code, (text) => {
         appendConsoleOutput(text);
@@ -902,6 +991,22 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                         </div>
                     </div>
                     <div className="console">
+                        {/* Skulpt 状态提示 */}
+                        {skulptStatus === 'loading' && (
+                            <div style={{ color: '#fbbf24', fontSize: '0.9rem', marginBottom: '8px' }}>
+                                🔄 正在加载 Python 运行时...
+                            </div>
+                        )}
+                        {skulptStatus === 'failed' && (
+                            <div style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '8px' }}>
+                                ❌ Python 运行时加载失败，请刷新页面重试
+                            </div>
+                        )}
+                        {skulptStatus === 'ready' && (
+                            <div style={{ color: '#10b981', fontSize: '0.9rem', marginBottom: '8px' }}>
+                                ✅ Python 运行时已就绪
+                            </div>
+                        )}
                         {consoleOutput}
                     </div>
                 </div>
@@ -917,9 +1022,12 @@ const TurtlePlayground: React.FC<TurtleData> = ({
                                   console.log('[Button] Run button clicked!');
                                   handleRun();
                                 }}
-                                disabled={isRunning}
+                                disabled={isRunning || skulptStatus !== 'ready'}
                             >
-                                {isRunning ? '⏸ 运行中...' : '▶ 运行'}
+                                {isRunning ? '⏸ 运行中...' :
+                                 skulptStatus === 'loading' ? '⏳ 加载中...' :
+                                 skulptStatus === 'failed' ? '❌ 不可用' :
+                                 '▶ 运行'}
                             </button>
                             <button
                                 className="btn-clear"

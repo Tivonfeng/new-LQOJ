@@ -326,15 +326,25 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
                     if (!scoreCore) {
                         console.warn('[ExamHall] scoreCore service not available, skipping score award');
                     } else {
+                        // 根据证书类型计算积分倍数，实现100+分范围
+                        let multiplier;
+                        if (certificate.examType === 'certification') {
+                            // 考级：5分权重对应100分积分，24分权重对应480分积分
+                            multiplier = 20;
+                        } else {
+                            // 竞赛：10分权重对应100分积分，80分权重对应800分积分
+                            multiplier = 10;
+                        }
+                        const scoreAmount = Math.round(finalWeight * multiplier);
                         await scoreCore.recordScoreChange({
                             uid: targetUid,
                             domainId: this.ctx.domain!._id.toString(),
                             pid: -9999998 - Date.now(), // 证书奖励的特殊标识
                             recordId: `certificate_created_${certificate._id}_${Date.now()}`,
-                            score: finalWeight, // 正数表示增加积分
+                            score: scoreAmount, // 正数表示增加积分
                             reason: `证书录入奖励：${certificate.certificateName}`,
                             category: '证书奖励',
-                            title: `证书奖励 +${finalWeight}积分`,
+                            title: `证书奖励 +${scoreAmount}积分`,
                         });
                         console.log(`[ExamHall] 证书创建奖励积分: uid=${targetUid}, amount=${finalWeight}`);
                     }
@@ -700,17 +710,25 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                     if (!scoreCore) {
                         console.warn('[ExamHall] scoreCore service not available, skipping score deduction');
                     } else {
+                        // 根据证书类型计算积分倍数，与发放积分保持一致
+                        let multiplier;
+                        if (certificate.examType === 'certification') {
+                            multiplier = 20; // 考级倍数
+                        } else {
+                            multiplier = 10; // 竞赛倍数
+                        }
+                        const scoreAmount = Math.round(weight * multiplier);
                         await scoreCore.recordScoreChange({
                             uid: certificate.uid,
                             domainId: this.ctx.domain!._id.toString(),
                             pid: -8888887 - Date.now(), // 证书删除的特殊标识
                             recordId: `certificate_deleted_${id}_${Date.now()}`,
-                            score: -weight, // 负数表示减少积分
+                            score: -scoreAmount, // 负数表示减少积分
                             reason: `证书删除扣除：${certificate.certificateName}`,
                             category: '证书奖励',
-                            title: `证书删除 -${weight}积分`,
+                            title: `证书删除 -${scoreAmount}积分`,
                         });
-                        console.log(`[ExamHall] 证书删除扣除积分: uid=${certificate.uid}, amount=${weight}`);
+                        console.log(`[ExamHall] 证书删除扣除积分: uid=${certificate.uid}, amount=${scoreAmount}`);
                     }
                 } catch (scoreErr: any) {
                     console.error(`[ExamHall] 证书删除积分扣除失败: ${scoreErr.message}`);
@@ -794,16 +812,24 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
 
                             const weight = cert.calculatedWeight || cert.weight || 0;
                             if (weight > 0) {
+                                // 根据证书类型计算积分倍数，与发放积分保持一致
+                                let multiplier;
+                                if (cert.examType === 'certification') {
+                                    multiplier = 20; // 考级倍数
+                                } else {
+                                    multiplier = 10; // 竞赛倍数
+                                }
+                                const scoreAmount = Math.round(weight * multiplier);
                                 // eslint-disable-next-line no-await-in-loop
                                 await scoreCore.recordScoreChange({
                                     uid: cert.uid,
                                     domainId,
                                     pid: -7777776 - Date.now() - deductionCount, // 批量删除的特殊标识
                                     recordId: `certificate_batch_deleted_${cert._id}_${Date.now()}`,
-                                    score: -weight, // 负数表示减少积分
+                                    score: -scoreAmount, // 负数表示减少积分
                                     reason: `批量删除证书扣除：${cert.certificateName}`,
                                     category: '证书奖励',
-                                    title: `批量删除证书 -${weight}积分`,
+                                    title: `批量删除证书 -${scoreAmount}积分`,
                                 });
                                 deductionCount++;
                             }

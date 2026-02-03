@@ -113,7 +113,7 @@ export class WeightPreviewHandler extends WeightHandlerBase {
         try {
             this.checkManagePermission();
 
-            const { examType, level, awardLevel } = this.request.body;
+            const { examType, level, awardLevel, presetId, category } = this.request.body;
 
             // 验证参数
             if (!examType || !['competition', 'certification'].includes(examType)) {
@@ -133,10 +133,20 @@ export class WeightPreviewHandler extends WeightHandlerBase {
             }
 
             const weightService = new WeightCalculationService(this.ctx);
+
+            // 如果提供了预设ID，获取预设信息
+            let preset;
+            if (presetId) {
+                const presetService = new PresetService(this.ctx);
+                preset = await presetService.getPresetById(presetId);
+            }
+
             const result = await weightService.previewWeight(
                 examType as 'competition' | 'certification',
                 level as any,
                 awardLevel,
+                preset,
+                category,
             );
 
             this.sendSuccess({

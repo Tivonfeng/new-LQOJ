@@ -50,6 +50,9 @@ export {
     UserScoreHandler,
 } from './ScoreHandlers';
 
+// 思考时间处理器（来自 confetti-thinking-time 插件）
+export { ThinkingTimeHandler } from './ThinkingTimeHandler';
+
 // 转账相关处理器
 export {
     TransferAdminHandler,
@@ -57,3 +60,22 @@ export {
     TransferHistoryHandler,
     WalletHandler,
 } from './WalletHandlers';
+
+// 红包相关处理器
+export {
+    RedEnvelopeClaimHandler,
+    RedEnvelopeCreateHandler,
+    RedEnvelopeDetailHandler,
+    RedEnvelopeHallPageHandler,
+    RedEnvelopeListHandler,
+    RedEnvelopeMyClaimedHandler,
+    RedEnvelopeMySentHandler,
+    RedEnvelopeStatsHandler,
+} from './RedEnvelopeHandler';
+
+// 红包 WebSocket 处理器
+export {
+    RedEnvelopeWSHandler,
+    broadcastNewRedEnvelope,
+    broadcastToAllClients,
+} from './RedEnvelopeWSHandler';

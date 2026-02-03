@@ -11,6 +11,7 @@ import {
   DollarOutlined,
   GiftOutlined,
   PlayCircleOutlined,
+  RedEnvelopeOutlined,
   RocketOutlined,
   SettingOutlined,
   TrophyOutlined,
@@ -154,7 +155,7 @@ const ScoreHallApp: React.FC = () => {
   const ruleItems = [
     { title: 'AC题目', desc: '首次 AC 奖励 20 分，重复 AC 不加分' },
     { title: '每日签到', desc: '连续签到递增奖励，周/双周额外奖励' },
-    { title: '证书', desc: '积分 = 证书权重 × 10，删除证书反向扣除' },
+    { title: '证书', desc: '竞赛证书 ×10，考级证书 ×20，删除证书反向扣除' },
     { title: '打字挑战', desc: '进度 / 等级 / 超越奖励发放对应积分' },
     { title: '作品投币', desc: '投币者扣除积分，作者获得同等积分' },
     { title: 'AI 辅助', desc: '按使用次数扣除设定的积分' },
@@ -200,6 +201,7 @@ const ScoreHallApp: React.FC = () => {
   const diceGameUrl = (window as any).diceGameUrl || '/score/dice';
   const rpsGameUrl = (window as any).rpsGameUrl || '/score/rps';
   const lotteryGameUrl = (window as any).lotteryGameUrl || '/score/lottery';
+  const redEnvelopeHallUrl = (window as any).redEnvelopeHallUrl || '/score/red-envelope/hall';
   const transferUrl = (window as any).transferUrl || '/score/transfer';
   const scoreManageUrl = (window as any).scoreManageUrl || '/score/manage';
   const scoreRecordsUrl = (window as any).scoreRecordsUrl || '/score/records';
@@ -599,6 +601,51 @@ const ScoreHallApp: React.FC = () => {
                   size="large"
                 >
                   开始抽奖
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Red Envelope Card */}
+        <Col xs={24} lg={8}>
+          <Card className="game-card red-envelope-card" bordered={false}>
+            <div className="game-card-content">
+              <div className="game-card-header">
+                <div className="game-icon-wrapper red-envelope-icon">
+                  <RedEnvelopeOutlined style={{ fontSize: 40, color: '#fff' }} />
+                </div>
+                <div className="game-card-title-section">
+                  <Title level={4} className="game-card-title">发红包</Title>
+                  <Text className="game-card-subtitle">分享积分好运</Text>
+                </div>
+              </div>
+              <div className="game-card-body">
+                <div className="game-card-info">
+                  <div className="game-info-item">
+                    <Text className="game-info-label">分配方式</Text>
+                    <Text className="game-info-value">随机/平均</Text>
+                  </div>
+                  <div className="game-info-item">
+                    <Text className="game-info-label">有效时间</Text>
+                    <Text className="game-info-value">24小时</Text>
+                  </div>
+                </div>
+                <div className="game-card-features">
+                  <Tag className="game-feature-tag">全员可抢</Tag>
+                  <Tag className="game-feature-tag">实时到账</Tag>
+                </div>
+              </div>
+              <div className="game-card-footer">
+                <Button
+                  type="primary"
+                  icon={<RedEnvelopeOutlined />}
+                  href={redEnvelopeHallUrl}
+                  className="game-action-btn red-envelope-btn"
+                  block
+                  size="large"
+                >
+                  发红包
                 </Button>
               </div>
             </div>
