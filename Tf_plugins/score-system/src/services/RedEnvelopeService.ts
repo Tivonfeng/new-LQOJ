@@ -48,8 +48,8 @@ export class RedEnvelopeService {
         if (totalCount < 1 || totalCount > 100) {
             return { success: false, error: '红包数量必须在1-100之间' };
         }
-        if (totalAmount < 1) {
-            return { success: false, error: '总金额必须大于0' };
+        if (totalAmount < 10) {
+            return { success: false, error: '总金额不能少于10积分' };
         }
 
         // 获取用户积分并扣款

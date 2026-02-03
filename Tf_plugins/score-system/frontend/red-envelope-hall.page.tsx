@@ -5,15 +5,24 @@ import './components/RedEnvelopeModal';
 
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
+  AimOutlined,
   ArrowLeftOutlined,
   BellOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   CrownOutlined,
+  DollarOutlined,
+  FireOutlined,
   GiftOutlined,
+  HistoryOutlined,
+  InboxOutlined,
+  MailOutlined,
+  MessageOutlined,
   PaperClipOutlined,
   RedEnvelopeOutlined,
   SendOutlined,
   ThunderboltOutlined,
+  TrophyOutlined,
   UserOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
@@ -39,6 +48,7 @@ import {
   Typography,
 } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 const { Text } = Typography;
@@ -128,18 +138,18 @@ function findBestClaimer(claims: Array<{
 // 获取状态配置
 function getStatusConfig(envelope: RedEnvelopeDetail) {
   if (envelope.isExpired || envelope.status === 'expired') {
-    return { color: 'default', text: '已过期', icon: '⏰' };
+    return { color: 'default', text: '已过期', icon: <ClockCircleOutlined /> };
   }
   if (envelope.userHasClaimed) {
-    return { color: 'blue', text: '已领取', icon: '✅' };
+    return { color: 'blue', text: '已领取', icon: <CheckCircleOutlined /> };
   }
   if (envelope.remainingCount === 0) {
-    return { color: 'green', text: '已领完', icon: '🎉' };
+    return { color: 'green', text: '已领完', icon: <GiftOutlined /> };
   }
   if (envelope.canClaim) {
-    return { color: 'red', text: '可领取', icon: '🔥' };
+    return { color: 'red', text: '可领取', icon: <FireOutlined /> };
   }
-  return { color: 'default', text: '待领取', icon: '📬' };
+  return { color: 'default', text: '待领取', icon: <MailOutlined /> };
 }
 
 // 计算领取进度颜色
@@ -182,10 +192,30 @@ const CompactEnvelopeItem: React.FC<{
 
   const handleMouseEnter = (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setHoverPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom + 10,
-    });
+    const cardHeight = 480; // 估算卡片最大高度
+    const cardWidth = 380;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // 弹窗固定显示在左侧，避开 compact-claimers-preview 容器
+    const leftMargin = 50;
+    let x = leftMargin;
+    let y = rect.top + rect.height / 2;
+
+    // 边界检测：确保不超出视口
+    const verticalPadding = 16;
+    if (y - cardHeight / 2 < verticalPadding) {
+      y = cardHeight / 2 + verticalPadding;
+    } else if (y + cardHeight / 2 > viewportHeight - verticalPadding) {
+      y = viewportHeight - cardHeight / 2 - verticalPadding;
+    }
+
+    // 确保不超出视口右边缘
+    if (x + cardWidth > viewportWidth - verticalPadding) {
+      x = viewportWidth - cardWidth - verticalPadding;
+    }
+
+    setHoverPosition({ x, y });
     setHovered(true);
   };
 
@@ -196,18 +226,16 @@ const CompactEnvelopeItem: React.FC<{
   return (
       <div
         className={`compact-envelope-item ${statusClassName}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
       >
       {/* 左侧：祝福语和发送者 */}
       <div className="compact-item-left">
         <div className="compact-avatar envelope-icon">
-          <span>🧧</span>
+          <RedEnvelopeOutlined />
         </div>
         <div className="compact-sender-info">
           {/* 祝福语 - 突出显示 */}
           <div className="compact-blessing-message">
-            <span className="blessing-icon">💬</span>
+            <span className="blessing-icon"><MessageOutlined /></span>
             <span className="blessing-text">{envelope.message.slice(0, 20)}{envelope.message.length > 20 ? '...' : ''}</span>
           </div>
           <div className="compact-sender-name">
@@ -261,7 +289,7 @@ const CompactEnvelopeItem: React.FC<{
           ) : (
             <Tag
               className={`compact-status-tag ${statusConfig.color}`}
-              icon={statusConfig.icon.includes('🔥') ? <ThunderboltOutlined /> : <CheckCircleOutlined />}
+              icon={statusConfig.color === 'red' ? <FireOutlined /> : <CheckCircleOutlined />}
             >
               {statusConfig.text}
             </Tag>
@@ -270,8 +298,12 @@ const CompactEnvelopeItem: React.FC<{
         <div className="compact-time">{formatRelativeTime(envelope.createdAt)}</div>
       </div>
 
-      {/* 领取者预览 */}
-      <div className="compact-claimers-preview">
+      {/* 领取者预览 - 鼠标悬停时显示详情 */}
+      <div
+        className="compact-claimers-preview"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         {envelope.claims.length > 0 && (
           <>
             <div className="claimer-avatars">
@@ -293,15 +325,15 @@ const CompactEnvelopeItem: React.FC<{
             </div>
             {bestClaimer && (
               <div className="best-claimer-preview">
-                👑 {bestClaimer.amount}max
+                <TrophyOutlined style={{ color: '#faad14' }} /> {bestClaimer.amount}max
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* 悬浮详情卡片 */}
-      {hovered && (
+      {/* 悬浮详情卡片 - 使用 Portal 渲染到 body 下，避免父元素 transform 影响 */}
+      {hovered && createPortal(
         <div
           className="envelope-hover-card"
           style={{
@@ -337,22 +369,22 @@ const CompactEnvelopeItem: React.FC<{
 
           <div className="hover-card-stats">
             <div className="stat-item">
-              <span className="stat-icon">💰</span>
+              <span className="stat-icon"><DollarOutlined /></span>
               <span className="stat-value">{envelope.totalAmount}</span>
               <span className="stat-label">总积分</span>
             </div>
             <div className="stat-item">
-              <span className="stat-icon">📦</span>
+              <span className="stat-icon"><InboxOutlined /></span>
               <span className="stat-value">{envelope.totalCount}</span>
               <span className="stat-label">红包数</span>
             </div>
             <div className="stat-item">
-              <span className="stat-icon">🎯</span>
+              <span className="stat-icon"><AimOutlined /></span>
               <span className="stat-value">{claimedAmount}</span>
               <span className="stat-label">已抢</span>
             </div>
             <div className="stat-item">
-              <span className="stat-icon">⏳</span>
+              <span className="stat-icon"><HistoryOutlined /></span>
               <span className="stat-value">{envelope.remainingCount}</span>
               <span className="stat-label">剩余</span>
             </div>
@@ -382,7 +414,7 @@ const CompactEnvelopeItem: React.FC<{
               <div className="claims-list">
                 {bestClaimer && (
                   <div className="claim-item best-claim-item">
-                    <div className="claim-rank">👑</div>
+                    <div className="claim-rank"><TrophyOutlined /></div>
                     <div className="claim-avatar best-avatar">
                       <span>{bestClaimer.claimerName?.charAt(0).toUpperCase()}</span>
                     </div>
@@ -429,27 +461,12 @@ const CompactEnvelopeItem: React.FC<{
           )}
 
           <div className="hover-card-footer">
-            {envelope.canClaim && !envelope.userHasClaimed ? (
-              <Button
-                type="primary"
-                block
-                size="large"
-                icon={<RedEnvelopeOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClaim(envelope);
-                }}
-                className="hover-claim-btn"
-              >
-                🧧 立即抢红包
-              </Button>
-            ) : (
-              <div className="footer-info">
-                {envelope.userHasClaimed ? `您已领取 +${envelope.userClaimAmount} 积分` : statusConfig.text}
-              </div>
-            )}
+            <div className="footer-info">
+              {envelope.userHasClaimed ? `您已领取 +${envelope.userClaimAmount} 积分` : statusConfig.text}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -510,10 +527,16 @@ const RedEnvelopeHallApp: React.FC = () => {
 
       const result = await response.json();
       if (result.success) {
+        // 过滤掉已领完和已过期的红包（仅用于"最新红包"标签页）
+        const filteredEnvelopes = result.envelopes.filter((envelope: RedEnvelopeDetail) =>
+          envelope.remainingCount > 0 && !envelope.isExpired && envelope.status !== 'expired',
+        );
+        // 使用过滤后的数量作为分页总数
+        const filteredTotal = filteredEnvelopes.length;
         // 使用 requestAnimationFrame 确保在下一个渲染周期更新状态
         requestAnimationFrame(() => {
-          setEnvelopes(result.envelopes);
-          setTotal(result.total);
+          setEnvelopes(filteredEnvelopes);
+          setTotal(filteredTotal);
           setCurrentPage(page);
         });
       }
@@ -627,6 +650,7 @@ const RedEnvelopeHallApp: React.FC = () => {
       const result = await response.json();
       if (result.success) {
         message.success('红包已发出！');
+        setSendModalVisible(false);
         form.resetFields();
         setTotalAmount(100);
         setTotalCount(10);
@@ -866,13 +890,13 @@ const RedEnvelopeHallApp: React.FC = () => {
                                 label="总金额"
                                 rules={[
                                   { required: true, message: '请输入总金额' },
-                                  { type: 'number', min: 1, max: 100000, message: '金额必须在1-100000之间' },
+                                  { type: 'number', min: 10, max: 100000, message: '金额必须在10-100000之间' },
                                 ]}
                             >
                                 <InputNumber
                                     style={{ width: '100%' }}
                                     placeholder="请输入总金额"
-                                    min={1}
+                                    min={10}
                                     max={100000}
                                     value={totalAmount}
                                     onChange={(value) => setTotalAmount(value || 0)}

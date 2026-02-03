@@ -1243,14 +1243,12 @@
     .envelope-hover-card {
         width: calc(100vw - 32px);
         max-width: 380px;
-        left: 16px !important;
-        transform: translateX(0) !important;
     }
 
     @keyframes slideUpFade {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px);
         }
         to {
             opacity: 1;
@@ -1414,6 +1412,7 @@
 
 .compact-envelope-list {
     overflow: visible;
+    isolation: isolate;
 }
 
 /* 入场动画 - 错落效果 */
@@ -1441,6 +1440,7 @@
     border-radius: 12px;
     margin: 4px 8px;
     animation: slideInUp 0.4s ease-out backwards;
+    isolation: isolate;
 }
 
 /* 每个列表项的延迟动画 */
@@ -1565,6 +1565,7 @@
     background: linear-gradient(135deg, #fff7e6 0%, #fff 50%, #f0f5ff 100%);
     box-shadow: 0 4px 16px rgba(255, 77, 79, 0.12);
     transform: translateX(4px);
+    z-index: 100001;
 }
 
 /* 点击波纹效果 */
@@ -1971,6 +1972,15 @@
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+    pointer-events: auto;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.compact-claimers-preview:hover {
+    background: rgba(255, 77, 79, 0.08);
 }
 
 .claimer-avatars {
@@ -2062,12 +2072,12 @@
 /* ========== 悬浮详情卡片 ========== */
 .envelope-hover-card {
     position: fixed;
-    transform: translateX(-50%);
-    z-index: 10000;
+    transform: translateY(-50%);
+    z-index: 100003;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
-    pointer-events: auto;
+    pointer-events: none;
     width: 380px;
     max-height: 80vh;
     overflow-y: auto;
@@ -2077,11 +2087,11 @@
 @keyframes slideUpFade {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(10px);
+        transform: translateY(-50%) translateX(-10px);
     }
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(-50%) translateX(0);
     }
 }
 
@@ -2336,32 +2346,17 @@
 
 /* 底部操作 */
 .hover-card-footer {
-    padding: 16px;
+    padding: 12px 16px;
     background: #fafafa;
     border-radius: 0 0 16px 16px;
     border-top: 1px solid #f0f0f0;
-}
-
-.hover-claim-btn {
-    height: 48px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 24px;
-    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
-    border: none;
-    box-shadow: 0 4px 16px rgba(255, 77, 79, 0.4);
-}
-
-.hover-claim-btn:hover {
-    background: linear-gradient(135deg, #ff4d4f 0%, #a8071a 100%);
-    box-shadow: 0 6px 20px rgba(255, 77, 79, 0.5);
+    text-align: center;
 }
 
 .hover-card-footer .footer-info {
-    text-align: center;
-    font-size: 14px;
+    font-size: 13px;
     color: #8c8c8c;
-    padding: 12px;
+    padding: 6px 12px;
     background: #f5f5f5;
     border-radius: 8px;
 }
@@ -2397,14 +2392,12 @@
     .envelope-hover-card {
         width: calc(100vw - 32px);
         max-width: 380px;
-        left: 16px !important;
-        transform: translateX(0) !important;
     }
 
     @keyframes slideUpFade {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px);
         }
         to {
             opacity: 1;

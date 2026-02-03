@@ -34,8 +34,8 @@ export class RedEnvelopeCreateHandler extends Handler {
         const { totalAmount, totalCount, message, type = 'random', expireHours = 24 } = this.request.body as CreateRedEnvelopeParams;
 
         // 参数验证
-        if (!totalAmount || typeof totalAmount !== 'number' || totalAmount < 1) {
-            this.response.body = { success: false, error: '请输入有效的总金额' };
+        if (!totalAmount || typeof totalAmount !== 'number' || totalAmount < 10) {
+            this.response.body = { success: false, error: '总金额不能少于10积分' };
             return;
         }
         if (!totalCount || typeof totalCount !== 'number' || totalCount < 1) {
