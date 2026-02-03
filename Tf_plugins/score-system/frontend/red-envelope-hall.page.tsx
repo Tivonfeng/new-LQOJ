@@ -23,10 +23,12 @@ import {
   TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
 import {
   Button,
   Card,
   Col,
+  Dropdown,
   Form,
   Input,
   InputNumber,
@@ -518,6 +520,35 @@ const RedEnvelopeHallApp: React.FC = () => {
   // 计算平均金额
   const averageAmount = totalCount > 0 ? Math.floor(totalAmount / totalCount) : 0;
 
+  // 祝福语快捷选项
+  const blessingMessages = [
+    '抢到红包的都是绿旗编程最靓的仔！',
+    '我来看看怎么个事儿～',
+    '绿旗编程发红包啦，手慢无！',
+    '这道题选我！不对，是红包选我！',
+    '哥们儿祝你代码全AC，红包全中！',
+    '来了老弟！哥们儿给你发福利啦！',
+    '奥利给！哥们儿的红包冲就完事儿！',
+    '恭喜发财，大吉大利！',
+    '新年快乐，万事如意！',
+    '学业进步，前程似锦！',
+    '身体健康，阖家欢乐！',
+    '心想事成，好运连连！',
+    '财源滚滚，福气满满！',
+    '节日快乐，开心每一天！',
+    '加油！你是最棒的！',
+  ];
+
+  // 祝福语下拉菜单项
+  const blessingMenuItems: MenuProps['items'] = blessingMessages.map((msg) => ({
+    key: msg,
+    label: msg,
+    onClick: () => {
+      setMessageText(msg);
+      form.setFieldsValue({ message: msg });
+    },
+  }));
+
   // 获取红包列表
   const fetchEnvelopes = useCallback(async (page = 1) => {
     setLoading(true);
@@ -980,12 +1011,28 @@ const RedEnvelopeHallApp: React.FC = () => {
                         label="祝福语"
                         initialValue=""
                     >
-                        <Input
-                            placeholder="恭喜发财，大吉大利！"
-                            maxLength={50}
-                            value={messageText}
-                            onChange={(e) => setMessageText(e.target.value)}
-                        />
+                        <Input.Group compact style={{ display: 'flex' }}>
+                            <Input
+                                placeholder="恭喜发财，大吉大利！"
+                                maxLength={50}
+                                value={messageText}
+                                onChange={(e) => setMessageText(e.target.value)}
+                                style={{ flex: 1 }}
+                            />
+                            <Dropdown
+                                menu={{ items: blessingMenuItems }}
+                                placement="bottomRight"
+                                trigger={['click']}
+                            >
+                                <Button
+                                    type="default"
+                                    icon={<ThunderboltOutlined />}
+                                    className="blessing-quick-select-btn"
+                                >
+                                    快捷选择
+                                </Button>
+                            </Dropdown>
+                        </Input.Group>
                     </Form.Item>
 
                     <Form.Item

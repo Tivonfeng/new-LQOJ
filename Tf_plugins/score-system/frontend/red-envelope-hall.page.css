@@ -14,10 +14,10 @@
 
 /* Hero Section - 增强版 */
 .hero-card {
-    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 50%, #a8071a 100%);
+    background: linear-gradient(135deg, #f5222d 0%, #cf1322 50%, #a8071a 100%);
     border: none;
     margin-bottom: 20px;
-    box-shadow: 0 10px 40px rgba(255, 77, 79, 0.3);
+    box-shadow: 0 10px 40px rgba(245, 34, 45, 0.35);
     position: relative;
     overflow: hidden;
 }
@@ -66,12 +66,6 @@
     display: inline-flex;
     align-items: center;
     gap: 12px;
-}
-
-.hero-title::before {
-    content: '🧧';
-    font-size: clamp(2rem, 4vw, 2.8rem);
-    animation: bounce 2s ease-in-out infinite;
 }
 
 @keyframes bounce {
