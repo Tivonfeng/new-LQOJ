@@ -7,7 +7,6 @@ import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   AimOutlined,
   ArrowLeftOutlined,
-  BellOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   CrownOutlined,
@@ -18,13 +17,11 @@ import {
   InboxOutlined,
   MailOutlined,
   MessageOutlined,
-  PaperClipOutlined,
   RedEnvelopeOutlined,
   SendOutlined,
   ThunderboltOutlined,
   TrophyOutlined,
   UserOutlined,
-  WalletOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -42,11 +39,11 @@ import {
   Select,
   Skeleton,
   Space,
-  Statistic,
   Tabs,
   Tag,
   Typography,
 } from 'antd';
+import confetti from 'canvas-confetti';
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -513,6 +510,11 @@ const RedEnvelopeHallApp: React.FC = () => {
   const [mySent, setMySent] = useState<RedEnvelopeDetail[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
 
+  // 领取弹窗状态
+  const [claimModalVisible, setClaimModalVisible] = useState(false);
+  const [claimEnvelope, setClaimEnvelope] = useState<RedEnvelopeDetail | null>(null);
+  const [claimResult, setClaimResult] = useState<{ success: boolean, amount?: number, error?: string } | null>(null);
+
   // 计算平均金额
   const averageAmount = totalCount > 0 ? Math.floor(totalAmount / totalCount) : 0;
 
@@ -667,12 +669,80 @@ const RedEnvelopeHallApp: React.FC = () => {
     }
   };
 
+  // 播放领取成功的音效
+  const playClaimSound = () => {
+    try {
+      const audio = new Audio('/ding.mp3');
+      audio.play().catch(() => {
+        // 如果音频播放失败，使用简单的提示音
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.1;
+        osc.connect(gain);
+        gain.connect(context.destination);
+        osc.start();
+        setTimeout(() => {
+          osc.stop();
+          gain.disconnect();
+        }, 200);
+      });
+    } catch {
+      console.log('[RedEnvelopeHall] 音频播放失败');
+    }
+  };
+
+  // 触发领取成功的彩带效果
+  const triggerClaimConfetti = () => {
+    try {
+      const confettiConfig = {
+        particleCount: 50,
+        spread: 60,
+        ticks: 200,
+        zIndex: 10000,
+        colors: ['#ff4d4f', '#ff7875', '#ffa39e', '#ffa940', '#ffc53d'],
+      };
+
+      // 左侧发射
+      confetti({
+        ...confettiConfig,
+        angle: 60,
+        origin: { x: 0.1, y: 0.6 },
+      });
+
+      // 右侧发射
+      confetti({
+        ...confettiConfig,
+        angle: 120,
+        origin: { x: 0.9, y: 0.6 },
+      });
+
+      // 中间发射
+      setTimeout(() => {
+        confetti({
+          particleCount: 30,
+          spread: 70,
+          ticks: 150,
+          zIndex: 10000,
+          colors: ['#ff4d4f', '#ff7875', '#ffa39e'],
+          origin: { x: 0.5, y: 0.5 },
+        });
+      }, 100);
+    } catch (error) {
+      console.error('[RedEnvelopeHall] 彩带效果触发失败:', error);
+    }
+  };
+
   // 领取红包
   const handleClaim = React.useCallback(async (envelope: RedEnvelopeDetail) => {
     if (!hallData.isLoggedIn) {
       message.warning('请先登录');
       return;
     }
+
+    setClaimEnvelope(envelope);
 
     try {
       // 使用 abort controller 来避免可能的超时问题
@@ -698,7 +768,13 @@ const RedEnvelopeHallApp: React.FC = () => {
 
       const result = await response.json();
       if (result.success) {
-        message.success(`恭喜！获得 ${result.amount} 积分`);
+        // 领取成功，播放音效和彩带效果
+        playClaimSound();
+        triggerClaimConfetti();
+
+        setClaimResult({ success: true, amount: result.amount });
+        setClaimModalVisible(true);
+
         // 只更新本地状态，不重新获取整个列表，保持当前页面位置
         setEnvelopes((prevEnvelopes) =>
           prevEnvelopes.map((e) => {
@@ -725,17 +801,26 @@ const RedEnvelopeHallApp: React.FC = () => {
           }),
         );
       } else {
-        message.error(result.error || '领取失败');
+        setClaimResult({ success: false, error: result.error || '领取失败' });
+        setClaimModalVisible(true);
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        message.error('请求超时，请重试');
+        setClaimResult({ success: false, error: '请求超时，请重试' });
       } else {
-        message.error('网络错误，请重试');
+        setClaimResult({ success: false, error: '网络错误，请重试' });
       }
+      setClaimModalVisible(true);
       console.error('领取红包失败:', error);
     }
   }, [hallData.isLoggedIn, hallData.currentUserId]);
+
+  // 关闭领取弹窗
+  const closeClaimModal = () => {
+    setClaimModalVisible(false);
+    setClaimEnvelope(null);
+    setClaimResult(null);
+  };
 
   // 骨架屏列表项 - 紧凑版
   const renderSkeletonItem = () => (
@@ -798,59 +883,23 @@ const RedEnvelopeHallApp: React.FC = () => {
               </Row>
             </Card>
 
-            {/* 统计卡片 - 骰子游戏风格 */}
-            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                <Col xs={12} sm={6}>
-                    <Card className="stat-card-hover red-envelope-stat-card quaternary" bordered={false}>
-                        <Statistic
-                            title={<div className="red-envelope-stat-label">当前积分</div>}
-                            value={hallData.currentUserScore}
-                            prefix={<WalletOutlined style={{ color: '#722ed1' }} />}
-                            valueStyle={{ color: '#722ed1', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="stat-card-hover red-envelope-stat-card" bordered={false}>
-                        <Statistic
-                            title={<div className="red-envelope-stat-label">发出红包</div>}
-                            value={hallData.stats.totalSent}
-                            prefix={<PaperClipOutlined style={{ color: '#ff4d4f' }} />}
-                            valueStyle={{ color: '#ff4d4f', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="stat-card-hover red-envelope-stat-card secondary" bordered={false}>
-                        <Statistic
-                            title={<div className="red-envelope-stat-label">发出积分</div>}
-                            value={hallData.stats.totalAmount}
-                            prefix={<SendOutlined style={{ color: '#fa8c16' }} />}
-                            valueStyle={{ color: '#fa8c16', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="stat-card-hover red-envelope-stat-card tertiary" bordered={false}>
-                        <Statistic
-                            title={<div className="red-envelope-stat-label">被领取</div>}
-                            value={hallData.stats.totalClaims}
-                            prefix={<BellOutlined style={{ color: '#52c41a' }} />}
-                            valueStyle={{ color: '#52c41a', fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 700 }}
-                        />
-                    </Card>
-                </Col>
-            </Row>
-
             {/* 发红包按钮 */}
             {hallData.isLoggedIn && (
-                <div className="send-envelope-button-container">
+                <div className="send-envelope-main-button" style={{ marginTop: 24 }}>
                     <Button
                         type="primary"
                         size="large"
                         icon={<RedEnvelopeOutlined />}
                         onClick={() => setSendModalVisible(true)}
-                        className="send-envelope-float-btn"
+                        className="send-envelope-main-btn"
+                        style={{
+                          height: 60,
+                          fontSize: 20,
+                          fontWeight: 600,
+                          borderRadius: 12,
+                          background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
+                          boxShadow: '0 4px 12px rgba(255, 77, 79, 0.4)',
+                        }}
                     >
                         发红包
                     </Button>
@@ -1002,6 +1051,55 @@ const RedEnvelopeHallApp: React.FC = () => {
                         </Space>
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            {/* 领取红包弹窗 */}
+            <Modal
+                title={
+                    <Space>
+                        <RedEnvelopeOutlined style={{ color: '#ff4d4f' }} />
+                        <span>领取结果</span>
+                    </Space>
+                }
+                open={claimModalVisible}
+                onCancel={closeClaimModal}
+                footer={null}
+                width={400}
+                className="red-envelope-claim-modal"
+            >
+                {claimEnvelope && (
+                    <div className="claim-result-content">
+                        <div className="claim-result-icon">
+                            {claimResult?.success ? (
+                                <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a' }} />
+                            ) : (
+                                <RedEnvelopeOutlined style={{ fontSize: 64, color: '#ff4d4f' }} />
+                            )}
+                        </div>
+                        <div className="claim-result-message">
+                            {claimResult?.success ? (
+                                <>
+                                    <Typography.Title level={4}>恭喜！</Typography.Title>
+                                    <Typography.Text>来自: {claimEnvelope.senderDisplayName || claimEnvelope.senderName}</Typography.Text>
+                                    <Typography.Text>"{claimEnvelope.message}"</Typography.Text>
+                                    <Typography.Title level={3} style={{ color: '#52c41a', marginTop: 16 }}>
+                                        +{claimResult.amount} 积分
+                                    </Typography.Title>
+                                </>
+                            ) : (
+                                <>
+                                    <Typography.Title level={4}>领取失败</Typography.Title>
+                                    <Typography.Text type="danger">{claimResult?.error || '未知错误'}</Typography.Text>
+                                </>
+                            )}
+                        </div>
+                        <div style={{ marginTop: 24, textAlign: 'right' }}>
+                            <Button type="primary" onClick={closeClaimModal}>
+                                我知道了
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             {/* 红包列表 */}

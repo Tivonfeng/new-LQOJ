@@ -180,7 +180,6 @@ export class RedEnvelopeService {
             },
             {
                 $inc: {
-                    remainingAmount: -1, // 这里先减1，实际金额后面计算
                     remainingCount: -1,
                 },
             },

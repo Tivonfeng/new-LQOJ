@@ -1,11 +1,11 @@
 /**
  * 红包弹窗组件
- * 全局显示的红包领取弹窗
- * 支持 WebSocket 实时接收红包消息
+ * 屏幕左上方显示红包图标，点击后直接领取并显示结果
  */
 import './RedEnvelopeModal.css';
 
 import { Button, Modal, Typography } from 'antd';
+import confetti from 'canvas-confetti';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -21,15 +21,14 @@ interface RedEnvelopeBrief {
   totalAmount: number;
 }
 
-// 红包弹窗组件
+// 红包弹窗组件 - 用于显示领取结果
 const RedEnvelopeModal: React.FC<{
   visible: boolean;
   envelope: RedEnvelopeBrief | null;
   onClose: () => void;
-  onClaim: () => void;
   claiming: boolean;
   claimResult: { success: boolean, amount?: number, error?: string } | null;
-}> = ({ visible, envelope, onClose, onClaim, claiming, claimResult }) => {
+}> = ({ visible, envelope, onClose, claimResult }) => {
   const [countdown, setCountdown] = useState(5);
 
   // 倒计时效果
@@ -126,41 +125,167 @@ const RedEnvelopeModal: React.FC<{
               我知道了
             </Button>
           ) : (
-            <Button
-              type="primary"
-              onClick={onClaim}
-              loading={claiming}
-              block
-              size="large"
-              className="red-envelope-claim-btn"
-            >
-              {claiming ? '领取中...' : '立即领取'}
-            </Button>
+            <Text type="secondary" className="red-envelope-countdown">
+              {countdown > 0 ? `${countdown}秒后自动关闭` : '正在关闭...'}
+            </Text>
           )}
-          <Text type="secondary" className="red-envelope-countdown">
-            {countdown > 0 ? `${countdown}秒后自动关闭` : '正在关闭...'}
-          </Text>
         </div>
       </div>
     </Modal>
   );
 };
 
+// 音效管理器
+class SoundManager {
+  private audioContext: AudioContext | null = null;
+  private audioBuffer: AudioBuffer | null = null;
+
+  constructor() {
+    this.initAudio();
+  }
+
+  private async initAudio() {
+    try {
+      if (!window.AudioContext && !(window as any).webkitAudioContext) {
+        console.warn('[RedEnvelope] 浏览器不支持 Web Audio API');
+        return;
+      }
+
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const response = await fetch('/ding.mp3');
+
+      if (!response.ok) {
+        throw new Error(`音频文件加载失败: ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      console.log('[RedEnvelope] 音效加载成功');
+    } catch (error) {
+      console.warn('[RedEnvelope] 音效初始化失败:', error);
+      if (this.audioContext) {
+        this.audioContext.close();
+        this.audioContext = null;
+      }
+    }
+  }
+
+  play() {
+    if (this.audioContext && this.audioBuffer) {
+      try {
+        const source = this.audioContext.createBufferSource();
+        source.buffer = this.audioBuffer;
+        source.connect(this.audioContext.destination);
+        source.start(0);
+        console.log('[RedEnvelope] 播放提示音');
+      } catch (error) {
+        console.warn('[RedEnvelope] 播放音效失败:', error);
+      }
+    } else if (this.audioContext) {
+      // 回退：使用振荡器播放简单提示音
+      try {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.1;
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.start();
+        setTimeout(() => {
+          try {
+            osc.stop();
+            gain.disconnect();
+          } catch (e) {}
+        }, 200);
+      } catch (e) {
+        console.warn('[RedEnvelope] 播放回退音效失败:', e);
+      }
+    }
+  }
+
+  destroy() {
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+    this.audioBuffer = null;
+  }
+}
+
+// 彩带效果管理器
+class ConfettiManager {
+  private isDestroyed = false;
+
+  triggerCelebration() {
+    if (this.isDestroyed) return;
+
+    console.log('[RedEnvelope] 触发彩带效果');
+    try {
+      const confettiConfig = {
+        particleCount: 50,
+        spread: 60,
+        ticks: 200,
+        zIndex: 10000,
+        colors: ['#ff4d4f', '#ff7875', '#ffa39e', '#ffccc7', '#ffa940', '#ffc53d'],
+      };
+
+      // 左侧发射
+      confetti({
+        ...confettiConfig,
+        angle: 60,
+        origin: { x: 0.1, y: 0.6 },
+      });
+
+      // 右侧发射
+      confetti({
+        ...confettiConfig,
+        angle: 120,
+        origin: { x: 0.9, y: 0.6 },
+      });
+
+      // 中间发射
+      setTimeout(() => {
+        confetti({
+          particleCount: 30,
+          spread: 70,
+          ticks: 150,
+          zIndex: 10000,
+          colors: ['#ff4d4f', '#ff7875', '#ffa39e'],
+          origin: { x: 0.5, y: 0.5 },
+        });
+      }, 100);
+
+      console.log('[RedEnvelope] 彩带效果已触发');
+    } catch (error) {
+      console.error('[RedEnvelope] 彩带效果触发失败:', error);
+    }
+  }
+
+  destroy() {
+    this.isDestroyed = true;
+  }
+}
+
 // 单例管理器
 class RedEnvelopeModalManager {
   private static instance: RedEnvelopeModalManager;
   private root: ReturnType<typeof createRoot> | null = null;
   private container: HTMLDivElement | null = null;
+  private iconContainer: HTMLDivElement | null = null;
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
+  private pendingEnvelope: RedEnvelopeBrief | null = null;
+  private claimResult: { success: boolean, amount?: number, error?: string } | null = null;
+  private soundManager: SoundManager | null = null;
+  private confettiManager: ConfettiManager | null = null;
 
   private state = {
     visible: false,
     envelope: null as RedEnvelopeBrief | null,
     claiming: false,
-    claimResult: null as { success: boolean, amount?: number, error?: string } | null,
   };
 
   private constructor() {
@@ -177,28 +302,44 @@ class RedEnvelopeModalManager {
 
   private init() {
     console.log('[RedEnvelopeModalManager] init() 开始执行');
-    // 创建容器
+
+    // 初始化音效和彩带
+    this.soundManager = new SoundManager();
+    this.confettiManager = new ConfettiManager();
+
+    // 创建弹窗容器
     this.container = document.createElement('div');
     this.container.id = 'red-envelope-modal-container';
     this.container.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 9999;';
     document.body.appendChild(this.container);
 
+    // 创建图标容器 - 在屏幕左上方
+    this.iconContainer = document.createElement('div');
+    this.iconContainer.id = 'red-envelope-icon-container';
+    this.iconContainer.style.cssText = `
+      position: fixed;
+      top: 70px;
+      left: 20px;
+      z-index: 9998;
+      display: none;
+      cursor: pointer;
+    `;
+    document.body.appendChild(this.iconContainer);
+
     // 创建 React 根
     this.root = createRoot(this.container);
 
-    // 渲染组件
-    this.render();
+    // 渲染弹窗组件
+    this.renderModal();
+
+    // 渲染图标组件
+    this.renderIcon();
 
     // 初始化 WebSocket 连接
     this.initWebSocket();
   }
 
-  private updateState(newState: Partial<typeof this.state>) {
-    this.state = { ...this.state, ...newState };
-    this.render();
-  }
-
-  private render() {
+  private renderModal() {
     if (!this.root) return;
 
     this.root.render(
@@ -206,11 +347,143 @@ class RedEnvelopeModalManager {
         visible={this.state.visible}
         envelope={this.state.envelope}
         onClose={() => this.close()}
-        onClaim={() => this.claim()}
         claiming={this.state.claiming}
-        claimResult={this.state.claimResult}
+        claimResult={this.claimResult}
       />,
     );
+  }
+
+  private renderIcon() {
+    if (!this.iconContainer) return;
+
+    // 清除之前的内容
+    this.iconContainer.innerHTML = '';
+
+    // 创建图标元素
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = 'red-envelope-icon-trigger';
+    iconWrapper.innerHTML = `
+      <div class="red-envelope-icon-wrapper">
+        <span class="red-envelope-icon-emoji">🧧</span>
+        <span class="red-envelope-icon-badge">!</span>
+        <div class="red-envelope-icon-ripple"></div>
+      </div>
+      <div class="red-envelope-icon-hint">点击领取</div>
+    `;
+
+    // 点击事件 - 直接领取
+    iconWrapper.addEventListener('click', () => this.handleIconClick());
+
+    this.iconContainer.appendChild(iconWrapper);
+  }
+
+  /**
+   * 处理图标点击 - 直接领取红包
+   */
+  private async handleIconClick() {
+    console.log('[RedEnvelopeModal] handleIconClick 被调用');
+    console.log('[RedEnvelopeModal] pendingEnvelope:', this.pendingEnvelope);
+    console.log('[RedEnvelopeModal] claiming:', this.state.claiming);
+
+    if (!this.pendingEnvelope) {
+      console.log('[RedEnvelopeModal] 没有待领取的红包');
+      return;
+    }
+    if (this.state.claiming) {
+      console.log('[RedEnvelopeModal] 正在领取中，忽略点击');
+      return;
+    }
+
+    const envelopeToClaim = this.pendingEnvelope;
+    console.log('[RedEnvelopeModal] 用户点击图标，准备领取红包:', envelopeToClaim.envelopeId);
+
+    // 显示领取中状态
+    this.state.claiming = true;
+    this.renderModal();
+
+    // 隐藏图标
+    this.hideIcon();
+
+    try {
+      const response = await fetch(
+        `/score/red-envelope/${envelopeToClaim.envelopeId}/claim`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'same-origin',
+        },
+      );
+
+      const result = await response.json();
+      console.log('[RedEnvelopeModal] 领取结果:', result);
+
+      if (result.success) {
+        console.log('[RedEnvelopeModal] 领取成功:', result.amount);
+        this.claimResult = { success: true, amount: result.amount };
+        this.state.envelope = envelopeToClaim;
+
+        // 领取成功，播放音效和彩带效果
+        this.soundManager?.play();
+        this.confettiManager?.triggerCelebration();
+      } else {
+        console.log('[RedEnvelopeModal] 领取失败:', result.error);
+        this.claimResult = { success: false, error: result.error };
+        this.state.envelope = envelopeToClaim;
+      }
+    } catch (error) {
+      console.error('[RedEnvelopeModal] 领取失败:', error);
+      this.claimResult = { success: false, error: '网络错误，请重试' };
+      this.state.envelope = envelopeToClaim;
+    }
+
+    // 显示结果弹窗
+    this.state.claiming = false;
+    this.state.visible = true;
+    this.pendingEnvelope = null;
+    this.renderModal();
+
+    console.log('[RedEnvelopeModal] 弹窗已显示，visible:', this.state.visible);
+  }
+
+  /**
+   * 显示图标
+   */
+  showIcon(envelope: RedEnvelopeBrief) {
+    if (!this.iconContainer) {
+      console.log('[RedEnvelopeModal] iconContainer 不存在');
+      return;
+    }
+
+    console.log('[RedEnvelopeModal] 显示红包图标:', envelope.envelopeId);
+    console.log('[RedEnvelopeModal] 图标容器:', this.iconContainer);
+    this.pendingEnvelope = envelope;
+
+    // 确保容器可见
+    this.iconContainer.style.display = 'block';
+    this.iconContainer.classList.add('show');
+
+    console.log('[RedEnvelopeModal] 容器父节点:', this.iconContainer.parentNode);
+    console.log('[RedEnvelopeModal] 容器可见性:', this.iconContainer.style.display);
+
+    // 15秒后自动隐藏图标（如果用户还没点击）
+    setTimeout(() => {
+      if (this.pendingEnvelope === envelope) {
+        console.log('[RedEnvelopeModal] 图标超时自动隐藏');
+        this.hideIcon();
+      }
+    }, 15000);
+  }
+
+  /**
+   * 隐藏图标
+   */
+  private hideIcon() {
+    if (!this.iconContainer) return;
+    this.iconContainer.style.display = 'none';
+    this.iconContainer.classList.remove('show');
+    this.pendingEnvelope = null;
   }
 
   /**
@@ -263,7 +536,7 @@ class RedEnvelopeModalManager {
         console.log('[RedEnvelopeModal] 收到 WebSocket 消息类型:', data.type);
 
         if (data.type === 'new_red_envelope') {
-          // 收到新红包消息
+          // 收到新红包消息 - 显示图标
           console.log('[RedEnvelopeModal] 收到新红包:', data.envelope?.envelopeId);
           this.handleNewRedEnvelope(data.envelope);
         } else if (data.type === 'envelope_claimed') {
@@ -314,12 +587,12 @@ class RedEnvelopeModalManager {
   }
 
   /**
-   * 处理新红包消息
+   * 处理新红包消息 - 显示图标
    */
   private handleNewRedEnvelope(envelope: RedEnvelopeBrief) {
-    console.log('[RedEnvelopeModal] 收到新红包:', envelope.envelopeId);
-    // 显示红包弹窗
-    this.show(envelope);
+    console.log('[RedEnvelopeModal] 收到新红包，显示图标:', envelope.envelopeId);
+    // 显示图标在屏幕左上方
+    this.showIcon(envelope);
   }
 
   /**
@@ -328,35 +601,13 @@ class RedEnvelopeModalManager {
   private handleEnvelopeClaimed(data: { envelopeId: string, remainingCount: number }) {
     console.log('[RedEnvelopeModal] 红包被领取:', data.envelopeId, '剩余:', data.remainingCount);
 
-    // 如果当前显示的是同一个红包，更新剩余数量
-    if (this.state.envelope?.envelopeId === data.envelopeId) {
-      this.updateState({
-        envelope: {
-          ...this.state.envelope,
-          remainingCount: data.remainingCount,
-        },
-      });
+    // 如果当前有未领取的红包被领完了，更新图标显示
+    if (this.pendingEnvelope?.envelopeId === data.envelopeId && data.remainingCount <= 0) {
+      this.pendingEnvelope = {
+        ...this.pendingEnvelope,
+        remainingCount: data.remainingCount,
+      };
     }
-  }
-
-  /**
-   * 显示红包弹窗
-   */
-  show(envelope: RedEnvelopeBrief) {
-    console.log('[RedEnvelopeModal] 显示红包弹窗:', envelope.envelopeId);
-
-    // 检查是否已经显示
-    if (this.state.visible && this.state.envelope) {
-      console.log('[RedEnvelopeModal] 已有红包弹窗显示，忽略新红包');
-      return;
-    }
-
-    this.updateState({
-      visible: true,
-      envelope,
-      claiming: false,
-      claimResult: null,
-    });
   }
 
   /**
@@ -364,56 +615,13 @@ class RedEnvelopeModalManager {
    */
   close() {
     console.log('[RedEnvelopeModal] 关闭红包弹窗');
-    this.updateState({
+    this.state = {
       visible: false,
       envelope: null,
       claiming: false,
-      claimResult: null,
-    });
-  }
-
-  /**
-   * 领取红包
-   */
-  private async claim() {
-    if (!this.state.envelope || this.state.claiming) return;
-
-    this.updateState({ claiming: true, claimResult: null });
-
-    try {
-      const response = await fetch(
-        `/score/red-envelope/${this.state.envelope.envelopeId}/claim`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'same-origin',
-        },
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        console.log('[RedEnvelopeModal] 领取成功:', result.amount);
-        this.updateState({
-          claiming: false,
-          claimResult: { success: true, amount: result.amount },
-        });
-      } else {
-        console.log('[RedEnvelopeModal] 领取失败:', result.error);
-        this.updateState({
-          claiming: false,
-          claimResult: { success: false, error: result.error },
-        });
-      }
-    } catch (error) {
-      console.error('[RedEnvelopeModal] 领取失败:', error);
-      this.updateState({
-        claiming: false,
-        claimResult: { success: false, error: '网络错误，请重试' },
-      });
-    }
+    };
+    this.claimResult = null;
+    this.renderModal();
   }
 
   /**
@@ -432,6 +640,15 @@ class RedEnvelopeModalManager {
       this.container.parentNode.removeChild(this.container);
       this.container = null;
     }
+    if (this.iconContainer && this.iconContainer.parentNode) {
+      this.iconContainer.parentNode.removeChild(this.iconContainer);
+      this.iconContainer = null;
+    }
+    // 清理音效和彩带管理器
+    this.soundManager?.destroy();
+    this.soundManager = null;
+    this.confettiManager?.destroy();
+    this.confettiManager = null;
     RedEnvelopeModalManager.instance = null as any;
   }
 }
@@ -445,32 +662,32 @@ if (typeof window !== 'undefined') {
 }
 
 // 初始化全局监听器
-function initGlobalListener() {
+function initGlobalListener(manager: RedEnvelopeModalManager) {
   // 监听自定义事件（兼容旧版）
   document.addEventListener('score:red-envelope', ((e: Event) => {
     const event = e as CustomEvent;
     const { envelope } = event.detail;
     if (envelope) {
-      redEnvelopeModalManager.show(envelope);
+      manager.showIcon(envelope);
     }
   }) as EventListener);
 }
 
 // 自动初始化
-function autoInit() {
+function autoInit(manager: RedEnvelopeModalManager) {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGlobalListener);
+    document.addEventListener('DOMContentLoaded', () => initGlobalListener(manager));
   } else {
-    initGlobalListener();
+    initGlobalListener(manager);
   }
 }
 
 // 在模块加载完成后执行初始化
 if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', autoInit);
+    document.addEventListener('DOMContentLoaded', () => autoInit(redEnvelopeModalManager));
   } else {
-    autoInit();
+    autoInit(redEnvelopeModalManager);
   }
 }
 
