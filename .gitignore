@@ -15,6 +15,7 @@ coverage
 benchmark.json
 globalConfig.json
 *.out
+!Tf_problems/**/*.out
 .clinic/
 .direnv/
 .yarn/cache
