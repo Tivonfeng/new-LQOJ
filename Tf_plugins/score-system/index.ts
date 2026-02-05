@@ -57,6 +57,7 @@ import {
     type DiceGameRecord,
     LotteryGameRecord,
     type RPSGameRecord,
+    RedEnvelopeService,
     ScoreCategory,
     type ScoreRecord,
     type TransferRecord,
@@ -330,7 +331,6 @@ export default async function apply(ctx: Context, config: any = {}) {
         if (process.env.NODE_APP_INSTANCE === '0' && !process.env.HYDRO_CLI) {
             ctx.effect(() => ctx.setInterval(async () => {
                 try {
-                    const { RedEnvelopeService } = await import('./src/services/RedEnvelopeService');
                     const service = new RedEnvelopeService(ctx, ctx.domain?._id || 'default');
                     const result = await service.checkAndExpireWithRefund();
                     if (result.expired > 0) {
@@ -411,7 +411,6 @@ export default async function apply(ctx: Context, config: any = {}) {
 
             // 创建红包相关数据库索引
             try {
-                const { RedEnvelopeService } = await import('./src/services/RedEnvelopeService');
                 const service = new RedEnvelopeService(ctx);
                 await service.createIndexes();
                 console.log('✅ 红包插件索引创建成功');
