@@ -6,8 +6,8 @@ int main() {
     for(int x=0;x<=m;x++){
         for(int y=0;y<=m-x;y++){
             int z=m-x-y;
-            if(z%3!=0) continue;
-            if(X*x+Y*y+z/3==n) cnt++;
+            if(z%Z!=0) continue;
+            if(X*x+Y*y+z*1.0/Z==n) cnt++;
         }
     }
     cout<<cnt; return 0;
