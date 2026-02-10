@@ -4,7 +4,7 @@ int main() {
     int n = 0;
     cin >> n;
     for (int i = 0; i < n; i++) {
-        char str[11];
+        string str;
         cin >> str;
         char max = '0';
         for (int j = 0; str[j] != '\0'; j++)
