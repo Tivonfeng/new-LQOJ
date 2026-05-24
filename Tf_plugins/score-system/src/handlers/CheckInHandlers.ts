@@ -202,7 +202,7 @@ export class CheckInHandler extends Handler {
         const checkInService = new CheckInService(this.ctx);
         const preview: any[] = [];
 
-        const startStreak = hasCheckedInToday ? currentStreak + 1 : currentStreak + 1;
+        const startStreak = currentStreak + 1;
 
         for (let i = 0; i < 7; i++) {
             const streak = startStreak + i;

@@ -165,17 +165,27 @@ class ConfettiCelebration {
     return `${remainingSeconds}秒`;
   }
 
-  // 获取庆祝显示信息（优先使用后端提供的真实数据）
+  // 获取庆祝显示信息
+  // 使用 localStorage 追踪首次 AC，比查后端 API 更可靠（避免竞态条件）
   private getCelebrationInfo(
     awardInfo?: { isFirstAC?: boolean, awardedScore?: number },
+    pid?: number,
   ): { isFirstAC: boolean, score: number } {
+    // 优先使用后端 WebSocket 推送的真实数据（score-system 广播的 record/change）
     if (awardInfo && typeof awardInfo.isFirstAC === 'boolean') {
       return { isFirstAC: Boolean(awardInfo.isFirstAC), score: Number(awardInfo.awardedScore || 0) };
     }
-    // 后备逻辑：随机决定是否显示"首次AC"信息（仅用于兼容旧服务端）
-    const isFirstAC = Math.random() > 0.5; // 50%概率显示首次AC
-    const score = isFirstAC ? 10 : 0; // 如果是首次AC，显示10分奖励
-    return { isFirstAC, score };
+    // 没有推送数据时，用 localStorage 判断是否首次 AC
+    if (pid) {
+      const key = 'ac_first_' + pid;
+      const alreadyAC = localStorage.getItem(key);
+      if (!alreadyAC) {
+        localStorage.setItem(key, Date.now().toString());
+        return { isFirstAC: true, score: 20 };
+      }
+    }
+    // 已经做过的题
+    return { isFirstAC: false, score: 0 };
   }
 
   private showCelebrationImage(
@@ -184,8 +194,7 @@ class ConfettiCelebration {
     _uid?: number,
     awardInfo?: { isFirstAC?: boolean, awardedScore?: number },
   ) {
-    // 获取庆祝显示信息（优先使用后端提供的 awardInfo）
-    const scoreInfo = this.getCelebrationInfo(awardInfo);
+    const scoreInfo = this.getCelebrationInfo(awardInfo, _pid);
 
     // 创建样式表 - 简洁版
     const style = document.createElement('style');
