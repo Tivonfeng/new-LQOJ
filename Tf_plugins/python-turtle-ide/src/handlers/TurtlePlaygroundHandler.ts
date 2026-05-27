@@ -8,8 +8,8 @@ import { TurtleTaskService, TurtleWorkService } from '../services';
 export class TurtlePlaygroundHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const workService = new TurtleWorkService(this.ctx);
-        const taskService = new TurtleTaskService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
+        const taskService = this.ctx.turtleTaskService!;
 
         // 从查询参数获取 workId 和 taskId
         const workId = this.request.query.workId as string | undefined;
@@ -105,8 +105,8 @@ export class TurtlePlaygroundHandler extends Handler {
             taskId,
             status,
         } = this.request.body;
-        const workService = new TurtleWorkService(this.ctx);
-        const taskService = new TurtleTaskService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
+        const taskService = this.ctx.turtleTaskService!;
 
         try {
             if (action === 'save') {

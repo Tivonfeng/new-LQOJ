@@ -1,6 +1,5 @@
 import { Handler, PRIV } from 'hydrooj';
-import { StudentAnalyticsService, StudentAnalyticsStats } from '../services';
-import { GlobalStatsService } from '../services/GlobalStatsService';
+import { StudentAnalyticsStats } from '../services';
 
 // 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
 function serializeForJSON(obj: any): any {
@@ -37,7 +36,7 @@ export class StudentAnalyticsHandler extends Handler {
         const months = Math.max(1, Number.parseInt(this.request.query.months as string) || 4);
 
         const uid = this.user?._id;
-        const analyticsService = new StudentAnalyticsService(this.ctx);
+        const analyticsService = this.ctx.studentAnalyticsService!;
 
         // 获取用户统计数据（全域统计）
         // 默认只加载 4 周和 4 个月的数据（懒加载优化）
@@ -97,7 +96,7 @@ export class StudentAnalyticsApiHandler extends Handler {
             return;
         }
 
-        const analyticsService = new StudentAnalyticsService(this.ctx);
+        const analyticsService = this.ctx.studentAnalyticsService!;
 
         let data: any = null;
 
@@ -141,7 +140,7 @@ export class StudentAnalyticsAdminHandler extends Handler {
     async get() {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
 
-        const globalStatsService = new GlobalStatsService(this.ctx);
+        const globalStatsService = this.ctx.globalStatsService!;
         const globalStats = await globalStatsService.getGlobalStats();
 
         // 准备传递给前端的数据
@@ -162,7 +161,7 @@ export class StudentAnalyticsAdminHandler extends Handler {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
 
         const { action } = this.request.body;
-        const globalStatsService = new GlobalStatsService(this.ctx);
+        const globalStatsService = this.ctx.globalStatsService!;
         let result: any = { success: false };
 
         switch (action) {

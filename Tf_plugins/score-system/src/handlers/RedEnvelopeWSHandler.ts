@@ -6,28 +6,14 @@ import { ConnectionHandler } from '@hydrooj/framework';
 import type { Context } from 'hydrooj';
 import { RedEnvelopeService } from '../services';
 
-// 【关键】使用 global 存储客户端 Map
-// 注意：在 index.ts 中也会初始化这个 Map
-const WS_CLIENTS_KEY = 'hydro_redEnvelope_wsClients';
-
-// 获取客户端 Map
-function getWsClients(): Map<string, any> {
-    const globalMap = (global as any)[WS_CLIENTS_KEY];
-    if (!globalMap) {
-        console.log('[RedEnvelope WS] global 上不存在客户端 Map，创建新的');
-        const newMap = new Map();
-        (global as any)[WS_CLIENTS_KEY] = newMap;
-        return newMap;
-    }
-    return globalMap;
-}
+// 模块级 WebSocket 客户端 Map，替代 global 存储
+const wsClients: Map<string, any> = new Map();
 
 /**
  * 广播消息到所有客户端
  */
 export function broadcastToAllClients(data: any): void {
     const message = { ...data, timestamp: new Date().toISOString() };
-    const wsClients = getWsClients();
 
     console.log('[RedEnvelope WS] ========== 广播开始 ==========');
     console.log('[RedEnvelope WS] wsClients 大小:', wsClients.size);
@@ -67,7 +53,6 @@ export class RedEnvelopeWSHandler extends ConnectionHandler<Context> {
      * Hydro 框架调用 prepare 方法来初始化连接
      */
     async prepare() {
-        const wsClients = getWsClients();
         const clientId = this.args.clientId || `client_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         console.log('[RedEnvelope WS] ========== prepare ==========');
         console.log('[RedEnvelope WS] 当前客户端数:', wsClients.size);
@@ -105,7 +90,6 @@ export class RedEnvelopeWSHandler extends ConnectionHandler<Context> {
     }
 
     private getClientId(): string {
-        const wsClients = getWsClients();
         for (const [id, client] of wsClients) {
             if (client === this) return id;
         }
@@ -144,7 +128,6 @@ export class RedEnvelopeWSHandler extends ConnectionHandler<Context> {
      * 清理方法
      */
     async cleanup() {
-        const wsClients = getWsClients();
         const clientId = this.getClientId();
         console.log('[RedEnvelope WS] cleanup, 客户端:', clientId);
         wsClients.delete(clientId);
@@ -157,7 +140,6 @@ export class RedEnvelopeWSHandler extends ConnectionHandler<Context> {
     async onerror(error: Error) {
         const clientId = this.getClientId();
         console.error('[RedEnvelope WS] onerror:', clientId, error.message);
-        const wsClients = getWsClients();
         wsClients.delete(clientId);
     }
 }

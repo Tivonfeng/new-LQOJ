@@ -38,16 +38,12 @@ export interface UserDiceStats {
  */
 export class DiceGameService {
     private ctx: Context;
-    private scoreCore: any;
-
     // 游戏常量
     private static readonly AVAILABLE_BETS = [10, 20, 50]; // 可选投注额度
     private static readonly WIN_MULTIPLIER = 2; // 获胜倍数(2倍)
 
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreCore = null;
-        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
 
     /**
@@ -75,7 +71,7 @@ export class DiceGameService {
             }
 
             // 获取 scoreCore 实例
-            const scoreCore = (global as any).scoreCoreService;
+            const scoreCore = this.ctx.scoreCore!;
             if (!scoreCore) {
                 throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
             }

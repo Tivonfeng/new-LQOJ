@@ -476,7 +476,7 @@ export class AiHelperStreamHandler extends ConnectionHandler {
             try {
                 const uid = Number(this.user._id);
                 const domainId = this.domain._id as string;
-                const scoreCore = (global as any).scoreCoreService;
+                const scoreCore = this.ctx.scoreCore!;
 
                 if (!scoreCore) {
                     console.warn('[Confetti AI Helper Stream] scoreCore service not available, skipping score deduction');

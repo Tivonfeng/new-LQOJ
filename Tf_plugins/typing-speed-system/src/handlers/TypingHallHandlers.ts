@@ -1,9 +1,4 @@
 import { avatar, Handler, PRIV } from 'hydrooj';
-import {
-    TypingAnalyticsService,
-    TypingRecordService,
-    TypingStatsService,
-} from '../services';
 
 /**
  * 打字大厅处理器
@@ -13,9 +8,9 @@ import {
 export class TypingHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const recordService = new TypingRecordService(this.ctx);
-        const statsService = new TypingStatsService(this.ctx, recordService);
-        const analyticsService = new TypingAnalyticsService(this.ctx, recordService, statsService);
+        const recordService = this.ctx.typingRecordService!;
+        const statsService = this.ctx.typingStatsService!;
+        const analyticsService = this.ctx.typingAnalyticsService!;
 
         // 获取全局统计
         const globalStats = await analyticsService.getGlobalStats();
@@ -120,8 +115,8 @@ export class TypingRankingHandler extends Handler {
         const limit = 50;
         const skip = (page - 1) * limit;
 
-        const recordService = new TypingRecordService(this.ctx);
-        const statsService = new TypingStatsService(this.ctx, recordService);
+        const recordService = this.ctx.typingRecordService!;
+        const statsService = this.ctx.typingStatsService!;
 
         let users: any[] = [];
         let total = 0;

@@ -1,5 +1,5 @@
 import { Handler, ObjectId, PRIV } from 'hydrooj';
-import PresetService, { CertificatePreset } from '../services/PresetService';
+import { CertificatePreset } from '../services/PresetService';
 
 /**
  * 预设管理处理器基类
@@ -40,7 +40,7 @@ export class PresetListHandler extends PresetHandlerBase {
             const type = this.request.query?.type as string | undefined;
             const enabledOnly = this.request.query?.enabledOnly === 'true';
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             let presets: CertificatePreset[];
 
             if (type && (type === 'competition' || type === 'certification')) {
@@ -111,7 +111,7 @@ export class PresetListHandler extends PresetHandlerBase {
                 return;
             }
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const preset = await presetService.createPreset({
                 type,
                 name,
@@ -161,7 +161,7 @@ export class PresetDetailHandler extends PresetHandlerBase {
                 return;
             }
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const preset = await presetService.getPresetById(new ObjectId(id));
 
             if (!preset) {
@@ -240,7 +240,7 @@ export class PresetDetailHandler extends PresetHandlerBase {
             if (enabled !== undefined) updateData.enabled = enabled;
             if (events !== undefined) updateData.events = events;
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const preset = await presetService.updatePreset(new ObjectId(id), updateData);
 
             // 确保 _id 转换为字符串
@@ -272,7 +272,7 @@ export class PresetDetailHandler extends PresetHandlerBase {
                 return;
             }
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const success = await presetService.deletePreset(new ObjectId(id));
 
             if (!success) {
@@ -313,7 +313,7 @@ export class PresetToggleHandler extends PresetHandlerBase {
                 return;
             }
 
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const preset = await presetService.togglePreset(new ObjectId(id), enabled);
 
             // 确保 _id 转换为字符串

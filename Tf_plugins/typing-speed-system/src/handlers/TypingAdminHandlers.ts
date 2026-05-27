@@ -1,10 +1,5 @@
 /* eslint-disable no-await-in-loop */
 import { Handler, PERM, PRIV } from 'hydrooj';
-import {
-    TypingBonusService,
-    TypingRecordService,
-    TypingStatsService,
-} from '../services';
 
 /**
  * 管理员页面处理器
@@ -20,7 +15,7 @@ export class TypingAdminHandler extends Handler {
     }
 
     async get() {
-        const recordService = new TypingRecordService(this.ctx);
+        const recordService = this.ctx.typingRecordService!;
 
         // 获取最近录入的记录
         const recentRecords = await recordService.getRecentRecords(20);
@@ -78,8 +73,8 @@ export class TypingAdminHandler extends Handler {
             }
 
             // 获取用户当前统计（用于计算进步和超越）
-            const recordService = new TypingRecordService(this.ctx);
-            const statsService = new TypingStatsService(this.ctx, recordService);
+            const recordService = this.ctx.typingRecordService!;
+            const statsService = this.ctx.typingStatsService!;
             const currentStats = await statsService.getUserStats(user._id);
             const previousMaxWpm = currentStats?.maxWpm || 0;
 
@@ -102,13 +97,13 @@ export class TypingAdminHandler extends Handler {
             await statsService.updateWeeklySnapshot(user._id);
 
             // 处理奖励（传递旧排行榜用于超越检查）
-            const bonusService = new TypingBonusService(this.ctx);
+            const bonusService = this.ctx.typingBonusService!;
             const bonusInfo = await bonusService.processBonuses(user._id, recordId, wpmNum, previousMaxWpm, oldRanking);
 
             let bonusMessage = '';
             if (bonusInfo.totalBonus > 0) {
                 // 直接使用 ScoreCoreService 处理积分奖励
-                const scoreCore = (global as any).scoreCoreService;
+                const scoreCore = this.ctx.scoreCore!;
                 if (!scoreCore) {
                     console.warn('[Typing Speed System] scoreCore service not available, skipping bonus awards');
                     bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分（积分系统暂不可用）`;
@@ -160,8 +155,8 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            const recordService = new TypingRecordService(this.ctx);
-            const statsService = new TypingStatsService(this.ctx, recordService);
+            const recordService = this.ctx.typingRecordService!;
+            const statsService = this.ctx.typingStatsService!;
 
             // 获取记录信息（用于更新统计）
             const record = await recordService.getRecordById(recordId);
@@ -196,8 +191,8 @@ export class TypingAdminHandler extends Handler {
      */
     private async handleRecalculateStats() {
         try {
-            const recordService = new TypingRecordService(this.ctx);
-            const statsService = new TypingStatsService(this.ctx, recordService);
+            const recordService = this.ctx.typingRecordService!;
+            const statsService = this.ctx.typingStatsService!;
 
             // 获取所有有记录的用户（全域）
             const allRecords = await recordService.getAllRecords();

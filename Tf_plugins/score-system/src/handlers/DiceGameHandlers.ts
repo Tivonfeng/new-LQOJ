@@ -2,38 +2,6 @@ import {
     avatar,
     Handler,
 } from 'hydrooj';
-import {
-    DailyGameLimitService,
-    DiceGameService,
-} from '../services';
-
-// helper: 获取注入的 scoreCore 服务
-function getScoreCore(ctx: any) {
-    // 优先从全局对象获取（在插件加载时设置）
-    let scoreCore = (global as any).scoreCoreService;
-    if (scoreCore) {
-        return scoreCore;
-    }
-
-    // 降级到 ctx.inject（在处理器运行时可能不可用）
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                scoreCore = _sc;
-            });
-        } else {
-            scoreCore = (ctx as any).scoreCore;
-        }
-    } catch (e) {
-        scoreCore = (ctx as any).scoreCore;
-    }
-
-    if (!scoreCore) {
-        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-    }
-
-    return scoreCore;
-}
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -76,8 +44,8 @@ export class DiceGameHandler extends Handler {
             return;
         }
 
-        const scoreCore = getScoreCore(this.ctx);
-        const diceService = new DiceGameService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const diceService = this.ctx.diceGameService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -90,7 +58,7 @@ export class DiceGameHandler extends Handler {
         const recentGames = await diceService.getUserGameHistory(this.domain._id, uid, 10);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const diceLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'dice');
 
         // 获取游戏配置
@@ -164,8 +132,8 @@ export class DiceStatusHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreCore = getScoreCore(this.ctx);
-        const diceService = new DiceGameService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const diceService = this.ctx.diceGameService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -178,7 +146,7 @@ export class DiceStatusHandler extends Handler {
         const recentGames = await diceService.getUserGameHistory(this.domain._id, uid, 10);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const diceLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'dice');
 
         // 获取游戏配置
@@ -254,7 +222,7 @@ export class DicePlayHandler extends Handler {
             }
 
             // 检查每日游戏次数限制
-            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const dailyLimitService = this.ctx.dailyGameLimitService!;
             const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'dice');
 
             if (!limitCheck.canPlay) {
@@ -266,7 +234,7 @@ export class DicePlayHandler extends Handler {
                 return;
             }
 
-            const diceService = new DiceGameService(this.ctx);
+            const diceService = this.ctx.diceGameService!;
 
             const result = await diceService.playDiceGame(
                 this.domain._id,
@@ -308,7 +276,7 @@ export class DiceHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
-        const diceService = new DiceGameService(this.ctx);
+        const diceService = this.ctx.diceGameService!;
 
         // 获取分页游戏历史
         const historyData = await diceService.getUserGameHistoryPaged(
@@ -357,7 +325,7 @@ export class DiceAdminHandler extends Handler {
     }
 
     async get() {
-        const diceService = new DiceGameService(this.ctx);
+        const diceService = this.ctx.diceGameService!;
 
         // 获取系统统计
         const systemStats = await diceService.getSystemStats(this.domain._id);

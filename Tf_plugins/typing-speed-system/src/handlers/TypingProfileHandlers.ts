@@ -1,9 +1,4 @@
 import { Handler } from 'hydrooj';
-import {
-    TypingAnalyticsService,
-    TypingRecordService,
-    TypingStatsService,
-} from '../services';
 
 /**
  * 个人打字中心处理器
@@ -13,9 +8,9 @@ import {
 export class TypingProfileHandler extends Handler {
     async get() {
         const uid = this.user._id;
-        const recordService = new TypingRecordService(this.ctx);
-        const statsService = new TypingStatsService(this.ctx, recordService);
-        const analyticsService = new TypingAnalyticsService(this.ctx, recordService, statsService);
+        const recordService = this.ctx.typingRecordService!;
+        const statsService = this.ctx.typingStatsService!;
+        const analyticsService = this.ctx.typingAnalyticsService!;
 
         // 获取用户统计（暂不使用 domainId 过滤）
         const userStats = await statsService.getUserStats(uid);

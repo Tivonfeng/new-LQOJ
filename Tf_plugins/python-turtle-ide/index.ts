@@ -7,6 +7,7 @@ import {
     TurtleWorkHandler,
 } from './src/handlers';
 import type { TurtleTask, TurtleTaskProgress, TurtleWork } from './src/types';
+import { TurtleWorkService, TurtleTaskService } from './src/services';
 
 // 配置 Schema
 const Config = Schema.object({
@@ -21,6 +22,11 @@ declare module 'hydrooj' {
         'turtle.works': TurtleWork;
         'turtle.tasks': TurtleTask;
         'turtle.task_progress': TurtleTaskProgress;
+    }
+
+    interface Context {
+        turtleWorkService?: import('./src/services/TurtleWorkService').TurtleWorkService;
+        turtleTaskService?: import('./src/services/TurtleTaskService').TurtleTaskService;
     }
 }
 
@@ -40,6 +46,13 @@ export default async function apply(ctx: Context, config: any = {}) {
     }
 
     console.log('[Python Turtle IDE] Plugin loading...');
+
+    // 📦 注册服务单例 - Register service singletons
+    const turtleWorkService = new TurtleWorkService(ctx);
+    const turtleTaskService = new TurtleTaskService(ctx);
+
+    ctx.provide('turtleWorkService', turtleWorkService);
+    ctx.provide('turtleTaskService', turtleTaskService);
 
     // 尝试注入 scoreService（如果可用），但不要把它赋值到 ctx（某些框架禁止在多个 fiber 中设置同一 ctx 属性）
     try {

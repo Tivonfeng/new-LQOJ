@@ -5,40 +5,10 @@ import {
     PRIV,
 } from 'hydrooj';
 import {
-    CheckInService,
     DailyGameLimitService,
     ScoreCategory,
-    StatisticsService,
     type UserScore,
 } from '../services';
-
-// helper: 获取注入的 scoreCore 服务
-function getScoreCore(ctx: any) {
-    // 优先从全局对象获取（在插件加载时设置）
-    let scoreCore = (global as any).scoreCoreService;
-    if (scoreCore) {
-        return scoreCore;
-    }
-
-    // 降级到 ctx.inject（在处理器运行时可能不可用）
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                scoreCore = _sc;
-            });
-        } else {
-            scoreCore = (ctx as any).scoreCore;
-        }
-    } catch (e) {
-        scoreCore = (ctx as any).scoreCore;
-    }
-
-    if (!scoreCore) {
-        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-    }
-
-    return scoreCore;
-}
 
 // 自定义 JSON 序列化函数，处理 BigInt 和其他不可序列化的值
 function serializeForJSON(obj: any): any {
@@ -130,8 +100,8 @@ async function getCrossDomainDisplayNames(
 export class ScoreHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const scoreCore = getScoreCore(this.ctx);
-        const checkInService = new CheckInService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const checkInService = this.ctx.checkInService!;
         let userScore: UserScore | null = null;
         let userRank: number | string = '-';
         let recentRecords: any[] = [];
@@ -159,7 +129,7 @@ export class ScoreHallHandler extends Handler {
             }
 
             // 获取各游戏剩余次数
-            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const dailyLimitService = this.ctx.dailyGameLimitService!;
             gameRemainingPlays = await dailyLimitService.getAllRemainingPlays(this.domain._id, uid);
         }
 
@@ -259,7 +229,7 @@ export class ScoreHallHandler extends Handler {
 export class UserScoreHandler extends Handler {
     async get() {
         const uid = this.user._id;
-        const scoreCore = getScoreCore(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
 
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
         const recentRecords = await scoreCore.getUserScoreRecords(this.domain._id, uid, 20);
@@ -303,7 +273,7 @@ export class ScoreRecordsHandler extends Handler {
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const category = (this.request.query.category as string || '').trim();
 
-        const scoreCore = getScoreCore(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
 
         // 使用 service 方法获取分页数据
         const { records, total, totalPages } = await scoreCore.getScoreRecordsWithPagination(
@@ -391,7 +361,7 @@ export class ScoreRankingHandler extends Handler {
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const search = (this.request.query.search as string || '').trim();
 
-        const scoreCore = getScoreCore(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
 
         const UserModel = global.Hydro.model.user;
         let users: any[] = [];
@@ -479,8 +449,8 @@ export class ScoreManageHandler extends Handler {
     }
 
     async get() {
-        const scoreCore = getScoreCore(this.ctx);
-        const statisticsService = new StatisticsService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const statisticsService = this.ctx.statisticsService!;
 
         const recentActivity = await statisticsService.getRecentActivity(this.domain._id, 20);
         const systemOverview = await statisticsService.getSystemOverview(this.domain._id);
@@ -536,7 +506,7 @@ export class ScoreManageHandler extends Handler {
                     return;
                 }
 
-                const scoreCore = getScoreCore(this.ctx);
+                const scoreCore = this.ctx.scoreCore!;
 
                 // 更新用户积分
                 await scoreCore.updateUserScore(this.domain._id, user._id, scoreChangeNum);
@@ -575,7 +545,7 @@ export class ScoreManageHandler extends Handler {
                 }
 
                 const UserModel = global.Hydro.model.user;
-                const scoreCore = getScoreCore(this.ctx);
+                const scoreCore = this.ctx.scoreCore!;
 
                 // 为避免在循环内使用 await（会触发 linter 的 no-await-in-loop），先构建任务列表并并行执行
                 const tasks = rows.map(async (row: any, i: number) => {

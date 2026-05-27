@@ -53,7 +53,7 @@ export class RedEnvelopeService {
         }
 
         // 获取用户积分并扣款
-        const scoreCore = (global as any).scoreCoreService;
+        const scoreCore = this.ctx.scoreCore!;
         if (!scoreCore) {
             console.error('[RedEnvelope] scoreCore 服务不存在');
             return { success: false, error: '积分服务不可用' };
@@ -239,7 +239,7 @@ export class RedEnvelopeService {
         }
 
         // 给领取者加积分
-        const scoreCoreForClaim = (global as any).scoreCoreService;
+        const scoreCoreForClaim = this.ctx.scoreCore!;
         if (scoreCoreForClaim) {
             // 使用时间戳+微秒级计数器确保PID唯一
             const claimPid = -10000002 - Date.now() % 1000000 - Math.floor(Math.random() * 1000);
@@ -484,7 +484,7 @@ export class RedEnvelopeService {
 
         // 检查是否有剩余积分需要退回
         if (envelope.remainingAmount > 0) {
-            const scoreCore = (global as any).scoreCoreService;
+            const scoreCore = this.ctx.scoreCore!;
             if (scoreCore) {
                 try {
                     // 生成唯一PID和recordId

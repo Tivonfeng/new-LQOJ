@@ -6,6 +6,7 @@ import {
 } from './src/handlers';
 import type { StudentAnalyticsStats } from './src/services';
 import { StudentAnalyticsService } from './src/services';
+import { GlobalStatsService } from './src/services';
 import type { CachedStats } from './src/services/StatsCacheService';
 
 // 学生数据分析系统配置Schema
@@ -19,8 +20,12 @@ const Config = Schema.object({
 // 声明数据库集合类型
 declare module 'hydrooj' {
     interface Collections {
-        // 统计缓存表（替代原来的 records 表）
         'student.analytics.stats': CachedStats;
+    }
+
+    interface Context {
+        studentAnalyticsService?: import('./src/services/StudentAnalyticsService').StudentAnalyticsService;
+        globalStatsService?: import('./src/services/GlobalStatsService').GlobalStatsService;
     }
 }
 
@@ -42,10 +47,15 @@ export default async function apply(ctx: Context, config: any = {}) {
     console.log('[Student Analytics] Plugin loading...');
 
     // 创建带缓存配置的服务实例
-    const analyticsService = new StudentAnalyticsService(ctx, {
+    const studentAnalyticsService = new StudentAnalyticsService(ctx, {
         ttl: finalConfig.cacheTTL,
         enabled: finalConfig.cacheEnabled,
     });
+
+    // 📦 注册服务单例 - Register service singletons
+    const globalStatsService = new GlobalStatsService(ctx);
+    ctx.provide('studentAnalyticsService', studentAnalyticsService);
+    ctx.provide('globalStatsService', globalStatsService);
 
     // 创建索引
     try {
@@ -68,7 +78,7 @@ export default async function apply(ctx: Context, config: any = {}) {
             if (!updated || !rdoc) return;
 
             // 标记用户缓存为脏（轻量级操作，只更新一个字段）
-            await analyticsService.invalidateUserCache(rdoc.uid);
+            await studentAnalyticsService.invalidateUserCache(rdoc.uid);
         } catch (error) {
             console.error('[Student Analytics] ❌ Error invalidating cache:', error);
         }

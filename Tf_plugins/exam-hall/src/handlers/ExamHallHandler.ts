@@ -1,5 +1,4 @@
 import { Handler, PRIV } from 'hydrooj';
-import { CertificateService } from '../services/CertificateService';
 
 /**
  * 赛考大厅主页处理器
@@ -15,7 +14,7 @@ export class ExamHallHandler extends Handler {
         try {
             const uid = this.user?._id;
             const canManage = this.checkManagePermission();
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
 
             // 获取最近一个季度的证书和排行榜
             const [recentCompetitions, recentCertifications, recentCertificates, leaderboard] = await Promise.all([

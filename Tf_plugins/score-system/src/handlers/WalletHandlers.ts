@@ -3,38 +3,9 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
-import {
-    type TransferRecord,
-    TransferService,
+import type {
+    TransferRecord,
 } from '../services';
-
-// helper: 获取注入的 scoreCore 服务
-function getScoreCore(ctx: any) {
-    // 优先从全局对象获取（在插件加载时设置）
-    let scoreCore = (global as any).scoreCoreService;
-    if (scoreCore) {
-        return scoreCore;
-    }
-
-    // 降级到 ctx.inject（在处理器运行时可能不可用）
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                scoreCore = _sc;
-            });
-        } else {
-            scoreCore = (ctx as any).scoreCore;
-        }
-    } catch (e) {
-        scoreCore = (ctx as any).scoreCore;
-    }
-
-    if (!scoreCore) {
-        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-    }
-
-    return scoreCore;
-}
 
 export class WalletHandler extends Handler {
     async prepare() {
@@ -44,8 +15,8 @@ export class WalletHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreCore = getScoreCore(this.ctx);
-        const transferService = new TransferService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const transferService = this.ctx.transferService!;
 
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
         const myTransfers = await transferService.getUserTransferHistory(uid, 10);
@@ -125,7 +96,7 @@ export class TransferCreateHandler extends Handler {
             return;
         }
 
-        const transferService = new TransferService(this.ctx);
+        const transferService = this.ctx.transferService!;
 
         const result = await transferService.createTransfer(uid, recipient.trim(), amountNum, reason?.trim());
 
@@ -148,7 +119,7 @@ export class TransferHistoryHandler extends Handler {
         const limit = Math.min(requestedLimit, 10000); // 最大10000条
         const skip = (page - 1) * limit;
 
-        const transferService = new TransferService(this.ctx);
+        const transferService = this.ctx.transferService!;
 
         // 如果请求JSON格式且limit很大，返回所有记录
         const isJsonRequest = this.request.json || this.request.headers.accept?.includes('application/json');
@@ -232,7 +203,7 @@ export class TransferAdminHandler extends Handler {
     }
 
     async get() {
-        const transferService = new TransferService(this.ctx);
+        const transferService = this.ctx.transferService!;
 
         const allTransfers = await transferService.getAllTransferHistory(50);
         const transferStats = await transferService.getTransferStats();

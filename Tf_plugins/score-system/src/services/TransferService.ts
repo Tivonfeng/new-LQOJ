@@ -1,3 +1,4 @@
+import type { ClientSession } from 'mongodb';
 import {
     Context,
 } from 'hydrooj';
@@ -25,13 +26,10 @@ export interface TransferConfig {
 
 export class TransferService {
     private ctx: Context;
-    private scoreCore: any;
     private config: TransferConfig;
 
     constructor(ctx: Context, config?: Partial<TransferConfig>) {
         this.ctx = ctx;
-        this.scoreCore = null;
-        // 不再在构造函数中注入，改为在方法调用时动态获取
         this.config = {
             enabled: true,
             minAmount: 1,
@@ -42,9 +40,30 @@ export class TransferService {
         };
     }
 
-    /**
-     * 获取 scoreCore 服务实例
-     */
+    private async withTransaction<T>(operations: (session: ClientSession | null) => Promise<T>): Promise<T> {
+        let session: ClientSession | null = null;
+        try {
+            session = this.ctx.db.client.startSession();
+        } catch {
+            session = null;
+        }
+
+        if (!session) {
+            return operations(null);
+        }
+
+        try {
+            session.startTransaction();
+            const result = await operations(session);
+            await session.commitTransaction();
+            return result;
+        } catch (error) {
+            try { await session.abortTransaction(); } catch { /* ignore */ }
+            throw error;
+        } finally {
+            await session.endSession();
+        }
+    }
 
     private generateTransactionId(): string {
         return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
@@ -62,7 +81,7 @@ export class TransferService {
     }> {
         try {
             // 获取 scoreCore 实例
-            const scoreCore = (global as any).scoreCoreService;
+            const scoreCore = this.ctx.scoreCore!;
             if (!scoreCore) {
                 throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
             }
@@ -103,44 +122,48 @@ export class TransferService {
 
             const transactionId = this.generateTransactionId();
 
-            await scoreCore.updateUserScore('system', fromUid, -totalCost);
-            await scoreCore.updateUserScore('system', toUser._id, amount);
-
-            await this.ctx.db.collection('transfer.records' as any).insertOne({
-                fromUid,
-                toUid: toUser._id,
-                amount,
-                fee: this.config.transferFee,
-                status: 'completed',
-                reason: reason || '',
-                createdAt: new Date(),
-                completedAt: new Date(),
-                transactionId,
-            });
-
             // 生成唯一的 pid 值，避免唯一索引冲突（转账使用 -7000000 范围）
             const timestamp = Date.now();
             const uniquePidFrom = -7000000 - timestamp;
             const uniquePidTo = -7000000 - timestamp - 1;
 
-            await scoreCore.addScoreRecord({
-                uid: fromUid,
-                domainId: 'system',
-                pid: uniquePidFrom,
-                recordId: null,
-                score: -totalCost,
-                reason: `转账给 ${toUsername} (${amount}积分 + ${this.config.transferFee}手续费)`,
-                category: '积分转账',
-            });
+            await this.withTransaction(async (session) => {
+                const opts = session ? { session } : {};
 
-            await scoreCore.addScoreRecord({
-                uid: toUser._id,
-                domainId: 'system',
-                pid: uniquePidTo,
-                recordId: null,
-                score: amount,
-                reason: `收到来自用户的转账: ${reason || '无备注'}`,
-                category: '积分转账',
+                await scoreCore.updateUserScore('system', fromUid, -totalCost, opts);
+                await scoreCore.updateUserScore('system', toUser._id, amount, opts);
+
+                await this.ctx.db.collection('transfer.records' as any).insertOne({
+                    fromUid,
+                    toUid: toUser._id,
+                    amount,
+                    fee: this.config.transferFee,
+                    status: 'completed',
+                    reason: reason || '',
+                    createdAt: new Date(),
+                    completedAt: new Date(),
+                    transactionId,
+                }, opts);
+
+                await scoreCore.addScoreRecord({
+                    uid: fromUid,
+                    domainId: 'system',
+                    pid: uniquePidFrom,
+                    recordId: null,
+                    score: -totalCost,
+                    reason: `转账给 ${toUsername} (${amount}积分 + ${this.config.transferFee}手续费)`,
+                    category: '积分转账',
+                }, opts);
+
+                await scoreCore.addScoreRecord({
+                    uid: toUser._id,
+                    domainId: 'system',
+                    pid: uniquePidTo,
+                    recordId: null,
+                    score: amount,
+                    reason: `收到来自用户的转账: ${reason || '无备注'}`,
+                    category: '积分转账',
+                }, opts);
             });
 
             return {

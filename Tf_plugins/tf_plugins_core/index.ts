@@ -1,6 +1,7 @@
 import { Context, Logger, Schema } from 'hydrooj';
 import { QiniuCoreService } from './src/services/QiniuCoreService';
 import { ScoreCoreService } from './src/services/ScoreCoreService';
+import './src/types';
 
 const logger = new Logger('tf_plugins_core');
 const Config = Schema.object({

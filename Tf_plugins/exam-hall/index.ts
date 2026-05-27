@@ -17,12 +17,23 @@ import {
 // 导入服务层 - 仅导入类型定义用于数据库集合声明
 import type { Certificate } from './src/services';
 import type { CertificatePreset } from './src/services/PresetService';
+import CertificateService from './src/services/CertificateService';
+import PresetService from './src/services/PresetService';
+import { WeightCalculationService } from './src/services/WeightCalculationService';
 
 // 声明数据库集合类型
 declare module 'hydrooj' {
     interface Collections {
         'exam.certificates': Certificate;
         'exam.presets': CertificatePreset;
+    }
+
+    interface Context {
+        scoreCore?: any;
+        qiniuCore?: any;
+        certificateService?: import('./src/services/CertificateService').default;
+        presetService?: import('./src/services/PresetService').default;
+        weightCalculationService?: import('./src/services/WeightCalculationService').WeightCalculationService;
     }
 }
 
@@ -75,43 +86,20 @@ export default async function apply(ctx: Context, _config: any = {}) {
         console.error('[ExamHall] ❌ 数据库初始化失败 (Database init failed):', error.message);
     }
 
+    // 📦 注册服务单例 - Register service singletons
+    const certificateService = new CertificateService(ctx);
+    const presetService = new PresetService(ctx);
+    const weightCalculationService = new WeightCalculationService(ctx);
+
+    ctx.provide('certificateService', certificateService);
+    ctx.provide('presetService', presetService);
+    ctx.provide('weightCalculationService', weightCalculationService);
+
     // 🧭 注入导航栏入口 - Inject navigation entry (similar to score-hall style)
     ctx.injectUI('Nav', 'exam_hall', {
         prefix: 'exam',
         before: 'ranking',
     }, PRIV.PRIV_USER_PROFILE);
-
-    // 通过 inject 获取 scoreCore 和 qiniuCore 服务并存储到 global
-    try {
-        if (typeof ctx.inject === 'function') {
-            // 注入 scoreCore 服务
-            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
-                (global as any).scoreCoreService = scoreCore;
-                if (scoreCore) {
-                    console.log('[ExamHall] ✅ scoreCore service injected to global');
-                } else {
-                    console.warn('[ExamHall] ⚠️ scoreCore service injected but is null');
-                }
-            });
-
-            // 注入 qiniuCore 服务
-            ctx.inject(['qiniuCore'], ({ qiniuCore }: any) => {
-                (global as any).qiniuCoreService = qiniuCore;
-                if (qiniuCore) {
-                    console.log('[ExamHall] ✅ qiniuCore service injected to global');
-                } else {
-                    console.warn('[ExamHall] ⚠️ qiniuCore service injected but is null');
-                }
-            });
-        } else if ((ctx as any).scoreCore) {
-            (global as any).scoreCoreService = (ctx as any).scoreCore;
-            console.log('[ExamHall] ✅ scoreCore service available via ctx');
-        } else {
-            console.warn('[ExamHall] ⚠️ ctx.inject not available and services not found');
-        }
-    } catch (e) {
-        console.warn('[ExamHall] ⚠️ Failed to inject services:', e);
-    }
 
     console.log('[ExamHall] ✅ 导航栏入口注册完成 (Nav entry registered)');
 

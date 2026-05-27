@@ -7,7 +7,7 @@ import { TurtleWorkService } from '../services';
  */
 export class TurtleWorkHandler extends Handler {
     async get(args: any) {
-        const workService = new TurtleWorkService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
 
         const workId = args.workId as string | undefined;
 
@@ -81,7 +81,7 @@ export class TurtleWorkHandler extends Handler {
     async post() {
         const uid = this.user?._id;
         const { action, workId } = this.request.body;
-        const workService = new TurtleWorkService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
 
         try {
             if (action === 'coin') {

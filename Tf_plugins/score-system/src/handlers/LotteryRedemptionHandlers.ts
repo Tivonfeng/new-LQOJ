@@ -5,9 +5,6 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
-import {
-    LotteryRedemptionService,
-} from '../services';
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -61,7 +58,7 @@ export class MyPrizesHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
 
         // 获取所有状态的奖品（全域查询）
         const [pending, redeemed, cancelled] = await Promise.all([
@@ -143,7 +140,7 @@ export class MyPrizesApiHandler extends Handler {
     async get() {
         const uid = this.user._id;
         const status = this.request.query.status as string | undefined;
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
 
         // 全域统一查询，不再区分域
         const records = await redemptionService.getUserRedemptions(
@@ -185,7 +182,7 @@ export class RedemptionAdminHandler extends Handler {
     }
 
     async get() {
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
 
         // 获取待核销列表
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
@@ -271,7 +268,7 @@ export class RedemptionListApiHandler extends Handler {
     }
 
     async get() {
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const uidParam = this.request.query.uid as string | undefined;
@@ -352,7 +349,7 @@ export class RedemptionRedeemApiHandler extends Handler {
             return;
         }
 
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
         const result = await redemptionService.redeemPrize(
             this.domain._id,
             recordId,
@@ -386,7 +383,7 @@ export class RedemptionCancelApiHandler extends Handler {
             return;
         }
 
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
         const result = await redemptionService.cancelRedemption(
             this.domain._id,
             recordId,
@@ -412,7 +409,7 @@ export class RedemptionHistoryApiHandler extends Handler {
     }
 
     async get() {
-        const redemptionService = new LotteryRedemptionService(this.ctx);
+        const redemptionService = this.ctx.lotteryRedemptionService!;
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
         const uidParam = this.request.query.uid as string | undefined;

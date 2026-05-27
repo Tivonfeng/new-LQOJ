@@ -2,38 +2,6 @@ import {
     avatar,
     Handler,
 } from 'hydrooj';
-import {
-    DailyGameLimitService,
-    RPSGameService,
-} from '../services';
-
-// helper: 获取注入的 scoreCore 服务
-function getScoreCore(ctx: any) {
-    // 优先从全局对象获取（在插件加载时设置）
-    let scoreCore = (global as any).scoreCoreService;
-    if (scoreCore) {
-        return scoreCore;
-    }
-
-    // 降级到 ctx.inject（在处理器运行时可能不可用）
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                scoreCore = _sc;
-            });
-        } else {
-            scoreCore = (ctx as any).scoreCore;
-        }
-    } catch (e) {
-        scoreCore = (ctx as any).scoreCore;
-    }
-
-    if (!scoreCore) {
-        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-    }
-
-    return scoreCore;
-}
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -76,8 +44,8 @@ export class RPSGameHandler extends Handler {
             return;
         }
 
-        const scoreCore = getScoreCore(this.ctx);
-        const rpsService = new RPSGameService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const rpsService = this.ctx.rpsGameService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -90,7 +58,7 @@ export class RPSGameHandler extends Handler {
         const recentGames = await rpsService.getUserGameHistory(this.domain._id, uid, 6);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const rpsLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'rps');
 
         // 获取游戏配置
@@ -173,8 +141,8 @@ export class RPSStatusHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreCore = getScoreCore(this.ctx);
-        const rpsService = new RPSGameService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const rpsService = this.ctx.rpsGameService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -187,7 +155,7 @@ export class RPSStatusHandler extends Handler {
         const recentGames = await rpsService.getUserGameHistory(this.domain._id, uid, 10);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const rpsLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'rps');
 
         // 获取游戏配置
@@ -261,7 +229,7 @@ export class RPSPlayHandler extends Handler {
             }
 
             // 检查每日游戏次数限制
-            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const dailyLimitService = this.ctx.dailyGameLimitService!;
             const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'rps');
 
             if (!limitCheck.canPlay) {
@@ -274,7 +242,7 @@ export class RPSPlayHandler extends Handler {
             }
 
             console.log(`[RPSPlayHandler] Creating services for domain ${this.domain._id}`);
-            const rpsService = new RPSGameService(this.ctx);
+            const rpsService = this.ctx.rpsGameService!;
 
             console.log(`[RPSPlayHandler] Calling playRPSGame with choice: ${choice}`);
             const result = await rpsService.playRPSGame(
@@ -334,7 +302,7 @@ export class RPSHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
-        const rpsService = new RPSGameService(this.ctx);
+        const rpsService = this.ctx.rpsGameService!;
 
         // 获取分页游戏历史
         const historyData = await rpsService.getUserGameHistoryPaged(

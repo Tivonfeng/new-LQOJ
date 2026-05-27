@@ -411,14 +411,9 @@ export function validateBulkScoreChanges(
  */
 declare module 'hydrooj' {
     interface Context {
-        /** ScoreCoreService 实例（可选，通过 ctx.inject 获取更安全） */
         scoreCore?: ScoreCoreService;
+        qiniuCore?: import('../services/QiniuCoreService').QiniuCoreService;
     }
-
-    /**
-     * 业务相关的事件类型由各自的插件定义
-     * 这里只保留积分系统内部可能用到的事件
-     */
 }
 
 // ============================================================================

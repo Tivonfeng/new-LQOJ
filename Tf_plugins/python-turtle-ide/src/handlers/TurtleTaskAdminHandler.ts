@@ -14,7 +14,7 @@ export class TurtleTaskAdminHandler extends Handler {
     }
 
     async get() {
-        const taskService = new TurtleTaskService(this.ctx);
+        const taskService = this.ctx.turtleTaskService!;
         const tasks = await taskService.listAllTasks();
         const taskViews = tasks.map((task) => ({
             ...task,
@@ -29,7 +29,7 @@ export class TurtleTaskAdminHandler extends Handler {
     }
 
     async post() {
-        const taskService = new TurtleTaskService(this.ctx);
+        const taskService = this.ctx.turtleTaskService!;
         const { action } = this.request.body;
 
         try {

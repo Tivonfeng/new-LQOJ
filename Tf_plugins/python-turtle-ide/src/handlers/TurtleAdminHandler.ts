@@ -14,7 +14,7 @@ export class TurtleAdminHandler extends Handler {
     }
 
     async get() {
-        const workService = new TurtleWorkService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
 
         // 从查询参数获取页码
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
@@ -46,7 +46,7 @@ export class TurtleAdminHandler extends Handler {
 
     async post() {
         const { action, workId, featured } = this.request.body;
-        const workService = new TurtleWorkService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
 
         try {
             if (action === 'delete') {

@@ -50,8 +50,6 @@ export interface UserChoiceStats {
  */
 export class RPSGameService {
     private ctx: Context;
-    private scoreCore: any;
-
     // 游戏常量
     private static readonly BASE_COST = 15; // 基础费用
     private static readonly WIN_REWARD = 30; // 胜利奖励(2倍)
@@ -61,8 +59,6 @@ export class RPSGameService {
 
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreCore = null;
-        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
 
     /**
@@ -98,7 +94,7 @@ export class RPSGameService {
         streakBonus?: number;
     }> {
         // 获取 scoreCore 实例
-        const scoreCore = (global as any).scoreCoreService;
+        const scoreCore = this.ctx.scoreCore!;
         if (!scoreCore) {
             throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
         }

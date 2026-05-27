@@ -37,6 +37,8 @@ export interface UserScore {
     lastUpdated: Date;
 }
 
+export * from '../models/RedEnvelope';
+
 // 签到服务
 export {
     type CheckInResult,
@@ -73,6 +75,11 @@ export {
     type UserLotteryStats,
 } from './LotteryService';
 
+// 红包服务
+export {
+    RedEnvelopeService,
+} from './RedEnvelopeService';
+
 // 剪刀石头布游戏服务
 export {
     type RPSGameRecord,
@@ -86,16 +93,14 @@ export {
     StatisticsService,
 } from './StatisticsService';
 
+// 思考时间服务
+export {
+    ThinkingTimeService,
+} from './ThinkingTimeService';
+
 // 转账服务
 export {
     type TransferConfig,
     type TransferRecord,
     TransferService,
 } from './TransferService';
-
-// 红包服务
-export {
-    RedEnvelopeService,
-} from './RedEnvelopeService';
-
-export * from '../models/RedEnvelope';

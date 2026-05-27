@@ -1,7 +1,5 @@
 import { Handler, ObjectId, PRIV } from 'hydrooj';
-import { Certificate, CertificateService } from '../services/CertificateService';
-import { PresetService } from '../services/PresetService';
-import WeightCalculationService from '../services/WeightCalculationService';
+import { Certificate } from '../services/CertificateService';
 
 /**
  * 权重管理基础处理器
@@ -40,7 +38,7 @@ export class WeightConfigHandler extends WeightHandlerBase {
         try {
             this.checkManagePermission();
 
-            const weightService = new WeightCalculationService(this.ctx);
+            const weightService = this.ctx.weightCalculationService!;
             const config = weightService.getConfig();
 
             this.sendSuccess({
@@ -84,7 +82,7 @@ export class WeightConfigHandler extends WeightHandlerBase {
                 }
             }
 
-            const weightService = new WeightCalculationService(this.ctx);
+            const weightService = this.ctx.weightCalculationService!;
             weightService.updateConfig({
                 levelWeights,
                 awardWeights,
@@ -132,12 +130,12 @@ export class WeightPreviewHandler extends WeightHandlerBase {
                 return;
             }
 
-            const weightService = new WeightCalculationService(this.ctx);
+            const weightService = this.ctx.weightCalculationService!;
 
             // 如果提供了预设ID，获取预设信息
             let preset;
             if (presetId) {
-                const presetService = new PresetService(this.ctx);
+                const presetService = this.ctx.presetService!;
                 preset = await presetService.getPresetById(presetId);
             }
 
@@ -172,9 +170,9 @@ export class WeightRecalculationHandler extends WeightHandlerBase {
 
             const { certificateIds, recalculateAll = false } = this.request.body;
 
-            const certificateService = new CertificateService(this.ctx);
-            const presetService = new PresetService(this.ctx);
-            const weightService = new WeightCalculationService(this.ctx);
+            const certificateService = this.ctx.certificateService!;
+            const presetService = this.ctx.presetService!;
+            const weightService = this.ctx.weightCalculationService!;
 
             let certificates: Certificate[];
             if (recalculateAll) {
@@ -256,7 +254,7 @@ export class WeightStatsHandler extends WeightHandlerBase {
         try {
             this.checkManagePermission();
 
-            const certificateService = new CertificateService(this.ctx);
+            const certificateService = this.ctx.certificateService!;
             const certificates = await certificateService.getAllCertificates();
 
             // 统计权重分布

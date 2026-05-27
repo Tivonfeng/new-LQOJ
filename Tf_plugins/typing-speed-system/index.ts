@@ -9,6 +9,7 @@ import type {
     TypingUserStats,
     WeeklySnapshot,
 } from './src/services';
+import { TypingRecordService, TypingStatsService, TypingAnalyticsService, TypingBonusService } from './src/services';
 
 // 打字速度系统配置Schema
 const Config = Schema.object({
@@ -21,6 +22,14 @@ declare module 'hydrooj' {
         'typing.records': TypingRecord;
         'typing.stats': TypingUserStats;
         'typing.weekly_snapshots': WeeklySnapshot;
+    }
+
+    interface Context {
+        scoreCore?: any;
+        typingRecordService?: import('./src/services/TypingRecordService').TypingRecordService;
+        typingStatsService?: import('./src/services/TypingStatsService').TypingStatsService;
+        typingAnalyticsService?: import('./src/services/TypingAnalyticsService').TypingAnalyticsService;
+        typingBonusService?: import('./src/services/TypingBonusService').TypingBonusService;
     }
 }
 
@@ -39,26 +48,16 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('[Typing Speed System] Plugin loading...');
 
-    // 通过 inject 获取 scoreCore 服务并存储到 global
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
-                (global as any).scoreCoreService = scoreCore;
-                if (scoreCore) {
-                    console.log('[Typing Speed System] ✅ scoreCore service injected to global');
-                } else {
-                    console.warn('[Typing Speed System] ⚠️ scoreCore service injected but is null');
-                }
-            });
-        } else if ((ctx as any).scoreCore) {
-            (global as any).scoreCoreService = (ctx as any).scoreCore;
-            console.log('[Typing Speed System] ✅ scoreCore service available via ctx');
-        } else {
-            console.warn('[Typing Speed System] ⚠️ ctx.inject not available and ctx.scoreCore not found');
-        }
-    } catch (e) {
-        console.warn('[Typing Speed System] ⚠️ Failed to inject scoreCore:', e);
-    }
+    // 📦 注册服务单例 - Register service singletons
+    const typingRecordService = new TypingRecordService(ctx);
+    const typingStatsService = new TypingStatsService(ctx, typingRecordService);
+    const typingAnalyticsService = new TypingAnalyticsService(ctx, typingRecordService, typingStatsService);
+    const typingBonusService = new TypingBonusService(ctx);
+
+    ctx.provide('typingRecordService', typingRecordService);
+    ctx.provide('typingStatsService', typingStatsService);
+    ctx.provide('typingAnalyticsService', typingAnalyticsService);
+    ctx.provide('typingBonusService', typingBonusService);
 
     // 修复旧索引和数据（删除可能存在的 uid_domainId 复合索引，因为数据是全域统一的）
     try {

@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop */
+import type { ClientSession } from 'mongodb';
 import { Context } from 'hydrooj';
 import {
     AwardIfFirstACParams,
@@ -110,6 +111,35 @@ export class ScoreCoreService {
             if (error.code !== 85 && !error.message?.includes('already exists')) {
                 throw error;
             }
+        }
+    }
+
+    /**
+     * 在 MongoDB 事务中执行操作（如果支持）
+     * Replica Set 环境使用事务，standalone mongod 降级为普通执行
+     */
+    private async withTransaction<T>(operations: (session: ClientSession | null) => Promise<T>): Promise<T> {
+        let session: ClientSession | null = null;
+        try {
+            session = this.ctx.db.client.startSession();
+        } catch {
+            session = null;
+        }
+
+        if (!session) {
+            return operations(null);
+        }
+
+        try {
+            session.startTransaction();
+            const result = await operations(session);
+            await session.commitTransaction();
+            return result;
+        } catch (error) {
+            try { await session.abortTransaction(); } catch { /* ignore */ }
+            throw error;
+        } finally {
+            await session.endSession();
         }
     }
 
@@ -426,7 +456,7 @@ export class ScoreCoreService {
      * });
      * ```
      */
-    async addScoreRecord(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<void> {
+    async addScoreRecord(record: Omit<ScoreRecord, '_id' | 'createdAt'>, options?: any): Promise<void> {
         // 验证积分变动参数
         const validation = validateScoreChange(record.score, SCORE_CONSTANTS.VALIDATION);
         if (!validation.valid) {
@@ -436,7 +466,7 @@ export class ScoreCoreService {
         await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne({
             ...record,
             createdAt: new Date(),
-        });
+        }, options || {});
     }
 
     /**
@@ -459,7 +489,7 @@ export class ScoreCoreService {
      * await scoreCore.updateUserScore('domain1', 123, -5);
      * ```
      */
-    async updateUserScore(_domainId: string, uid: number, scoreChange: number): Promise<void> {
+    async updateUserScore(_domainId: string, uid: number, scoreChange: number, options?: any): Promise<void> {
         // 验证积分变动参数
         const validation = validateScoreChange(scoreChange);
         if (!validation.valid) {
@@ -476,7 +506,7 @@ export class ScoreCoreService {
                 $inc: { totalScore: scoreChange, acCount: scoreChange > 0 ? 1 : 0 },
                 $set: { lastUpdated: new Date() },
             },
-            { upsert: true },
+            { upsert: true, ...(options || {}) },
         );
 
         // 使该用户的缓存失效
@@ -551,7 +581,19 @@ export class ScoreCoreService {
             });
 
             // 插入成功，说明是首次 AC，更新用户积分
-            await this.updateUserScore(domainId, uid, score);
+            try {
+                await this.updateUserScore(domainId, uid, score);
+            } catch (updateError) {
+                // 补偿操作：删除已插入的孤儿记录
+                try {
+                    await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any)
+                        .deleteOne({ uid, pid, domainId });
+                } catch (cleanupError) {
+                    console.error('[ScoreCore] Failed to clean up orphan record after updateUserScore failure:', cleanupError);
+                }
+                throw updateError;
+            }
+
             return { isFirstAC: true, awarded: score };
         } catch (err: any) {
             // 处理重复键（已存在积分记录）——非首次 AC
@@ -688,9 +730,11 @@ export class ScoreCoreService {
      * ```
      */
     async recordScoreChange(record: Omit<ScoreRecord, '_id' | 'createdAt'>): Promise<void> {
-        // 先添加积分记录，再更新用户积分
-        await this.addScoreRecord(record);
-        await this.updateUserScore(record.domainId, record.uid, record.score);
+        await this.withTransaction(async (session) => {
+            const opts = session ? { session } : {};
+            await this.addScoreRecord(record, opts);
+            await this.updateUserScore(record.domainId, record.uid, record.score, opts);
+        });
     }
 
     /**
@@ -1032,77 +1076,48 @@ export class ScoreCoreService {
         const timestamp = Date.now();
         const uniquePidFrom = -7000000 - timestamp;
         const uniquePidTo = -7000000 - timestamp - 1;
-
-        // 生成唯一的转账ID用于关联双方的记录
         const transferId = `transfer_${timestamp}_${fromUid}_${toUid}_${amount}`;
 
-        // 使用应用层原子性保证
-        // 注意：如果数据库支持ACID事务，建议使用数据库事务确保原子性
-        // 当前实现通过预检查和顺序执行确保数据一致性
+        const usersColl = this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.USERS as any);
+        const recordsColl = this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any);
 
-        try {
+        await this.withTransaction(async (session) => {
+            const opts = session ? { session } : {};
+
             // 扣除转出用户积分
-            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.USERS as any).updateOne(
+            await usersColl.updateOne(
                 { uid: fromUid },
-                {
-                    $inc: { totalScore: -amount },
-                    $set: { lastUpdated: new Date() },
-                },
+                { $inc: { totalScore: -amount }, $set: { lastUpdated: new Date() } },
+                opts,
             );
 
             // 添加转出用户的积分记录
-            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne({
-                uid: fromUid,
-                domainId,
-                pid: uniquePidFrom,
-                recordId: transferId,
-                score: -amount,
-                reason: reason || `转账给用户 ${toUid}`,
-                category: ScoreCategory.TRANSFER,
-                title: `转账支出 -${amount}积分`,
+            await recordsColl.insertOne({
+                uid: fromUid, domainId, pid: uniquePidFrom, recordId: transferId,
+                score: -amount, reason: reason || `转账给用户 ${toUid}`,
+                category: ScoreCategory.TRANSFER, title: `转账支出 -${amount}积分`,
                 createdAt: new Date(),
-            });
+            }, opts);
 
             // 增加接收用户积分
-            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.USERS as any).updateOne(
+            await usersColl.updateOne(
                 { uid: toUid },
-                {
-                    $inc: { totalScore: amount },
-                    $set: { lastUpdated: new Date() },
-                },
-                { upsert: true },
+                { $inc: { totalScore: amount }, $set: { lastUpdated: new Date() } },
+                { ...opts, upsert: true },
             );
 
             // 添加接收用户的积分记录
-            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne({
-                uid: toUid,
-                domainId,
-                pid: uniquePidTo,
-                recordId: transferId,
-                score: amount,
-                reason: reason || `收到用户 ${fromUid} 转账`,
-                category: ScoreCategory.TRANSFER,
-                title: `转账收入 +${amount}积分`,
+            await recordsColl.insertOne({
+                uid: toUid, domainId, pid: uniquePidTo, recordId: transferId,
+                score: amount, reason: reason || `收到用户 ${fromUid} 转账`,
+                category: ScoreCategory.TRANSFER, title: `转账收入 +${amount}积分`,
                 createdAt: new Date(),
-            });
+            }, opts);
+        });
 
-            // 使相关用户的缓存失效
-            this.invalidateUserCache(fromUid);
-            this.invalidateUserCache(toUid);
-        } catch (error) {
-            // 如果发生错误，尝试回滚积分变动
-            try {
-                // 回滚转出用户的积分（如果扣除了的话）
-                await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.USERS as any).updateOne(
-                    { uid: fromUid },
-                    { $inc: { totalScore: amount } },
-                );
-            } catch (rollbackError) {
-                console.error('[TransferRollback] Failed to rollback fromUser:', rollbackError);
-            }
-
-            throw error;
-        }
+        // 事务提交后使缓存失效
+        this.invalidateUserCache(fromUid);
+        this.invalidateUserCache(toUid);
     }
 
     /**

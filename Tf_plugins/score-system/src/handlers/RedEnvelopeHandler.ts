@@ -243,7 +243,7 @@ export class RedEnvelopeHallPageHandler extends Handler {
         // 获取用户积分
         let currentUserScore = 0;
         if (uid) {
-            const scoreCore = (global as any).scoreCoreService;
+            const scoreCore = this.ctx.scoreCore!;
             if (scoreCore) {
                 const userScore = await scoreCore.getUserScore(this.domain._id, uid);
                 currentUserScore = userScore?.totalScore || 0;

@@ -1,9 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Handler, ObjectId, PRIV } from 'hydrooj';
-import CertificateService from '../services/CertificateService';
-import PresetService from '../services/PresetService';
-import WeightCalculationService from '../services/WeightCalculationService';
 
 // ============================================================================
 // 🎓 证书管理处理器集合
@@ -121,7 +118,7 @@ export class CertificateUploadHandler extends CertificateHandlerBase {
                 return;
             }
 
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const uploadResult = await certService.uploadCertificateImage(filePath);
 
             if (uploadResult.success) {
@@ -223,7 +220,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             let finalCertificationSeries = typeof certificationSeries === 'string' ? certificationSeries.trim() : undefined;
             if (presetId) {
                 try {
-                    const presetService = new PresetService(this.ctx);
+                    const presetService = this.ctx.presetService!;
                     const preset = await presetService.getPresetById(new ObjectId(presetId));
 
                     if (!preset) {
@@ -280,7 +277,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             }
 
             // 创建证书
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const certificate = await certService.createCertificate(
                 targetUid,
                 {
@@ -304,8 +301,8 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             // 自动计算权重
             let finalWeight = 0;
             try {
-                const weightService = new WeightCalculationService(this.ctx);
-                const preset = presetId ? await new PresetService(this.ctx).getPresetById(new ObjectId(presetId)) : undefined;
+                const weightService = this.ctx.weightCalculationService!;
+                const preset = presetId ? await this.ctx.presetService!.getPresetById(new ObjectId(presetId)) : undefined;
                 const weightResult = await weightService.calculateCertificateWeight(certificate, preset || undefined);
                 finalWeight = weightResult.finalWeight;
                 await certService.updateCertificate(certificate._id!, {
@@ -322,7 +319,7 @@ export class CertificateCreateHandler extends CertificateHandlerBase {
             // 直接使用 ScoreCoreService 增加积分
             if (finalWeight > 0) {
                 try {
-                    const scoreCore = (global as any).scoreCoreService;
+                    const scoreCore = this.ctx.scoreCore!;
                     if (!scoreCore) {
                         console.warn('[ExamHall] scoreCore service not available, skipping score award');
                     } else {
@@ -388,7 +385,7 @@ export class CertificateGetHandler extends CertificateHandlerBase {
             const skip = Math.max(0, Number.parseInt((this.request.query?.skip as string) || '0') || 0);
             const limit = Math.min(1000, Math.max(1, Number.parseInt((this.request.query?.limit as string) || '100') || 100));
 
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
 
             // 获取分页数据和总数
             const [certificates, total] = await Promise.all([
@@ -432,7 +429,7 @@ export class CertificateListAdminHandler extends CertificateHandlerBase {
             this.checkManagePermission();
 
             const uid = (this.request.query?.uid as string) || undefined;
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const UserModel = (global as any).Hydro.model.user;
 
             let targetUid: number | undefined;
@@ -532,7 +529,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
                 return;
             }
 
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const certificate = await certService.getCertificateById(new ObjectId(id));
 
             if (!certificate) {
@@ -590,7 +587,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             } = this.request.body;
 
             // 更新证书 - 只更新允许的字段，保留 examType、competitionName 等用于统计的字段
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const updateData: any = {
                 certificateName,
                 certifyingBody,
@@ -606,7 +603,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             // 如果提供了预设ID，从预设中获取examType
             if (presetId) {
                 try {
-                    const presetService = new PresetService(this.ctx);
+                    const presetService = this.ctx.presetService!;
                     const preset = await presetService.getPresetById(new ObjectId(presetId));
 
                     if (preset) {
@@ -630,9 +627,9 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
 
             // 自动重新计算权重
             try {
-                const weightService = new WeightCalculationService(this.ctx);
+                const weightService = this.ctx.weightCalculationService!;
                 const preset = certificate.presetId
-                    ? await new PresetService(this.ctx).getPresetById(
+                    ? await this.ctx.presetService!.getPresetById(
                         typeof certificate.presetId === 'string'
                             ? new ObjectId(certificate.presetId)
                             : certificate.presetId,
@@ -684,7 +681,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             }
 
             // 获取证书信息（删除前获取权重）
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const certificate = await certService.getCertificateById(new ObjectId(id));
 
             if (!certificate) {
@@ -706,7 +703,7 @@ export class CertificateDetailHandler extends CertificateHandlerBase {
             // 直接使用 ScoreCoreService 减少积分
             if (weight > 0) {
                 try {
-                    const scoreCore = (global as any).scoreCoreService;
+                    const scoreCore = this.ctx.scoreCore!;
                     if (!scoreCore) {
                         console.warn('[ExamHall] scoreCore service not available, skipping score deduction');
                     } else {
@@ -790,7 +787,7 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
             }
 
             // 获取证书信息（删除前获取权重）
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const certificates = await certService.getCertificatesByIds(validIds);
 
             // 批量删除
@@ -799,7 +796,7 @@ export class CertificateBatchDeleteHandler extends CertificateHandlerBase {
             // 直接使用 ScoreCoreService 批量减少积分
             if (certificates.length > 0) {
                 try {
-                    const scoreCore = (global as any).scoreCoreService;
+                    const scoreCore = this.ctx.scoreCore!;
                     if (!scoreCore) {
                         console.warn('[ExamHall] scoreCore service not available, skipping batch score deduction');
                     } else {
@@ -879,7 +876,7 @@ export class CertificateStatsHandler extends CertificateHandlerBase {
             }
 
             // 获取统计数据
-            const certService = new CertificateService(this.ctx);
+            const certService = this.ctx.certificateService!;
             const stats = await certService.getUserStats(targetUid);
 
             this.sendSuccess({

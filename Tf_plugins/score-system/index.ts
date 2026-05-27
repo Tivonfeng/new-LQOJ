@@ -53,13 +53,22 @@ import {
 import { ScoreConfig } from './src/handlers/config';
 // 导入服务层
 import {
+    CheckInService,
     type DailyCheckInRecord,
+    DailyGameLimitService,
     type DiceGameRecord,
+    DiceGameService,
     LotteryGameRecord,
+    LotteryRedemptionService,
+    LotteryService,
     RedEnvelopeService,
     type RPSGameRecord,
+    RPSGameService,
     ScoreCategory,
     type ScoreRecord,
+    StatisticsService,
+    ThinkingTimeService,
+    TransferService,
     type TransferRecord,
     type UserCheckInStats,
     type UserDiceStats,
@@ -67,21 +76,6 @@ import {
     type UserRPSStats,
     type UserScore,
 } from './src/services';
-
-// 【关键】初始化 WebSocket 客户端 Map，确保在模块加载时就创建
-// 使用 global 并保存直接引用，确保热重载时不会丢失
-const WS_CLIENTS_KEY = 'hydro_redEnvelope_wsClients';
-let wsClientsMap: Map<string, any> | null = null;
-
-// 在 global 上保存引用的同时保存本地变量
-if (!(global as any)[WS_CLIENTS_KEY]) {
-    wsClientsMap = new Map();
-    (global as any)[WS_CLIENTS_KEY] = wsClientsMap;
-    console.log('[Score System] WebSocket 客户端 Map 已初始化');
-} else {
-    wsClientsMap = (global as any)[WS_CLIENTS_KEY];
-    console.log('[Score System] 使用已有的 WebSocket 客户端 Map');
-}
 
 // 积分系统配置Schema
 const Config = Schema.object({
@@ -104,6 +98,20 @@ declare module 'hydrooj' {
         'checkin.stats': UserCheckInStats;
     }
 
+    interface Context {
+        scoreCore?: any;
+        qiniuCore?: any;
+        checkInService?: import('./src/services/CheckInService').CheckInService;
+        diceGameService?: import('./src/services/DiceGameService').DiceGameService;
+        dailyGameLimitService?: import('./src/services/DailyGameLimitService').DailyGameLimitService;
+        rpsGameService?: import('./src/services/RPSGameService').RPSGameService;
+        lotteryService?: import('./src/services/LotteryService').LotteryService;
+        lotteryRedemptionService?: import('./src/services/LotteryRedemptionService').LotteryRedemptionService;
+        transferService?: import('./src/services/TransferService').TransferService;
+        redEnvelopeService?: import('./src/services/RedEnvelopeService').RedEnvelopeService;
+        thinkingTimeService?: import('./src/services/ThinkingTimeService').ThinkingTimeService;
+        statisticsService?: import('./src/services/StatisticsService').StatisticsService;
+    }
 }
 
 // 插件主函数
@@ -119,27 +127,6 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     console.log('📋 SCORE-SYSTEM: Config loaded:', finalConfig);
     console.log('🔧 SCORE-SYSTEM: Starting full initialization...');
-
-    // 通过 inject 获取 scoreCore 服务并存储到 global
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore }: any) => {
-                (global as any).scoreCoreService = scoreCore;
-                if (scoreCore) {
-                    console.log('[Score System] ✅ scoreCore service injected to global');
-                } else {
-                    console.warn('[Score System] ⚠️ scoreCore service injected but is null');
-                }
-            });
-        } else if ((ctx as any).scoreCore) {
-            (global as any).scoreCoreService = (ctx as any).scoreCore;
-            console.log('[Score System] ✅ scoreCore service available via ctx');
-        } else {
-            console.warn('[Score System] ⚠️ ctx.inject not available and ctx.scoreCore not found');
-        }
-    } catch (e) {
-        console.warn('[Score System] ⚠️ Failed to inject scoreCore:', e);
-    }
 
     // 创建核销相关数据库索引
     try {
@@ -192,6 +179,27 @@ export default async function apply(ctx: Context, config: any = {}) {
 
     // 注册积分相关事件监听器
     if (finalConfig.enabled) {
+        // 注册服务单例
+        const checkInService = new CheckInService(ctx);
+        const diceGameService = new DiceGameService(ctx);
+        const dailyGameLimitService = new DailyGameLimitService(ctx);
+        const rpsGameService = new RPSGameService(ctx);
+        const lotteryService = new LotteryService(ctx);
+        const lotteryRedemptionService = new LotteryRedemptionService(ctx);
+        const transferService = new TransferService(ctx);
+        const thinkingTimeService = new ThinkingTimeService(ctx);
+        const statisticsService = new StatisticsService(ctx);
+
+        ctx.provide('checkInService', checkInService);
+        ctx.provide('diceGameService', diceGameService);
+        ctx.provide('dailyGameLimitService', dailyGameLimitService);
+        ctx.provide('rpsGameService', rpsGameService);
+        ctx.provide('lotteryService', lotteryService);
+        ctx.provide('lotteryRedemptionService', lotteryRedemptionService);
+        ctx.provide('transferService', transferService);
+        ctx.provide('thinkingTimeService', thinkingTimeService);
+        ctx.provide('statisticsService', statisticsService);
+
         // 在插件内注册系统设置：score.max_daily_plays（仅当 model.setting 可用时）
         try {
             const settingModel = (global as any).Hydro?.model?.setting;
@@ -223,8 +231,8 @@ export default async function apply(ctx: Context, config: any = {}) {
                 let isFirstAC = false;
                 let awardedScore = 0;
 
-                // 使用 global 中的 scoreCore 服务
-                const currentScoreCore = (global as any).scoreCoreService;
+                // 使用 ctx 中的 scoreCore 服务
+                const currentScoreCore = ctx.scoreCore!;
                 if (currentScoreCore) {
                     const result = await currentScoreCore.awardIfFirstAC({
                         uid: rdoc.uid,

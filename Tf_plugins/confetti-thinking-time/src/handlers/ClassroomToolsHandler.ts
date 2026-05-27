@@ -1,5 +1,4 @@
 import { ForbiddenError, Handler, PRIV } from 'hydrooj';
-import { ClassroomToolsService } from '../services/ClassroomToolsService';
 
 export class ClassroomToolsHandler extends Handler {
     async prepare() {
@@ -38,7 +37,7 @@ export class ClassroomToolsHandler extends Handler {
 
     private async handleRandomNumber() {
         const { min, max, count, allowDuplicate } = this.request.body;
-        const toolsService = new ClassroomToolsService(this.ctx);
+        const toolsService = this.ctx.classroomToolsService!;
 
         const safeConfig = {
             min: Number.parseInt(min, 10) || 1,

@@ -7,8 +7,8 @@ import { TurtleTaskService, TurtleWorkService } from '../services';
  */
 export class TurtleGalleryHandler extends Handler {
     async get() {
-        const workService = new TurtleWorkService(this.ctx);
-        const taskService = new TurtleTaskService(this.ctx);
+        const workService = this.ctx.turtleWorkService!;
+        const taskService = this.ctx.turtleTaskService!;
 
         // 从查询参数获取页码
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);

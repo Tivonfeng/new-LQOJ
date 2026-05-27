@@ -7,17 +7,10 @@ import { UserScore } from '../services';
  */
 export class StatisticsService {
     private ctx: Context;
-    private scoreCore: any;
 
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreCore = null;
-        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
-
-    /**
-     * 获取 scoreCore 服务实例
-     */
 
     /**
      * 获取系统总览统计 (全局)
@@ -31,7 +24,7 @@ export class StatisticsService {
         todayActiveUsers: number;
     }> {
         // 获取 scoreCore 实例
-        const scoreCore = (global as any).scoreCoreService;
+        const scoreCore = this.ctx.scoreCore!;
         if (!scoreCore) {
             throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
         }
@@ -206,7 +199,7 @@ export class StatisticsService {
         recentScoreCount: number;
     }> {
         // 获取 scoreCore 实例
-        const scoreCore = (global as any).scoreCoreService;
+        const scoreCore = this.ctx.scoreCore!;
         if (!scoreCore) {
             throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
         }

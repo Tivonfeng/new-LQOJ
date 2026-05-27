@@ -83,9 +83,7 @@ export class CertificateService {
 
     // 获取 qiniuCore 服务实例
     private getQiniuCore(): any {
-        // 使用 ctx.inject 获取 qiniuCore 服务
-
-        return (global as any).qiniuCoreService;
+        return this.ctx.qiniuCore!;
     }
 
     /**

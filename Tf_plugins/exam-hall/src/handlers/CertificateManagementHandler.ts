@@ -1,5 +1,4 @@
 import { Handler, ObjectId, PRIV } from 'hydrooj';
-import { PresetService } from '../services/PresetService';
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -41,7 +40,7 @@ export class CertificateManagementPageHandler extends Handler {
         this.checkPriv(PRIV.PRIV_EDIT_SYSTEM);
 
         try {
-            const presetService = new PresetService(this.ctx);
+            const presetService = this.ctx.presetService!;
             const UserModel = (global as any).Hydro.model.user;
             const certCollection = this.ctx.db.collection('exam.certificates' as any);
 

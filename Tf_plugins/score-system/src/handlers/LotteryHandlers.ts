@@ -4,38 +4,6 @@ import {
     PERM,
     PRIV,
 } from 'hydrooj';
-import {
-    DailyGameLimitService,
-    LotteryService,
-} from '../services';
-
-// helper: 获取注入的 scoreCore 服务
-function getScoreCore(ctx: any) {
-    // 优先从全局对象获取（在插件加载时设置）
-    let scoreCore = (global as any).scoreCoreService;
-    if (scoreCore) {
-        return scoreCore;
-    }
-
-    // 降级到 ctx.inject（在处理器运行时可能不可用）
-    try {
-        if (typeof ctx.inject === 'function') {
-            ctx.inject(['scoreCore'], ({ scoreCore: _sc }: any) => {
-                scoreCore = _sc;
-            });
-        } else {
-            scoreCore = (ctx as any).scoreCore;
-        }
-    } catch (e) {
-        scoreCore = (ctx as any).scoreCore;
-    }
-
-    if (!scoreCore) {
-        throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
-    }
-
-    return scoreCore;
-}
 
 /**
  * 序列化对象为 JSON 兼容格式
@@ -78,8 +46,8 @@ export class LotteryGameHandler extends Handler {
             return;
         }
 
-        const scoreCore = getScoreCore(this.ctx);
-        const lotteryService = new LotteryService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const lotteryService = this.ctx.lotteryService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -92,7 +60,7 @@ export class LotteryGameHandler extends Handler {
         const recentGames = await lotteryService.getUserGameHistory(undefined, uid, 10);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const lotteryLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'lottery');
 
         // 获取游戏配置
@@ -201,8 +169,8 @@ export class LotteryStatusHandler extends Handler {
 
     async get() {
         const uid = this.user._id;
-        const scoreCore = getScoreCore(this.ctx);
-        const lotteryService = new LotteryService(this.ctx);
+        const scoreCore = this.ctx.scoreCore!;
+        const lotteryService = this.ctx.lotteryService!;
 
         // 获取用户积分
         const userScore = await scoreCore.getUserScore(this.domain._id, uid);
@@ -215,7 +183,7 @@ export class LotteryStatusHandler extends Handler {
         const recentGames = await lotteryService.getUserGameHistory(undefined, uid, 10);
 
         // 检查每日游戏次数限制
-        const dailyLimitService = new DailyGameLimitService(this.ctx);
+        const dailyLimitService = this.ctx.dailyGameLimitService!;
         const lotteryLimit = await dailyLimitService.checkCanPlay(this.domain._id, uid, 'lottery');
 
         // 获取游戏配置
@@ -292,7 +260,7 @@ export class LotteryPlayHandler extends Handler {
     async post() {
         try {
             // 检查每日游戏次数限制
-            const dailyLimitService = new DailyGameLimitService(this.ctx);
+            const dailyLimitService = this.ctx.dailyGameLimitService!;
             const limitCheck = await dailyLimitService.checkCanPlay(this.domain._id, this.user._id, 'lottery');
 
             if (!limitCheck.canPlay) {
@@ -304,7 +272,7 @@ export class LotteryPlayHandler extends Handler {
                 return;
             }
 
-            const lotteryService = new LotteryService(this.ctx);
+            const lotteryService = this.ctx.lotteryService!;
 
             const result = await lotteryService.playLottery(
                 this.domain._id,
@@ -344,7 +312,7 @@ export class LotteryHistoryHandler extends Handler {
         const page = Math.max(1, Number.parseInt(this.request.query.page as string) || 1);
         const limit = Number.parseInt(this.request.query.limit as string) || 20;
 
-        const lotteryService = new LotteryService(this.ctx);
+        const lotteryService = this.ctx.lotteryService!;
 
         // 获取分页游戏历史（全域统一）
         const historyData = await lotteryService.getUserGameHistoryPaged(

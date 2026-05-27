@@ -58,8 +58,6 @@ export interface UserLotteryStats {
  */
 export class LotteryService {
     private ctx: Context;
-    private scoreCore: any;
-
     // 游戏常量
     private static readonly BET_AMOUNT = 100; // 每次抽奖消耗积分
     // 九宫格显示的9个位置（8个可见奖品 + 1个中间按钮占位）
@@ -111,13 +109,7 @@ export class LotteryService {
 
     constructor(ctx: Context) {
         this.ctx = ctx;
-        this.scoreCore = null;
-        // 不再在构造函数中注入，改为在方法调用时动态获取
     }
-
-    /**
-     * 获取 scoreCore 服务实例
-     */
 
     /**
      * 执行九宫格抽奖
@@ -132,7 +124,7 @@ export class LotteryService {
     }> {
         try {
             // 检查用户积分
-            const scoreCore = (global as any).scoreCoreService;
+            const scoreCore = this.ctx.scoreCore!;
             if (!scoreCore) {
                 throw new Error('ScoreCore service not available. Please ensure tf_plugins_core plugin is loaded before score-system plugin.');
             }

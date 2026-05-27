@@ -2,7 +2,6 @@ import {
     Handler,
     ObjectId,
 } from 'hydrooj';
-import { ThinkingTimeService } from '../services/ThinkingTimeService';
 
 export class ThinkingTimeHandler extends Handler {
     async post(args: any) {
@@ -15,7 +14,7 @@ export class ThinkingTimeHandler extends Handler {
                     return;
                 }
 
-                const service = new ThinkingTimeService(this.ctx);
+                const service = this.ctx.thinkingTimeService!;
 
                 const acRecords = await service.recordColl.find({
                     pid,
@@ -71,7 +70,7 @@ export class ThinkingTimeHandler extends Handler {
             throw new Error(`无效的记录ID: ${rid}`);
         }
 
-        const service = new ThinkingTimeService(this.ctx);
+        const service = this.ctx.thinkingTimeService!;
         await service.updateRecordThinkingTime(objectId, thinkingTime);
 
         this.response.body = {
@@ -88,7 +87,7 @@ export class ThinkingTimeHandler extends Handler {
             throw new Error('无权限查看其他用户数据');
         }
 
-        const service = new ThinkingTimeService(this.ctx);
+        const service = this.ctx.thinkingTimeService!;
         const stats = await service.getUserStats(targetUid, this.domain._id);
         this.response.body = { stats };
     }
@@ -99,7 +98,7 @@ export class ThinkingTimeHandler extends Handler {
             throw new Error('缺少题目ID');
         }
 
-        const service = new ThinkingTimeService(this.ctx);
+        const service = this.ctx.thinkingTimeService!;
         const stats = await service.getProblemStats(pid, this.domain._id);
         this.response.body = { stats };
     }
@@ -110,7 +109,7 @@ export class ThinkingTimeHandler extends Handler {
             throw new Error('缺少题目ID');
         }
 
-        const service = new ThinkingTimeService(this.ctx);
+        const service = this.ctx.thinkingTimeService!;
 
         const problemDoc = await service.documentColl.findOne({
             docType: 10,
