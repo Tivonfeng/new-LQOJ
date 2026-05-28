@@ -107,9 +107,12 @@ export class ScoreCoreService {
                 ...options,
             });
         } catch (error: any) {
-            // 如果索引已存在，忽略错误
-            if (error.code !== 85 && !error.message?.includes('already exists')) {
+            // 索引已存在(85) 或 唯一索引冲突(11000，集合中已有重复数据)，忽略
+            if (error.code !== 85 && error.code !== 11000 && !error.message?.includes('already exists')) {
                 throw error;
+            }
+            if (error.code === 11000) {
+                console.warn(`[ScoreCore] Skipping unique index "${options.name}" due to duplicate keys in collection ${collectionName}`);
             }
         }
     }
@@ -119,27 +122,35 @@ export class ScoreCoreService {
      * Replica Set 环境使用事务，standalone mongod 降级为普通执行
      */
     private async withTransaction<T>(operations: (session: ClientSession | null) => Promise<T>): Promise<T> {
-        let session: ClientSession | null = null;
+        // standalone MongoDB 不支持事务和 retryable writes
+        // 检测是否为 Replica Set：只有 Replica Set 才能使用 session/transaction
+        let isReplicaSet = false;
         try {
-            session = this.ctx.db.client.startSession();
+            const adminDb = this.ctx.db.client.db('admin');
+            const status = await adminDb.command({ replSetGetStatus: 1 }).catch(() => null);
+            isReplicaSet = !!status;
         } catch {
-            session = null;
+            isReplicaSet = false;
         }
 
-        if (!session) {
+        if (!isReplicaSet) {
+            // standalone 模式：不使用 session/transaction，直接执行
             return operations(null);
         }
 
+        // Replica Set 模式：使用事务
+        let session: ClientSession | null = null;
         try {
+            session = this.ctx.db.client.startSession();
             session.startTransaction();
             const result = await operations(session);
             await session.commitTransaction();
             return result;
         } catch (error) {
-            try { await session.abortTransaction(); } catch { /* ignore */ }
+            try { await session?.abortTransaction(); } catch { /* ignore */ }
             throw error;
         } finally {
-            await session.endSession();
+            try { await session?.endSession(); } catch { /* ignore */ }
         }
     }
 
@@ -463,10 +474,16 @@ export class ScoreCoreService {
             throw new ValidationError('score', validation.error!);
         }
 
-        await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne({
+        const doc = {
             ...record,
             createdAt: new Date(),
-        }, options || {});
+        };
+
+        if (options?.session) {
+            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne(doc, { session: options.session });
+        } else {
+            await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.RECORDS as any).insertOne(doc);
+        }
     }
 
     /**
@@ -500,13 +517,18 @@ export class ScoreCoreService {
             throw new Error('用户ID无效');
         }
 
+        const updateOpts: any = { upsert: true };
+        if (options?.session) {
+            updateOpts.session = options.session;
+        }
+
         await this.ctx.db.collection(SCORE_CONSTANTS.COLLECTIONS.USERS as any).updateOne(
             { uid },
             {
                 $inc: { totalScore: scoreChange, acCount: scoreChange > 0 ? 1 : 0 },
                 $set: { lastUpdated: new Date() },
             },
-            { upsert: true, ...(options || {}) },
+            updateOpts,
         );
 
         // 使该用户的缓存失效
