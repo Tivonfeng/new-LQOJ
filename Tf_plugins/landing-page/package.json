@@ -1,0 +1,12 @@
+{
+  "name": "@hydrooj/landing-page",
+  "version": "1.0.0",
+  "description": "绿旗编程主页 - lqcode.fun 落地页插件",
+  "main": "index.ts",
+  "author": "TfFeng",
+  "license": "MIT",
+  "packageManager": "yarn@4.9.1",
+  "dependencies": {
+    "hydrooj": "workspace:^"
+  }
+}
