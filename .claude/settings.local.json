@@ -3,8 +3,17 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(g++:*)",
-      "Bash(cat 2.out)"
+      "Bash(cat 2.out)",
+      "Bash(node *)",
+      "WebSearch",
+      "WebFetch(domain:hydro.js.org)",
+      "Bash(mongosh *)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "ssh-42",
+    "ssh-118",
+    "lqcode"
+  ]
 }

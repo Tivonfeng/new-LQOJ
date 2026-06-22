@@ -39,17 +39,21 @@ const { Title, Text } = Typography;
 /**
  * 计算相对时间显示
  * 24小时内显示相对时间（如"2小时前"），超过24小时显示格式化时间
+ * 时间格式化在客户端完成，使用浏览器本地时区
  */
-function formatRelativeTime(isoString: string, formattedTime?: string): string {
+function formatRelativeTime(isoString: string): string {
   try {
     const recordTime = new Date(isoString);
+    if (Number.isNaN(recordTime.getTime())) {
+      return isoString;
+    }
     const now = new Date();
     const diffMs = now.getTime() - recordTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
 
-    // 如果超过24小时，返回格式化时间
+    // 如果超过24小时，返回格式化时间（客户端本地时区）
     if (diffHours >= 24) {
-      return formattedTime || recordTime.toLocaleString('zh-CN', {
+      return recordTime.toLocaleString('zh-CN', {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
@@ -68,9 +72,8 @@ function formatRelativeTime(isoString: string, formattedTime?: string): string {
       const hours = Math.floor(diffHours);
       return `${hours}小时前`;
     }
-  } catch (error) {
-    // 如果解析失败，返回格式化时间或原始字符串
-    return formattedTime || isoString;
+  } catch {
+    return isoString;
   }
 }
 
@@ -760,7 +763,7 @@ const ScoreHallApp: React.FC = () => {
                               </Tag>
                             </div>
                             <Text type="secondary" className="record-time">
-                              {formatRelativeTime(record.createdAt, record.createdAtFormatted)}
+                              {formatRelativeTime(record.createdAt)}
                             </Text>
                           </div>
                         }

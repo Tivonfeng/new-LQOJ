@@ -1,0 +1,76 @@
+{% extends "layout/basic.html" %}
+{% block title %}{{ tdoc.title }} - {{ _('Scoreboard Pro') }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/scoreboard-pro/cyberpunk.css">
+
+<div id="scoreboard-pro" class="scoreboard-pro {% if mode == 'projector' %}scoreboard-pro--projector{% endif %}">
+  <!-- 顶部信息条 -->
+  <header class="sbp-header">
+    <div class="sbp-header__left">
+      <h1 class="sbp-title">{{ tdoc.title }}</h1>
+      <div class="sbp-meta">
+        <span class="sbp-meta__item"><span class="icon">⏱</span> <span id="sbp-timer">--:--:--</span></span>
+        <span class="sbp-meta__item"><span class="icon">👥</span> <span id="sbp-attend">{{ rows|length - 1 }}</span> 选手</span>
+        <span class="sbp-meta__item"><span class="icon">📝</span> <span id="sbp-pids">{{ tdoc.pids|length }}</span> 题</span>
+      </div>
+    </div>
+    <div class="sbp-header__right">
+      <button class="sbp-btn" onclick="toggleProjector()" title="投影模式 (F)">
+        <span class="icon">⛶</span>
+      </button>
+      <button class="sbp-btn" onclick="toggleSound()" title="静音 (M)">
+        <span class="icon" id="sbp-sound-icon">🔊</span>
+      </button>
+      <button class="sbp-btn" onclick="startReplay()" title="冻榜回放 (R)">
+        <span class="icon">▶</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 奖牌区（前三名特殊展示）-->
+  <div class="sbp-podium" id="sbp-podium"></div>
+
+  <!-- 主表格 -->
+  <div class="sbp-table-wrap">
+    <table class="sbp-table" id="sbp-table">
+      <thead id="sbp-thead"></thead>
+      <tbody id="sbp-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 特效画布 -->
+  <canvas id="fx-canvas" class="sbp-canvas"></canvas>
+
+  <!-- 超越提示容器 -->
+  <div id="sbp-toasts" class="sbp-toasts"></div>
+
+  <!-- 回放遮罩 -->
+  <div id="sbp-replay-overlay" class="sbp-replay-overlay" style="display:none;">
+    <div class="sbp-replay-content">
+      <h2 id="sbp-replay-msg">准备揭晓...</h2>
+      <p>按 <kbd>空格</kbd> 继续，按 <kbd>ESC</kbd> 退出</p>
+    </div>
+  </div>
+</div>
+
+<script id="sbp-data" type="application/json">
+{
+  "tdoc": {{ {
+    "_id": tdoc._id.toString(),
+    "title": tdoc.title,
+    "beginAt": tdoc.beginAt,
+    "endAt": tdoc.endAt,
+    "lockAt": tdoc.lockAt,
+    "rule": tdoc.rule,
+    "pids": tdoc.pids
+  }|json|safe }},
+  "rows": {{ rows|json|safe }},
+  "udict": {{ udict|json|safe }},
+  "pdict": {{ pdict|json|safe }},
+  "wsPath": {{ wsPath|json|safe }},
+  "mode": {{ mode|json|safe }}
+}
+</script>
+
+<script src="/scoreboard-pro/scoreboard-pro.js"></script>
+{% endblock %}

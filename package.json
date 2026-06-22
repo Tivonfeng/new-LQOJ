@@ -33,6 +33,7 @@
     "license": "AGPL-3.0-only",
     "devDependencies": {
         "@types/autocannon": "^7.12.7",
+        "@types/canvas-confetti": "^1",
         "@types/chai": "^5.2.3",
         "@types/cross-spawn": "^6.0.6",
         "@types/node": "24.10.13",
@@ -64,7 +65,17 @@
     },
     "resolutions": {
         "mongodb": "^7.0.0",
+        "schemastery": "^3.18.0",
         "@types/express-serve-static-core": "patch:@types/express-serve-static-core@npm%3A4.19.6#~/.yarn/patches/@types-express-serve-static-core-npm-4.19.6-cc0017aaf4.patch"
     },
-    "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8"
+    "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8",
+    "dependencies": {
+        "@ant-design/icons": "^6.2.5",
+        "@lucky-canvas/react": "^0.1.13",
+        "antd": "^6.4.3",
+        "canvas-confetti": "^1.9.4",
+        "pinyin-pro": "^3.28.1",
+        "qiniu": "^7.15.2",
+        "xlsx": "^0.18.5"
+    }
 }
