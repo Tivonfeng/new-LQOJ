@@ -18,9 +18,10 @@ let { template } = argv.options;
 if (!template || typeof template !== 'string') template = findFileSync('@hydrooj/ui-default/templates');
 else template = findFileSync(template);
 
-const replacer = (k, v) => {
+const replacer = (s) => (k, v) => {
   if (k.startsWith('_') && k !== '_id') return undefined;
   if (typeof v === 'bigint') return `BigInt::${v.toString()}`;
+  if (v && typeof v === 'object' && 'serialize' in v && typeof v.serialize === 'function') return v.serialize(s);
   return v;
 };
 
@@ -68,7 +69,7 @@ class Nunjucks extends nunjucks.Environment {
         callback(error);
       }
     }, true);
-    this.addFilter('json', (self) => (self ? JSON.stringify(self, replacer) : ''));
+    this.addFilter('json', (self, s) => (self ? JSON.stringify(self, replacer(s)) : ''));
     this.addFilter('parseYaml', (self) => yaml.load(self));
     this.addFilter('dumpYaml', (self) => yaml.dump(self));
     this.addFilter('assign', (self, data) => Object.assign(self, data));
@@ -79,7 +80,7 @@ class Nunjucks extends nunjucks.Environment {
     this.addFilter('base64_decode', (s) => Buffer.from(s, 'base64').toString());
     this.addFilter('jsesc', (self) => jsesc(self, { isScriptContext: true }));
     this.addFilter('bitand', (self, val) => self & val);
-    this.addFilter('toString', (self) => (typeof self === 'string' ? self : JSON.stringify(self, replacer)));
+    this.addFilter('toString', (self, s) => (typeof self === 'string' ? self : JSON.stringify(self, replacer(s))));
     this.addFilter('content', (content, language, html) => {
       let s: any = '';
       try {
@@ -176,7 +177,7 @@ export class TemplateService extends Service {
       h.ctx = h.ctx.extend({ domain: h.domain });
       h.renderHTML = ((orig) => function (name: string, args: Record<string, any>) {
         const s = name.split('.');
-        let templateName = `${s[0]}.${args.domainId}.${s[1]}`;
+        let templateName = `${s[0]}.${h.domain._id}.${s[1]}`;
         if (!that.registry[templateName]) templateName = name;
         return orig(templateName, args);
       })(h.renderHTML).bind(h);

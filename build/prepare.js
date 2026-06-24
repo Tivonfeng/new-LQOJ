@@ -90,6 +90,8 @@ const UIConfig = {
         'packages/ui-default/backendlib/misc.ts',
         'packages/ui-default/backendlib/template.ts',
         'packages/ui-default/backendlib/markdown.js',
+        'packages/ui-default/service-worker.ts',
+        'packages/ui-default/components/message/worker.ts',
         '**/node_modules',
     ],
     include: ['ts', 'tsx', 'vue', 'json']
@@ -135,7 +137,6 @@ const UINextConfig = {
         module: 'ESNext',
         skipLibCheck: true,
         allowSyntheticDefaultImports: true,
-        baseUrl: '.',
         jsx: 'react-jsx',
         outDir: path.join(baseOutDir, 'ui-next'),
 
@@ -157,9 +158,6 @@ const UINextConfig = {
         paths: {
             '@/*': [
                 './packages/ui-next/src/*',
-            ],
-            'vj/*': [
-                './packages/ui-default/*',
             ],
         },
     },

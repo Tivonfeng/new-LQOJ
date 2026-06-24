@@ -18,6 +18,7 @@ globalConfig.json
 !Tf_problems/**/*.out
 .clinic/
 .direnv/
+.omc/
 .yarn/cache
 .yarn/build-state.yml
 .yarn/unplugged
@@ -48,8 +49,9 @@ packages/**/*.js
 packages/ui-default/public
 packages/ui-default/misc/.iconfont
 packages/ui-default/static/locale
-plugins/
-modules/
+packages/ui-next/public
+/plugins/
+/modules/
 
 # Data files
 *.mmdb

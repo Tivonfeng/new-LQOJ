@@ -103,12 +103,12 @@ class DomainUserHandler extends ManageHandler {
     @requireSudo
     @param('format', Types.Range(['default', 'raw']), true)
     async get({ domainId }, format = 'default') {
+        const showDefault = system.get('server.showDefaultRole') || domainId !== 'system';
         const [dudocs, roles] = await Promise.all([
             domain.collUser.aggregate([
                 {
                     $match: {
-                        // TODO: add a page to display users who joined but with default role
-                        role: {
+                        role: showDefault ? { $ne: 'guest' } : {
                             $nin: ['default', 'guest'],
                             $ne: null,
                         },
@@ -158,7 +158,7 @@ class DomainUserHandler extends ManageHandler {
             return u;
         });
         const rudocs = {};
-        for (const role of roles) rudocs[role._id] = users.filter((udoc) => udoc.role === role._id);
+        for (const role of roles) rudocs[role._id] = users.filter((udoc) => (udoc.role || 'default') === role._id);
         this.response.template = format === 'raw' ? 'domain_user_raw.html' : 'domain_user.html';
         this.response.body = {
             roles, rudocs, domain: this.domain,
@@ -436,23 +436,21 @@ export const DomainApi = {
             return ddoc;
         },
     ),
+    'domain.current': Query(
+        Schema.object({}),
+        async (handler) => ({ domain: handler.domain as DomainDoc }),
+    ),
     groups: Query(
         Schema.object({
-            search: Schema.string(),
-            names: Schema.array(Schema.string()),
             domainId: Schema.string().required(),
+            uid: Schema.number().step(1),
+            names: Schema.array(Schema.string()),
+            search: Schema.string(),
+            limit: Schema.number().step(1).max(100),
         }),
         async (ctx, args) => {
             if (!ctx.user.hasPerm(PERM.PERM_VIEW) && !ctx.user.hasPriv(PRIV.PRIV_VIEW_ALL_DOMAIN)) throw new PermissionError(PERM.PERM_VIEW);
-            const groups = await user.listGroup(args.domainId);
-            if (args.names?.length) {
-                return groups.filter((g) => args.names.includes(g.name));
-            }
-            if (args.search) {
-                const searchLower = args.search.toLowerCase();
-                return groups.filter((g) => g.name.toLowerCase().includes(searchLower));
-            }
-            return groups;
+            return user.listGroup(args.domainId, args.uid, args.names, args.search, args.limit || (args.search ? 20 : undefined));
         },
     ),
     'domain.group': Mutation(

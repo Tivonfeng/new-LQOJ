@@ -307,7 +307,7 @@ export class ProblemDetailHandler extends ContestDetailBaseHandler {
             if (contest.isNotStarted(this.tdoc)) throw new ContestNotLiveError(tid);
             if (!contest.isDone(this.tdoc, this.tsdoc) && (!this.tsdoc?.attend || !this.tsdoc.startAt)) throw new ContestNotAttendedError(tid);
             // Delete problem-related info in contest mode
-            this.pdoc.tag.length = 0;
+            if (this.pdoc.tag) this.pdoc.tag.length = 0;
             delete this.pdoc.nAccept;
             delete this.pdoc.nSubmit;
             delete this.pdoc.difficulty;
@@ -366,10 +366,9 @@ export class ProblemDetailHandler extends ContestDetailBaseHandler {
                         : problem.canViewBy(this.pdoc, this.user) ? 'correction' : 'none',
         };
         if (this.tdoc && this.tsdoc) {
-            const fields = ['attend', 'startAt'];
-            if (this.tdoc.duration) fields.push('endAt');
+            const fields = ['attend', 'startAt', 'endAt'];
             if (contest.canShowSelfRecord.call(this, this.tdoc, true)) fields.push('detail');
-            this.tsdoc = pick(this.tsdoc, fields);
+            this.tsdoc = pick(this.tsdoc, fields) as typeof this.tsdoc;
             this.response.body.tsdoc = this.tsdoc;
         }
         this.response.template = 'problem_detail.html';
