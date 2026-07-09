@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
     Context, ConnectionHandler, Handler, NotFoundError,
-    param, Types, contest, PERM,
+    param, Types, ContestModel, PERM,
 } from 'hydrooj';
 
 // ========== WebSocket Handler ==========
@@ -12,11 +12,28 @@ export class ScoreboardProConnHandler extends ConnectionHandler {
     tid: ObjectId;
     tdoc: any;
 
-    @param('tid', Types.ObjectId)
-    async prepare(domainId: string, tid: ObjectId) {
+    // domainId 编码进 WS 路径参数 :domainId，由 WebSocketLayer.accept 注入 args
+    async prepare() {
+        const domainId: string = this.args.domainId;
+        const tid = new ObjectId(this.args.tid);
+        console.log('[SBP-WS] prepare args=', JSON.stringify(this.args));
         this.tid = tid;
-        this.tdoc = await contest.get(domainId, tid);
+        this.tdoc = await ContestModel.get(domainId, tid);
         if (!this.tdoc) throw new NotFoundError(tid);
+        // 注册到订阅集合（prepare 之后 this.tdoc 才有值，handler/create 时机太早）
+        const key = getKey(this.tdoc.domainId, this.tid);
+        if (!subscribers.has(key)) subscribers.set(key, new Set());
+        subscribers.get(key)!.add(this);
+        // 立即推送一次全量
+        await this.pushFullScoreboard();
+    }
+
+    // 连接关闭时由框架自动调用，从订阅集合移除
+    async cleanup() {
+        if (this.tdoc) {
+            const key = getKey(this.tdoc.domainId, this.tid);
+            subscribers.get(key)?.delete(this);
+        }
     }
 
     async message(payload: any) {
@@ -28,7 +45,7 @@ export class ScoreboardProConnHandler extends ConnectionHandler {
 
     async pushFullScoreboard() {
         try {
-            const [, rows, udict, pdict] = await contest.getScoreboard.call(
+            const [, rows, udict, pdict] = await ContestModel.getScoreboard.call(
                 this, this.tdoc.domainId, this.tdoc._id, {
                     isExport: false, showDisplayName: false,
                 },
@@ -50,9 +67,6 @@ export class ScoreboardProConnHandler extends ConnectionHandler {
             this.send(JSON.stringify({ type: 'error', message: String(e) }));
         }
     }
-
-    // 订阅 record/change 事件并过滤本比赛的提交
-    // @subscribe 装饰器在某些版本可能不可用，改用 bus 监听
 }
 
 // ========== 静态资源 Handler ==========
@@ -84,43 +98,12 @@ export class ScoreboardProStaticHandler extends Handler {
     }
 }
 
-// ========== HTTP Handler (页面) ==========
-
-export class ScoreboardProHandler extends Handler {
-    @param('tid', Types.ObjectId)
-    @param('mode', Types.String, true)
-    async get(domainId: string, tid: ObjectId, mode = 'normal') {
-        const tdoc = await contest.get(domainId, tid);
-        if (!tdoc) throw new NotFoundError(tid);
-
-        // 检查权限
-        if (!this.user.own(tdoc) && !contest.canShowScoreboard.call(this, tdoc, true)) {
-            this.checkPerm(PERM.PERM_VIEW_CONTEST_HIDDEN_SCOREBOARD);
-        }
-
-        // 直接渲染初始数据（首屏直出）
-        const [, rows, udict, pdict] = await contest.getScoreboard.call(
-            this, domainId, tid, { isExport: false, showDisplayName: false },
-        );
-
-        this.response.template = 'scoreboard_pro.html';
-        this.response.body = {
-            tdoc,
-            rows,
-            udict,
-            pdict,
-            mode, // 'normal' | 'projector'
-            wsPath: `/ws/scoreboard-pro/${tid.toHexString()}`,
-        };
-    }
-}
-
 // ========== 冻榜回放数据接口 ==========
 
 export class ScoreboardProFrozenHandler extends Handler {
     @param('tid', Types.ObjectId)
     async get(domainId: string, tid: ObjectId) {
-        const tdoc = await contest.get(domainId, tid);
+        const tdoc = await ContestModel.get(domainId, tid);
         if (!tdoc) throw new NotFoundError(tid);
         if (!this.user.own(tdoc)) {
             this.checkPerm(PERM.PERM_EDIT_CONTEST);
@@ -164,14 +147,35 @@ function getKey(domainId: string, tid: ObjectId | string) {
 // ========== 插件入口 ==========
 
 export async function apply(ctx: Context) {
-    // 路由
-    ctx.Route(
-        'scoreboard_pro',
-        '/contest/:tid/scoreboard-pro',
-        ScoreboardProHandler,
-        PERM.PERM_VIEW_CONTEST_SCOREBOARD,
-    );
+    // 注册为 scoreboard view，出现在比赛榜单页面的视图切换按钮里（与 Default / XCPCIO 并列）
+    await ctx.inject(['scoreboard'], ({ scoreboard }) => {
+        scoreboard.addView(
+            'scoreboard-pro', 'Scoreboard Pro',
+            { tdoc: 'tdoc' },
+            {
+                async display({ tdoc }) {
+                    const [, rows, udict, pdict] = await ContestModel.getScoreboard.call(
+                        this, tdoc.domainId, tdoc._id,
+                        { isExport: false, showDisplayName: false },
+                    );
+                    this.response.template = 'scoreboard_pro.html';
+                    this.response.body = {
+                        tdoc,
+                        rows,
+                        udict,
+                        pdict,
+                        mode: 'normal', // 投影模式由前端按钮 (F键) 切换
+                        // WS 路由无 /d/:domain 前缀，domainId 默认会是 system；
+                        // 通过查询参数显式带上比赛所属域，prepare 里从 args 取回
+                        wsPath: `/ws/scoreboard-pro/${tdoc._id.toHexString()}?domainId=${tdoc.domainId}`,
+                    };
+                },
+                supportedRules: ['*'],
+            },
+        );
+    });
 
+    // 冻榜回放数据接口
     ctx.Route(
         'scoreboard_pro_frozen',
         '/contest/:tid/scoreboard-pro/frozen',
@@ -193,18 +197,6 @@ export async function apply(ctx: Context) {
         ScoreboardProConnHandler,
         PERM.PERM_VIEW_CONTEST_SCOREBOARD,
     );
-
-    // 拦截连接创建，加入订阅集合
-    ctx.on('handler/create' as any, async (h: any) => {
-        if (h instanceof ScoreboardProConnHandler) {
-            const key = getKey(h.tdoc.domainId, h.tid);
-            if (!subscribers.has(key)) subscribers.set(key, new Set());
-            subscribers.get(key)!.add(h);
-
-            // 立即推送一次全量
-            await h.pushFullScoreboard();
-        }
-    });
 
     // 监听评测完成事件
     ctx.on('record/judge' as any, async (rdoc: any, _updated: any) => {
@@ -250,17 +242,8 @@ export async function apply(ctx: Context) {
 
     ctx.on('dispose', () => clearInterval(cleanupTimer));
 
-    // 导航
-    ctx.injectUI(
-        'Nav',
-        'scoreboard_pro',
-        { prefix: 'scoreboard-pro', icon: 'star' },
-        PERM.PERM_VIEW_CONTEST_SCOREBOARD,
-    );
-
     // i18n
     ctx.i18n.load('zh', {
-        scoreboard_pro: '🏆 实时榜单',
         'Scoreboard Pro': '⚡ 酷炫实时榜',
         'Projector Mode': '投影模式',
         'Frozen Replay': '冻榜回放',

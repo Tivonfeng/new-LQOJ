@@ -40,28 +40,45 @@ export class TransferService {
         };
     }
 
+    /**
+     * 在 MongoDB 事务中执行操作（如果支持）
+     * Replica Set 环境使用事务，standalone mongod 降级为普通执行
+     *
+     * standalone MongoDB 不支持事务和 retryable writes，强行使用
+     * session/transaction 会抛出 "This MongoDB deployment does not support
+     * retryable writes" 错误（事务内部依赖 retryable writes，即使连接串加了
+     * retryWrites=false 也无法在 standalone 上使用事务）。因此需要先检测部署
+     * 形态，只有 Replica Set 才使用事务。
+     */
     private async withTransaction<T>(operations: (session: ClientSession | null) => Promise<T>): Promise<T> {
-        let session: ClientSession | null = null;
+        // 检测是否为 Replica Set：只有 Replica Set 才能使用 session/transaction
+        let isReplicaSet = false;
         try {
-            session = this.ctx.db.client.startSession();
+            const adminDb = this.ctx.db.client.db('admin');
+            const status = await adminDb.command({ replSetGetStatus: 1 }).catch(() => null);
+            isReplicaSet = !!status;
         } catch {
-            session = null;
+            isReplicaSet = false;
         }
 
-        if (!session) {
+        if (!isReplicaSet) {
+            // standalone 模式：不使用 session/transaction，直接执行
             return operations(null);
         }
 
+        // Replica Set 模式：使用事务
+        let session: ClientSession | null = null;
         try {
+            session = this.ctx.db.client.startSession();
             session.startTransaction();
             const result = await operations(session);
             await session.commitTransaction();
             return result;
         } catch (error) {
-            try { await session.abortTransaction(); } catch { /* ignore */ }
+            try { await session?.abortTransaction(); } catch { /* ignore */ }
             throw error;
         } finally {
-            await session.endSession();
+            try { await session?.endSession(); } catch { /* ignore */ }
         }
     }
 

@@ -14,6 +14,7 @@
   "enabledMcpjsonServers": [
     "ssh-42",
     "ssh-118",
-    "lqcode"
+    "lqcode",
+    "server-103"
   ]
 }

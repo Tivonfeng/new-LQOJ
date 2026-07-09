@@ -176,18 +176,25 @@ export default async function apply(ctx: Context, config: any = {}) {
         console.error('[Typing Speed System] ❌ Error creating indexes:', error.message);
     }
 
-    // 注册路由
-    ctx.Route('typing_hall', '/typing/hall', TypingHallHandler);
-    ctx.Route('typing_profile', '/typing/me', TypingProfileHandler);
-    ctx.Route('typing_admin', '/typing/admin', TypingAdminHandler);
+    // 通过 ctx.inject 声明对 scoreCore 的依赖
+    // Cordis 的 ctx.inject 会创建子 fiber，子 fiber 的 ctx 能访问被注入的服务
+    // 因此将路由注册都放在 inject 回调内，确保 Handler 中 this.ctx.scoreCore 可用
+    ctx.inject(['scoreCore'], (ctx2: Context) => {
+        console.log('[Typing Speed System] ✅ scoreCore injected, registering routes');
 
-    // 注入导航栏
-    ctx.injectUI('Nav', 'typing_hall', {
-        prefix: 'typing',
-        before: 'score', // 插入到积分系统前面
-    }, PRIV.PRIV_USER_PROFILE);
+        // 注册路由（使用注入了 scoreCore 的 ctx2）
+        ctx2.Route('typing_hall', '/typing/hall', TypingHallHandler);
+        ctx2.Route('typing_profile', '/typing/me', TypingProfileHandler);
+        ctx2.Route('typing_admin', '/typing/admin', TypingAdminHandler);
 
-    console.log('[Typing Speed System] ✅ Plugin loaded successfully!');
+        // 注入导航栏
+        ctx2.injectUI('Nav', 'typing_hall', {
+            prefix: 'typing',
+            before: 'score', // 插入到积分系统前面
+        }, PRIV.PRIV_USER_PROFILE);
+
+        console.log('[Typing Speed System] ✅ Plugin loaded successfully!');
+    });
 }
 
 // 导出配置Schema

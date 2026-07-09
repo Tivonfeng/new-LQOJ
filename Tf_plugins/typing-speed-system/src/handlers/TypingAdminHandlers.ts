@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { Handler, PERM, PRIV } from 'hydrooj';
+import { getTypingServices, safeGetService } from '../utils/ctxHelper';
 
 /**
  * 管理员页面处理器
@@ -15,13 +16,17 @@ export class TypingAdminHandler extends Handler {
     }
 
     async get() {
-        const recordService = this.ctx.typingRecordService!;
+        const { recordService } = getTypingServices(this.ctx);
+        if (!recordService) {
+            this.response.body = { error: '打字系统服务未就绪' };
+            return;
+        }
 
         // 获取最近录入的记录
         const recentRecords = await recordService.getRecentRecords(20);
 
         // 获取用户信息
-        const uids = [...new Set(recentRecords.map((r) => r.uid))];
+        const uids = [...new Set(recentRecords.map((r: any) => r.uid))];
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
@@ -72,9 +77,13 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            // 获取用户当前统计（用于计算进步和超越）
-            const recordService = this.ctx.typingRecordService!;
-            const statsService = this.ctx.typingStatsService!;
+            // 安全获取服务
+            const { recordService, statsService, bonusService } = getTypingServices(this.ctx);
+            if (!recordService || !statsService || !bonusService) {
+                this.response.body = { success: false, message: '打字系统服务未就绪' };
+                return;
+            }
+
             const currentStats = await statsService.getUserStats(user._id);
             const previousMaxWpm = currentStats?.maxWpm || 0;
 
@@ -97,13 +106,12 @@ export class TypingAdminHandler extends Handler {
             await statsService.updateWeeklySnapshot(user._id);
 
             // 处理奖励（传递旧排行榜用于超越检查）
-            const bonusService = this.ctx.typingBonusService!;
             const bonusInfo = await bonusService.processBonuses(user._id, recordId, wpmNum, previousMaxWpm, oldRanking);
 
             let bonusMessage = '';
             if (bonusInfo.totalBonus > 0) {
-                // 直接使用 ScoreCoreService 处理积分奖励
-                const scoreCore = this.ctx.scoreCore!;
+                // 安全读取 scoreCore（Hydro Proxy 会阻止直接读取 provide 注册的属性）
+                const scoreCore = safeGetService(this.ctx, 'scoreCore');
                 if (!scoreCore) {
                     console.warn('[Typing Speed System] scoreCore service not available, skipping bonus awards');
                     bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分（积分系统暂不可用）`;
@@ -137,7 +145,7 @@ export class TypingAdminHandler extends Handler {
                 message: `成功为 ${username} 录入打字速度: ${wpmNum} WPM${bonusMessage}`,
                 bonusInfo,
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TypingAdmin] Error adding record:', error);
             this.response.body = { success: false, message: `操作失败：${error.message}` };
         }
@@ -155,8 +163,11 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            const recordService = this.ctx.typingRecordService!;
-            const statsService = this.ctx.typingStatsService!;
+            const { recordService, statsService } = getTypingServices(this.ctx);
+            if (!recordService || !statsService) {
+                this.response.body = { success: false, message: '打字系统服务未就绪' };
+                return;
+            }
 
             // 获取记录信息（用于更新统计）
             const record = await recordService.getRecordById(recordId);
@@ -180,7 +191,7 @@ export class TypingAdminHandler extends Handler {
                 success: true,
                 message: '记录删除成功',
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TypingAdmin] Error deleting record:', error);
             this.response.body = { success: false, message: `删除失败：${error.message}` };
         }
@@ -191,14 +202,17 @@ export class TypingAdminHandler extends Handler {
      */
     private async handleRecalculateStats() {
         try {
-            const recordService = this.ctx.typingRecordService!;
-            const statsService = this.ctx.typingStatsService!;
+            const { recordService, statsService } = getTypingServices(this.ctx);
+            if (!recordService || !statsService) {
+                this.response.body = { success: false, message: '打字系统服务未就绪' };
+                return;
+            }
 
             // 获取所有有记录的用户（全域）
             const allRecords = await recordService.getAllRecords();
 
             // 按 uid 提取唯一用户（全域统一数据）
-            const validUids = [...new Set(allRecords.map((r) => r.uid))];
+            const validUids = [...new Set(allRecords.map((r: any) => r.uid))];
 
             if (validUids.length === 0) {
                 // 如果没有任何记录，清空统计表和快照表（全域）
@@ -225,8 +239,8 @@ export class TypingAdminHandler extends Handler {
             // 删除没有对应记录的统计数据（全域）
             const allStats = await statsService.getAllStats();
             const uidsToDelete = allStats
-                .filter((stat) => !validUids.includes(stat.uid))
-                .map((stat) => stat.uid);
+                .filter((stat: any) => !validUids.includes(stat.uid))
+                .map((stat: any) => stat.uid);
             if (uidsToDelete.length > 0) {
                 await statsService.deleteStatsByUids(uidsToDelete);
             }
@@ -237,7 +251,7 @@ export class TypingAdminHandler extends Handler {
                 success: true,
                 message: `成功重新计算 ${updated} 个用户的统计数据（全域）`,
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('[TypingAdmin] Error recalculating stats:', error);
             this.response.body = { success: false, message: `重新计算失败：${error.message}` };
         }

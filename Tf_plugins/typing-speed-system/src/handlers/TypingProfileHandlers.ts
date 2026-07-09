@@ -1,4 +1,5 @@
 import { Handler } from 'hydrooj';
+import { getTypingServices } from '../utils/ctxHelper';
 
 /**
  * 个人打字中心处理器
@@ -8,9 +9,11 @@ import { Handler } from 'hydrooj';
 export class TypingProfileHandler extends Handler {
     async get() {
         const uid = this.user._id;
-        const recordService = this.ctx.typingRecordService!;
-        const statsService = this.ctx.typingStatsService!;
-        const analyticsService = this.ctx.typingAnalyticsService!;
+        const { recordService, statsService, analyticsService } = getTypingServices(this.ctx);
+        if (!recordService || !statsService || !analyticsService) {
+            this.response.body = { error: '打字系统服务未就绪' };
+            return;
+        }
 
         // 获取用户统计（暂不使用 domainId 过滤）
         const userStats = await statsService.getUserStats(uid);
@@ -33,7 +36,7 @@ export class TypingProfileHandler extends Handler {
         const formattedRecords = recordService.formatRecords(userRecords);
 
         // 获取录入人信息
-        const recorderIds = [...new Set(userRecords.map((r) => r.recordedBy))];
+        const recorderIds = [...new Set(userRecords.map((r: any) => r.recordedBy))];
         const UserModel = global.Hydro.model.user;
         const recorderDocs = await UserModel.getList(this.domain._id, recorderIds);
 

@@ -1,4 +1,5 @@
 import { avatar, Handler, PRIV } from 'hydrooj';
+import { getTypingServices } from '../utils/ctxHelper';
 
 /**
  * 打字大厅处理器
@@ -8,9 +9,11 @@ import { avatar, Handler, PRIV } from 'hydrooj';
 export class TypingHallHandler extends Handler {
     async get() {
         const uid = this.user?._id;
-        const recordService = this.ctx.typingRecordService!;
-        const statsService = this.ctx.typingStatsService!;
-        const analyticsService = this.ctx.typingAnalyticsService!;
+        const { recordService, statsService, analyticsService } = getTypingServices(this.ctx);
+        if (!recordService || !statsService || !analyticsService) {
+            this.response.body = { error: '打字系统服务未就绪' };
+            return;
+        }
 
         // 获取全局统计
         const globalStats = await analyticsService.getGlobalStats();
@@ -46,11 +49,11 @@ export class TypingHallHandler extends Handler {
 
         // 获取所有涉及的用户ID
         const rankingUids = [
-            ...maxWpmRanking.map((u) => u.uid),
-            ...avgWpmRanking.map((u) => u.uid),
-            ...improvementRanking.map((u) => u.uid),
-            ...recentRecords.map((r) => r.uid),
-            ...userSpeedPoints.map((p) => p.uid),
+            ...maxWpmRanking.map((u: any) => u.uid),
+            ...avgWpmRanking.map((u: any) => u.uid),
+            ...improvementRanking.map((u: any) => u.uid),
+            ...recentRecords.map((r: any) => r.uid),
+            ...userSpeedPoints.map((p: any) => p.uid),
         ];
         const allUids = [...new Set(rankingUids)];
 
@@ -115,8 +118,7 @@ export class TypingRankingHandler extends Handler {
         const limit = 50;
         const skip = (page - 1) * limit;
 
-        const recordService = this.ctx.typingRecordService!;
-        const statsService = this.ctx.typingStatsService!;
+        const { recordService, statsService } = getTypingServices(this.ctx);
 
         let users: any[] = [];
         let total = 0;
@@ -138,7 +140,7 @@ export class TypingRankingHandler extends Handler {
         }
 
         // 获取用户信息
-        const uids = users.map((u) => u.uid);
+        const uids = users.map((u: any) => u.uid);
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 

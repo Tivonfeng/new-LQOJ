@@ -38,6 +38,30 @@
     window.addEventListener('resize', resizeCanvas);
 
     // ========== 音效 ==========
+    // 浏览器自动播放策略：AudioContext 必须在用户手势后才能 running。
+    // 故共享一个 context，首次手势时 resume；未唤醒前静默跳过音效。
+    let audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            audioCtx = new AudioCtx();
+        }
+        return audioCtx;
+    }
+    function resumeAudio() {
+        const ctx = getAudioCtx();
+        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    }
+    // 首次任意手势（点击/按键）即唤醒音频
+    function wakeOnGesture() {
+        resumeAudio();
+        document.removeEventListener('pointerdown', wakeOnGesture);
+        document.removeEventListener('keydown', wakeOnGesture);
+    }
+    document.addEventListener('pointerdown', wakeOnGesture);
+    document.addEventListener('keydown', wakeOnGesture);
+
     const sounds = {
         ac: createOscillator(523.25, 0.15, 'square'),       // C5
         overtake: createOscillator(659.25, 0.2, 'sawtooth'), // E5
@@ -47,20 +71,19 @@
     function createOscillator(freq, duration, type) {
         return function () {
             if (state.soundMuted) return;
+            const ctx = getAudioCtx();
+            if (!ctx || ctx.state !== 'running') return; // 未被手势唤醒，静默跳过
             try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const audioCtx = new AudioCtx();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = type;
                 osc.frequency.value = freq;
                 osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                gain.connect(ctx.destination);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
                 osc.start();
-                osc.stop(audioCtx.currentTime + duration);
+                osc.stop(ctx.currentTime + duration);
             } catch (e) {}
         };
     }
@@ -68,6 +91,7 @@
     window.toggleSound = function () {
         state.soundMuted = !state.soundMuted;
         document.getElementById('sbp-sound-icon').textContent = state.soundMuted ? '🔇' : '🔊';
+        resumeAudio(); // 点喇叭按钮也算手势，顺势唤醒
     };
 
     // ========== 烟花特效 ==========
@@ -166,9 +190,23 @@
         });
         thead.appendChild(headerRow);
 
-        // 渲染数据行
+        // 渲染数据行（前 3 名已在上方奖牌区展示，列表从第 4 名开始）
         const dataRows = state.rows.slice(1);
         const newScores = new Map();
+        const PODIUM_COUNT = 3;
+        const tableRows = dataRows.slice(PODIUM_COUNT);
+
+        // 预扫描全部选手总分（含奖牌区前 3 名），保证 AC 烟花判定不漏
+        for (const row of dataRows) {
+            let _uid = null;
+            for (let ci = 0; ci < row.length; ci++) {
+                const colDef = state.rows[0][ci];
+                if (colDef.type === 'user') _uid = +row[ci].raw;
+                else if (colDef.type === 'total_score' || colDef.type === 'total' || colDef.type === 'solved') {
+                    if (_uid !== null) newScores.set(_uid, parseFloat(row[ci].value) || 0);
+                }
+            }
+        }
 
         // 先快照旧位置（FLIP step 1: First）
         const oldPositions = new Map();
@@ -177,14 +215,13 @@
             oldPositions.set(uid, row.getBoundingClientRect());
         });
 
-        // 清空并重建
+        // 清空并重建（只渲染第 4 名起，前 3 名交给上方奖牌区）
         tbody.innerHTML = '';
 
-        dataRows.forEach((row, idx) => {
+        tableRows.forEach((row, idx) => {
             const tr = document.createElement('tr');
-            const rank = idx + 1;
+            const rank = idx + 1 + PODIUM_COUNT; // 真实名次（从 4 开始）
             tr.className = 'sbp-row';
-            if (rank <= 3) tr.classList.add('sbp-row--rank-' + rank);
 
             let uid = null;
             row.forEach((col, ci) => {
@@ -325,8 +362,14 @@
                 state.ws.send(JSON.stringify({ action: 'sync' }));
             };
             state.ws.onmessage = (e) => {
+                const data = e.data;
+                // 框架心跳：收到 "ping" 回 "pong" 保活（非 JSON，必须在 parse 前处理）
+                if (data === 'ping') {
+                    try { state.ws.send('pong'); } catch (_) {}
+                    return;
+                }
                 try {
-                    const msg = JSON.parse(e.data);
+                    const msg = JSON.parse(data);
                     if (msg.type === 'full') {
                         state.rows = msg.rows;
                         state.udict = msg.udict || state.udict;
@@ -336,7 +379,10 @@
                         // 单次提交事件 - 立即闪烁该单元格
                         flashCell(msg.uid, msg.pid, msg.status);
                     }
-                } catch (e) { console.error(e); }
+                } catch (err) {
+                    // 非 JSON 且非 ping 的消息，静默跳过，避免断流
+                    console.error('[SBP] parse error:', err, 'raw:', data);
+                }
             };
             state.ws.onclose = () => {
                 console.log('[SBP] WS closed, reconnecting in 3s...');
@@ -360,29 +406,58 @@
     }
 
     // ========== 倒计时 ==========
+    const timerBox = document.getElementById('sbp-timer-box');
+    const timerLabel = document.getElementById('sbp-timer-label');
+    const timerFill = document.getElementById('sbp-timer-fill');
+    // 进度条基准：按比赛总时长线性推进；未开始时停在 0%，结束后停在 100%
+    let totalDuration = 0;
+    function computeDuration() {
+        const begin = new Date(state.tdoc.beginAt).getTime();
+        const end = new Date(state.tdoc.endAt).getTime();
+        totalDuration = end - begin;
+    }
+    computeDuration();
+
+    function setTimer(label, remainMs, progress) {
+        if (timerLabel) timerLabel.textContent = label;
+        const h = Math.floor(remainMs / 3600000);
+        const m = Math.floor((remainMs % 3600000) / 60000);
+        const s = Math.floor((remainMs % 60000) / 1000);
+        const text = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        const el = document.getElementById('sbp-timer');
+        if (el) el.textContent = text;
+        if (timerFill) timerFill.style.width = Math.max(0, Math.min(100, progress * 100)) + '%';
+        // 紧急态：剩余 < 5 分钟闪烁红色
+        if (timerBox) {
+            if (label === '剩余时间' && remainMs <= 5 * 60 * 1000) {
+                timerBox.classList.add('sbp-timer--urgent');
+            } else {
+                timerBox.classList.remove('sbp-timer--urgent');
+            }
+        }
+    }
+
     function updateTimer() {
         const now = Date.now();
         const begin = new Date(state.tdoc.beginAt).getTime();
         const end = new Date(state.tdoc.endAt).getTime();
 
-        let label = '', remain = 0;
         if (now < begin) {
-            label = '距离开始';
-            remain = begin - now;
-        } else if (now < end) {
-            label = '剩余时间';
-            remain = end - now;
-        } else {
-            label = '已结束';
-            document.getElementById('sbp-timer').textContent = label;
+            setTimer('距开始', begin - now, 0);
             return;
         }
-
-        const h = Math.floor(remain / 3600000);
-        const m = Math.floor((remain % 3600000) / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        document.getElementById('sbp-timer').textContent =
-            `${label} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        if (now >= end) {
+            if (timerLabel) timerLabel.textContent = '已结束';
+            const el = document.getElementById('sbp-timer');
+            if (el) el.textContent = '00:00:00';
+            if (timerFill) timerFill.style.width = '100%';
+            if (timerBox) timerBox.classList.remove('sbp-timer--urgent');
+            return;
+        }
+        const remain = end - now;
+        const elapsed = now - begin;
+        const progress = totalDuration > 0 ? elapsed / totalDuration : 0;
+        setTimer('剩余时间', remain, progress);
     }
     setInterval(updateTimer, 1000);
     updateTimer();

@@ -1,7 +1,7 @@
 {% extends "layout/basic.html" %}
 {% block title %}{{ tdoc.title }} - {{ _('Scoreboard Pro') }}{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="/scoreboard-pro/cyberpunk.css">
+<link rel="stylesheet" href="/scoreboard-pro/cyberpunk.css?v=3">
 
 <div id="scoreboard-pro" class="scoreboard-pro {% if mode == 'projector' %}scoreboard-pro--projector{% endif %}">
   <!-- 顶部信息条 -->
@@ -9,10 +9,15 @@
     <div class="sbp-header__left">
       <h1 class="sbp-title">{{ tdoc.title }}</h1>
       <div class="sbp-meta">
-        <span class="sbp-meta__item"><span class="icon">⏱</span> <span id="sbp-timer">--:--:--</span></span>
         <span class="sbp-meta__item"><span class="icon">👥</span> <span id="sbp-attend">{{ rows|length - 1 }}</span> 选手</span>
         <span class="sbp-meta__item"><span class="icon">📝</span> <span id="sbp-pids">{{ tdoc.pids|length }}</span> 题</span>
       </div>
+    </div>
+    <!-- 剩余时间：重点高亮显示 -->
+    <div class="sbp-timer" id="sbp-timer-box">
+      <div class="sbp-timer__label" id="sbp-timer-label">剩余时间</div>
+      <div class="sbp-timer__value" id="sbp-timer">--:--:--</div>
+      <div class="sbp-timer__bar"><div class="sbp-timer__fill" id="sbp-timer-fill"></div></div>
     </div>
     <div class="sbp-header__right">
       <button class="sbp-btn" onclick="toggleProjector()" title="投影模式 (F)">
@@ -72,5 +77,5 @@
 }
 </script>
 
-<script src="/scoreboard-pro/scoreboard-pro.js"></script>
+<script src="/scoreboard-pro/scoreboard-pro.js?v=3"></script>
 {% endblock %}
