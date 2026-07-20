@@ -1,5 +1,4 @@
 import { Handler, Logger, PRIV } from 'hydrooj';
-import type { WechatService } from '../core/wechat-service';
 import type { TemplateMessageService } from '../services/template-message-service';
 
 const logger = new Logger('wechat-template-handler');
@@ -9,12 +8,10 @@ const logger = new Logger('wechat-template-handler');
  * 提供模板消息的发送和管理功能
  */
 export class WechatTemplateHandler extends Handler {
-    wechatService: WechatService;
-    templateService: TemplateMessageService;
+    private templateService: TemplateMessageService;
 
     async _prepare() {
-        this.wechatService = (this.ctx as any).wechatService;
-        this.templateService = (this.ctx as any).wechatTemplateMessage;
+        this.templateService = this.ctx.wechatTemplateMessage;
     }
 
     /**
@@ -71,12 +68,10 @@ export class WechatTemplateHandler extends Handler {
  * 删除模板 Handler
  */
 export class WechatTemplateDeleteHandler extends Handler {
-    wechatService: WechatService;
-    templateService: TemplateMessageService;
+    private templateService: TemplateMessageService;
 
     async _prepare() {
-        this.wechatService = (this.ctx as any).wechatService;
-        this.templateService = (this.ctx as any).wechatTemplateMessage;
+        this.templateService = this.ctx.wechatTemplateMessage;
     }
 
     /**

@@ -1,0 +1,33 @@
+{% set page_name = "community_toolkit" %}
+{% extends "layout/html5.html" %}
+
+{% block ogp %}
+<meta property="og:title" content="绿旗编程·B端合作平台" />
+{% endblock %}
+
+{% block body %}
+<script>document.title = '绿旗编程·B端合作平台';</script>
+<div id="community-toolkit-app">
+  <style>
+    #ct-loading {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #f5f7fa; z-index: 999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #ct-loading .ct-loading-logo { font-size: 48px; animation: ct-pulse 1.2s ease-in-out infinite; }
+    #ct-loading .ct-loading-text { margin-top: 16px; font-size: 14px; color: #999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    @keyframes ct-pulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+  </style>
+  <div id="ct-loading">
+    <div class="ct-loading-logo">🏳️</div>
+    <div class="ct-loading-text">正在加载...</div>
+  </div>
+</div>
+<script>
+  window.__CT_COURSES_BASE__ = '/community-toolkit/courses';
+  window.__CT_FILES_BASE__ = '/community-toolkit/files';
+  window.__CT_IMAGES_BASE__ = '/community-toolkit/images';
+  window.__CT_SHARE_API__ = '/wechat/share';
+  window.__CT_LOGO_URL__ = '/wechat/static/logo.png';
+</script>
+{% endblock %}

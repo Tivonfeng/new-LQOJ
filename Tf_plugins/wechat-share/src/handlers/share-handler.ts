@@ -3,18 +3,37 @@ import type { WechatService } from '../core/wechat-service';
 
 const logger = new Logger('wechat-share-handler');
 
+export interface ShareConfig {
+    title?: string;
+    desc?: string;
+    link?: string;
+    imgUrl?: string;
+    hideMenuItems?: string[];
+    showMenuItems?: string[];
+}
+
 export class WechatShareHandler extends Handler {
-    wechatService: WechatService;
     allowCors = true;
     private allowedDomains: string[] = [];
 
     async _prepare() {
-        // Get wechatService from context
-        this.wechatService = (this.ctx as any).wechatService;
-        // 从 wechatService 获取允许的域名列表
-        if (this.wechatService) {
-            this.allowedDomains = this.wechatService.getAllowedDomains();
+        const wechatService = this.ctx.wechatService;
+        if (wechatService) {
+            this.allowedDomains = wechatService.getAllowedDomains();
         }
+    }
+
+    /**
+     * 设置 CORS 响应头（统一入口）
+     */
+    private applyCorsHeaders(): void {
+        const origin = this.getAllowedOrigin();
+        if (origin) {
+            this.response.addHeader('Access-Control-Allow-Origin', origin);
+            this.response.addHeader('Access-Control-Allow-Credentials', 'true');
+        }
+        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
 
     /**
@@ -44,54 +63,51 @@ export class WechatShareHandler extends Handler {
     }
 
     async options() {
-        const origin = this.getAllowedOrigin();
-        if (origin) {
-            this.response.addHeader('Access-Control-Allow-Origin', origin);
-            this.response.addHeader('Access-Control-Allow-Credentials', 'true');
-        }
-        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        this.applyCorsHeaders();
         this.response.status = 200;
         this.response.body = {};
     }
 
     async get(args: any) {
-        const origin = this.getAllowedOrigin();
-        if (origin) {
-            this.response.addHeader('Access-Control-Allow-Origin', origin);
-            this.response.addHeader('Access-Control-Allow-Credentials', 'true');
-        }
-        this.response.addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        this.response.addHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        this.applyCorsHeaders();
 
-        logger.debug(`[WechatShareHandler] 收到分享配置请求: ${JSON.stringify(args)}`);
         try {
             const url = args.url as string;
+            const shareConfig: ShareConfig = args.share ? JSON.parse(args.share) : {};
 
             if (!url) {
-                logger.error('[WechatShareHandler] 缺少url参数');
                 throw new Error('缺少url参数');
             }
 
-            if (!this.wechatService.validateDomain(url)) {
-                logger.error(`[WechatShareHandler] 域名未授权: ${url}`);
+            const wechatService = this.ctx.wechatService;
+            if (!wechatService) {
+                throw new Error('微信服务未初始化');
+            }
+
+            if (!wechatService.validateDomain(url)) {
+                logger.warn(`[WechatShareHandler] 域名未授权: ${url}`);
                 throw new Error('域名未授权');
             }
 
-            const jssdkConfig = await this.wechatService.getJSSDKConfig(url);
-            logger.info('[WechatShareHandler] 成功生成分享配置');
+            const jssdkConfig = await wechatService.getJSSDKConfig(url);
 
             this.response.body = {
                 success: true,
                 data: {
                     jssdkConfig,
+                    shareConfig: {
+                        title: shareConfig.title || '',
+                        desc: shareConfig.desc || '',
+                        link: shareConfig.link || url,
+                        imgUrl: shareConfig.imgUrl || '',
+                    },
                     menuConfig: {
-                        hideMenuItems: [
+                        hideMenuItems: shareConfig.hideMenuItems || [
                             'menuItem:copyUrl',
                             'menuItem:openWithQQBrowser',
                             'menuItem:openWithSafari',
                         ],
-                        showMenuItems: [
+                        showMenuItems: shareConfig.showMenuItems || [
                             'menuItem:share:appMessage',
                             'menuItem:share:timeline',
                         ],

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "racing-programming",
+    "title": "学霸编程入门体验之竞赛赛车",
+    "subtitle": "1课时·公益免费",
+    "icon": "🏎️",
+    "theme": "programming",
+    "lessons": 1,
+    "pricing": "free",
+    "clientTypes": [
+      "community",
+      "school"
+    ],
+    "cover": "racing-cover.webp",
+    "ageRange": "1-9年级",
+    "duration": "90分钟",
+    "shortTitle": "竞赛赛车",
+    "category": "编程课"
+  },
+  {
+    "id": "3dprint-nametag",
+    "title": "3D打印科创之自制姓名牌",
+    "subtitle": "1课时·公益免费",
+    "icon": "🖨️",
+    "theme": "maker",
+    "lessons": 1,
+    "pricing": "free",
+    "clientTypes": [
+      "community",
+      "school"
+    ],
+    "cover": "3dprint-cover.webp",
+    "ageRange": "3-9年级",
+    "duration": "90分钟",
+    "shortTitle": "自制姓名牌",
+    "category": "创客课"
+  },
+  {
+    "id": "lego-castle",
+    "title": "乐高创意搭建之我的城堡",
+    "subtitle": "1课时·公益免费",
+    "icon": "🏰",
+    "theme": "thinking",
+    "lessons": 1,
+    "pricing": "free",
+    "clientTypes": [
+      "community",
+      "school"
+    ],
+    "cover": "lego-cover.webp",
+    "ageRange": "幼儿小中大班",
+    "duration": "60分钟",
+    "shortTitle": "我的城堡",
+    "category": "思维课"
+  },
+  {
+    "id": "ai-magician",
+    "title": "AI大模型之神笔马良",
+    "subtitle": "1课时·公益免费",
+    "icon": "🪄",
+    "theme": "ai",
+    "lessons": 1,
+    "pricing": "free",
+    "clientTypes": [
+      "community",
+      "school"
+    ],
+    "cover": "ai-cover.webp",
+    "ageRange": "1-9年级",
+    "duration": "90分钟",
+    "shortTitle": "神笔马良",
+    "category": "AI课"
+  }
+]

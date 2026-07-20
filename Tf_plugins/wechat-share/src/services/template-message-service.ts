@@ -1,4 +1,4 @@
-import { Context, Logger } from 'hydrooj';
+import { Context, Logger, Service } from 'hydrooj';
 import type { WechatService } from '../core/wechat-service';
 import type { TemplateItem, TemplateMessage } from '../types/wechat';
 
@@ -6,17 +6,23 @@ type TemplateData = Record<string, { value: string, color?: string }>;
 
 const logger = new Logger('wechat-template-message');
 
+declare module 'cordis' {
+    interface Context {
+        wechatTemplateMessage: TemplateMessageService;
+    }
+}
+
 /**
  * 模板消息服务
  * 提供便捷的模板消息发送功能
  */
-export class TemplateMessageService {
+export class TemplateMessageService extends Service {
+    static inject = ['wechatService'];
     private wechatService: WechatService;
-    private ctx: Context;
 
-    constructor(wechatService: WechatService, ctx: Context) {
+    constructor(ctx: Context, wechatService: WechatService) {
+        super(ctx, 'wechatTemplateMessage');
         this.wechatService = wechatService;
-        this.ctx = ctx;
     }
 
     private async ensureTemplateExists(templateId: string): Promise<void> {
@@ -70,24 +76,21 @@ export class TemplateMessageService {
             miniprogram?: { appid: string, pagepath: string };
         },
     ): Promise<number | null> {
-        // 从 OAuth 绑定中获取 openid
-        const oauthData = await this.ctx.oauth.get('wechat', String(uid));
-        if (!oauthData) {
+        // 从 OAuth 绑定中反查微信标识（oauth.list 是 uid -> 绑定记录列表）
+        const bindings = await this.ctx.oauth.list(uid);
+        const wechatBinding = bindings.find((b) => b.platform === 'wechat');
+        if (!wechatBinding) {
             logger.warn(`[TemplateMessageService] 用户 ${uid} 未绑定微信账号`);
             return null;
         }
 
-        // oauthData 可能是 openid 字符串，也可能是包含 openid 的对象
-        let openid: string | undefined;
-        if (typeof oauthData === 'string') {
-            openid = oauthData;
-        } else if (oauthData && typeof oauthData === 'object' && 'openid' in oauthData) {
-            openid = (oauthData as { openid?: string }).openid;
-        }
-
-        if (!openid) {
-            logger.warn(`[TemplateMessageService] 用户 ${uid} 的微信绑定数据无效`);
-            return null;
+        // 绑定记录的 id 可能是 unionid 或 openid，发模板消息需要 openid
+        let openid: string = wechatBinding.id;
+        const oauthTokenDoc = await this.ctx.db.collection('wechat.oauth_tokens' as any).findOne({
+            $or: [{ unionid: wechatBinding.id }, { openid: wechatBinding.id }],
+        });
+        if (oauthTokenDoc?.openid) {
+            openid = oauthTokenDoc.openid;
         }
 
         return this.sendByOpenId(openid, templateId, data, options);
