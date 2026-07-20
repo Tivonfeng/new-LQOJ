@@ -1,5 +1,163 @@
 {% extends "layout/basic.html" %}
 {% block content %}
+<style>
+  /* ====== 训练卡片网格布局 ====== */
+  .training-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .training-category-section {
+    margin-bottom: 28px;
+  }
+  .training-category__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #3d3d3d;
+    margin: 0 0 16px 2px;
+    display: flex;
+    align-items: center;
+  }
+  /* 卡片本体 */
+  .training-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e8eaed;
+    border-radius: 10px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 2px 6px rgba(175, 194, 201, 0.18);
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+    overflow: hidden;
+  }
+  .training-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(95, 159, 214, 0.22);
+    border-color: #cfe2f3;
+  }
+  .training-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: #5f9fd6;
+    border-radius: 10px 0 0 10px;
+  }
+  .training-card.cat-zhenti::before { background: #fb5555; }
+  .training-card.cat-regular::before { background: #5f9fd6; }
+  .training-card.cat-other::before  { background: #25ad40; }
+
+  .training-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .training-card__participants {
+    flex-shrink: 0;
+    min-width: 52px;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .training-card__participants .num {
+    font-size: 22px;
+    font-weight: 600;
+    color: #3d3d3d;
+  }
+  .training-card__participants .label {
+    font-size: 12px;
+    color: #999;
+  }
+  .training-card__status {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .training-card__status.outside  { background: #f0f0f0; color: #999; }
+  .training-card__status.progress { background: #fdecef; color: #e64c72; }
+  .training-card__status.done     { background: #e8f6ec; color: #25ad40; }
+
+  .training-card__title {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 8px;
+  }
+  .training-card__title a {
+    color: #3d3d3d;
+    text-decoration: none;
+  }
+  .training-card__title a:hover {
+    color: #5f9fd6;
+  }
+  .training-card__intro {
+    color: #777;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0 0 14px;
+    flex: 1 1 auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .training-card__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #f2f3f5;
+    font-size: 12px;
+    color: #999;
+  }
+  .training-card__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .training-card__meta .icon {
+    margin-right: 3px;
+  }
+  .training-card__progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .training-card__progress-bar {
+    width: 60px;
+    height: 5px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .training-card__progress-track {
+    height: 100%;
+    background: #25ad40;
+    transition: width .3s ease;
+  }
+  .training-card__progress-track.progress { background: #e64c72; }
+
+  /* 空分组不占位 */
+  .training-category-section:empty { display: none; }
+
+  /* 移动端：单列 */
+  @media (max-width: 600px) {
+    .training-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .training-card__intro { -webkit-line-clamp: 4; }
+  }
+</style>
 <div class="row">
   <div class="large-9 columns">
     <div class="section">
@@ -17,70 +175,79 @@
       {% if not tdocs.length %}
         {{ nothing.render('Sorry, there are no training plans.') }}
       {% else %}
-        {%- macro render_training_item(tdoc) -%}
-            <li class="section__list__item training__item">
-              <div class="media">
-                <div class="media__left middle">
-                  <div class="training__participants numbox">
-                    <div class="numbox__num large">{{ tdoc.attend|default(0) }}</div>
-                    <div class="numbox__text">{{ _('Enrolled') }}</div>
-                  </div>
+        {%- macro render_training_item(tdoc, cat) -%}
+            <li class="training-card cat-{{ cat }}">
+              <div class="training-card__head">
+                <div class="training-card__participants">
+                  <div class="num">{{ tdoc.attend|default(0) }}</div>
+                  <div class="label">{{ _('Enrolled') }}</div>
                 </div>
-                <div class="media__body middle">
-                  <h1 class="training__title"><a href="{{ url('training_detail', tid=tdoc.docId) }}" data-emoji-enabled>{{ tdoc.title }}</a></h1>
-                  <div class="training__intro typo">
-                    <p>{{ tdoc['content'] }}</p>
-                  </div>
-                  <ul class="supplementary list training__progress">
-                    <li>
-                      <span class="icon icon-flag text-blue"></span> {{ _('{0} sections').format(tdoc['dag']|length) }}, {{ _('{0} problems').format(model.training.getPids(tdoc.dag)|length) }}
-                    </li>
-                    <li>
-                    {% if tsdict[tdoc.docId]['enroll'] %}
-                      {% if not tsdict[tdoc.docId]['done'] %}
-                        <span class="icon training-status--icon progress"></span>
-                        <span class="training-status--text progress">{{ _('Completed') }} {{ (100 * tsdict[tdoc.docId]['donePids']|length / model.training.getPids(tdoc.dag)|length)|round|int }}%</span>
-                      {% else %}
-                        <span class="icon training-status--icon done"></span>
-                        <span class="training-status--text done">{{ _('Completed') }} 100%</span>
-                      {% endif %}
-                    {% elif handler.user.hasPriv(PRIV.PRIV_USER_PROFILE) %}
-                      <span class="icon training-status--icon outside"></span> <span class="training-status--text outside">{{ _('Not Enrolled') }}</span>
-                    {% endif %}
-                    </li>
-                  </ul>
+                {% if tsdict[tdoc.docId]['enroll'] %}
+                  {% if not tsdict[tdoc.docId]['done'] %}
+                    {% set pct = (100 * tsdict[tdoc.docId]['donePids']|length / model.training.getPids(tdoc.dag)|length)|round|int %}
+                    <span class="training-card__status progress">{{ _('Completed') }} {{ pct }}%</span>
+                  {% else %}
+                    <span class="training-card__status done">{{ _('Completed') }} 100%</span>
+                  {% endif %}
+                {% elif handler.user.hasPriv(PRIV.PRIV_USER_PROFILE) %}
+                  <span class="training-card__status outside">{{ _('Not Enrolled') }}</span>
+                {% endif %}
+              </div>
+              <h2 class="training-card__title">
+                <a href="{{ url('training_detail', tid=tdoc.docId) }}" data-emoji-enabled>{{ tdoc.title }}</a>
+              </h2>
+              <p class="training-card__intro">{{ tdoc['content'] }}</p>
+              <div class="training-card__foot">
+                <div class="training-card__meta">
+                  <span><span class="icon icon-flag text-blue"></span>{{ _('{0} sections').format(tdoc['dag']|length) }}</span>
+                  <span><span class="icon icon-book text-green"></span>{{ _('{0} problems').format(model.training.getPids(tdoc.dag)|length) }}</span>
                 </div>
+                {% if tsdict[tdoc.docId]['enroll'] and not tsdict[tdoc.docId]['done'] %}
+                  {% set pct = (100 * tsdict[tdoc.docId]['donePids']|length / model.training.getPids(tdoc.dag)|length)|round|int %}
+                  <div class="training-card__progress">
+                    <div class="training-card__progress-bar"><div class="training-card__progress-track progress" style="width:{{ pct }}%;"></div></div>
+                    <span>{{ pct }}%</span>
+                  </div>
+                {% endif %}
               </div>
             </li>
         {%- endmacro -%}
 
         <!-- ====== 真题训练 ====== -->
+        {% set has_zhenti = false %}
+        {%- for tdoc in tdocs -%}{% if tdoc.tag and ('真题训练' in tdoc.tag) %}{% set has_zhenti = true %}{% endif %}{%- endfor -%}
+        {% if has_zhenti %}
         <div class="training-category-section">
           <h2 class="training-category__title">
             <span class="icon icon-flag text-red"></span>&ensp;🏷️ 真题训练
           </h2>
-          <ol class="section__list all primary training__list">
+          <ol class="training-grid">
             {%- for tdoc in tdocs -%}
               {% if tdoc.tag and ('真题训练' in tdoc.tag) %}
-                {{ render_training_item(tdoc) }}
+                {{ render_training_item(tdoc, 'zhenti') }}
               {% endif %}
             {%- endfor -%}
           </ol>
         </div>
+        {% endif %}
 
         <!-- ====== 常规训练 ====== -->
+        {% set has_regular = false %}
+        {%- for tdoc in tdocs -%}{% if tdoc.tag and ('常规训练' in tdoc.tag) %}{% set has_regular = true %}{% endif %}{%- endfor -%}
+        {% if has_regular %}
         <div class="training-category-section">
           <h2 class="training-category__title">
             <span class="icon icon-training text-blue"></span>&ensp;🏷️ 常规训练
           </h2>
-          <ol class="section__list all primary training__list">
+          <ol class="training-grid">
             {%- for tdoc in tdocs -%}
               {% if tdoc.tag and ('常规训练' in tdoc.tag) %}
-                {{ render_training_item(tdoc) }}
+                {{ render_training_item(tdoc, 'regular') }}
               {% endif %}
             {%- endfor -%}
           </ol>
         </div>
+        {% endif %}
 
         <!-- ====== 其他训练（无 tag 或不匹配） ====== -->
         {% set has_other = false %}
@@ -94,10 +261,10 @@
           <h2 class="training-category__title">
             <span class="icon icon-book text-green"></span>&ensp;🏷️ 其他训练
           </h2>
-          <ol class="section__list all primary training__list">
+          <ol class="training-grid">
             {%- for tdoc in tdocs -%}
               {% if not tdoc.tag or (not ('真题训练' in tdoc.tag) and not ('常规训练' in tdoc.tag)) %}
-                {{ render_training_item(tdoc) }}
+                {{ render_training_item(tdoc, 'other') }}
               {% endif %}
             {%- endfor -%}
           </ol>
