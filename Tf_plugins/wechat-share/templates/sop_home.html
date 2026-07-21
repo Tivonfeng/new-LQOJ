@@ -1,0 +1,26 @@
+{% set page_name = "sop_home" %}
+{% extends "layout/html5.html" %}
+
+{% block ogp %}
+<meta property="og:title" content="绿旗编程·运营SOP" />
+{% endblock %}
+
+{% block body %}
+<script>document.title = '绿旗编程·运营SOP';</script>
+<div id="sop-home-app">
+  <style>
+    #sop-home-loading {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #f5f7fa; z-index: 999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #sop-home-loading .sop-loading-logo { width: 56px; height: 56px; border-radius: 14px; object-fit: cover; animation: sop-pulse 1.2s ease-in-out infinite; }
+    #sop-home-loading .sop-loading-text { margin-top: 16px; font-size: 14px; color: #999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    @keyframes sop-pulse { 0%,100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+  </style>
+  <div id="sop-home-loading">
+    <img class="sop-loading-logo" src="/wechat/static/logo.png" alt="绿旗编程" />
+    <div class="sop-loading-text">正在加载...</div>
+  </div>
+</div>
+{% endblock %}

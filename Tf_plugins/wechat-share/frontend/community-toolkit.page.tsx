@@ -198,6 +198,7 @@ function initWechatShare(shareConfig: { title: string; desc: string }) {
 const Gallery: React.FC<{ images: string[] }> = ({ images }) => {
   const [current, setCurrent] = useState(0);
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
+  const [imgLoaded, setImgLoaded] = useState<Record<number, boolean>>({});
 
   const validImages = images.map((img, i) => ({ img, i })).filter(({ i }) => !imgError[i]);
   if (validImages.length === 0) {
@@ -210,13 +211,17 @@ const Gallery: React.FC<{ images: string[] }> = ({ images }) => {
   }
 
   const currentImg = validImages[current % validImages.length];
+  const loaded = imgLoaded[currentImg.i];
 
   return (
     <div className="ct-gallery">
       <div className="ct-gallery-main">
+        {!loaded && <div className="ct-gallery-loading" />}
         <img
           src={`${IMAGES_BASE}/${currentImg.img}`}
           alt={`往期照片 ${current + 1}`}
+          style={{ opacity: loaded ? 1 : 0 }}
+          onLoad={() => setImgLoaded((prev) => ({ ...prev, [currentImg.i]: true }))}
           onError={() => setImgError((prev) => ({ ...prev, [currentImg.i]: true }))}
         />
       </div>
@@ -256,7 +261,7 @@ const TemplateCard: React.FC<{ template: TemplateItem; index: number; sectionKey
     const ok = await copyText(content);
     if (ok) {
       setCopied(true);
-      message.success('已复制到剪贴板');
+      message.success('已复制！去微信群/朋友圈粘贴，替换括号内容即可使用');
       setTimeout(() => setCopied(false), 3000);
     } else {
       setModalVisible(true);
@@ -421,7 +426,7 @@ const TabBar: React.FC<{ active: string; onChange: (tab: string) => void }> = ({
   const tabs = [
     { key: 'intro', icon: <ReadOutlined />, label: '介绍' },
     { key: 'recruit', icon: <BellOutlined />, label: '招募' },
-    { key: 'execute', icon: <AimOutlined />, label: '准备执行' },
+    { key: 'execute', icon: <AimOutlined />, label: '备课' },
     { key: 'promote', icon: <CameraOutlined />, label: '宣传' },
   ];
   return (
@@ -465,23 +470,7 @@ const CourseListPage: React.FC<{ onSelect: (id: string) => void }> = ({ onSelect
       </header>
       <main className="ct-content">
         <div className="ct-platform-intro">
-          <p className="ct-platform-intro-text">绿旗编程B端合作平台，为社区、学校、机构提供一站式课程交付工具包。每个课程配备完整的招募文案、课前准备清单、课中执行流程、课后宣传模板，解锁即用，复制即发。</p>
-          <div className="ct-platform-stats">
-            <div className="ct-platform-stat">
-              <span className="ct-platform-stat-num">4</span>
-              <span className="ct-platform-stat-label">门课程</span>
-            </div>
-            <div className="ct-platform-stat-divider" />
-            <div className="ct-platform-stat">
-              <span className="ct-platform-stat-num">4</span>
-              <span className="ct-platform-stat-label">大板块</span>
-            </div>
-            <div className="ct-platform-stat-divider" />
-            <div className="ct-platform-stat">
-              <span className="ct-platform-stat-num">1对1</span>
-              <span className="ct-platform-stat-label">专属支持</span>
-            </div>
-          </div>
+          <p className="ct-platform-intro-text">为社区、学校、机构提供一站式课程交付工具包，招募文案、执行流程、宣传模板，解锁即用，复制即发。</p>
         </div>
         {loading ? (
           <Skeleton active paragraph={{ rows: 4 }} />
@@ -628,15 +617,26 @@ const CourseIntroPage: React.FC<{ courseId: string; onBack: () => void; onEnter:
           </Button>
         )}
 
-        {/* 进入工具包按钮 */}
+        {/* 行动按钮 */}
         <div className="ct-unlock-area">
+          <div className="ct-contact-btn-row">
+            <Button
+              size="large"
+              block
+              icon={<PhoneOutlined />}
+              href={`tel:${PHONE}`}
+              style={{ borderRadius: 'var(--ct-radius-btn)', height: 48, fontSize: 16 }}
+            >
+              联系合作
+            </Button>
+          </div>
           <Button
             type="primary"
             size="large"
             block
             icon={<RightCircleOutlined />}
             onClick={onEnter}
-            style={{ borderRadius: 'var(--ct-radius-btn)', height: 48, fontSize: 16 }}
+            style={{ borderRadius: 'var(--ct-radius-btn)', height: 48, fontSize: 16, marginTop: 8 }}
           >
             进入工具包
           </Button>

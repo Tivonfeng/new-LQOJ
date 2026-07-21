@@ -27,6 +27,7 @@ import {
     CommunityToolkitFileHandler,
     CommunityToolkitImageHandler,
 } from './src/handlers/community-toolkit-handler';
+import { SopHomeHandler, SalesSopHandler, SopCourseHandler, SalesSopDataHandler } from './src/handlers/sop-handler';
 import { WechatApiLimiter } from './src/services/api-limiter';
 import { TemplateMessageService } from './src/services/template-message-service';
 import { TokenCacheService } from './src/services/token-cache';
@@ -130,6 +131,14 @@ export default class WechatPlugin extends Service {
         ctx.Route('community_toolkit_images', '/community-toolkit/images/:filename', CommunityToolkitImageHandler);
         logger.info('[WechatPlugin] 社区工具包已启用 - 路由: /community-toolkit');
 
+        // 注册 SOP 路由
+        ctx.Route('sop_home', '/sop', SopHomeHandler);
+        ctx.Route('sales_sop', '/sop/experience', SalesSopHandler);
+        ctx.Route('sop_course', '/sop/course', SopCourseHandler);
+        ctx.Route('sales_sop_data', '/sop/data/:filename', SalesSopDataHandler);
+        ctx.Route('sales_sop_images', '/sop/images/:filename', SalesSopDataHandler);
+        logger.info('[WechatPlugin] SOP已启用 - 首页: /sop, 体验课: /sop/experience, 课程: /sop/course');
+
         // 注册微信验证文件路由
         this.initVerifyFileRoute(ctx);
         logger.info('[WechatPlugin] 微信验证文件路由已注册');
@@ -142,6 +151,9 @@ export default class WechatPlugin extends Service {
         ctx.i18n.load('zh', {
             'Login With Wechat': '使用微信登录',
             'community_toolkit': 'B端合作平台',
+            'sop_home': '运营SOP',
+            'sales_sop': '体验课群运营SOP',
+            'sop_course': '课程课后反馈SOP',
         });
     }
 

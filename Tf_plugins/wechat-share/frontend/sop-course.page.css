@@ -1,0 +1,178 @@
+/* SOP Course - 课程课后反馈SOP页面 */
+/* 复用体验课SOP的基础样式 */
+@import './sop-experience.page.css';
+
+/* 课程SOP特有样式 */
+
+/* 返回首页按钮 */
+.sop-course-back {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--sop-text);
+  cursor: pointer;
+  z-index: 10;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s;
+}
+.sop-course-back:active { transform: scale(0.9); }
+
+/* 体系选择 tab bar（底部固定） */
+.sop-course-system-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid var(--sop-border);
+  z-index: 100;
+  max-width: 480px;
+  margin: 0 auto;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+.sop-course-system-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+.sop-course-system-item.active {
+  border-bottom-color: var(--sop-primary);
+}
+.sop-course-system-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 3px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.sop-course-system-item.active .sop-course-system-icon {
+  opacity: 1;
+}
+.sop-course-system-name {
+  font-size: 11px;
+  color: var(--sop-text-2);
+  transition: color 0.2s;
+}
+.sop-course-system-item.active .sop-course-system-name {
+  color: var(--sop-primary);
+  font-weight: 600;
+}
+
+/* 阶段选择条（水平） */
+.sop-course-level-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 4px 0;
+}
+.sop-course-level-item {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: var(--sop-card-bg);
+  border: 1.5px solid var(--sop-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sop-course-level-item.active {
+  background: var(--sop-primary);
+  border-color: var(--sop-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(23, 174, 104, 0.3);
+}
+.sop-course-level-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+.sop-course-level-sub {
+  font-size: 10px;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+/* 课时选择条（水平滚动） */
+.sop-course-lesson-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 4px 2px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.sop-course-lesson-bar::-webkit-scrollbar { display: none; }
+.sop-course-lesson-item {
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--sop-card-bg);
+  border: 1.5px solid var(--sop-border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sop-course-lesson-item.active {
+  background: var(--sop-primary-light);
+  border-color: var(--sop-primary);
+  color: var(--sop-primary);
+}
+.sop-course-lesson-num {
+  font-size: 13px;
+  font-weight: 600;
+}
+.sop-course-lesson-bar-item .sop-course-lesson-title {
+  font-size: 10px;
+  color: var(--sop-text-hint);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
+}
+
+/* 当前课时信息卡 */
+.sop-course-lesson-info {
+  background: var(--sop-card-bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-left: 4px solid var(--sop-primary);
+}
+.sop-course-lesson-info-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sop-text);
+  margin-bottom: 4px;
+}
+.sop-course-lesson-info-title {
+  font-size: 13px;
+  color: var(--sop-text-2);
+}
+
+/* 底部留白给 system bar */
+.sop-course-content {
+  padding-bottom: 80px;
+}
+
+/* 覆盖 has-tabbar（课程SOP用自己的 system bar） */
+.sop-course-app .sop-content {
+  padding-bottom: 80px;
+}

@@ -74,7 +74,9 @@
     "dependencies": {
         "@ant-design/icons": "^6.2.5",
         "@lucky-canvas/react": "^0.1.13",
+        "@react-spring/web": "^10.1.2",
         "antd": "^6.4.3",
+        "axios": "^1.18.1",
         "canvas-confetti": "^1.9.4",
         "pinyin-pro": "^3.28.1",
         "qiniu": "^7.15.2",

@@ -35,6 +35,10 @@ export class CommunityToolkitHandler extends Handler {
     async get() {
         this.response.template = 'community_toolkit.html';
         this.response.body = {};
+        // 禁止 HTML 启发式缓存，确保每次刷新都拿到最新 constantVersion -> 最新 entry.js
+        this.response.addHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        this.response.addHeader('Pragma', 'no-cache');
+        this.response.addHeader('Expires', '0');
     }
 }
 
@@ -66,7 +70,7 @@ export class CommunityToolkitCourseDataHandler extends Handler {
 
         this.response.body = fs.readFileSync(filePath, 'utf-8');
         this.response.type = 'application/json; charset=utf-8';
-        this.response.addHeader('Cache-Control', 'public, max-age=300');
+        this.response.addHeader('Cache-Control', 'no-cache');
     }
 }
 
