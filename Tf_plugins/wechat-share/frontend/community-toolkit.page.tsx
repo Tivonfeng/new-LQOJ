@@ -165,8 +165,9 @@ function initWechatShare(shareConfig: { title: string; desc: string }) {
   const ua = navigator.userAgent;
   if (!/MicroMessenger/i.test(ua)) return;
   if (/wxwork/i.test(ua)) return;
-  const currentUrl = window.location.href.split('#')[0];
-  fetch(`${SHARE_API}?url=${encodeURIComponent(currentUrl)}`)
+  const fullUrl = window.location.href;
+  const signUrl = fullUrl.split('#')[0];
+  fetch(`${SHARE_API}?url=${encodeURIComponent(signUrl)}`)
     .then((r) => r.json())
     .then((result) => {
       if (!result.success) return;
@@ -178,7 +179,7 @@ function initWechatShare(shareConfig: { title: string; desc: string }) {
         wx.config({ debug: false, appId: c.appId, timestamp: c.timestamp, nonceStr: c.nonceStr, signature: c.signature, jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData', 'onMenuShareAppMessage', 'onMenuShareTimeline'] });
         // @ts-ignore
         wx.ready(() => {
-          const shareData = { title: shareConfig.title, desc: shareConfig.desc, link: currentUrl, imgUrl: window.location.origin + LOGO_URL };
+          const shareData = { title: shareConfig.title, desc: shareConfig.desc, link: fullUrl, imgUrl: window.location.origin + LOGO_URL };
           // @ts-ignore
           wx.updateAppMessageShareData(shareData);
           // @ts-ignore
@@ -454,7 +455,7 @@ const CourseListPage: React.FC<{ onSelect: (id: string) => void }> = ({ onSelect
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${COURSES_BASE}/index.json`)
+    fetch(`${COURSES_BASE}/index.json`, { headers: { 'Pragma': 'no-cache' } })
       .then((r) => r.json())
       .then((data) => { setCourses(data); setLoading(false); })
       .catch(() => { setLoading(false); });
@@ -518,7 +519,7 @@ const CourseIntroPage: React.FC<{ courseId: string; onBack: () => void; onEnter:
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${COURSES_BASE}/${courseId}.json`)
+    fetch(`${COURSES_BASE}/${courseId}.json`, { headers: { 'Pragma': 'no-cache' } })
       .then((r) => { if (!r.ok) throw new Error('课程不存在'); return r.json(); })
       .then((course) => {
         setData(course);
@@ -654,7 +655,7 @@ const CourseToolkitPage: React.FC<{ courseId: string; onBack: () => void; onIntr
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${COURSES_BASE}/${courseId}.json`)
+    fetch(`${COURSES_BASE}/${courseId}.json`, { headers: { 'Pragma': 'no-cache' } })
       .then((r) => { if (!r.ok) throw new Error('课程不存在'); return r.json(); })
       .then((course) => {
         setData(course);

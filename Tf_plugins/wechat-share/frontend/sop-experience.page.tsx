@@ -2,7 +2,7 @@
 import './sop-experience.page.css';
 
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { CheckOutlined, LeftOutlined, UpOutlined } from '@ant-design/icons';
+import { CheckOutlined, EditOutlined, LeftOutlined, UpOutlined } from '@ant-design/icons';
 import { ConfigProvider, Empty, Skeleton } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -96,7 +96,7 @@ const SopPage: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('advisor');
 
   useEffect(() => {
-    fetch(SOP_JSON_URL)
+    fetch(SOP_JSON_URL, { headers: { 'Pragma': 'no-cache' } })
       .then((r) => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then((d) => {
         setData(d);
@@ -155,6 +155,9 @@ const SopPage: React.FC = () => {
     <div className="sop-app">
       <a className="sop-course-back" href="/sop">
         <LeftOutlined />
+      </a>
+      <a className="sop-edit-btn" href="/sop/admin">
+        <EditOutlined />
       </a>
       <header className="sop-header">
         <h1>体验课群运营SOP</h1>

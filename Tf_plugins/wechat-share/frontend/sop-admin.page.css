@@ -1,0 +1,328 @@
+/* SOP Admin - 模板管理页面 */
+:root {
+  --sop-primary: #17ae68;
+  --sop-primary-light: #e8f7ef;
+  --sop-bg: #f5f7fa;
+  --sop-card-bg: #fff;
+  --sop-border: #e8e8e8;
+  --sop-text: #1a1a1a;
+  --sop-text-2: #666;
+  --sop-text-hint: #999;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { background: var(--sop-bg); -webkit-font-smoothing: antialiased; }
+
+.sop-admin-app {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+}
+
+/* ===== Header ===== */
+.sop-admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--sop-card-bg);
+  border-bottom: 1px solid var(--sop-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.sop-admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sop-admin-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--sop-text-2);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sop-admin-back:hover { color: var(--sop-primary); }
+.sop-admin-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sop-text);
+}
+.sop-admin-save-all {
+  font-weight: 600;
+}
+
+/* ===== Layout ===== */
+.sop-admin-layout {
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 53px);
+}
+
+/* ===== Sidebar ===== */
+.sop-admin-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--sop-card-bg);
+  border-right: 1px solid var(--sop-border);
+  overflow-y: auto;
+  max-height: calc(100vh - 53px);
+  position: sticky;
+  top: 53px;
+}
+.sop-sidebar-section {
+  border-bottom: 1px solid var(--sop-border);
+}
+.sop-sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sop-text);
+  cursor: pointer;
+  user-select: none;
+}
+.sop-sidebar-section-header:hover { background: var(--sop-bg); }
+.sop-sidebar-section-arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: var(--sop-text-hint);
+}
+.sop-sidebar-section-arrow.collapsed { transform: rotate(-90deg); }
+.sop-sidebar-section-body {
+  padding-bottom: 8px;
+}
+.sop-sidebar-group {
+  padding: 4px 16px 4px 28px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sop-text-hint);
+  cursor: pointer;
+  user-select: none;
+}
+.sop-sidebar-group:hover { color: var(--sop-text-2); }
+.sop-sidebar-group.collapsed .sop-sidebar-group-arrow { transform: rotate(-90deg); }
+.sop-sidebar-group-arrow {
+  font-size: 9px;
+  margin-right: 4px;
+  transition: transform 0.2s;
+}
+.sop-sidebar-template {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 6px 44px;
+  font-size: 13px;
+  color: var(--sop-text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.sop-sidebar-template:hover {
+  background: var(--sop-bg);
+  color: var(--sop-text);
+}
+.sop-sidebar-template.active {
+  background: var(--sop-primary-light);
+  color: var(--sop-primary);
+  border-left-color: var(--sop-primary);
+  font-weight: 600;
+}
+.sop-sidebar-template-role {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.sop-sidebar-template-role.advisor { background: var(--sop-primary-light); color: var(--sop-primary); }
+.sop-sidebar-template-role.teacher { background: #e8f0ff; color: #4a7dff; }
+.sop-sidebar-template-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 课程SOP多级导航 */
+.sop-sidebar-subgroup {
+  padding: 4px 16px 4px 40px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sop-text-hint);
+  cursor: pointer;
+  user-select: none;
+}
+.sop-sidebar-subgroup:hover { color: var(--sop-text-2); }
+.sop-sidebar-lesson {
+  padding: 4px 16px 4px 56px;
+  font-size: 11px;
+  color: var(--sop-text-hint);
+  cursor: pointer;
+  user-select: none;
+}
+.sop-sidebar-lesson:hover { color: var(--sop-text-2); }
+.sop-sidebar-lesson.collapsed ~ .sop-sidebar-template { display: none; }
+.sop-sidebar-template.course {
+  padding-left: 72px;
+}
+
+/* ===== Editor ===== */
+.sop-admin-editor {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  max-width: 800px;
+}
+.sop-admin-editor-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--sop-text-hint);
+  font-size: 14px;
+}
+.sop-editor-breadcrumb {
+  font-size: 12px;
+  color: var(--sop-text-hint);
+  margin-bottom: 16px;
+}
+.sop-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sop-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sop-editor-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sop-text);
+}
+.sop-editor-input,
+.sop-editor-textarea,
+.sop-editor-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--sop-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--sop-text);
+  background: var(--sop-card-bg);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.sop-editor-input:focus,
+.sop-editor-textarea:focus,
+.sop-editor-select:focus {
+  border-color: var(--sop-primary);
+}
+.sop-editor-textarea {
+  min-height: 200px;
+  resize: vertical;
+  line-height: 1.6;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+}
+.sop-editor-row {
+  display: flex;
+  gap: 12px;
+}
+.sop-editor-row > .sop-editor-field { flex: 1; }
+
+/* 图片管理 */
+.sop-editor-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sop-editor-image-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--sop-border);
+}
+.sop-editor-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sop-editor-image-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sop-editor-image-upload {
+  width: 80px;
+  height: 80px;
+  border: 2px dashed var(--sop-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--sop-text-hint);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sop-editor-image-upload:hover {
+  border-color: var(--sop-primary);
+  color: var(--sop-primary);
+}
+
+/* 保存按钮 */
+.sop-editor-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sop-border);
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .sop-admin-layout {
+    flex-direction: column;
+  }
+  .sop-admin-sidebar {
+    width: 100%;
+    max-height: 40vh;
+    position: relative;
+    top: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--sop-border);
+  }
+  .sop-admin-editor {
+    padding: 16px;
+  }
+  .sop-editor-row {
+    flex-direction: column;
+  }
+}
+
+/* antd 主按钮品牌色 */
+.sop-admin-app .ant-btn-primary {
+  background: var(--sop-primary) !important;
+  border-color: var(--sop-primary) !important;
+}

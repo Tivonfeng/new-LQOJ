@@ -2,7 +2,7 @@
 import './sop-course.page.css';
 
 import { addPage, NamedPage } from '@hydrooj/ui-default';
-import { CodeOutlined, LeftOutlined, ThunderboltOutlined, UpOutlined, BuildOutlined, BlockOutlined } from '@ant-design/icons';
+import { BuildOutlined, CodeOutlined, EditOutlined, LeftOutlined, ThunderboltOutlined, UpOutlined, BlockOutlined } from '@ant-design/icons';
 import { ConfigProvider, Empty, Skeleton } from 'antd';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -77,7 +77,7 @@ const SopCoursePage: React.FC = () => {
   const [showTopBtn, setShowTopBtn] = useState(false);
 
   useEffect(() => {
-    fetch(SOP_JSON_URL)
+    fetch(SOP_JSON_URL, { headers: { 'Pragma': 'no-cache' } })
       .then((r) => { if (!r.ok) throw new Error('加载失败'); return r.json(); })
       .then((d) => {
         setData(d);
@@ -148,6 +148,9 @@ const SopCoursePage: React.FC = () => {
     <div className="sop-course-app sop-app">
       <a className="sop-course-back" href="/sop">
         <LeftOutlined />
+      </a>
+      <a className="sop-edit-btn" href="/sop/admin">
+        <EditOutlined />
       </a>
       <header className="sop-header">
         <h1>{data?.title || '课程课后反馈SOP'}</h1>

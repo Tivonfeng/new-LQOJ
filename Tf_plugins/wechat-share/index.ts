@@ -28,6 +28,12 @@ import {
     CommunityToolkitImageHandler,
 } from './src/handlers/community-toolkit-handler';
 import { SopHomeHandler, SalesSopHandler, SopCourseHandler, SalesSopDataHandler } from './src/handlers/sop-handler';
+import {
+    SopAdminHandler,
+    SopAdminSaveHandler,
+    SopAdminUploadHandler,
+    SopAdminDeleteImageHandler,
+} from './src/handlers/sop-admin-handler';
 import { WechatApiLimiter } from './src/services/api-limiter';
 import { TemplateMessageService } from './src/services/template-message-service';
 import { TokenCacheService } from './src/services/token-cache';
@@ -137,7 +143,12 @@ export default class WechatPlugin extends Service {
         ctx.Route('sop_course', '/sop/course', SopCourseHandler);
         ctx.Route('sales_sop_data', '/sop/data/:filename', SalesSopDataHandler);
         ctx.Route('sales_sop_images', '/sop/images/:filename', SalesSopDataHandler);
-        logger.info('[WechatPlugin] SOP已启用 - 首页: /sop, 体验课: /sop/experience, 课程: /sop/course');
+        // SOP 管理路由
+        ctx.Route('sop_admin', '/sop/admin', SopAdminHandler);
+        ctx.Route('sop_admin_save', '/sop/admin/save', SopAdminSaveHandler);
+        ctx.Route('sop_admin_upload', '/sop/admin/upload', SopAdminUploadHandler);
+        ctx.Route('sop_admin_delete_image', '/sop/admin/delete-image', SopAdminDeleteImageHandler);
+        logger.info('[WechatPlugin] SOP已启用 - 首页: /sop, 体验课: /sop/experience, 课程: /sop/course, 管理: /sop/admin');
 
         // 注册微信验证文件路由
         this.initVerifyFileRoute(ctx);
@@ -154,6 +165,7 @@ export default class WechatPlugin extends Service {
             'sop_home': '运营SOP',
             'sales_sop': '体验课群运营SOP',
             'sop_course': '课程课后反馈SOP',
+            'sop_admin': 'SOP模板管理',
         });
     }
 
