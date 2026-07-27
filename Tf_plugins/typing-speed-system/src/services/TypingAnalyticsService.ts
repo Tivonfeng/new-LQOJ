@@ -1,6 +1,7 @@
 import { Context } from 'hydrooj';
 import { TypingRecordService } from './TypingRecordService';
 import { TypingStatsService } from './TypingStatsService';
+import { getWeekString } from '../utils/dateUtils';
 
 // 全局统计接口
 export interface GlobalStats {
@@ -158,7 +159,7 @@ export class TypingAnalyticsService {
         // 获取最近8周的数据
         for (let i = 7; i >= 0; i--) {
             const date = new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000);
-            const weekString = this.getWeekString(date);
+            const weekString = getWeekString(date);
 
             // 获取该周所有快照
             const snapshots = await this.ctx.db.collection('typing.weekly_snapshots' as any)
@@ -184,6 +185,7 @@ export class TypingAnalyticsService {
 
     /**
      * 获取用户进步曲线（最近20条记录）
+     * 时间以 ISO 字符串返回，由前端负责格式化为可读标签。
      */
     async getUserProgress(uid: number): Promise<ProgressData[]> {
         const records = await this.recordService.getUserRecords(uid, 20);
@@ -192,33 +194,8 @@ export class TypingAnalyticsService {
         records.reverse();
 
         return records.map((r) => ({
-            date: r.createdAt.toLocaleString('zh-CN', {
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
+            date: r.createdAt instanceof Date ? r.createdAt.toISOString() : new Date(r.createdAt).toISOString(),
             wpm: r.wpm,
         }));
-    }
-
-    /**
-     * 获取周字符串 (如: "2025-W03")
-     */
-    private getWeekString(date: Date): string {
-        const year = date.getFullYear();
-        const weekNumber = this.getWeekNumber(date);
-        return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * 获取周数
-     */
-    private getWeekNumber(date: Date): number {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
     }
 }

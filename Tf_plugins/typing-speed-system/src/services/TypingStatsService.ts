@@ -1,5 +1,6 @@
 import { Context, ObjectId } from 'hydrooj';
 import { TypingRecordService } from './TypingRecordService';
+import { getWeekStart, getWeekString } from '../utils/dateUtils';
 
 // 用户统计接口
 export interface TypingUserStats {
@@ -285,33 +286,33 @@ export class TypingStatsService {
 
     /**
      * 获取进步最快排行榜（本周 vs 上周）
+     * 优化：单次查询取回本周与上周全部快照，内存中按 uid 分组计算，
+     * 避免对每个用户发起 2 次 findOne 的 N+1 查询。
      */
     async getImprovementRanking(limit: number = 50, _domainId?: string): Promise<Array<TypingUserStats & { improvement: number }>> {
-        const thisWeek = this.getWeekString(new Date());
-        const lastWeek = this.getWeekString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+        const thisWeek = getWeekString(new Date());
+        const lastWeek = getWeekString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
         // 获取所有用户统计（全域统一数据）
         const allStats = await this.ctx.db.collection('typing.stats' as any)
             .find({})
             .toArray();
 
+        // 一次取回本周与上周的全部快照
+        const snapshots = await this.ctx.db.collection('typing.weekly_snapshots' as any)
+            .find({ week: { $in: [thisWeek, lastWeek] } })
+            .toArray();
+
+        // 按 (uid, week) 建立索引，O(N) 构造、O(1) 查找
+        const snapshotMap = new Map<string, any>();
+        for (const snap of snapshots) {
+            snapshotMap.set(`${snap.uid}_${snap.week}`, snap);
+        }
+
         const improvements: Array<TypingUserStats & { improvement: number }> = [];
-
-        // 并行获取所有用户的快照数据
-        const snapshotsPromises = allStats.map((stats) =>
-            Promise.all([
-                this.ctx.db.collection('typing.weekly_snapshots' as any).findOne({ uid: stats.uid, week: thisWeek }),
-                this.ctx.db.collection('typing.weekly_snapshots' as any).findOne({ uid: stats.uid, week: lastWeek }),
-            ]).then(([thisWeekSnapshot, lastWeekSnapshot]) => ({
-                stats,
-                thisWeekSnapshot,
-                lastWeekSnapshot,
-            })),
-        );
-
-        const snapshots = await Promise.all(snapshotsPromises);
-
-        for (const { stats, thisWeekSnapshot, lastWeekSnapshot } of snapshots) {
+        for (const stats of allStats) {
+            const thisWeekSnapshot = snapshotMap.get(`${stats.uid}_${thisWeek}`);
+            const lastWeekSnapshot = snapshotMap.get(`${stats.uid}_${lastWeek}`);
             if (thisWeekSnapshot && lastWeekSnapshot) {
                 const improvement = thisWeekSnapshot.avgWpm - lastWeekSnapshot.avgWpm;
                 improvements.push({
@@ -331,10 +332,10 @@ export class TypingStatsService {
      * 更新周快照
      */
     async updateWeeklySnapshot(uid: number): Promise<void> {
-        const currentWeek = this.getWeekString(new Date());
+        const currentWeek = getWeekString(new Date());
 
         // 获取本周的所有记录
-        const weekStart = this.getWeekStart(new Date());
+        const weekStart = getWeekStart(new Date());
         const records = await this.ctx.db.collection('typing.records' as any)
             .find({
                 uid,
@@ -375,36 +376,6 @@ export class TypingStatsService {
             .countDocuments({ [field]: { $gt: value } });
 
         return higherRankCount + 1;
-    }
-
-    /**
-     * 获取周字符串 (如: "2025-W03")
-     */
-    private getWeekString(date: Date): string {
-        const year = date.getFullYear();
-        const weekNumber = this.getWeekNumber(date);
-        return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * 获取周数
-     */
-    private getWeekNumber(date: Date): number {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-    }
-
-    /**
-     * 获取本周开始日期
-     */
-    private getWeekStart(date: Date): Date {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 周一为一周开始
-        return new Date(d.setDate(diff));
     }
 
     /**

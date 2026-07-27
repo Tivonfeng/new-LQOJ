@@ -32,6 +32,9 @@ window.TypingAdminRecentRecords = {
 
 // 打字大厅 URL
 window.typingHallUrl = '{{ url("typing_hall") }}';
+
+// 赛季管理数据
+window.typingSeasonData = {{ ({ "currentSeason": currentSeason, "seasonStats": seasonStats }) | json | safe }};
 </script>
 
 {% endblock %}

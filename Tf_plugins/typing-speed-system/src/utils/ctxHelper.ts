@@ -31,6 +31,8 @@ export function getTypingServices(ctx: any) {
         statsService: safeGetService(ctx, 'typingStatsService'),
         analyticsService: safeGetService(ctx, 'typingAnalyticsService'),
         bonusService: safeGetService(ctx, 'typingBonusService'),
+        seasonService: safeGetService(ctx, 'typingSeasonService'),
+        poisonZoneService: safeGetService(ctx, 'typingPoisonZoneService'),
         scoreCore: safeGetService(ctx, 'scoreCore'),
     };
 }

@@ -62,6 +62,17 @@ const ProgressChart: React.FC<{ progressData: Array<{ date: string, wpm: number 
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
+  // 将 ISO 日期格式化为可读标签（MM/DD HH:mm）
+  const formatChartLabel = useCallback((iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${m}/${day} ${hh}:${mm}`;
+  }, []);
+
   useEffect(() => {
     if (!chartRef.current || !progressData || progressData.length === 0) {
       return undefined;
@@ -81,7 +92,7 @@ const ProgressChart: React.FC<{ progressData: Array<{ date: string, wpm: number 
     chartInstanceRef.current = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: progressData.map((d) => d.date),
+        labels: progressData.map((d) => formatChartLabel(d.date)),
         datasets: [
           {
             label: 'WPM',
@@ -150,7 +161,7 @@ const ProgressChart: React.FC<{ progressData: Array<{ date: string, wpm: number 
         chartInstanceRef.current.destroy();
       }
     };
-  }, [progressData]);
+  }, [progressData, formatChartLabel]);
 
   return <canvas ref={chartRef} />;
 };

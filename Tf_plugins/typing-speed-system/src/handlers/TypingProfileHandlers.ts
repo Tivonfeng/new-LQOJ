@@ -15,10 +15,10 @@ export class TypingProfileHandler extends Handler {
             return;
         }
 
-        // 获取用户统计（暂不使用 domainId 过滤）
+        // 获取用户统计（全域统一）
         const userStats = await statsService.getUserStats(uid);
 
-        // 获取用户排名（暂不使用 domainId 过滤）
+        // 获取用户排名（全域统一）
         let maxRank: number | null = null;
         let avgRank: number | null = null;
         if (userStats) {
@@ -26,14 +26,11 @@ export class TypingProfileHandler extends Handler {
             avgRank = await statsService.getUserRank(uid, 'avg');
         }
 
-        // 获取用户历史记录
+        // 获取用户历史记录（createdAt 保持 Date，JSON.stringify 自动转 ISO）
         const userRecords = await recordService.getUserRecords(uid, 30);
 
-        // 获取用户进步曲线数据
+        // 获取用户进步曲线数据（date 已为 ISO 字符串）
         const progressData = await analyticsService.getUserProgress(uid);
-
-        // 格式化记录
-        const formattedRecords = recordService.formatRecords(userRecords);
 
         // 获取录入人信息
         const recorderIds = [...new Set(userRecords.map((r: any) => r.recordedBy))];
@@ -52,15 +49,11 @@ export class TypingProfileHandler extends Handler {
         this.response.template = 'typing_profile.html';
         this.response.body = {
             userStats: userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 },
-            userStatsJSON: JSON.stringify(userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 }),
             maxRank,
             avgRank,
-            userRecords: formattedRecords,
-            userRecordsJSON: JSON.stringify(formattedRecords),
+            userRecords,
             progressData,
-            progressDataJSON: JSON.stringify(progressData),
-            recorderDocs,
-            recorderDocsJSON: JSON.stringify(recorderDocsSimplified),
+            recorderDocs: recorderDocsSimplified,
         };
     }
 }

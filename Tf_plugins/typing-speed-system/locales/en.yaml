@@ -108,3 +108,35 @@ Error: Error
 Recalculate Statistics: Recalculate Statistics
 This will recalculate all user statistics based on records. Continue?: This will recalculate all user statistics based on records. Continue?
 Calculating...: Calculating...
+
+typing_hall: Typing Hall
+typing_season: Typing Season
+
+# Season
+Typing Season: Typing Season
+Season Rules: Season Rules
+Season Ranking: Season Ranking
+Season Stats: Season Stats
+Current Season: Current Season
+Register: Register
+Poison Zone: Poison Zone
+Safe: Safe
+In Zone: In Zone
+Weeks in Zone: Weeks in Zone
+Season Progress: Season Progress
+Baseline WPM: Baseline WPM
+Current Max WPM: Current Max WPM
+Total Deducted: Total Deducted
+Upcoming Deduct: Upcoming Deduct
+Escape Poison: Escape Poison
+Season Management: Season Management
+Create Season: Create Season
+Finalize Season: Finalize Season
+Season Name: Season Name
+Week Count: Week Count
+Progress Target: Progress Target
+Progress Reward: Progress Reward
+No active season: No active season
+Season created successfully: Season created successfully
+Season finalized successfully: Season finalized successfully
+Participant Count: Participants

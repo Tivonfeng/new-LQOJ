@@ -4,16 +4,16 @@
 <!-- React App Container -->
 <div id="typing-profile-react-app"></div>
 
-<!-- 数据传递给 React -->
+<!-- 数据传递给 React（统一用 |json|safe 序列化，避免 XSS 与裸输出问题） -->
 <script id="typing-profile-data" type="application/json">
-{
-    "userStats": {{ userStatsJSON | safe }},
-    "maxRank": {{ maxRank if maxRank else 'null' }},
-    "avgRank": {{ avgRank if avgRank else 'null' }},
-    "userRecords": {{ userRecordsJSON | safe }},
-    "progressData": {{ progressDataJSON | safe }},
-    "recorderDocs": {{ recorderDocsJSON | safe }}
-}
+{{ {
+    "userStats": userStats,
+    "maxRank": maxRank,
+    "avgRank": avgRank,
+    "userRecords": userRecords,
+    "progressData": progressData,
+    "recorderDocs": recorderDocs
+} | json | safe }}
 </script>
 
 {% endblock %}

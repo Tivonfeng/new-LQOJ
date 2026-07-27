@@ -9,6 +9,7 @@ export interface ProgressBonusRecord {
     newWpm: number;
     progressBonus: number; // 固定20分
     awardedAt: Date;
+    scoreAwarded?: boolean; // 积分是否已实际发放到 scoreCore（两阶段标记）
     awardedScoreRecordId?: ObjectId;
 }
 
@@ -23,6 +24,7 @@ export interface LevelAchievementRecord {
     targetBonus: number;
     achievedAt: Date;
     bonusAwarded: boolean;
+    scoreAwarded?: boolean; // 积分是否已实际发放到 scoreCore（两阶段标记）
     awardedScoreRecordId?: ObjectId;
     awardedAt?: Date;
 }
@@ -38,6 +40,7 @@ export interface SurpassRecord {
     bonus: number;
     surpassBonus: boolean;
     surpassedAt: Date;
+    scoreAwarded?: boolean; // 积分是否已实际发放到 scoreCore（两阶段标记）
     awardedScoreRecordId?: ObjectId;
 }
 
@@ -173,7 +176,7 @@ export class TypingBonusService {
         recordId: ObjectId,
         previousMaxWpm: number,
         newWpm: number,
-    ): Promise<{ awarded: boolean, bonus: number, reason: string }> {
+    ): Promise<{ awarded: boolean, bonus: number, reason: string, recordDbId?: any }> {
     // 检查是否进步
         if (newWpm <= previousMaxWpm) {
             return { awarded: false, bonus: 0, reason: '没有进步' };
@@ -200,14 +203,16 @@ export class TypingBonusService {
                 newWpm,
                 progressBonus,
                 awardedAt: new Date(),
+                scoreAwarded: false,
             };
 
-            await this.ctx.db.collection('typing.progress_records' as any).insertOne(progressRecord);
+            const insertResult = await this.ctx.db.collection('typing.progress_records' as any).insertOne(progressRecord);
 
             return {
                 awarded: true,
                 bonus: progressBonus,
-                reason: `打字进步分: ${previousMaxWpm} → ${newWpm} WPM`,
+                reason: `打字进步分: ${previousMaxWpm} -> ${newWpm} WPM`,
+                recordDbId: insertResult.insertedId,
             };
         } catch (error) {
             if ((error as any).code === 11000) {
@@ -226,7 +231,7 @@ export class TypingBonusService {
         uid: number,
         newLevel: LevelDefinition,
         newWpm: number,
-    ): Promise<{ awarded: boolean, bonus: number, reason: string }> {
+    ): Promise<{ awarded: boolean, bonus: number, reason: string, recordDbId?: any }> {
     // 检查该等级是否已奖励过
         try {
             const existingRecord = await this.ctx.db.collection('typing.level_achievements' as any).findOne({
@@ -247,12 +252,15 @@ export class TypingBonusService {
                 targetBonus: newLevel.bonus,
                 achievedAt: new Date(),
                 bonusAwarded: true,
+                scoreAwarded: false,
                 awardedAt: new Date(),
             };
 
             // 使用 insertOne，由于唯一索引，如果已存在会失败
+            let recordDbId: any;
             try {
-                await this.ctx.db.collection('typing.level_achievements' as any).insertOne(levelAchievement);
+                const insertResult = await this.ctx.db.collection('typing.level_achievements' as any).insertOne(levelAchievement);
+                recordDbId = insertResult.insertedId;
             } catch (error) {
                 if ((error as any).code === 11000) {
                     // 已存在，尝试更新
@@ -271,10 +279,12 @@ export class TypingBonusService {
                         {
                             $set: {
                                 bonusAwarded: true,
+                                scoreAwarded: false,
                                 awardedAt: new Date(),
                             },
                         },
                     );
+                    recordDbId = existing?._id;
                 } else {
                     throw error;
                 }
@@ -284,6 +294,7 @@ export class TypingBonusService {
                 awarded: true,
                 bonus: newLevel.bonus,
                 reason: `打字目标分: 升级至 ${newLevel.name} (${newWpm} WPM)`,
+                recordDbId,
             };
         } catch (error) {
             console.error('[TypingBonusService] Error awarding level bonus:', error);
@@ -302,7 +313,7 @@ export class TypingBonusService {
         uid: number,
         newMaxWpm: number,
         oldRanking?: any[],
-    ): Promise<{ awarded: boolean, bonus: number, reason: string, surpassedUser?: string }> {
+    ): Promise<{ awarded: boolean, bonus: number, reason: string, surpassedUser?: string, recordDbId?: any }> {
     // 1. 获取排行榜（如果提供了oldRanking则使用旧排行榜，否则查询当前排行榜）
         const ranking = oldRanking || (await this.ctx.db.collection('typing.stats' as any)
             .find({})
@@ -376,15 +387,17 @@ export class TypingBonusService {
                 bonus: surpassBonus,
                 surpassBonus: true,
                 surpassedAt: new Date(),
+                scoreAwarded: false,
             };
 
-            await this.ctx.db.collection('typing.surpass_records' as any).insertOne(surpassRecord);
+            const insertResult = await this.ctx.db.collection('typing.surpass_records' as any).insertOne(surpassRecord);
 
             return {
                 awarded: true,
                 bonus: surpassBonus,
                 reason: `超越对手奖: 超越 ${surpassedUsername}`,
                 surpassedUser: surpassedUsername,
+                recordDbId: insertResult.insertedId,
             };
         } catch (error) {
             if ((error as any).code === 11000) {
@@ -417,12 +430,14 @@ export class TypingBonusService {
             type: 'progress' | 'level' | 'surpass';
             bonus: number;
             reason: string;
+            recordDbId?: any;
         }>;
     }> {
         const bonuses: Array<{
             type: 'progress' | 'level' | 'surpass';
             bonus: number;
             reason: string;
+            recordDbId?: any;
         }> = [];
         let totalBonus = 0;
 
@@ -437,6 +452,7 @@ export class TypingBonusService {
                     type: 'progress',
                     bonus: progressResult.bonus,
                     reason: progressResult.reason,
+                    recordDbId: progressResult.recordDbId,
                 });
                 totalBonus += progressResult.bonus;
             }
@@ -450,6 +466,7 @@ export class TypingBonusService {
                         type: 'level',
                         bonus: levelResult.bonus,
                         reason: levelResult.reason,
+                        recordDbId: levelResult.recordDbId,
                     });
                     totalBonus += levelResult.bonus;
                 }
@@ -462,6 +479,7 @@ export class TypingBonusService {
                     type: 'surpass',
                     bonus: surpassResult.bonus,
                     reason: surpassResult.reason,
+                    recordDbId: surpassResult.recordDbId,
                 });
                 totalBonus += surpassResult.bonus;
             }
@@ -550,5 +568,57 @@ export class TypingBonusService {
             levelCount: levelRecords.length,
             surpassCount: surpassRecords.length,
         };
+    }
+
+    /**
+     * 标记某条奖励记录的积分已实际发放到 scoreCore（两阶段标记的第二阶段）
+     * @param type 奖励类型
+     * @param recordDbId 奖励记录在对应集合中的 _id
+     */
+    async markScoreAwarded(type: 'progress' | 'level' | 'surpass', recordDbId: any): Promise<void> {
+        const collectionName = type === 'progress'
+            ? 'typing.progress_records'
+            : type === 'level'
+                ? 'typing.level_achievements'
+                : 'typing.surpass_records';
+        await this.ctx.db.collection(collectionName as any).updateOne(
+            { _id: recordDbId },
+            { $set: { scoreAwarded: true } },
+        );
+    }
+
+    /**
+     * 查询某用户积分尚未实际发放到 scoreCore 的奖励记录（供补偿用）
+     */
+    async getPendingScoreBonuses(uid: number): Promise<{
+        progress: ProgressBonusRecord[];
+        level: LevelAchievementRecord[];
+        surpass: SurpassRecord[];
+    }> {
+        const [progress, level, surpass] = await Promise.all([
+            this.ctx.db.collection('typing.progress_records' as any)
+                .find({ uid, scoreAwarded: { $ne: true } }).toArray(),
+            this.ctx.db.collection('typing.level_achievements' as any)
+                .find({ uid, bonusAwarded: true, scoreAwarded: { $ne: true } }).toArray(),
+            this.ctx.db.collection('typing.surpass_records' as any)
+                .find({ uid, scoreAwarded: { $ne: true } }).toArray(),
+        ]);
+        return { progress, level, surpass };
+    }
+
+    /**
+     * 删除与某条打字记录关联的进步奖励记录，并返回其 bonus 值供积分回滚。
+     * 等级成就与超越记录属于「成就」性质，不因单条打字记录删除而清除。
+     * @param recordId 打字记录的 recordId（即 TypingRecord._id）
+     * @returns 被删除的进步奖励 bonus 总额，若无可删则返回 0
+     */
+    async deleteProgressBonusByRecordId(recordId: any): Promise<number> {
+        const records = await this.ctx.db.collection('typing.progress_records' as any)
+            .find({ recordId }).toArray();
+        if (records.length === 0) return 0;
+        const totalBonus = records.reduce((sum, r) => sum + (r.progressBonus || 0), 0);
+        await this.ctx.db.collection('typing.progress_records' as any)
+            .deleteMany({ recordId });
+        return totalBonus;
     }
 }

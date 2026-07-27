@@ -1,26 +1,30 @@
 /* eslint-disable react-refresh/only-export-components */
 import './typing-hall.page.css';
+import './typing-season.page.css';
 
 import { addPage, NamedPage } from '@hydrooj/ui-default';
 import {
   AimOutlined,
   ArrowRightOutlined,
   BarChartOutlined,
+  CheckCircleOutlined,
   CrownOutlined,
   FireOutlined,
   GiftOutlined,
   LaptopOutlined,
   PlayCircleOutlined,
   RiseOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   StarOutlined,
   ThunderboltOutlined,
   TrophyOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Input, List, Pagination, Row, Space, Tag, Typography } from 'antd';
+import { Button, Card, Col, Input, List, Pagination, Row, Space, Tag, Typography, message } from 'antd';
 import { Chart, registerables } from 'chart.js';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { TypingStatsFloatingBall } from './components/TypingStatsFloatingBall';
 
@@ -190,6 +194,80 @@ interface SpeedLadderProps {
   userSpeedPoints: UserSpeedPoint[];
   udocs: Record<number, UserDoc>;
   currentUserId?: number;
+}
+
+// ==================== 赛季相关类型定义 ====================
+interface SeasonRankingReward {
+  rank: number;
+  score: number;
+}
+
+interface SeasonInfo {
+  _id: string;
+  name: string;
+  status: 'pending' | 'active' | 'ended';
+  weekCount: number;
+  startWeek: string;
+  endWeek: string;
+  startedAt: string;
+  endedAt: string | null;
+  rankingRewards: SeasonRankingReward[];
+  progressTarget: number;
+  progressReward: number;
+  participantCount: number;
+}
+
+interface Registration {
+  _id: string;
+  seasonId: string;
+  uid: number;
+  registeredAt: string;
+  baselineMaxWpm: number;
+  currentMaxWpm: number;
+  seasonProgress: number;
+  poisonStatus: 'safe' | 'in_zone';
+  weeksInZone: number;
+  lastSafeWeek: string;
+  totalDeducted: number;
+  finalized: boolean;
+  finalRank: number | null;
+  rankingReward: number;
+  progressRewardEarned: number;
+}
+
+interface DeductPreview {
+  weekNumber: number;
+  potentialDeduct: number;
+  weeksInZone: number;
+}
+
+interface RankingUser {
+  _id: string;
+  uid: number;
+  seasonProgress: number;
+  currentMaxWpm: number;
+  baselineMaxWpm: number;
+  poisonStatus: 'safe' | 'in_zone';
+  weeksInZone: number;
+  totalDeducted: number;
+  netScore?: number; // 净分 = 进步WPM - 累计扣分（后端计算）
+}
+
+interface SeasonStats {
+  totalParticipants: number;
+  safeCount: number;
+  inZoneCount: number;
+  finalizedCount: number;
+}
+
+interface SeasonData {
+  currentSeason: SeasonInfo | null;
+  recentSeasons: SeasonInfo[];
+  myRegistration: Registration | null;
+  deductPreview: DeductPreview | null;
+  seasonRanking: RankingUser[];
+  udocs: Record<string, UserDoc>;
+  seasonStats: SeasonStats | null;
 }
 
 const SpeedLadder: React.FC<SpeedLadderProps> = ({ userSpeedPoints, udocs, currentUserId }) => {
@@ -364,32 +442,23 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
   maxWpmRanking,
   avgWpmRanking,
   improvementRanking,
-  udocs,
+  udocs: initialUdocs,
   currentUserId,
 }) => {
   const [activeTab, setActiveTab] = useState<'max-wpm' | 'avg-wpm' | 'improvement'>('max-wpm');
   const [rankingSearch, setRankingSearch] = useState('');
   const [rankingPage, setRankingPage] = useState(1);
   const [rankingPageSize] = useState(10);
+  const [loading, setLoading] = useState(false);
+  // 服务端分页缓存：page -> 数据；以及总数
+  const [serverPageData, setServerPageData] = useState<Record<number, UserStats[]>>({});
+  const [serverTotal, setServerTotal] = useState(0);
 
   const getRankIcon = (rankNum: number) => {
     if (rankNum === 1) return <TrophyOutlined style={{ color: '#FFD700' }} />;
     if (rankNum === 2) return <TrophyOutlined style={{ color: '#C0C0C0' }} />;
     if (rankNum === 3) return <TrophyOutlined style={{ color: '#CD7F32' }} />;
     return rankNum;
-  };
-
-  const getCurrentRanking = () => {
-    switch (activeTab) {
-      case 'max-wpm':
-        return maxWpmRanking;
-      case 'avg-wpm':
-        return avgWpmRanking;
-      case 'improvement':
-        return improvementRanking;
-      default:
-        return maxWpmRanking;
-    }
   };
 
   const getRankingValue = (user: UserStats) => {
@@ -405,31 +474,88 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
     }
   };
 
-  const filteredRanking = useMemo(() => {
-    const ranking = getCurrentRanking();
-    if (!rankingSearch.trim()) {
-      return ranking;
+  // 当前 tab 对应的首屏数据（page=1 时使用）
+  const getInitialRanking = (): UserStats[] => {
+    switch (activeTab) {
+      case 'max-wpm':
+        return maxWpmRanking;
+      case 'avg-wpm':
+        return avgWpmRanking;
+      case 'improvement':
+        return improvementRanking;
+      default:
+        return maxWpmRanking;
     }
+  };
+
+  // 搜索过滤（仅作用于首屏已加载的数据）
+  const filteredInitial = useMemo(() => {
+    const ranking = getInitialRanking();
+    if (!rankingSearch.trim()) return ranking;
     const keyword = rankingSearch.trim().toLowerCase();
     return ranking.filter((user) => {
-      const userDoc = udocs[user.uid];
+      const userDoc = initialUdocs[user.uid];
       const uname = userDoc?.uname?.toLowerCase() || '';
       const displayName = userDoc?.displayName?.toLowerCase() || '';
       return uname.includes(keyword) || displayName.includes(keyword);
     });
-  }, [activeTab, rankingSearch, maxWpmRanking, avgWpmRanking, improvementRanking, udocs]);
+  }, [activeTab, rankingSearch, maxWpmRanking, avgWpmRanking, improvementRanking, initialUdocs]);
 
-  // 分页后的排行榜数据
-  const paginatedRanking = useMemo(() => {
-    const start = (rankingPage - 1) * rankingPageSize;
-    const end = start + rankingPageSize;
-    return filteredRanking.slice(start, end);
-  }, [filteredRanking, rankingPage, rankingPageSize]);
-
-  // 当搜索或标签页切换时，重置到第一页
+  // 当搜索或标签页切换时，重置到第一页并清空服务端缓存
   useEffect(() => {
     setRankingPage(1);
+    setServerPageData({});
+    setServerTotal(0);
   }, [activeTab, rankingSearch]);
+
+  // 翻页时，若超出首屏数据范围且无搜索，则 fetch 服务端
+  useEffect(() => {
+    if (rankingSearch.trim()) return; // 搜索模式纯前端分页，不 fetch
+    if (rankingPage === 1) return; // 首页用首屏数据
+    if (serverPageData[rankingPage]) return; // 已缓存
+
+    let cancelled = false;
+    setLoading(true);
+    const typeMap = { 'max-wpm': 'max', 'avg-wpm': 'avg', 'improvement': 'improvement' } as const;
+    const params = new URLSearchParams({
+      section: 'ranking',
+      type: typeMap[activeTab],
+      page: String(rankingPage),
+      limit: String(rankingPageSize),
+    });
+    fetch(`/typing/hall?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    })
+      .then((r) => r.json())
+      .then((result) => {
+        if (cancelled || !result.success) return;
+        setServerTotal(result.total);
+        setServerPageData((prev) => ({ ...prev, [rankingPage]: result.data }));
+      })
+      .catch((err) => console.error('[Typing Hall] Failed to fetch ranking page:', err))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [rankingPage, activeTab, rankingSearch, rankingPageSize, serverPageData]);
+
+  // 当前页要展示的数据
+  const currentPageData: UserStats[] = useMemo(() => {
+    if (rankingSearch.trim()) {
+      // 搜索模式：前端分页
+      const start = (rankingPage - 1) * rankingPageSize;
+      return filteredInitial.slice(start, start + rankingPageSize);
+    }
+    if (rankingPage === 1) {
+      // 首页用首屏数据
+      return getInitialRanking().slice(0, rankingPageSize);
+    }
+    // 其他页用服务端数据
+    return serverPageData[rankingPage] || [];
+  }, [rankingPage, rankingSearch, filteredInitial, serverPageData, activeTab, rankingPageSize]);
+
+  // 分页总数
+  const paginationTotal = rankingSearch.trim()
+    ? filteredInitial.length
+    : (serverTotal || getInitialRanking().length);
 
   return (
     <Card
@@ -505,12 +631,13 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
       }
       className="content-card"
     >
-      {filteredRanking && filteredRanking.length > 0 ? (
+      {currentPageData && currentPageData.length > 0 ? (
         <>
           <List
-            dataSource={paginatedRanking}
+            loading={loading}
+            dataSource={currentPageData}
             renderItem={(user, index) => {
-              const userDoc = udocs[user.uid];
+              const userDoc = initialUdocs[user.uid];
               const isCurrentUser = currentUserId === user.uid;
               const rank = (rankingPage - 1) * rankingPageSize + index + 1;
               const value = getRankingValue(user);
@@ -573,24 +700,22 @@ const RankingTabs: React.FC<RankingTabsProps> = ({
               );
             }}
           />
-          {filteredRanking.length > rankingPageSize && (
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <Pagination
-                current={rankingPage}
-                total={filteredRanking.length}
-                pageSize={rankingPageSize}
-                onChange={(page) => setRankingPage(page)}
-                showSizeChanger={false}
-                showQuickJumper
-                showTotal={(total) => `共 ${total} 人`}
-                size="small"
-              />
-            </div>
-          )}
+          <div style={{ marginTop: 16, textAlign: 'right' }}>
+            <Pagination
+              current={rankingPage}
+              total={paginationTotal}
+              pageSize={rankingPageSize}
+              onChange={(page) => setRankingPage(page)}
+              showSizeChanger={false}
+              showQuickJumper
+              showTotal={(total) => `共 ${total} 人`}
+              size="small"
+            />
+          </div>
         </>
       ) : (
         <div className="empty-state">
-          <Text type="secondary">暂无排名</Text>
+          <Text type="secondary">{loading ? '加载中...' : '暂无排名'}</Text>
         </div>
       )}
     </Card>
@@ -1005,16 +1130,55 @@ interface RecentRecordsProps {
   currentUserId?: number;
 }
 
-const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs, currentUserId }) => {
+const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs: initialUdocs, currentUserId }) => {
   const [recordsPage, setRecordsPage] = useState(1);
   const [recordsPageSize] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [serverPageData, setServerPageData] = useState<Record<number, RecentRecord[]>>({});
+  const [serverTotal, setServerTotal] = useState(0);
+  const [extraUdocs, setExtraUdocs] = useState<Record<number, UserDoc>>({});
 
-  // 分页后的记录数据
-  const paginatedRecords = useMemo(() => {
-    const start = (recordsPage - 1) * recordsPageSize;
-    const end = start + recordsPageSize;
-    return recentRecords.slice(start, end);
-  }, [recentRecords, recordsPage, recordsPageSize]);
+  // 翻页时，page>1 且未缓存则 fetch 服务端
+  useEffect(() => {
+    if (recordsPage === 1) return;
+    if (serverPageData[recordsPage]) return;
+
+    let cancelled = false;
+    setLoading(true);
+    const params = new URLSearchParams({
+      section: 'records',
+      page: String(recordsPage),
+      limit: String(recordsPageSize),
+    });
+    fetch(`/typing/hall?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    })
+      .then((r) => r.json())
+      .then((result) => {
+        if (cancelled || !result.success) return;
+        setServerTotal(result.total);
+        setServerPageData((prev) => ({ ...prev, [recordsPage]: result.data }));
+        // 补全该页涉及的用户信息占位（实际 uname 靠首屏 udocs，查不到则 User ${uid}）
+        const fetched: Record<number, UserDoc> = { ...extraUdocs };
+        (result.data as any[]).forEach((r) => {
+          if (r.uid && !initialUdocs[r.uid] && !fetched[r.uid]) {
+            fetched[r.uid] = { uname: `User ${r.uid}`, displayName: '', avatarUrl: '' };
+          }
+        });
+        setExtraUdocs(fetched);
+      })
+      .catch((err) => console.error('[Typing Hall] Failed to fetch records page:', err))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [recordsPage, recordsPageSize, serverPageData, initialUdocs, extraUdocs]);
+
+  // 当前页数据
+  const currentPageData = recordsPage === 1
+    ? recentRecords.slice(0, recordsPageSize)
+    : (serverPageData[recordsPage] || []);
+
+  const mergedUdocs = useMemo(() => ({ ...initialUdocs, ...extraUdocs }), [initialUdocs, extraUdocs]);
+  const paginationTotal = serverTotal || recentRecords.length;
 
   return (
     <Card
@@ -1026,12 +1190,13 @@ const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs, cur
       }
       className="content-card"
     >
-      {recentRecords.length > 0 ? (
+      {currentPageData.length > 0 ? (
         <>
           <List
-            dataSource={paginatedRecords}
+            loading={loading}
+            dataSource={currentPageData}
             renderItem={(record) => {
-              const user = udocs[record.uid];
+              const user = mergedUdocs[record.uid];
               const isCurrentUser = currentUserId === record.uid;
               return (
                 <List.Item className={`record-item ${isCurrentUser ? 'current-user' : ''}`}>
@@ -1084,24 +1249,22 @@ const RecentRecords: React.FC<RecentRecordsProps> = ({ recentRecords, udocs, cur
               );
             }}
           />
-          {recentRecords.length > recordsPageSize && (
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <Pagination
-                current={recordsPage}
-                total={recentRecords.length}
-                pageSize={recordsPageSize}
-                onChange={(page) => setRecordsPage(page)}
-                showSizeChanger={false}
-                showQuickJumper
-                showTotal={(total) => `共 ${total} 条记录`}
-                size="small"
-              />
-            </div>
-          )}
+          <div style={{ marginTop: 16, textAlign: 'right' }}>
+            <Pagination
+              current={recordsPage}
+              total={paginationTotal}
+              pageSize={recordsPageSize}
+              onChange={(page) => setRecordsPage(page)}
+              showSizeChanger={false}
+              showQuickJumper
+              showTotal={(total) => `共 ${total} 条记录`}
+              size="small"
+            />
+          </div>
         </>
       ) : (
         <div className="empty-state">
-          <Text type="secondary">暂无记录</Text>
+          <Text type="secondary">{loading ? '加载中...' : '暂无记录'}</Text>
         </div>
       )}
     </Card>
@@ -1124,7 +1287,505 @@ interface TypingHallAppProps {
   canManage: boolean;
   isLoggedIn: boolean;
   currentUserId?: number;
+  seasonData?: SeasonData | null;
 }
+
+// ==================== 赛季 Tab 组件（从 typing-season.page.tsx 迁移） ====================
+
+// 赛季概要信息条（展示赛季名/周数/报名人数/起止周/进步目标）
+const SeasonSummary: React.FC<{ season: SeasonInfo }> = ({ season }) => (
+  <div className="season-summary-bar">
+    <span className="season-summary-name">{season.name}</span>
+    <div className="season-summary-meta">
+      <span><ThunderboltOutlined /> {season.weekCount}周赛季</span>
+      <span><UserOutlined /> {season.participantCount}人参赛</span>
+      <span>{season.startWeek} ~ {season.endWeek}</span>
+      <span><GiftOutlined /> 进步目标 {season.progressTarget} WPM</span>
+    </div>
+  </div>
+);
+
+// 赛季状态卡组件（赛季 Tab 内的详细状态展示）
+const SeasonStatusCard: React.FC<{
+  season: SeasonInfo;
+  registration: Registration | null;
+  deductPreview: DeductPreview | null;
+  isLoggedIn: boolean;
+  onRegister: () => void;
+  registering: boolean;
+}> = ({ season, registration, deductPreview, isLoggedIn, onRegister, registering }) => {
+  if (!isLoggedIn) {
+    return (
+      <Card className="season-status-card season-status-neutral">
+        <div className="season-status-content">
+          <SeasonSummary season={season} />
+          <div className="season-status-header">
+            <SafetyCertificateOutlined className="season-status-icon" style={{ color: '#3b82f6' }} />
+            <h3 className="season-status-title">登录后可报名参加赛季</h3>
+          </div>
+          <p className="season-status-desc">加入赛季，挑战自我，赢取专属奖励！</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!registration) {
+    return (
+      <Card className="season-status-card season-status-neutral">
+        <div className="season-status-content">
+          <SeasonSummary season={season} />
+          <div className="season-status-header">
+            <GiftOutlined className="season-status-icon" style={{ color: '#3b82f6' }} />
+            <h3 className="season-status-title">你还未报名本赛季</h3>
+          </div>
+          <p className="season-status-desc">
+            加入本赛季，挑战进步目标，赢取排名奖励和达标奖励！
+            <br />
+            报名后你的当前最高成绩将作为赛季起点，进步越多奖励越多。
+          </p>
+          <Button type="primary" size="large" icon={<ThunderboltOutlined />} onClick={onRegister} loading={registering}>
+            立即报名
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const isInZone = registration.poisonStatus === 'in_zone';
+  const cardClass = isInZone ? 'season-status-danger' : 'season-status-safe';
+  const icon = isInZone ? <WarningOutlined className="season-status-icon" style={{ color: '#ef4444' }} /> : <CheckCircleOutlined className="season-status-icon" style={{ color: '#10b981' }} />;
+
+  return (
+    <Card className={`season-status-card ${cardClass}`}>
+      <div className="season-status-content">
+        <SeasonSummary season={season} />
+        <div className="season-status-header">
+          {icon}
+          <h3 className="season-status-title">
+            {isInZone ? `你已进入毒圈 ${registration.weeksInZone} 周` : '安全期内'}
+          </h3>
+        </div>
+        <p className="season-status-desc">
+          {isInZone
+            ? '你已连续未刷新个人最高成绩。请尽快练习并请老师录入新成绩出毒，否则每周将继续扣分！'
+            : '你已在本周刷新个人最高成绩，处于安全期。继续保持，每周进步！'}
+        </p>
+        <div className="season-status-stats">
+          <div className="season-status-stat">
+            <div className="season-status-stat-value">+{registration.seasonProgress}</div>
+            <div className="season-status-stat-label">赛季进步 WPM</div>
+          </div>
+          <div className="season-status-stat">
+            <div className="season-status-stat-value">{registration.currentMaxWpm}</div>
+            <div className="season-status-stat-label">当前最高 WPM</div>
+          </div>
+          <div className="season-status-stat">
+            <div className="season-status-stat-value">{registration.baselineMaxWpm}</div>
+            <div className="season-status-stat-label">赛季起点 WPM</div>
+          </div>
+          {isInZone && deductPreview && (
+            <div className="season-status-stat">
+              <div className="season-status-stat-value">-{deductPreview.potentialDeduct}</div>
+              <div className="season-status-stat-label">下周预计扣分</div>
+            </div>
+          )}
+          {registration.totalDeducted > 0 && (
+            <div className="season-status-stat">
+              <div className="season-status-stat-value">-{registration.totalDeducted}</div>
+              <div className="season-status-stat-label">赛季累计被扣</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// 赛季规则说明组件
+const SeasonRules: React.FC<{ season: SeasonInfo }> = ({ season }) => {
+  return (
+    <Card
+      className="season-rules-card content-card"
+      title={
+        <Space>
+          <SafetyCertificateOutlined />
+          <span>赛季规则</span>
+        </Space>
+      }
+    >
+      <div className="season-rules-grid">
+        {/* 跑毒规则 */}
+        <div className="season-rule-item">
+          <div className="season-rule-title">
+            <FireOutlined style={{ color: '#ef4444' }} />
+            跑毒扣分规则
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: 8 }}>
+            赛季内每周一结算，若上周未刷新个人最高成绩则扣分：
+          </p>
+          <table className="season-rule-table">
+            <thead>
+              <tr>
+                <th>赛季周次</th>
+                <th>扣分</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>第 1 周</td><td className="deduct-amount">-10</td></tr>
+              <tr><td>第 2 周</td><td className="deduct-amount">-20</td></tr>
+              <tr><td>第 3 周</td><td className="deduct-amount">-30</td></tr>
+              <tr><td>第 4 周+</td><td className="deduct-amount">-50</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* 出毒规则 */}
+        <div className="season-rule-item">
+          <div className="season-rule-title">
+            <CheckCircleOutlined style={{ color: '#10b981' }} />
+            出毒条件
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', lineHeight: 1.6 }}>
+            只要有新成绩刷新你的<strong>个人历史最高 WPM</strong>（哪怕多 1 个字），即可出毒，重置扣分计数。
+            <br /><br />
+            出毒后立即收到通知，本周安全。下周若再次未进步，将重新进入毒圈。
+          </p>
+        </div>
+
+        {/* 奖励规则 */}
+        <div className="season-rule-item">
+          <div className="season-rule-title">
+            <TrophyOutlined style={{ color: '#f59e0b' }} />
+            赛季奖励
+          </div>
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: 8 }}>
+            赛季结束时按<strong>净分</strong>（进步WPM - 毒圈累计扣分）排名发奖，另设达标奖：
+          </p>
+          <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: 8 }}>
+            ※ 净分 &gt; 0 且至少有1WPM进步才有资格获得排名奖
+          </p>
+          <table className="season-rule-table">
+            <thead>
+              <tr>
+                <th>名次</th>
+                <th>奖励</th>
+              </tr>
+            </thead>
+            <tbody>
+              {season.rankingRewards.map((reward, idx) => {
+                const label = reward.rank === 1 ? '冠军' : reward.rank === 2 ? '亚军' : reward.rank === 3 ? '季军' : `第4-${reward.rank}名`;
+                return (
+                  <tr key={idx}>
+                    <td>{label}</td>
+                    <td className="reward-amount">+{reward.score}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td>进步 ≥{season.progressTarget} WPM</td>
+                <td className="reward-amount">+{season.progressReward}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+// 赛季排行榜组件
+const SeasonRanking: React.FC<{
+  ranking: RankingUser[];
+  udocs: Record<string, UserDoc>;
+  currentUserId: number | null;
+}> = ({ ranking, udocs, currentUserId }) => {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  const paginatedRanking = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return ranking.slice(start, start + pageSize);
+  }, [ranking, page, pageSize]);
+
+  if (ranking.length === 0) {
+    return (
+      <Card className="season-ranking-card content-card" title={<Space><TrophyOutlined /><span>赛季排行榜</span></Space>}>
+        <div className="season-empty-state">
+          <TrophyOutlined className="season-empty-icon" />
+          <p>暂无报名数据</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      className="season-ranking-card content-card"
+      title={
+        <Space>
+          <TrophyOutlined />
+          <span>赛季排行榜</span>
+          <Tag color="blue">{ranking.length} 人参赛</Tag>
+        </Space>
+      }
+    >
+      <List
+        dataSource={paginatedRanking}
+        renderItem={(user, index) => {
+          const rank = (page - 1) * pageSize + index + 1;
+          const userDoc = udocs[String(user.uid)];
+          const isCurrentUser = currentUserId === user.uid;
+          const isInZone = user.poisonStatus === 'in_zone';
+          const netScore = user.netScore ?? (user.seasonProgress - (user.totalDeducted || 0));
+
+          return (
+            <div className={`season-ranking-item ${isCurrentUser ? 'current-user' : ''}`}>
+              <div className={`season-rank-badge ${
+                rank === 1 ? 'season-rank-1' : rank === 2 ? 'season-rank-2' : rank === 3 ? 'season-rank-3' : 'season-rank-other'
+              }`}>
+                {rank <= 3 ? <CrownOutlined /> : rank}
+              </div>
+              {userDoc?.avatarUrl ? (
+                <img
+                  src={userDoc.avatarUrl}
+                  alt={userDoc?.uname || `User ${user.uid}`}
+                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : null}
+              <div className="season-ranking-user">
+                <div className="season-ranking-name">
+                  {userDoc?.uname || `User ${user.uid}`}
+                  {isCurrentUser && <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>(你)</Text>}
+                  {' '}
+                  {isInZone ? (
+                    <span className="poison-badge poison-badge-danger">
+                      <FireOutlined /> 毒圈 {user.weeksInZone}周
+                    </span>
+                  ) : (
+                    <span className="poison-badge poison-badge-safe">
+                      <CheckCircleOutlined /> 安全
+                    </span>
+                  )}
+                </div>
+                <div className="season-ranking-meta">
+                  起点 {user.baselineMaxWpm} -&gt; 当前 {user.currentMaxWpm} WPM
+                  {user.totalDeducted > 0 && ` · 累计扣 ${user.totalDeducted}`}
+                </div>
+              </div>
+              <div className="season-ranking-progress">
+                <div className="season-ranking-progress-value" style={{ color: netScore >= 0 ? '#3b82f6' : '#ef4444' }}>
+                  {netScore >= 0 ? '+' : ''}{netScore}
+                </div>
+                <div className="season-ranking-progress-label">净分 (进步{user.seasonProgress} - 扣{user.totalDeducted || 0})</div>
+              </div>
+            </div>
+          );
+        }}
+      />
+      {ranking.length > pageSize && (
+        <div style={{ marginTop: 16, textAlign: 'right' }}>
+          <Pagination
+            current={page}
+            total={ranking.length}
+            pageSize={pageSize}
+            onChange={setPage}
+            showSizeChanger={false}
+            size="small"
+          />
+        </div>
+      )}
+    </Card>
+  );
+};
+
+// 赛季 Tab 完整内容
+interface SeasonTabProps {
+  seasonData: SeasonData | null;
+  isLoggedIn: boolean;
+  currentUserId: number | null;
+  canManage: boolean;
+  onSwitchToHall: () => void;
+}
+
+const SeasonTab: React.FC<SeasonTabProps> = ({ seasonData, isLoggedIn, currentUserId, canManage, onSwitchToHall }) => {
+  const [registering, setRegistering] = useState(false);
+
+  const handleRegister = useCallback(async () => {
+    setRegistering(true);
+    try {
+      const response = await fetch('/typing/season', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register' }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        message.success(result.message);
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        message.error(result.message);
+      }
+    } catch {
+      message.error('网络错误，请重试');
+    } finally {
+      setRegistering(false);
+    }
+  }, []);
+
+  // 无赛季数据
+  if (!seasonData || !seasonData.currentSeason) {
+    return (
+      <div className="typing-season-container">
+        <Card className="content-card">
+          <div className="season-empty-state">
+            <TrophyOutlined className="season-empty-icon" />
+            <p style={{ fontSize: 16, marginBottom: 8 }}>当前没有进行中的赛季</p>
+            <Text type="secondary">
+              {canManage ? '请前往管理面板开启新赛季' : '请等待管理员开启新赛季'}
+            </Text>
+          </div>
+        </Card>
+        {seasonData?.recentSeasons && seasonData.recentSeasons.length > 0 && (
+          <Card className="season-history-card content-card" title="历史赛季">
+            {seasonData.recentSeasons.map((s) => (
+              <div className="season-history-item" key={s._id}>
+                <div>
+                  <Text strong>{s.name}</Text>
+                  <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                    {s.status === 'ended' ? '已结束' : s.status}
+                  </Text>
+                </div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {s.participantCount} 人参赛
+                </Text>
+              </div>
+            ))}
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  const { currentSeason, myRegistration, deductPreview, seasonRanking, udocs: seasonUdocs, seasonStats } = seasonData;
+
+  return (
+    <div className="typing-season-container">
+      {/* 赛季状态卡（含赛季概要信息） */}
+      <SeasonStatusCard
+        season={currentSeason}
+        registration={myRegistration}
+        deductPreview={deductPreview}
+        isLoggedIn={isLoggedIn}
+        onRegister={handleRegister}
+        registering={registering}
+      />
+
+      {/* 赛季规则 */}
+      <SeasonRules season={currentSeason} />
+
+      {/* 赛季排行榜 */}
+      <SeasonRanking
+        ranking={seasonRanking}
+        udocs={seasonUdocs}
+        currentUserId={currentUserId}
+      />
+
+      {/* 统计信息 */}
+      {seasonStats && (
+        <Card className="content-card" title={<Space><ThunderboltOutlined /><span>赛季统计</span></Space>}>
+          <Space size="large" wrap>
+            <Tag color="blue">总参赛 {seasonStats.totalParticipants} 人</Tag>
+            <Tag color="green">安全 {seasonStats.safeCount} 人</Tag>
+            <Tag color="red">毒圈中 {seasonStats.inZoneCount} 人</Tag>
+          </Space>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// 赛季状态横幅组件（大厅 Tab 内的简略横幅，点击切换到赛季 Tab）
+const SeasonStatusBanner: React.FC<{
+  seasonData: SeasonData | null;
+  isLoggedIn: boolean;
+  onSwitchToSeason: () => void;
+}> = ({ seasonData, isLoggedIn, onSwitchToSeason }) => {
+  if (!seasonData || !seasonData.currentSeason) return null;
+
+  const { currentSeason, myRegistration, deductPreview } = seasonData;
+
+  const handleRegister = async () => {
+    try {
+      const response = await fetch('/typing/season', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register' }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        message.success(result.message);
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        message.error(result.message);
+      }
+    } catch {
+      message.error('网络错误');
+    }
+  };
+
+  // 未登录或未报名
+  if (!isLoggedIn || !myRegistration) {
+    return (
+      <Card className="content-card season-banner-card season-banner-neutral" bordered={false}>
+        <div className="season-banner-content">
+          <GiftOutlined style={{ fontSize: 24, color: '#3b82f6' }} />
+          <div className="season-banner-text">
+            <Text strong>「{currentSeason.name}」进行中</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>加入赛季赢取专属奖励，进步目标 {currentSeason.progressTarget} WPM</Text>
+          </div>
+          {isLoggedIn ? (
+            <Button type="primary" size="small" icon={<ThunderboltOutlined />} onClick={handleRegister}>报名参赛</Button>
+          ) : (
+            <Button type="primary" size="small" onClick={onSwitchToSeason}>查看详情</Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  const isInZone = myRegistration.poisonStatus === 'in_zone';
+
+  // 已报名 - 安全
+  if (!isInZone) {
+    return (
+      <Card className="content-card season-banner-card season-banner-safe" bordered={false}>
+        <div className="season-banner-content">
+          <CheckCircleOutlined style={{ fontSize: 24, color: '#10b981' }} />
+          <div className="season-banner-text">
+            <Text strong style={{ color: '#065f46' }}>赛季安全 · 进步 +{myRegistration.seasonProgress} WPM</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>继续保持，每周刷新个人最高成绩即可维持安全</Text>
+          </div>
+          <Button type="default" size="small" onClick={onSwitchToSeason}>查看详情</Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // 已报名 - 毒圈
+  return (
+    <Card className="content-card season-banner-card season-banner-danger" bordered={false}>
+      <div className="season-banner-content">
+        <WarningOutlined style={{ fontSize: 24, color: '#ef4444' }} />
+        <div className="season-banner-text">
+          <Text strong style={{ color: '#991b1b' }}>⚠️ 毒圈第 {myRegistration.weeksInZone} 周 · 每周扣 {deductPreview?.potentialDeduct || 10} 分</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>快去练习并请老师录入新成绩出毒！累计已扣 {myRegistration.totalDeducted} 分</Text>
+        </div>
+        <Button type="primary" danger size="small" onClick={onSwitchToSeason}>查看详情</Button>
+      </div>
+    </Card>
+  );
+};
 
 const TypingHallApp: React.FC<TypingHallAppProps> = ({
   globalStats: _globalStats,
@@ -1141,7 +1802,28 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
   canManage,
   isLoggedIn,
   currentUserId,
+  seasonData,
 }) => {
+  // Tab 状态：从 URL ?tab=season 读取初始值
+  const [activeTab, setActiveTab] = useState<'hall' | 'season'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') === 'season' ? 'season' : 'hall';
+  });
+
+  // Tab 切换时更新 URL（不刷新页面，支持前进/后退）
+  const switchTab = useCallback((tab: 'hall' | 'season') => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === 'season') {
+      url.searchParams.set('tab', 'season');
+    } else {
+      url.searchParams.delete('tab');
+    }
+    window.history.replaceState({}, '', url.toString());
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="typing-hall-container">
       {/* 打字统计悬浮球 */}
@@ -1167,15 +1849,17 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
         />
       )}
 
-      {/* Hero Section - 参考积分大厅设计 */}
+      {/* Hero Section - 标题随 Tab 切换 */}
       <Card className="hero-card" bordered={false}>
         <div className="hero-content-wrapper">
           <div className="hero-main-content">
             <div className="hero-text-section">
               <Title level={2} className="hero-title">
-                打字大厅
+                {activeTab === 'season' ? '打字赛季' : '打字大厅'}
               </Title>
-              <Text className="hero-subtitle">追踪你的打字进步</Text>
+              <Text className="hero-subtitle">
+                {activeTab === 'season' ? '挑战自我，赢取专属奖励' : '追踪你的打字进步'}
+              </Text>
             </div>
           </div>
           <div className="hero-actions-section">
@@ -1205,29 +1889,70 @@ const TypingHallApp: React.FC<TypingHallAppProps> = ({
         </div>
       </Card>
 
-      {/* 奖励系统说明 */}
-      <BonusExplanation weeklyTrend={weeklyTrend} globalStats={_globalStats} />
-
-      {/* 天梯图 */}
-      <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
-
-      {/* 排行榜和统计 */}
-      <div className="dual-section-grid">
-        {/* 排行榜 */}
-        <RankingTabs
-          maxWpmRanking={maxWpmRanking}
-          avgWpmRanking={avgWpmRanking}
-          improvementRanking={improvementRanking}
-          udocs={udocs}
-          currentUserId={currentUserId}
-        />
-
-        {/* 右侧栏 */}
-        <div className="right-column">
-          {/* 最近记录 */}
-          <RecentRecords recentRecords={recentRecords} udocs={udocs} currentUserId={currentUserId} />
-        </div>
+      {/* Tab 切换器 */}
+      <div className="hall-tab-switcher">
+        <button
+          className={`hall-tab-btn ${activeTab === 'hall' ? 'active' : ''}`}
+          onClick={() => switchTab('hall')}
+        >
+          <BarChartOutlined className="hall-tab-icon" />
+          <span>打字大厅</span>
+        </button>
+        <button
+          className={`hall-tab-btn ${activeTab === 'season' ? 'active' : ''}`}
+          onClick={() => switchTab('season')}
+        >
+          <TrophyOutlined className="hall-tab-icon" />
+          <span>打字赛季</span>
+        </button>
       </div>
+
+      {/* 大厅 Tab 内容 */}
+      {activeTab === 'hall' && (
+        <>
+          {/* 赛季状态横幅（简略，点击切到赛季 Tab） */}
+          <SeasonStatusBanner
+            seasonData={seasonData || null}
+            isLoggedIn={isLoggedIn}
+            onSwitchToSeason={() => switchTab('season')}
+          />
+
+          {/* 奖励系统说明 */}
+          <BonusExplanation weeklyTrend={weeklyTrend} globalStats={_globalStats} />
+
+          {/* 天梯图 */}
+          <SpeedLadder userSpeedPoints={userSpeedPoints} udocs={udocs} currentUserId={currentUserId} />
+
+          {/* 排行榜和统计 */}
+          <div className="dual-section-grid">
+            {/* 排行榜 */}
+            <RankingTabs
+              maxWpmRanking={maxWpmRanking}
+              avgWpmRanking={avgWpmRanking}
+              improvementRanking={improvementRanking}
+              udocs={udocs}
+              currentUserId={currentUserId}
+            />
+
+            {/* 右侧栏 */}
+            <div className="right-column">
+              {/* 最近记录 */}
+              <RecentRecords recentRecords={recentRecords} udocs={udocs} currentUserId={currentUserId} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 赛季 Tab 内容 */}
+      {activeTab === 'season' && (
+        <SeasonTab
+          seasonData={seasonData || null}
+          isLoggedIn={isLoggedIn}
+          currentUserId={currentUserId || null}
+          canManage={canManage}
+          onSwitchToHall={() => switchTab('hall')}
+        />
+      )}
 
     </div>
   );

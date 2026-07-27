@@ -16,7 +16,7 @@ export class TypingAdminHandler extends Handler {
     }
 
     async get() {
-        const { recordService } = getTypingServices(this.ctx);
+        const { recordService, seasonService } = getTypingServices(this.ctx);
         if (!recordService) {
             this.response.body = { error: '打字系统服务未就绪' };
             return;
@@ -30,13 +30,28 @@ export class TypingAdminHandler extends Handler {
         const UserModel = global.Hydro.model.user;
         const udocs = await UserModel.getList(this.domain._id, uids);
 
-        // 格式化记录
-        const formattedRecords = recordService.formatRecords(recentRecords);
+        // createdAt 转为 ISO 字符串，供前端 new Date() 稳定解析
+        const formattedRecords = recentRecords.map((r: any) => ({
+            ...r,
+            createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : new Date(r.createdAt).toISOString(),
+        }));
+
+        // 赛季管理数据
+        let currentSeason: any = null;
+        let seasonStats: any = null;
+        if (seasonService) {
+            currentSeason = await seasonService.getCurrentSeason();
+            if (currentSeason) {
+                seasonStats = await seasonService.getSeasonStats(currentSeason._id);
+            }
+        }
 
         this.response.template = 'typing_admin.html';
         this.response.body = {
             recentRecords: formattedRecords,
             udocs,
+            currentSeason,
+            seasonStats,
         };
     }
 
@@ -49,6 +64,10 @@ export class TypingAdminHandler extends Handler {
             await this.handleDeleteRecord();
         } else if (action === 'recalculate_stats') {
             await this.handleRecalculateStats();
+        } else if (action === 'create_season') {
+            await this.handleCreateSeason();
+        } else if (action === 'finalize_season') {
+            await this.handleFinalizeSeason();
         } else {
             this.response.body = { success: false, message: '无效的操作' };
         }
@@ -128,10 +147,18 @@ export class TypingAdminHandler extends Handler {
                                 category: '打字挑战',
                                 title: `打字奖励 +${bonus.bonus}积分`,
                             });
+                            // 积分发放成功，回写两阶段标记
+                            if (bonus.recordDbId) {
+                                try {
+                                    await bonusService.markScoreAwarded(bonus.type, bonus.recordDbId);
+                                } catch (markErr: any) {
+                                    console.warn(`[Typing Speed System] Failed to mark scoreAwarded for ${bonus.type}: ${markErr.message}`);
+                                }
+                            }
                             console.log(`[Typing Speed System] 打字奖励积分发放: uid=${user._id}, bonus=${bonus.bonus}, reason=${bonus.reason}`);
                         } catch (scoreErr: any) {
                             console.error(`[Typing Speed System] 打字奖励积分发放失败: ${scoreErr.message}`);
-                            // 积分发放失败不影响打字记录处理
+                            // 积分发放失败不影响打字记录处理；奖励记录保留 scoreAwarded=false 供后续补偿
                         }
                     }
                     bonusMessage = `，获得奖励: +${bonusInfo.totalBonus}分`;
@@ -139,6 +166,21 @@ export class TypingAdminHandler extends Handler {
             }
 
             console.log(`[TypingAdmin] Admin ${this.user._id} added record for user ${user._id}: ${wpmNum} WPM, bonus: +${bonusInfo.totalBonus}`);
+
+            // 赛季集成：更新赛季进度 + 检查出毒
+            try {
+                const updatedStats = await statsService.getUserStats(user._id);
+                const newMaxWpm = updatedStats?.maxWpm || wpmNum;
+                const { seasonService, poisonZoneService } = getTypingServices(this.ctx);
+                if (seasonService) {
+                    await seasonService.updateRegistrationProgress(user._id, newMaxWpm);
+                }
+                if (poisonZoneService) {
+                    await poisonZoneService.refreshZoneState(user._id, wpmNum, newMaxWpm);
+                }
+            } catch (seasonErr: any) {
+                console.error(`[TypingAdmin] Season integration error (non-blocking): ${seasonErr.message}`);
+            }
 
             this.response.body = {
                 success: true,
@@ -153,6 +195,8 @@ export class TypingAdminHandler extends Handler {
 
     /**
      * 处理删除记录
+     * 删除打字记录后，回滚已发放的进步奖励积分（发负分扣回），
+     * 并清理对应的 progress_records 条目。等级成就与超越记录属成就性质，保留。
      */
     private async handleDeleteRecord() {
         const { recordId } = this.request.body;
@@ -163,8 +207,8 @@ export class TypingAdminHandler extends Handler {
                 return;
             }
 
-            const { recordService, statsService } = getTypingServices(this.ctx);
-            if (!recordService || !statsService) {
+            const { recordService, statsService, bonusService } = getTypingServices(this.ctx);
+            if (!recordService || !statsService || !bonusService) {
                 this.response.body = { success: false, message: '打字系统服务未就绪' };
                 return;
             }
@@ -179,11 +223,50 @@ export class TypingAdminHandler extends Handler {
             // 删除记录
             await recordService.deleteRecord(recordId);
 
+            // 回滚该记录触发的进步奖励：清理 progress_records 并发负分扣回
+            // （仿 exam-hall 证书删除范式：发负分 recordScoreChange，保留审计 trail）
+            try {
+                const refundBonus = await bonusService.deleteProgressBonusByRecordId(record._id);
+                if (refundBonus > 0) {
+                    const scoreCore = safeGetService(this.ctx, 'scoreCore');
+                    if (scoreCore) {
+                        await scoreCore.recordScoreChange({
+                            uid: record.uid,
+                            domainId: this.domain._id.toString(),
+                            pid: -9999997 - Date.now() - Math.floor(Math.random() * 1000),
+                            recordId: `typing_bonus_refund_${record._id}_${Date.now()}`,
+                            score: -refundBonus, // 负数扣回
+                            reason: `打字记录删除回滚进步奖励`,
+                            category: '打字挑战',
+                            title: `打字奖励回退 -${refundBonus}积分`,
+                        });
+                        console.log(`[TypingAdmin] Refunded ${refundBonus} score for deleted record ${recordId} (uid=${record.uid})`);
+                    } else {
+                        console.warn('[TypingAdmin] scoreCore unavailable, progress bonus record deleted but score not refunded');
+                    }
+                }
+            } catch (refundErr: any) {
+                // 回滚失败不阻断删除主流程，仅记录日志
+                console.error(`[TypingAdmin] Failed to refund bonus for record ${recordId}: ${refundErr.message}`);
+            }
+
             // 更新用户统计
             await statsService.updateUserStats(record.uid, record.domainId);
 
             // 更新周快照
             await statsService.updateWeeklySnapshot(record.uid);
+
+            // 赛季集成：删除记录后重算赛季进度
+            try {
+                const updatedStats = await statsService.getUserStats(record.uid);
+                const newMaxWpm = updatedStats?.maxWpm || 0;
+                const { seasonService } = getTypingServices(this.ctx);
+                if (seasonService) {
+                    await seasonService.updateRegistrationProgress(record.uid, newMaxWpm);
+                }
+            } catch (seasonErr: any) {
+                console.error(`[TypingAdmin] Season progress update error (non-blocking): ${seasonErr.message}`);
+            }
 
             console.log(`[TypingAdmin] Admin ${this.user._id} deleted record ${recordId} for user ${record.uid}`);
 
@@ -254,6 +337,80 @@ export class TypingAdminHandler extends Handler {
         } catch (error: any) {
             console.error('[TypingAdmin] Error recalculating stats:', error);
             this.response.body = { success: false, message: `重新计算失败：${error.message}` };
+        }
+    }
+
+    /**
+     * 管理员创建并开启新赛季
+     */
+    private async handleCreateSeason() {
+        const { seasonName, weekCount, progressTarget, progressReward } = this.request.body;
+
+        try {
+            if (!seasonName || !seasonName.trim()) {
+                this.response.body = { success: false, message: '赛季名称不能为空' };
+                return;
+            }
+
+            const { seasonService } = getTypingServices(this.ctx);
+            if (!seasonService) {
+                this.response.body = { success: false, message: '打字系统服务未就绪' };
+                return;
+            }
+
+            const weeks = Number.parseInt(weekCount) || 4;
+            const target = Number.parseInt(progressTarget) || 20;
+            const reward = Number.parseInt(progressReward) || 200;
+
+            const season = await seasonService.createSeason(
+                seasonName.trim(),
+                weeks,
+                undefined, // 用默认排名奖励配置
+                target,
+                reward,
+            );
+
+            console.log(`[TypingAdmin] Admin ${this.user._id} created season: ${season.name}`);
+
+            this.response.body = {
+                success: true,
+                message: `赛季「${season.name}」已开启！周期 ${weeks} 周，进步目标 ${target} WPM`,
+            };
+        } catch (error: any) {
+            console.error('[TypingAdmin] Error creating season:', error);
+            this.response.body = { success: false, message: `创建赛季失败：${error.message}` };
+        }
+    }
+
+    /**
+     * 管理员结束赛季并结算奖励
+     */
+    private async handleFinalizeSeason() {
+        const { seasonId } = this.request.body;
+
+        try {
+            if (!seasonId) {
+                this.response.body = { success: false, message: '赛季ID不能为空' };
+                return;
+            }
+
+            const { seasonService } = getTypingServices(this.ctx);
+            if (!seasonService) {
+                this.response.body = { success: false, message: '打字系统服务未就绪' };
+                return;
+            }
+
+            const result = await seasonService.finalizeSeason(seasonId);
+
+            console.log(`[TypingAdmin] Admin ${this.user._id} finalized season: ${result.finalizedCount} users, ${result.totalRewardDispensed} score`);
+
+            this.response.body = {
+                success: true,
+                message: `赛季已结算！共结算 ${result.finalizedCount} 名学生，发放 ${result.totalRewardDispensed} 积分`,
+            };
+        } catch (error: any) {
+            console.error('[TypingAdmin] Error finalizing season:', error);
+            this.response.body = { success: false, message: `结算失败：${error.message}` };
         }
     }
 }

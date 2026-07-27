@@ -267,18 +267,14 @@ export class TypingRecordService {
     }
 
     /**
-     * 格式化记录日期
+     * 保留原始记录结构，createdAt 以 Date 对象返回。
+     * MongoDB Date 在 JSON.stringify 时自动序列化为 ISO 字符串，
+     * 供前端 formatRelativeTime 用 new Date() 稳定解析。
      */
-    formatRecords(records: TypingRecord[]): Array<Omit<TypingRecord, 'createdAt'> & { createdAt: string }> {
+    formatRecords(records: TypingRecord[]): TypingRecord[] {
         return records.map((record) => ({
             ...record,
-            createdAt: record.createdAt.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            }),
+            createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(record.createdAt),
         }));
     }
 }

@@ -5,6 +5,10 @@ import { getTypingServices } from '../utils/ctxHelper';
  * 打字大厅处理器
  * 路由: /typing/hall
  * 功能: 打字系统总入口，展示排行榜、统计数据、数据可视化
+ *
+ * 同路由双模式：
+ *  - 浏览器普通 GET（Accept: text/html）：渲染页面，首屏仅带 20 条排行榜/最近记录
+ *  - fetch GET（Accept: application/json，带 ?section=...）：返回分页 JSON，供前端翻页
  */
 export class TypingHallHandler extends Handler {
     async get() {
@@ -15,10 +19,19 @@ export class TypingHallHandler extends Handler {
             return;
         }
 
+        // 同路由双模式：JSON 请求且带 section 参数时返回分页数据，不渲染页面
+        const isApiRequest = this.request.json
+            || (this.request.headers.accept || '').includes('application/json');
+        const section = this.request.query?.section as string;
+        if (isApiRequest && section) {
+            await this.handleApiRequest(section, { recordService, statsService });
+            return;
+        }
+
         // 获取全局统计
         const globalStats = await analyticsService.getGlobalStats();
 
-        // 获取用户个人数据（暂不使用 domainId 过滤，与其他查询保持一致）
+        // 获取用户个人数据（全域统一，与其他查询保持一致）
         let userStats: import('../services/TypingStatsService').TypingUserStats | null = null;
         let userMaxRank: number | null = null;
         let userAvgRank: number | null = null;
@@ -30,13 +43,12 @@ export class TypingHallHandler extends Handler {
             }
         }
 
-        // 获取排行榜数据（返回足够多的数据以支持前端分页）
-        const maxWpmRanking = await statsService.getMaxWpmRanking(100);
-        const avgWpmRanking = await statsService.getAvgWpmRanking(100);
-        const improvementRanking = await statsService.getImprovementRanking(100);
-
-        // 获取最近记录（返回足够多的数据以支持前端分页）
-        const recentRecords = await recordService.getRecentRecords(100);
+        // 首屏只带 20 条排行榜与最近记录，翻页走分页 API，降低首屏体积
+        const initialLimit = 20;
+        const maxWpmRanking = await statsService.getMaxWpmRanking(initialLimit);
+        const avgWpmRanking = await statsService.getAvgWpmRanking(initialLimit);
+        const improvementRanking = await statsService.getImprovementRanking(initialLimit);
+        const recentRecords = await recordService.getRecentRecords(initialLimit);
 
         // 获取速度分布
         const speedDistribution = await analyticsService.getSpeedDistribution();
@@ -64,11 +76,8 @@ export class TypingHallHandler extends Handler {
         // 检查管理权限
         const canManage = this.user?.priv && this.user.priv & PRIV.PRIV_EDIT_SYSTEM;
 
-        // 格式化最近记录
-        const formattedRecentRecords = recordService.formatRecords(recentRecords);
-
         // 将udocs转换为简化的JSON格式，包含头像URL
-        const udocsSimplified = {};
+        const udocsSimplified: Record<string, any> = {};
         for (const userId in udocs) {
             udocsSimplified[userId] = {
                 uname: udocs[userId].uname,
@@ -79,32 +88,141 @@ export class TypingHallHandler extends Handler {
             };
         }
 
+        // recentRecords 直接传原始记录，createdAt 保持 Date（JSON.stringify 自动转 ISO）
+
+        // 赛季数据（融合到大厅 Tab 展示，需要完整赛季信息）
+        let seasonData: any = null;
+        const { seasonService, poisonZoneService } = getTypingServices(this.ctx);
+        if (seasonService) {
+            const currentSeason = await seasonService.getCurrentSeason();
+            if (currentSeason) {
+                // 当前用户的报名状态和毒圈预览
+                let myRegistration: any = null;
+                let deductPreview: any = null;
+                if (uid) {
+                    myRegistration = await seasonService.getRegistration(currentSeason._id, uid);
+                    if (myRegistration && poisonZoneService) {
+                        deductPreview = await poisonZoneService.getUpcomingDeductPreview(uid);
+                    }
+                }
+                // 赛季排行榜
+                const seasonRanking = await seasonService.getSeasonRanking(currentSeason._id, 50);
+                // 赛季统计
+                const seasonStats = await seasonService.getSeasonStats(currentSeason._id);
+                // 历史赛季
+                const recentSeasons = await seasonService.getRecentSeasons(5);
+
+                // 合并排行榜与当前用户涉及的 uid，补充用户信息
+                const seasonUids = seasonRanking.map((r: any) => r.uid);
+                const seasonAllUids = uid
+                    ? [...new Set([...seasonUids, uid])]
+                    : [...new Set(seasonUids)];
+                const UserModel2 = global.Hydro.model.user;
+                const seasonUdocsRaw = seasonAllUids.length > 0
+                    ? await UserModel2.getList(this.domain._id, seasonAllUids)
+                    : {};
+                const seasonUdocs: Record<string, any> = {};
+                for (const userId in seasonUdocsRaw) {
+                    seasonUdocs[userId] = {
+                        uname: seasonUdocsRaw[userId].uname,
+                        displayName: seasonUdocsRaw[userId].displayName,
+                        avatarUrl: avatar(seasonUdocsRaw[userId].avatar, 32),
+                    };
+                }
+
+                seasonData = {
+                    currentSeason,
+                    recentSeasons,
+                    myRegistration,
+                    deductPreview,
+                    seasonRanking,
+                    seasonStats,
+                    udocs: seasonUdocs,
+                };
+            }
+        }
+
         this.response.template = 'typing_hall.html';
         this.response.body = {
             globalStats,
-            globalStatsJSON: JSON.stringify(globalStats),
             userStats: userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 },
-            userStatsJSON: JSON.stringify(userStats || { maxWpm: 0, avgWpm: 0, totalRecords: 0 }),
             userMaxRank,
             userAvgRank,
             maxWpmRanking,
-            maxWpmRankingJSON: JSON.stringify(maxWpmRanking),
             avgWpmRanking,
-            avgWpmRankingJSON: JSON.stringify(avgWpmRanking),
             improvementRanking,
-            improvementRankingJSON: JSON.stringify(improvementRanking),
-            recentRecords: formattedRecentRecords,
-            recentRecordsJSON: JSON.stringify(formattedRecentRecords),
+            recentRecords,
             speedDistribution,
             userSpeedPoints,
-            userSpeedPointsJSON: JSON.stringify(userSpeedPoints),
-            udocsJSON: JSON.stringify(udocsSimplified),
             weeklyTrend,
-            weeklyTrendJSON: JSON.stringify(weeklyTrend),
-            udocs,
+            udocs: udocsSimplified,
             canManage,
             isLoggedIn: !!uid,
+            currentUserId: uid || null,
+            seasonData,
         };
+    }
+
+    /**
+     * 处理分页 API 请求（同路由双模式的 JSON 分支）
+     * section=ranking -> 排行榜分页（type=max|avg|improvement）
+     * section=records -> 最近记录分页
+     */
+    private async handleApiRequest(
+        section: string,
+        services: { recordService: any, statsService: any },
+    ) {
+        const { recordService, statsService } = services;
+        const page = Math.max(1, Number.parseInt(this.request.query?.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, Number.parseInt(this.request.query?.limit as string) || 10));
+
+        if (section === 'ranking') {
+            const type = (this.request.query?.type as string) || 'max';
+            if (type === 'improvement') {
+                // 进步榜数据量不大，取较大集合后内存分页
+                const all = await statsService.getImprovementRanking(1000);
+                const total = all.length;
+                const users = all.slice((page - 1) * limit, page * limit);
+                this.response.type = 'application/json';
+                this.response.body = {
+                    success: true,
+                    data: users,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                    page,
+                    limit,
+                };
+                return;
+            }
+            const result = await statsService.getRankingWithPagination(type as 'max' | 'avg', page, limit);
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                data: result.users,
+                total: result.total,
+                totalPages: result.totalPages,
+                page,
+                limit,
+            };
+            return;
+        }
+
+        if (section === 'records') {
+            const result = await recordService.getRecordsWithPagination(page, limit);
+            this.response.type = 'application/json';
+            this.response.body = {
+                success: true,
+                data: result.records,
+                total: result.total,
+                totalPages: result.totalPages,
+                page,
+                limit,
+            };
+            return;
+        }
+
+        this.response.type = 'application/json';
+        this.response.body = { success: false, message: '未知的 section 参数' };
     }
 }
 

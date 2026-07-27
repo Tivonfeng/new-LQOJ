@@ -110,3 +110,33 @@ This will recalculate all user statistics based on records. Continue?: 这将根
 Calculating...: 计算中...
 
 typing_hall: 打字大厅
+typing_season: 打字赛季
+
+# 赛季相关
+Typing Season: 打字赛季
+Season Rules: 赛季规则
+Season Ranking: 赛季排行榜
+Season Stats: 赛季统计
+Current Season: 当前赛季
+Register: 报名参赛
+Poison Zone: 毒圈
+Safe: 安全
+In Zone: 毒圈中
+Weeks in Zone: 毒圈周数
+Season Progress: 赛季进步
+Baseline WPM: 赛季起点
+Current Max WPM: 当前最高
+Total Deducted: 累计被扣
+Upcoming Deduct: 下周预计扣分
+Escape Poison: 出毒
+Season Management: 赛季管理
+Create Season: 开启新赛季
+Finalize Season: 结束赛季并结算
+Season Name: 赛季名称
+Week Count: 赛季周数
+Progress Target: 进步目标
+Progress Reward: 达标奖励
+No active season: 当前没有进行中的赛季
+Season created successfully: 赛季开启成功
+Season finalized successfully: 赛季结算成功
+Participant Count: 参赛人数

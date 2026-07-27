@@ -11,6 +11,7 @@ import {
   FileTextOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
+  TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import {
@@ -18,6 +19,7 @@ import {
   Card,
   Input,
   Space,
+  Tag,
   Typography,
   Avatar,
   Tooltip,
@@ -64,6 +66,72 @@ const TypingAdminApp: React.FC = () => {
   });
   const [page, setPage] = useState(1);
   const pageSize = 5;
+
+  // 赛季管理状态
+  const [seasonData] = useState<any>(() => (window as any).typingSeasonData || {});
+  const [seasonForm, setSeasonForm] = useState({ name: '', weekCount: '4', progressTarget: '20', progressReward: '200' });
+  const [seasonSubmitting, setSeasonSubmitting] = useState(false);
+  const [seasonMessage, setSeasonMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // 创建赛季
+  const handleCreateSeason = useCallback(async () => {
+    if (!seasonForm.name.trim()) {
+      setSeasonMessage({ type: 'error', text: '请填写赛季名称' });
+      return;
+    }
+    setSeasonSubmitting(true);
+    setSeasonMessage(null);
+    try {
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_season',
+          seasonName: seasonForm.name.trim(),
+          weekCount: seasonForm.weekCount,
+          progressTarget: seasonForm.progressTarget,
+          progressReward: seasonForm.progressReward,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setSeasonMessage({ type: 'success', text: result.message });
+        setSeasonForm({ name: '', weekCount: '4', progressTarget: '20', progressReward: '200' });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        setSeasonMessage({ type: 'error', text: result.message });
+      }
+    } catch {
+      setSeasonMessage({ type: 'error', text: '网络错误' });
+    } finally {
+      setSeasonSubmitting(false);
+    }
+  }, [seasonForm]);
+
+  // 结束赛季
+  const handleFinalizeSeason = useCallback(async (seasonId: string) => {
+    // eslint-disable-next-line no-alert
+    if (!confirm('确认结束当前赛季并结算奖励？这将向所有参赛学生发放奖励积分。')) return;
+    try {
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'finalize_season', seasonId }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        // eslint-disable-next-line no-alert
+        alert(result.message);
+        window.location.reload();
+      } else {
+        // eslint-disable-next-line no-alert
+        alert(`结算失败: ${result.message}`);
+      }
+    } catch {
+      // eslint-disable-next-line no-alert
+      alert('网络错误');
+    }
+  }, []);
 
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const userSelectComponentRef = useRef<any>(null);
@@ -536,6 +604,121 @@ const TypingAdminApp: React.FC = () => {
                 <span>{addRecordMessage.text}</span>
               </div>
             )}
+          </Card>
+
+          {/* 赛季管理 */}
+          <Card
+            className="section-card season-manage-card"
+            title={
+              <Space>
+                <TrophyOutlined />
+                <span>赛季管理</span>
+              </Space>
+            }
+          >
+            {/* 当前赛季状态 */}
+            {seasonData.currentSeason ? (
+              <div className="season-current-info">
+                <div className="season-info-row">
+                  <Text strong>当前赛季：</Text>
+                  <Text>{seasonData.currentSeason.name}</Text>
+                  <Tag color="green" style={{ marginLeft: 8 }}>进行中</Tag>
+                </div>
+                <div className="season-info-row">
+                  <Text type="secondary">周期：{seasonData.currentSeason.weekCount} 周</Text>
+                  <Text type="secondary" style={{ marginLeft: 16}}>起始：{seasonData.currentSeason.startWeek}</Text>
+                  <Text type="secondary" style={{ marginLeft: 16}}>结束：{seasonData.currentSeason.endWeek}</Text>
+                </div>
+                {seasonData.seasonStats && (
+                  <div className="season-info-row">
+                    <Tag color="blue">参赛 {seasonData.seasonStats.totalParticipants} 人</Tag>
+                    <Tag color="green">安全 {seasonData.seasonStats.safeCount} 人</Tag>
+                    <Tag color="red">毒圈 {seasonData.seasonStats.inZoneCount} 人</Tag>
+                  </div>
+                )}
+                <div style={{ marginTop: 16 }}>
+                  <Popconfirm
+                    title="确认结束赛季并结算？"
+                    description="将向所有参赛学生发放排名奖和达标奖"
+                    onConfirm={() => handleFinalizeSeason(seasonData.currentSeason._id)}
+                    okText="确认结算"
+                    cancelText="取消"
+                  >
+                    <Button type="primary" danger icon={<TrophyOutlined />}>
+                      结束赛季并结算
+                    </Button>
+                  </Popconfirm>
+                </div>
+              </div>
+            ) : (
+              <div className="season-no-active">
+                <Text type="secondary">当前没有进行中的赛季</Text>
+              </div>
+            )}
+
+            {/* 创建新赛季表单 */}
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+              <Text strong style={{ display: 'block', marginBottom: 12 }}>开启新赛季</Text>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label"><span>赛季名称</span></label>
+                  <Input
+                    value={seasonForm.name}
+                    onChange={(e) => setSeasonForm({ ...seasonForm, name: e.target.value })}
+                    placeholder="如：2026年8月赛季"
+                    size="large"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label"><span>赛季周数</span></label>
+                  <Input
+                    type="number"
+                    value={seasonForm.weekCount}
+                    onChange={(e) => setSeasonForm({ ...seasonForm, weekCount: e.target.value })}
+                    placeholder="4"
+                    size="large"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label"><span>进步目标 (WPM)</span></label>
+                  <Input
+                    type="number"
+                    value={seasonForm.progressTarget}
+                    onChange={(e) => setSeasonForm({ ...seasonForm, progressTarget: e.target.value })}
+                    placeholder="20"
+                    size="large"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label"><span>达标奖励 (积分)</span></label>
+                  <Input
+                    type="number"
+                    value={seasonForm.progressReward}
+                    onChange={(e) => setSeasonForm({ ...seasonForm, progressReward: e.target.value })}
+                    placeholder="200"
+                    size="large"
+                  />
+                </div>
+              </div>
+              <div className="form-actions" style={{ marginTop: 12 }}>
+                <Button
+                  type="primary"
+                  icon={seasonSubmitting ? <ReloadOutlined spin /> : <ThunderboltOutlined />}
+                  onClick={handleCreateSeason}
+                  loading={seasonSubmitting}
+                  size="large"
+                  className="submit-btn"
+                >
+                  {seasonSubmitting ? '创建中...' : '开启新赛季'}
+                </Button>
+              </div>
+              {seasonMessage && (
+                <div className={`result-message ${seasonMessage.type === 'success' ? 'success' : 'error'}`} style={{ marginTop: 12 }}>
+                  {seasonMessage.type === 'success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                  <span>{seasonMessage.text}</span>
+                </div>
+              )}
+            </div>
           </Card>
         </div>
 

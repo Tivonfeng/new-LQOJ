@@ -6,24 +6,26 @@
     <!-- React App 挂载点 -->
     <div id="typing-hall-react-app"></div>
 
-    <!-- 数据传递给 React -->
+    <!-- 数据传递给 React（统一用 |json|safe 序列化，避免 XSS 与裸输出问题） -->
     <script id="typing-hall-data" type="application/json">
-    {
-        "globalStats": {{ globalStatsJSON | safe }},
-        "userStats": {{ userStatsJSON | safe }},
-        "userMaxRank": {{ userMaxRank if userMaxRank else 'null' }},
-        "userAvgRank": {{ userAvgRank if userAvgRank else 'null' }},
-        "maxWpmRanking": {{ maxWpmRankingJSON | safe }},
-        "avgWpmRanking": {{ avgWpmRankingJSON | safe }},
-        "improvementRanking": {{ improvementRankingJSON | safe }},
-        "recentRecords": {{ recentRecordsJSON | safe }},
-        "userSpeedPoints": {{ userSpeedPointsJSON | safe }},
-        "weeklyTrend": {{ weeklyTrendJSON | safe }},
-        "udocs": {{ udocsJSON | safe }},
-        "canManage": {{ 'true' if canManage else 'false' }},
-        "isLoggedIn": {{ 'true' if isLoggedIn else 'false' }},
-        "currentUserId": {{ handler.user._id if isLoggedIn else 'null' }}
-    }
+    {{ {
+        "globalStats": globalStats,
+        "userStats": userStats,
+        "userMaxRank": userMaxRank,
+        "userAvgRank": userAvgRank,
+        "maxWpmRanking": maxWpmRanking,
+        "avgWpmRanking": avgWpmRanking,
+        "improvementRanking": improvementRanking,
+        "recentRecords": recentRecords,
+        "speedDistribution": speedDistribution,
+        "userSpeedPoints": userSpeedPoints,
+        "weeklyTrend": weeklyTrend,
+        "udocs": udocs,
+        "canManage": canManage,
+        "isLoggedIn": isLoggedIn,
+        "currentUserId": currentUserId,
+        "seasonData": seasonData
+    } | json | safe }}
     </script>
 </div>
 

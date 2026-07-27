@@ -3,13 +3,24 @@ import {
     TypingAdminHandler,
     TypingHallHandler,
     TypingProfileHandler,
+    TypingSeasonHandler,
 } from './src/handlers';
 import type {
     TypingRecord,
     TypingUserStats,
     WeeklySnapshot,
+    TypingSeason,
+    SeasonRegistration,
+    PoisonLog,
 } from './src/services';
-import { TypingRecordService, TypingStatsService, TypingAnalyticsService, TypingBonusService } from './src/services';
+import {
+    TypingRecordService,
+    TypingStatsService,
+    TypingAnalyticsService,
+    TypingBonusService,
+    TypingSeasonService,
+    TypingPoisonZoneService,
+} from './src/services';
 
 // 打字速度系统配置Schema
 const Config = Schema.object({
@@ -22,6 +33,9 @@ declare module 'hydrooj' {
         'typing.records': TypingRecord;
         'typing.stats': TypingUserStats;
         'typing.weekly_snapshots': WeeklySnapshot;
+        'typing.seasons': TypingSeason;
+        'typing.season_registrations': SeasonRegistration;
+        'typing.poison_logs': PoisonLog;
     }
 
     interface Context {
@@ -30,6 +44,8 @@ declare module 'hydrooj' {
         typingStatsService?: import('./src/services/TypingStatsService').TypingStatsService;
         typingAnalyticsService?: import('./src/services/TypingAnalyticsService').TypingAnalyticsService;
         typingBonusService?: import('./src/services/TypingBonusService').TypingBonusService;
+        typingSeasonService?: import('./src/services/TypingSeasonService').TypingSeasonService;
+        typingPoisonZoneService?: import('./src/services/TypingPoisonZoneService').TypingPoisonZoneService;
     }
 }
 
@@ -53,11 +69,15 @@ export default async function apply(ctx: Context, config: any = {}) {
     const typingStatsService = new TypingStatsService(ctx, typingRecordService);
     const typingAnalyticsService = new TypingAnalyticsService(ctx, typingRecordService, typingStatsService);
     const typingBonusService = new TypingBonusService(ctx);
+    const typingSeasonService = new TypingSeasonService(ctx, typingStatsService);
+    const typingPoisonZoneService = new TypingPoisonZoneService(ctx, typingSeasonService, typingRecordService);
 
     ctx.provide('typingRecordService', typingRecordService);
     ctx.provide('typingStatsService', typingStatsService);
     ctx.provide('typingAnalyticsService', typingAnalyticsService);
     ctx.provide('typingBonusService', typingBonusService);
+    ctx.provide('typingSeasonService', typingSeasonService);
+    ctx.provide('typingPoisonZoneService', typingPoisonZoneService);
 
     // 修复旧索引和数据（删除可能存在的 uid_domainId 复合索引，因为数据是全域统一的）
     try {
@@ -171,6 +191,45 @@ export default async function apply(ctx: Context, config: any = {}) {
             { key: { uid: 1, week: 1 }, name: 'uid_week', unique: true },
         );
 
+        // 为奖励记录集合创建索引（修复原有遗漏：initializeIndexes 未被调用）
+        // progress_records：uid+recordId 唯一防重复奖励；recordId 单字段索引用于删记录回滚查询
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.progress_records' as any),
+            { key: { uid: 1, recordId: 1 }, name: 'uid_recordId', unique: true, sparse: true },
+            { key: { recordId: 1 }, name: 'recordId' },
+        );
+        // level_achievements：uid+level 唯一防重复升级奖励
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.level_achievements' as any),
+            { key: { uid: 1, level: 1 }, name: 'uid_level', unique: true, sparse: true },
+        );
+        // surpass_records：uid+surpassedUid 唯一防重复超越奖励
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.surpass_records' as any),
+            { key: { uid: 1, surpassedUid: 1 }, name: 'uid_surpassedUid', unique: true, sparse: true },
+        );
+
+        // 赛季集合索引
+        // seasons：按状态查当前赛季
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.seasons' as any),
+            { key: { status: 1 }, name: 'status' },
+            { key: { startedAt: -1 }, name: 'startedAt' },
+        );
+        // season_registrations：seasonId+uid 唯一防重复报名；seasonId+poisonStatus 扫描毒圈用户；seasonId+seasonProgress 排名
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.season_registrations' as any),
+            { key: { seasonId: 1, uid: 1 }, name: 'seasonId_uid', unique: true },
+            { key: { seasonId: 1, poisonStatus: 1 }, name: 'seasonId_poisonStatus' },
+            { key: { seasonId: 1, seasonProgress: -1 }, name: 'seasonId_seasonProgress' },
+        );
+        // poison_logs：seasonId+uid+week 防同周重复扣分
+        await ctx.db.ensureIndexes(
+            ctx.db.collection('typing.poison_logs' as any),
+            { key: { seasonId: 1, uid: 1, week: 1 }, name: 'seasonId_uid_week' },
+            { key: { seasonId: 1, week: 1 }, name: 'seasonId_week' },
+        );
+
         console.log('[Typing Speed System] ✅ Indexes created successfully');
     } catch (error) {
         console.error('[Typing Speed System] ❌ Error creating indexes:', error.message);
@@ -186,12 +245,26 @@ export default async function apply(ctx: Context, config: any = {}) {
         ctx2.Route('typing_hall', '/typing/hall', TypingHallHandler);
         ctx2.Route('typing_profile', '/typing/me', TypingProfileHandler);
         ctx2.Route('typing_admin', '/typing/admin', TypingAdminHandler);
+        ctx2.Route('typing_season', '/typing/season', TypingSeasonHandler);
 
-        // 注入导航栏
+        // 注入导航栏（赛季已融合到打字大厅 Tab，不再单独注入导航）
         ctx2.injectUI('Nav', 'typing_hall', {
             prefix: 'typing',
             before: 'score', // 插入到积分系统前面
         }, PRIV.PRIV_USER_PROFILE);
+
+        // 注册每周一毒圈结算任务（复用 Hydro 每日凌晨3点的 task/daily 调度）
+        ctx2.on('task/daily', async () => {
+            // 仅周一执行结算
+            if (new Date().getDay() !== 1) return;
+            try {
+                console.log('[Typing Speed System] Running weekly poison zone settlement...');
+                const result = await typingPoisonZoneService.runWeeklySettlement();
+                console.log(`[Typing Speed System] Weekly settlement done: ${result.processed} processed, ${result.deducted} deducted`);
+            } catch (error: any) {
+                console.error('[Typing Speed System] Weekly settlement failed:', error.message);
+            }
+        });
 
         console.log('[Typing Speed System] ✅ Plugin loaded successfully!');
     });

@@ -1,0 +1,384 @@
+/* 打字赛季页面样式 - 复用大厅的视觉风格 */
+
+.typing-season-container {
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Hero Section */
+.season-hero-card {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+    border: none;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.season-hero-card .ant-card-body {
+    padding: 28px 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.season-hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.season-hero-text {
+    color: #fff;
+}
+
+.season-hero-title {
+    color: #fff !important;
+    margin: 0 0 4px 0 !important;
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+}
+
+.season-hero-subtitle {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 0.95rem;
+}
+
+.season-hero-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.season-hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.875rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.season-hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.season-hero-action-btn {
+    border: none;
+    font-weight: 600;
+}
+
+/* 赛季概要信息条 */
+.season-summary-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.season-summary-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.season-summary-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.season-summary-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 赛季状态卡 */
+.season-status-card {
+    margin-bottom: 20px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.season-status-safe {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left: 4px solid #10b981;
+}
+
+.season-status-danger {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid #ef4444;
+}
+
+.season-status-neutral {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-left: 4px solid #3b82f6;
+}
+
+.season-status-content {
+    padding: 20px 24px;
+}
+
+.season-status-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.season-status-icon {
+    font-size: 32px;
+}
+
+.season-status-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.season-status-safe .season-status-title { color: #065f46; }
+.season-status-danger .season-status-title { color: #991b1b; }
+.season-status-neutral .season-status-title { color: #1e40af; }
+
+.season-status-desc {
+    font-size: 0.95rem;
+    color: #374151;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.season-status-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.season-status-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.season-status-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.season-status-safe .season-status-stat-value { color: #059669; }
+.season-status-danger .season-status-stat-value { color: #dc2626; }
+.season-status-neutral .season-status-stat-value { color: #2563eb; }
+
+.season-status-stat-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* 规则说明卡 */
+.season-rules-card {
+    margin-bottom: 20px;
+}
+
+.season-rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.season-rule-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.season-rule-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.season-rule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.season-rule-table th,
+.season-rule-table td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.season-rule-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+    color: #374151;
+}
+
+.season-rule-table td.deduct-amount {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.season-rule-table td.reward-amount {
+    color: #10b981;
+    font-weight: 600;
+}
+
+/* 赛季排行榜 */
+.season-ranking-card {
+    margin-bottom: 20px;
+}
+
+.season-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.season-ranking-item:hover {
+    background: #f9fafb;
+}
+
+.season-ranking-item.current-user {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.season-rank-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.season-rank-1 { background: #fde68a; color: #92400e; }
+.season-rank-2 { background: #e5e7eb; color: #4b5563; }
+.season-rank-3 { background: #fed7aa; color: #9a3412; }
+.season-rank-other { background: #f3f4f6; color: #6b7280; }
+
+.season-ranking-user {
+    flex: 1;
+    min-width: 0;
+}
+
+.season-ranking-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.season-ranking-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.season-ranking-progress {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.season-ranking-progress-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.season-ranking-progress-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* 毒圈状态标签 */
+.poison-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.poison-badge-safe {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.poison-badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* 空状态 */
+.season-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9ca3af;
+}
+
+.season-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+/* 历史赛季 */
+.season-history-card {
+    margin-bottom: 20px;
+}
+
+.season-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.season-history-item:last-child {
+    border-bottom: none;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .season-hero-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .season-status-stats {
+        gap: 16px;
+    }
+
+    .season-status-stat-value {
+        font-size: 1.25rem;
+    }
+}
