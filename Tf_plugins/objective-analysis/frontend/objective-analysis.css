@@ -1,0 +1,221 @@
+.objective-analysis-result {
+  margin: .5em 0 1.2em;
+  padding: .6em 1em;
+  border-left: 4px solid;
+  border-radius: 4px;
+  background: #f8f9fa;
+  font-size: .95em;
+}
+
+.objective-analysis-ok {
+  border-color: #2e7d32;
+  background: #f0f9f1;
+}
+
+.objective-analysis-ok .objective-analysis-mine { color: #2e7d32; }
+
+.objective-analysis-wrong {
+  border-color: #c62828;
+  background: #fdf0f0;
+}
+
+.objective-analysis-wrong .objective-analysis-mine { color: #c62828; font-weight: 700; }
+
+.objective-analysis-partial {
+  border-color: #f9a825;
+  background: #fffbea;
+}
+
+.objective-analysis-partial .objective-analysis-mine { color: #8a6d00; }
+
+.objective-analysis-row { margin: .25em 0; line-height: 1.6; }
+.objective-analysis-label { opacity: .75; }
+.objective-analysis-mine { font-weight: 600; }
+.objective-analysis-std { color: #2e7d32; font-weight: 600; }
+.objective-analysis-ana { line-height: 1.7; }
+.objective-analysis-ana p { margin: .3em 0; }
+.objective-analysis-ana code {
+  background: #eee;
+  padding: 0 .25em;
+  border-radius: 3px;
+  font-size: .9em;
+}
+.objective-analysis-ana pre {
+  background: #f5f5f5;
+  padding: .6em .8em;
+  border-radius: 4px;
+  overflow: auto;
+}
+.objective-analysis-ana ul { margin: .3em 0 .3em 1.2em; }
+
+.objective-analysis-record { margin-top: 1em; }
+
+/* 编辑页 */
+.objective-analysis-edit-wrap { max-width: 900px; }
+.objective-analysis-edit-item {
+  margin-bottom: 1.2em;
+  padding: 1em;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #fff;
+}
+.objective-analysis-edit-item .item-header { margin-bottom: .5em; font-weight: 600; }
+.objective-analysis-edit-item .item-std { color: #2e7d32; margin-left: 1em; font-weight: 400; }
+.objective-analysis-edit-item textarea {
+  width: 100%;
+  min-height: 90px;
+  font-size: .95em;
+  line-height: 1.6;
+}
+
+/* 底部悬浮题号导航 */
+.objective-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: .9em;
+  padding: 1em 1.2em;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(10px) saturate(1.3);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  border-top: 1px solid rgba(0, 0, 0, .08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, .08);
+  font-size: .9em;
+}
+
+.objective-bottom-nav-title {
+  flex: none;
+  font-weight: 700;
+  font-size: .95em;
+  letter-spacing: .08em;
+  color: #343a40;
+  padding-right: .9em;
+  border-right: 1px solid #e9ecef;
+  user-select: none;
+}
+
+.objective-bottom-nav-items {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: .45em;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  padding: .1em 0;
+}
+
+.objective-bottom-nav .nav-item {
+  flex: none;
+  min-width: 2.8em;
+  height: 2.8em;
+  line-height: 2.7em;
+  padding: 0 .7em;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid #f0f2f5;
+  color: #c0c6cd;
+  background: #fff;
+  font-weight: 600;
+  font-size: .95em;
+  text-decoration: none;
+  transition: all .18s ease;
+}
+
+.objective-bottom-nav .nav-item:hover {
+  border-color: #4a9ee8;
+  color: #4a9ee8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(74, 158, 232, .25);
+}
+
+.objective-bottom-nav .nav-item.answered {
+  border-color: #34a853;
+  background: linear-gradient(135deg, #e8f5e9, #dbf4de);
+  color: #1e7e34;
+}
+
+/* 判分状态色（答对绿 / 答错红 / 多选漏选黄），优先于 answered 默认绿 */
+.objective-bottom-nav .nav-item.correct {
+  border-color: #2e9e44;
+  background: linear-gradient(135deg, #e3f6e6, #cdeeda);
+  color: #157f33;
+}
+
+.objective-bottom-nav .nav-item.wrong {
+  border-color: #c62828;
+  background: linear-gradient(135deg, #fdeaea, #f8d5d5);
+  color: #b71c1c;
+}
+
+.objective-bottom-nav .nav-item.partial {
+  border-color: #f9a825;
+  background: linear-gradient(135deg, #fffbea, #fff3cd);
+  color: #8a6d00;
+}
+
+/* 当前题：外圈蓝色高亮标识（不覆盖状态色） */
+.objective-bottom-nav .nav-item.active {
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, .45);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .objective-bottom-nav { padding: .7em .7em; gap: .5em; }
+  .objective-bottom-nav-title { display: none; }
+  .objective-bottom-nav .nav-item { min-width: 2.5em; height: 2.5em; line-height: 2.4em; }
+}
+
+/* 底栏内的提交按钮（核心 input[type=submit] 移动至此，样式与清空答案按钮保持一致）
+   input 是原生控件：必须去掉 appearance/系统内边距，并显式统一盒模型与字号 */
+.objective-bottom-nav-submit {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0 .6em !important;
+  padding: .7em 1.5em !important;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  border: 1.5px solid #3d8bf0 !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #1a73e8, #4a9ee8) !important;
+  color: #fff !important;
+  font-size: .88em !important;
+  font-family: inherit;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1.4 !important;
+  letter-spacing: normal;
+  text-transform: none;
+  text-indent: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+  cursor: pointer;
+  transition: all .18s ease;
+}
+
+.objective-bottom-nav-submit:hover {
+  background: linear-gradient(135deg, #2b7de9, #5baaf0) !important;
+  box-shadow: 0 2px 10px rgba(26, 115, 232, .45);
+  transform: translateY(-1px);
+}
+
+.objective-bottom-nav-submit:active {
+  transform: translateY(0);
+}
+
+.objective-bottom-nav-submit:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}

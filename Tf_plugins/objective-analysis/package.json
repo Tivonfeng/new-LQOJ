@@ -1,0 +1,16 @@
+{
+  "name": "@hydrooj/objective-analysis",
+  "version": "1.0.0",
+  "description": "客观题答案解析 - 提交后查看标准答案与解析",
+  "main": "index.ts",
+  "author": "Tivon Feng",
+  "license": "AGPL-3.0",
+  "hydro": {
+    "cli": false
+  },
+  "dependencies": {
+    "@hydrooj/common": "workspace:^",
+    "@hydrooj/utils": "workspace:^",
+    "hydrooj": "workspace:^"
+  }
+}

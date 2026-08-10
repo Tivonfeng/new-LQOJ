@@ -1,0 +1,17 @@
+{
+  "name": "@hydrooj/excalidraw-board",
+  "version": "1.0.0",
+  "description": "Excalidraw 教师画板 - 题目页随时画图给学生讲解",
+  "main": "index.ts",
+  "author": "Tivon Feng",
+  "license": "AGPL-3.0",
+  "hydro": {
+    "cli": false
+  },
+  "scripts": {
+    "postinstall": "node scripts/trim-locales.js"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1"
+  }
+}
