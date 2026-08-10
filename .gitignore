@@ -31,6 +31,7 @@ globalConfig.json
 /config.json
 yarn.lock
 pnpm-lock.yaml
+package-lock.json
 tsconfig.json
 tsconfig.*.json
 .oxlintrc.json
