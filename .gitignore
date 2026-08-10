@@ -58,6 +58,7 @@ packages/ui-next/public
 
 # Base
 node_modules/
+.DS_Store
 __*
 !__mocks__
 !.gitkeep
@@ -68,3 +69,6 @@ __*
 
 packages/*/public/assets
 node_modules.*
+
+# Session & Tooling
+.zcode/
