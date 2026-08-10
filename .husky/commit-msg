@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+# 跳过 merge / revert 自动生成的提交（上游同步 merge 不受限制）
+if head -n1 "$1" | grep -qE '^(Merge|Revert) '; then
+  exit 0
+fi
+
+commitlint --edit "$1"

@@ -35,7 +35,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0
+        
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.8.0
       with:
@@ -44,6 +46,27 @@ jobs:
     - name: Add remote host to known_hosts
       run: |
         ssh-keyscan -H ${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Get version info
+      run: |
+        echo "VERSION_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+        echo "Deploying version: $VERSION_TAG (${{ github.sha }})"
+        
+    - name: Backup remote current version
+      run: |
+        ssh "${{ github.event.inputs.remote_user || secrets.REMOTE_USER }}@${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}" 'bash -s' <<'REMOTE_EOF'
+        set -e
+        dir="${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}"
+        if [ -d "$dir" ]; then
+          ts=$(date +%Y%m%d_%H%M%S)
+          cp -r "$dir" "$dir.bak.$ts"
+          # 只保留最近 5 份备份
+          ls -dt "$dir".bak.* 2>/dev/null | tail -n +6 | xargs -r rm -rf
+          echo "Backup created: $dir.bak.$ts"
+        else
+          echo "Remote dir not found, skip backup: $dir"
+        fi
+        REMOTE_EOF
         
     - name: Sync Tf_plugins using rsync
       if: (github.event.inputs.sync_method == 'rsync' || github.event.inputs.sync_method == '') && github.event_name == 'workflow_dispatch'
@@ -73,9 +96,21 @@ jobs:
           Tf_plugins/ \
           ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_PATH }}/
           
+    - name: Write version marker
+      run: |
+        ssh "${{ github.event.inputs.remote_user || secrets.REMOTE_USER }}@${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}" 'bash -s' <<'REMOTE_EOF'
+        set -e
+        dir="${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}"
+        parent=$(dirname "$dir")
+        echo "${{ env.VERSION_TAG }} ${{ github.sha }} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$parent/VERSION"
+        echo "VERSION file written: $(cat "$parent/VERSION")"
+        REMOTE_EOF
+          
     - name: Verify sync
       run: |
         echo "Sync completed successfully!"
         echo "Synced directory: Tf_plugins/"
+        echo "Deployed version: ${{ env.VERSION_TAG }} (${{ github.sha }})"
         echo "Remote host: ${{ github.event.inputs.remote_host || secrets.REMOTE_HOST }}"
-        echo "Remote path: ${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}" 
+        echo "Remote path: ${{ github.event.inputs.remote_path || secrets.REMOTE_PATH }}"
+        echo "Rollback: restore from <path>.bak.<timestamp> backup directory"

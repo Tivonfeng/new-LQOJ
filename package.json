@@ -29,11 +29,15 @@
         "start": "packages/hydrooj/bin/hydrooj.js",
         "postinstall": "node build/prepare.js",
         "gen-patch": "node -r @hydrooj/register build/gen-patch.ts",
-        "hydrooj": "./node_modules/.bin/hydrooj"
+        "hydrooj": "./node_modules/.bin/hydrooj",
+        "prepare": "husky",
+        "release": "node scripts/release.js"
     },
     "version": "1.0.0",
     "license": "AGPL-3.0-only",
     "devDependencies": {
+        "@commitlint/cli": "^21.2.1",
+        "@commitlint/config-conventional": "^21.2.0",
         "@types/autocannon": "^7.12.7",
         "@types/canvas-confetti": "^1",
         "@types/chai": "^5.2.3",
@@ -52,6 +56,7 @@
         "fs-extra": "^11.3.5",
         "globals": "^17.7.0",
         "globby": "~14.0.2",
+        "husky": "^9.1.7",
         "inspectpack": "^4.7.1",
         "mongodb-memory-server": "11.0.1",
         "nyc": "^18.0.0",
