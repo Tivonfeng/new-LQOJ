@@ -163,15 +163,17 @@ if (fs.existsSync(CHANGELOG_PATH)) {
 const pkgRaw = fs.readFileSync(PKG_PATH, 'utf8');
 const currentVersion = (pkgRaw.match(/"version"\s*:\s*"([^"]*)"/) || [])[1];
 if (!currentVersion) fail('package.json 中未找到 version 字段');
-if (currentVersion === version) fail(`package.json 当前版本已是 ${version}，无需发布（请检查版本号）`);
-const newPkgRaw = pkgRaw.replace(/("version"\s*:\s*)"[^"]*"/, `$1"${version}"`);
+// 首次发布（显式 --from 基线）时允许版本相同：根 package.json 自带 1.0.0 恰好等于首个目标版本，
+// 此时只打 tag、不更新 version 字段
+if (currentVersion === version && !fromArg) fail(`package.json 当前版本已是 ${version}，无需发布（请检查版本号）`);
+const newPkgRaw = currentVersion === version ? pkgRaw : pkgRaw.replace(/("version"\s*:\s*)"[^"]*"/, `$1"${version}"`);
 
 // ---------- 落地 ----------
 if (dryRun) {
     console.log('\n[dry-run] 以下内容将被执行，未做任何修改:\n');
     console.log('  CHANGELOG.md 新增段落:\n');
     console.log(lines.map((l) => `    ${l}`).join('\n'));
-    console.log(`\n  package.json version: 1.0.0 -> ${version}`);
+    console.log(`\n  package.json version: ${currentVersion} -> ${version}${currentVersion === version ? ' (不变)' : ''}`);
     console.log(`  git commit: chore(release): ${tag}`);
     console.log(`  git tag: ${tag}`);
     process.exit(0);
