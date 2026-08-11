@@ -2,18 +2,17 @@ import { $, addPage, NamedPage, load, Notification, React } from '@hydrooj/ui-de
 import { createRoot } from 'react-dom/client';
 import { SaveOutlined, SketchOutlined } from '@ant-design/icons';
 
-const PERMISSION_EDIT_PROBLEM = 8; // PERM.PERM_EDIT_PROBLEM（位值）
+const PRIV_EDIT_SYSTEM = 1; // @hydrooj/common permission.ts: PRIV_EDIT_SYSTEM = 1 << 0
 
-/** 判断当前用户是否为该题作者或拥有编辑权限 */
+/** 判断当前用户是否为教师（PRIV_EDIT_SYSTEM 系统编辑权限） */
 function isTeacher(): boolean {
   const UiContext: any = (window as any).UiContext;
   const UserContext: any = (window as any).UserContext;
-  const pdoc = UiContext?.pdoc;
-  if (!pdoc || !UserContext) return false;
-  if (pdoc.owner === UserContext._id) return true;
-  // perm 是位掩码
-  const perm = BigInt(UserContext.perm || 0);
-  return (perm & BigInt(PERMISSION_EDIT_PROBLEM)) !== BigInt(0);
+  if (!UiContext?.pdoc || !UserContext) return false;
+  // Hydro 把 bigint 权限序列化为 "BigInt::<值>" 字符串（JSON 无法表示 bigint），需先剥离前缀
+  const privStr = String(UserContext.priv || '0');
+  const priv = privStr.startsWith('BigInt::') ? BigInt(privStr.slice('BigInt::'.length)) : BigInt(privStr);
+  return (priv & BigInt(PRIV_EDIT_SYSTEM)) !== BigInt(0);
 }
 
 /** 注入右下角悬浮「画板」按钮（仅教师可见），位于课堂工具按钮上方 */

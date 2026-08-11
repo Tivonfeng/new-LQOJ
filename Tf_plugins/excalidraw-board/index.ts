@@ -1,4 +1,4 @@
-import { Context, Handler, PERM, ProblemModel, StorageModel, Types, param, query, route } from 'hydrooj';
+import { Context, Handler, PERM, PRIV, ProblemModel, StorageModel, Types, param, query, route } from 'hydrooj';
 import { streamToBuffer } from '@hydrooj/utils/lib/utils';
 import fs from 'fs';
 import path from 'path';
@@ -65,7 +65,8 @@ export class ExcalidrawBoardHandler extends Handler {
     }
 
     private checkOwner(pdoc: any) {
-        if (!this.user.own(pdoc) && !this.user.hasPerm(PERM.PERM_EDIT_PROBLEM)) {
+        // 教师身份：题目作者 / 域编辑权限 / 系统编辑权限（PRIV_EDIT_SYSTEM）
+        if (!this.user.own(pdoc) && !this.user.hasPerm(PERM.PERM_EDIT_PROBLEM) && !this.user.hasPriv(PRIV.PRIV_EDIT_SYSTEM)) {
             this.response.status = 403;
             jsonResponse(this, { error: 'permission denied' });
             return false;
