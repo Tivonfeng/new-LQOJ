@@ -281,6 +281,17 @@ function bindBottomNavClick() {
   });
 }
 
+// 提交按钮移入底栏（DOM 移动不丢事件绑定，核心提交逻辑与闭包数据不变）
+function moveSubmitToBottomNav() {
+  const $submit = $('.problem-content .typo input[type="submit"]').first();
+  if ($submit.length && !$('.objective-bottom-nav').find($submit).length) {
+    $('.objective-bottom-nav-items').append($submit);
+    $submit.addClass('objective-bottom-nav-submit');
+    return true;
+  }
+  return false;
+}
+
 function initBottomNav() {
   const UiContext: any = (window as any).UiContext;
   const pdoc = UiContext?.pdoc;
@@ -309,11 +320,13 @@ function initBottomNav() {
       } else {
         updateBottomNavState();
       }
-      // 提交按钮移入底栏（DOM 移动不丢事件绑定，核心提交逻辑与闭包数据不变）
-      const $submit = $('.problem-content .typo input[type="submit"]').first();
-      if ($submit.length && !$('.objective-bottom-nav').find($submit).length) {
-        $('.objective-bottom-nav-items').append($submit);
-        $submit.addClass('objective-bottom-nav-submit');
+      // 提交按钮：立即尝试一次（兜底）+ MutationObserver 监听后续追加（核心可能稍后 append）
+      moveSubmitToBottomNav();
+      const typo = document.querySelector('.problem-content .typo');
+      if (typo && !(typo as any).__submitObserver) {
+        const observer = new MutationObserver(() => moveSubmitToBottomNav());
+        observer.observe(typo, { childList: true, subtree: true });
+        (typo as any).__submitObserver = observer;
       }
     }
   }, 150);
