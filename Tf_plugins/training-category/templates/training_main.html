@@ -1,7 +1,47 @@
 {% extends "layout/basic.html" %}
 {% block content %}
 <style>
-  /* ====== 训练卡片网格布局 ====== */
+  /* ====== 分类筛选栏 ====== */
+  .training-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 20px;
+  }
+  .training-filter__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    background: #f2f3f5;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .18s ease, color .18s ease;
+  }
+  .training-filter__pill:hover { background: #e8eaee; color: #3d3d3d; }
+  .training-filter__pill .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #c5c9cf;
+  }
+  .training-filter__pill.cat-zhenti .dot  { background: #fb5555; }
+  .training-filter__pill.cat-regular .dot { background: #5f9fd6; }
+  .training-filter__pill.cat-other .dot   { background: #8a8f99; }
+  .training-filter__pill.active { color: #fff; }
+  .training-filter__pill.active:hover { color: #fff; opacity: .92; }
+  .training-filter__pill.active.all      { background: #3d3d3d; }
+  .training-filter__pill.active.cat-zhenti  { background: #fb5555; }
+  .training-filter__pill.active.cat-regular { background: #5f9fd6; }
+  .training-filter__pill.active.cat-other   { background: #8a8f99; }
+  .training-filter__pill.active .dot { background: rgba(255, 255, 255, .85); }
+
+  /* ====== 训练卡片网格 ====== */
   .training-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -10,17 +50,7 @@
     margin: 0;
     padding: 0;
   }
-  .training-category-section {
-    margin-bottom: 28px;
-  }
-  .training-category__title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #3d3d3d;
-    margin: 0 0 16px 2px;
-    display: flex;
-    align-items: center;
-  }
+
   /* 卡片本体 */
   .training-card {
     position: relative;
@@ -29,7 +59,7 @@
     background: #fff;
     border: 1px solid #e8eaed;
     border-radius: 10px;
-    padding: 18px 18px 14px;
+    padding: 16px 18px 14px;
     box-shadow: 0 2px 6px rgba(175, 194, 201, 0.18);
     transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
     overflow: hidden;
@@ -44,45 +74,52 @@
     position: absolute;
     left: 0; top: 0; bottom: 0;
     width: 4px;
-    background: #5f9fd6;
+    background: #8a8f99;
     border-radius: 10px 0 0 10px;
   }
-  .training-card.cat-zhenti::before { background: #fb5555; }
+  .training-card.cat-zhenti::before  { background: #fb5555; }
   .training-card.cat-regular::before { background: #5f9fd6; }
-  .training-card.cat-other::before  { background: #25ad40; }
+  .training-card.cat-other::before   { background: #8a8f99; }
 
   .training-card__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 10px;
   }
-  .training-card__participants {
-    flex-shrink: 0;
-    min-width: 52px;
-    text-align: center;
-    line-height: 1.1;
-  }
-  .training-card__participants .num {
-    font-size: 22px;
-    font-weight: 600;
-    color: #3d3d3d;
-  }
-  .training-card__participants .label {
+  .training-card__cat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12px;
-    color: #999;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
   }
+  .training-card__cat-badge .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+  .training-card__cat-badge.zhenti  { background: #fdeeee; color: #e64545; }
+  .training-card__cat-badge.zhenti .dot  { background: #fb5555; }
+  .training-card__cat-badge.regular { background: #eaf3fb; color: #4a86b8; }
+  .training-card__cat-badge.regular .dot { background: #5f9fd6; }
+  .training-card__cat-badge.other   { background: #f0f1f3; color: #8a8f99; }
+  .training-card__cat-badge.other .dot   { background: #8a8f99; }
+
   .training-card__status {
     flex-shrink: 0;
     font-size: 12px;
-    padding: 3px 9px;
+    padding: 3px 10px;
     border-radius: 12px;
     font-weight: 500;
     white-space: nowrap;
   }
   .training-card__status.outside  { background: #f0f0f0; color: #999; }
-  .training-card__status.progress { background: #fdecef; color: #e64c72; }
+  .training-card__status.progress { background: #eaf3fb; color: #4a86b8; }
   .training-card__status.done     { background: #e8f6ec; color: #25ad40; }
 
   .training-card__title {
@@ -90,6 +127,9 @@
     font-weight: 600;
     line-height: 1.3;
     margin: 0 0 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
   }
   .training-card__title a {
     color: #3d3d3d;
@@ -98,64 +138,135 @@
   .training-card__title a:hover {
     color: #5f9fd6;
   }
+  .training-card__pin {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
   .training-card__intro {
     color: #777;
     font-size: 13px;
     line-height: 1.55;
-    margin: 0 0 14px;
+    margin: 0;
     flex: 1 1 auto;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
   .training-card__foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 12px;
+    margin-top: 14px;
     padding-top: 12px;
     border-top: 1px solid #f2f3f5;
     font-size: 12px;
     color: #999;
   }
-  .training-card__meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .training-card__meta .icon {
+  .training-card__foot .icon {
     margin-right: 3px;
   }
+
+  /* 全宽进度条（贴卡片底边） */
   .training-card__progress {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    margin: 14px -18px -14px;
+    padding: 0 18px 14px;
+    font-size: 12px;
+    color: #999;
   }
   .training-card__progress-bar {
-    width: 60px;
-    height: 5px;
-    background: #eee;
+    flex: 1 1 auto;
+    height: 6px;
+    background: #eef0f2;
     border-radius: 3px;
     overflow: hidden;
   }
   .training-card__progress-track {
     height: 100%;
-    background: #25ad40;
+    background: linear-gradient(90deg, #5f9fd6, #4a86b8);
+    border-radius: 3px;
     transition: width .3s ease;
   }
-  .training-card__progress-track.progress { background: #e64c72; }
+  .training-card__progress-num {
+    flex-shrink: 0;
+    min-width: 34px;
+    text-align: right;
+    font-weight: 500;
+  }
 
-  /* 空分组不占位 */
-  .training-category-section:empty { display: none; }
+  /* 筛选/搜索无结果 */
+  .training-empty {
+    text-align: center;
+    padding: 48px 16px;
+    color: #999;
+  }
+  .training-empty .icon {
+    font-size: 36px;
+    color: #c5c9cf;
+  }
+  .training-empty p {
+    margin: 12px 0 16px;
+    font-size: 14px;
+  }
+  .training-empty__reset {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 999px;
+    background: #5f9fd6;
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .training-empty__reset:hover {
+    background: #4a86b8;
+    color: #fff;
+  }
 
-  /* 移动端：单列 */
+  /* ====== 深色模式 ====== */
+  .theme--dark .training-filter__pill { background: #424242; color: #bdbdbd; }
+  .theme--dark .training-filter__pill:hover { background: #4a4a4e; color: #eee; }
+  .theme--dark .training-filter__pill.active.all { background: #8a8f99; }
+  .theme--dark .training-card { background: #323334; border-color: #424242; box-shadow: none; }
+  .theme--dark .training-card:hover {
+    box-shadow: none;
+    border-color: #55b6e2;
+  }
+  .theme--dark .training-card__title a { color: #eee; }
+  .theme--dark .training-card__title a:hover { color: #55b6e2; }
+  .theme--dark .training-card__intro { color: #9e9e9e; }
+  .theme--dark .training-card__foot { border-top-color: #424242; color: #8f8f8f; }
+  .theme--dark .training-card__status.outside  { background: #424242; color: #999; }
+  .theme--dark .training-card__status.progress { background: rgba(91, 141, 204, .18); color: #7ab1e8; }
+  .theme--dark .training-card__status.done     { background: rgba(37, 173, 64, .16); color: #5ec97a; }
+  .theme--dark .training-card__cat-badge.zhenti  { background: rgba(251, 85, 85, .15); color: #f08c8c; }
+  .theme--dark .training-card__cat-badge.regular { background: rgba(95, 159, 214, .15); color: #7ab1e8; }
+  .theme--dark .training-card__cat-badge.other   { background: rgba(255, 255, 255, .08); color: #a8adb5; }
+  .theme--dark .training-card__progress { color: #8f8f8f; }
+  .theme--dark .training-card__progress-bar { background: #424242; }
+  .theme--dark .training-card__progress-track { background: linear-gradient(90deg, #55b6e2, #3d8fc4); }
+  .theme--dark .training-empty .icon { color: #55575c; }
+
+  /* ====== 移动端 ====== */
   @media (max-width: 600px) {
     .training-grid {
       grid-template-columns: 1fr;
       gap: 14px;
     }
     .training-card__intro { -webkit-line-clamp: 4; }
+    .training-filter {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-left: -12px;
+      margin-right: -12px;
+      padding: 0 12px 4px;
+    }
+    .training-filter__pill { flex-shrink: 0; }
   }
 </style>
 <div class="row">
@@ -172,105 +283,77 @@
           </form>
         </div>
       </div>
+
+      {%- set cat = handler.request.query.cat or '' -%}
+      {%- if cat not in ['zhenti', 'regular', 'other'] -%}{% set cat = '' %}{%- endif -%}
+      {%- set q_qs = ('&q=' ~ (q|urlencode)) if q else '' -%}
+      {%- set all_href = ('?q=' ~ (q|urlencode)) if q else '?' -%}
+
+      <nav class="training-filter">
+        <a class="training-filter__pill all {{ 'active' if not cat }}" href="{{ all_href }}">全部</a>
+        <a class="training-filter__pill cat-zhenti {{ 'active' if cat == 'zhenti' }}" href="?cat=zhenti{{ q_qs }}"><span class="dot"></span>真题训练</a>
+        <a class="training-filter__pill cat-regular {{ 'active' if cat == 'regular' }}" href="?cat=regular{{ q_qs }}"><span class="dot"></span>常规课</a>
+        <a class="training-filter__pill cat-other {{ 'active' if cat == 'other' }}" href="?cat=other{{ q_qs }}"><span class="dot"></span>其他</a>
+      </nav>
+
       {% if not tdocs.length %}
-        {{ nothing.render('Sorry, there are no training plans.') }}
+        {% if cat or q %}
+          <div class="training-empty">
+            <span class="icon icon-search"></span>
+            <p>没有找到符合条件的训练计划</p>
+            <a class="training-empty__reset" href="?">查看全部训练</a>
+          </div>
+        {% else %}
+          {{ nothing.render('Sorry, there are no training plans.') }}
+        {% endif %}
       {% else %}
-        {%- macro render_training_item(tdoc, cat) -%}
-            <li class="training-card cat-{{ cat }}">
-              <div class="training-card__head">
-                <div class="training-card__participants">
-                  <div class="num">{{ tdoc.attend|default(0) }}</div>
-                  <div class="label">{{ _('Enrolled') }}</div>
-                </div>
-                {% if tsdict[tdoc.docId]['enroll'] %}
-                  {% if not tsdict[tdoc.docId]['done'] %}
-                    {% set pct = (100 * tsdict[tdoc.docId]['donePids']|length / model.training.getPids(tdoc.dag)|length)|round|int %}
-                    <span class="training-card__status progress">{{ _('Completed') }} {{ pct }}%</span>
-                  {% else %}
-                    <span class="training-card__status done">{{ _('Completed') }} 100%</span>
-                  {% endif %}
-                {% elif handler.user.hasPriv(PRIV.PRIV_USER_PROFILE) %}
-                  <span class="training-card__status outside">{{ _('Not Enrolled') }}</span>
-                {% endif %}
+        {%- macro training_card(tdoc) -%}
+          {%- set is_zhenti = tdoc.tag and ('真题训练' in tdoc.tag) -%}
+          {%- set is_regular = (not is_zhenti) and tdoc.tag and ('常规训练' in tdoc.tag) -%}
+          {%- set cat_key = 'zhenti' if is_zhenti else ('regular' if is_regular else 'other') -%}
+          {%- set cat_label = '真题训练' if is_zhenti else ('常规课' if is_regular else '其他') -%}
+          {%- set enrolled = tsdict[tdoc.docId]['enroll'] -%}
+          {%- set done = tsdict[tdoc.docId]['done'] -%}
+          {%- set total = model.training.getPids(tdoc.dag)|length -%}
+          {%- set pct = ((100 * tsdict[tdoc.docId]['donePids']|length / total)|round|int) if total else 0 -%}
+          <li class="training-card cat-{{ cat_key }}">
+            <div class="training-card__head">
+              <span class="training-card__cat-badge {{ cat_key }}"><span class="dot"></span>{{ cat_label }}</span>
+              {% if enrolled and not done %}
+                <span class="training-card__status progress">进行中</span>
+              {% elif enrolled and done %}
+                <span class="training-card__status done">✓ 已完成</span>
+              {% elif handler.user.hasPriv(PRIV.PRIV_USER_PROFILE) %}
+                <span class="training-card__status outside">未报名</span>
+              {% endif %}
+            </div>
+            <h2 class="training-card__title">
+              {% if tdoc.pin %}<span class="training-card__pin">📌</span>{% endif %}
+              <a href="{{ url('training_detail', tid=tdoc.docId) }}" data-emoji-enabled>{{ tdoc.title }}</a>
+            </h2>
+            <p class="training-card__intro">{{ tdoc['content'] }}</p>
+            <div class="training-card__foot">
+              <span><span class="icon icon-flag"></span>{{ _('{0} sections').format(tdoc['dag']|length) }}</span>
+              <span><span class="icon icon-book"></span>{{ _('{0} problems').format(total) }}</span>
+              <span><span class="icon icon-user--multiple"></span>{{ tdoc.attend|default(0) }} 人参加</span>
+            </div>
+            {% if enrolled and not done %}
+              <div class="training-card__progress">
+                <div class="training-card__progress-bar"><div class="training-card__progress-track" style="width:{{ pct }}%;"></div></div>
+                <span class="training-card__progress-num">{{ pct }}%</span>
               </div>
-              <h2 class="training-card__title">
-                <a href="{{ url('training_detail', tid=tdoc.docId) }}" data-emoji-enabled>{{ tdoc.title }}</a>
-              </h2>
-              <p class="training-card__intro">{{ tdoc['content'] }}</p>
-              <div class="training-card__foot">
-                <div class="training-card__meta">
-                  <span><span class="icon icon-flag text-blue"></span>{{ _('{0} sections').format(tdoc['dag']|length) }}</span>
-                  <span><span class="icon icon-book text-green"></span>{{ _('{0} problems').format(model.training.getPids(tdoc.dag)|length) }}</span>
-                </div>
-                {% if tsdict[tdoc.docId]['enroll'] and not tsdict[tdoc.docId]['done'] %}
-                  {% set pct = (100 * tsdict[tdoc.docId]['donePids']|length / model.training.getPids(tdoc.dag)|length)|round|int %}
-                  <div class="training-card__progress">
-                    <div class="training-card__progress-bar"><div class="training-card__progress-track progress" style="width:{{ pct }}%;"></div></div>
-                    <span>{{ pct }}%</span>
-                  </div>
-                {% endif %}
-              </div>
-            </li>
+            {% endif %}
+          </li>
         {%- endmacro -%}
 
-        <!-- ====== 真题训练 ====== -->
-        {% set has_zhenti = false %}
-        {%- for tdoc in tdocs -%}{% if tdoc.tag and ('真题训练' in tdoc.tag) %}{% set has_zhenti = true %}{% endif %}{%- endfor -%}
-        {% if has_zhenti %}
-        <div class="training-category-section">
-          <h2 class="training-category__title">
-            <span class="icon icon-flag text-red"></span>&ensp;🏷️ 真题训练
-          </h2>
-          <ol class="training-grid">
-            {%- for tdoc in tdocs -%}
-              {% if tdoc.tag and ('真题训练' in tdoc.tag) %}
-                {{ render_training_item(tdoc, 'zhenti') }}
-              {% endif %}
-            {%- endfor -%}
-          </ol>
-        </div>
-        {% endif %}
+        <ol class="training-grid">
+          {%- for tdoc in tdocs -%}
+            {{ training_card(tdoc) }}
+          {%- endfor -%}
+        </ol>
 
-        <!-- ====== 常规训练 ====== -->
-        {% set has_regular = false %}
-        {%- for tdoc in tdocs -%}{% if tdoc.tag and ('常规训练' in tdoc.tag) %}{% set has_regular = true %}{% endif %}{%- endfor -%}
-        {% if has_regular %}
-        <div class="training-category-section">
-          <h2 class="training-category__title">
-            <span class="icon icon-training text-blue"></span>&ensp;🏷️ 常规训练
-          </h2>
-          <ol class="training-grid">
-            {%- for tdoc in tdocs -%}
-              {% if tdoc.tag and ('常规训练' in tdoc.tag) %}
-                {{ render_training_item(tdoc, 'regular') }}
-              {% endif %}
-            {%- endfor -%}
-          </ol>
-        </div>
-        {% endif %}
-
-        <!-- ====== 其他训练（无 tag 或不匹配） ====== -->
-        {% set has_other = false %}
-        {%- for tdoc in tdocs -%}
-          {% if not tdoc.tag or (not ('真题训练' in tdoc.tag) and not ('常规训练' in tdoc.tag)) %}
-            {% set has_other = true %}
-          {% endif %}
-        {%- endfor -%}
-        {% if has_other %}
-        <div class="training-category-section">
-          <h2 class="training-category__title">
-            <span class="icon icon-book text-green"></span>&ensp;🏷️ 其他训练
-          </h2>
-          <ol class="training-grid">
-            {%- for tdoc in tdocs -%}
-              {% if not tdoc.tag or (not ('真题训练' in tdoc.tag) and not ('常规训练' in tdoc.tag)) %}
-                {{ render_training_item(tdoc, 'other') }}
-              {% endif %}
-            {%- endfor -%}
-          </ol>
-        </div>
-        {% endif %}
-
+        {%- set qs = ('q=' ~ (q|urlencode)) if q else '' -%}
+        {%- if cat -%}{% set qs = (qs ~ '&cat=' ~ cat) if qs else ('cat=' ~ cat) %}{%- endif -%}
         {{ paginator.render(page, tpcount, add_qs=qs) }}
       {% endif %}
     </div>
@@ -301,7 +384,7 @@
         <div class="section__body">
           <ol class="my secondary training__list">
             {%- for tid, tsdoc in tsdict -%}
-              {% if tsdoc['enroll'] %}
+              {% if tsdoc['enroll'] and tdict[tsdoc['docId']] %}
                 {% set progress = (100 * (tsdoc['donePids']|length) / (model.training.getPids(tdict[tsdoc['docId']].dag)|length))|round|int %}
                 <li class="training__item"><div class="media">
                   <div class="media__left">
